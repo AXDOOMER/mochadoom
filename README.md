@@ -1,5 +1,5 @@
 # Mocha Doom
-Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doom to Java has already been done, thanks to Velktron (Maes), but some work remains to do. Most importantly, the network code is missing. Now that Mocha Doom's development has apparently stopped for three years, I've decided to maintain it. The main objective will be to write it and make it work. Secondly, there is going to be some bug fixes and some features will be added. At last, an OpenGL renderer may be added. 
+Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doom to Java has already been done, thanks to Velktron (Maes), but some work remains to do. Most importantly, the network code is missing. Now that Mocha Doom's development has apparently stopped for three years, I've decided to maintain it. The main objective will be to write the network codde and make the multiplayer work. Secondly, there is going to be some bug fixes and some features will be added. At last, an OpenGL renderer may be added. 
 
 # List of TO-DOs (for version 1.7)
 
@@ -20,6 +20,8 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 [ ] - Detect FreeDM and FreeDoom has IWADs. 
 
 [ ] - Aspect-ratio correction. 
+
+[ ] - Add the nostalgic 'SQUEAK!' sound when the players connect and the multiplayer game starts. 
 
 [ ] - Make sure the .jar file executes without aving to specify where the 'main' is. 
 
