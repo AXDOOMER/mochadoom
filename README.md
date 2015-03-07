@@ -29,6 +29,8 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Fix the size of the 'pause' message.
 
+[ ] - Make the sound pitch more like Doom v1.2.
+
 [ ] - Write the network code.
 
 # List of TO-DOs (for version 1.8)
