@@ -9,6 +9,8 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Fix game settings not being saved.
 
+[ ] - Ajust the default settings.
+
 [ ] - Fix the different details of rendering.
 
 [ ] - Fix a bug where the player keeps moving forward after the automap has been activated.
