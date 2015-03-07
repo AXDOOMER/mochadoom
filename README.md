@@ -38,4 +38,4 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 [ ] - Add an OpenGL renderer.
 
 
-*These TO-DOs lists are subject to changes. 
+*These TO-DOs lists may be subject to changes. 
