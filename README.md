@@ -25,6 +25,8 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Make sure the .jar file executes without aving to specify where the 'main' is. 
 
+[ ] - Fix the wall wiggle.
+
 [ ] - Write the network code.
 
 # List of TO-DOs (for version 1.8)
