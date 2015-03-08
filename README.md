@@ -23,7 +23,7 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Add the nostalgic 'SQUEAK!' sound when the players connect and the multiplayer game starts. 
 
-[ ] - Make sure the .jar file executes without aving to specify where the 'main' is. 
+[ ] - Make sure the .jar file executes without the need to specify where the 'main' is. 
 
 [ ] - Fix the wall-wiggle glitch.
 
@@ -32,6 +32,8 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 [ ] - Make the sound pitch more like Doom v1.2.
 
 [ ] - Fix desynch of DEMO1 and DEMO4 of The Ultimate Doom.
+
+[ ] - Restore the classic fuzz-effect.
 
 [ ] - Write the network code.
 
