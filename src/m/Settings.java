@@ -15,7 +15,7 @@ public enum Settings {
     sfx_volume("8"),
    music_volume("8"),
    show_messages("1"),
-   alwaysrun("1"),
+   alwaysrun("0"),	// Always run is OFF
    key_right(KEY_RIGHTARROW),
    key_left(KEY_LEFTARROW),
    key_up('w'),
@@ -28,8 +28,8 @@ public enum Settings {
    key_speed(KEY_SHIFT),
    use_mouse(1),
    mouseb_fire(0),
-   mouseb_strafe(1),
-   mouseb_forward(2),
+   mouseb_strafe(2),	// AX: Fixed
+   mouseb_forward(1),	// AX: Value inverted with the one above
    use_joystick( 0),
    joyb_fire(0),
    joyb_strafe(1),
@@ -37,7 +37,7 @@ public enum Settings {
    joyb_speed(2),
    screenblocks(10),
    detaillevel(0),
-   snd_channels(6),
+   snd_channels(32),
    usegamma(0),
    mb_used(2),
    chatmacro0(HUSTR_CHATMACRO0 ),

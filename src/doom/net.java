@@ -101,6 +101,8 @@ public static int	PL_DRONE	=0x80;	// bit flag in doomdata->player
 
 ticcmd_t[]	localcmds= new ticcmd_t[BACKUPTICS];
 
+final int MAXPLAYERS = 4;
+
 ticcmd_t [][]       netcmds=new ticcmd_t [MAXPLAYERS][BACKUPTICS];
 int[]         	nettics=new int[MAXNETNODES];
 boolean[]		nodeingame=new boolean[MAXNETNODES];		// set false as nodes leave game

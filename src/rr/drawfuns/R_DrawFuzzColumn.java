@@ -316,6 +316,7 @@ public static final class TrueColor extends R_DrawFuzzColumn<byte[],int[]>{
                 
             }
             
+            // AX: This is what makes it blurry
             private final int fuzzMix(int rgb){
                 // Proper half-brite alpha!
                 return rgb&0x10FFFFFF;

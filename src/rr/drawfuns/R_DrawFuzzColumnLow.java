@@ -350,6 +350,7 @@ public abstract class R_DrawFuzzColumnLow<T, V> extends
 
         }
 
+        // AX: This is what made it dark and ugly
         private final int fuzzMix(int rgb) {
             // super-fast half-brite trick
             // 3DEF and >> 1: ok hue, but too dark

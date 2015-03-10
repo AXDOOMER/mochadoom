@@ -295,7 +295,7 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     // wipegamestate can be set to -1 to force a wipe on the next draw
     public gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
     
-    public int mouseSensitivity=15;
+    public int mouseSensitivity=5;	// AX: Fix wrong defaut mouseSensitivity
     
     // debug flag to cancel adaptiveness
     // Set to true during timedemos.
@@ -433,9 +433,9 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 
     public int mousebfire=0;
 
-    public int mousebstrafe=1;
+    public int mousebstrafe=2;	// AX: Fixed - Now we use the right mouse buttons
 
-    public int mousebforward=2;
+    public int mousebforward=1;	// AX: Fixed - Now we use the right mouse buttons
 
     public int joybfire;
 
@@ -446,7 +446,7 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     public int joybspeed;
     
     /** Cancel vertical mouse movement by default */
-    protected boolean novert=true;
+    protected boolean novert=false;	// AX: The good default
 
     protected int MAXPLMOVE() {
         return forwardmove[1];
