@@ -482,7 +482,7 @@ public final static String  C3TEXT =(
 "GOT TO GO THROUGH HELL TO GET TO IT?");
 
 
-// After level 29, put this:
+// After level 30, put this:
 
 public final static String  C4TEXT =(
 "THE HORRENDOUS VISAGE OF THE BIGGEST\n"+
