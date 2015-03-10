@@ -5,7 +5,7 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Fix a bug that allows the player to see through walls.
 
-[ ] - Fix a crash between Doom II MAP20 and MAP21.
+[x] - Fix a crash between Doom II MAP20 and MAP21.
 
 [ ] - Fix game settings not being saved.
 
