@@ -19,7 +19,7 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Fix other input problems with the keyboard and mouse buttons. 
 
-[ ] - Add back the mouse vertical movement. Allow it to be disabled using '-novert'.
+[x] - Add back the mouse vertical movement. Allow it to be disabled using '-novert'.
 
 [ ] - Detect FreeDM and FreeDoom has IWADs. 
 
