@@ -9,7 +9,9 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Fix game settings not being saved.
 
-[ ] - Ajust the default settings.
+[X] - Ajust the default settings.
+
+[ ] - Display the correct quit messages.
 
 [ ] - Fix the different details of rendering.
 
@@ -33,7 +35,7 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 [ ] - Make the sound pitch more like Doom v1.2.
 
-[ ] - Fix desynch of DEMO1 and DEMO4 of The Ultimate Doom.
+[X] - Fix desynch of DEMO1 and DEMO4 of The Ultimate Doom.
 
 [ ] - Restore the classic fuzz-effect.
 
