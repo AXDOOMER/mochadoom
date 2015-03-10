@@ -73,7 +73,7 @@ public class dstrings{
     // Not done in french?
 
     // QuitDOOM messages
-    public static final int NUM_QUITMESSAGES= 22;
+    public static final int NUM_QUITMESSAGES= 15;
 
 
 public static final String[] endmsg=

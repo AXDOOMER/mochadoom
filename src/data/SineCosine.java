@@ -3,7 +3,7 @@ package data;
 import static data.Tables.FINEANGLES;
 
 /** Sine and Cosine.
- *  Java can't have that mush initialization data in one file, so I had to separate it.
+ *  Java can't have that much initialization data in one file, so I had to separate it.
  * 
  * @author Maes
  *
