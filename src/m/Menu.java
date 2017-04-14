@@ -24,6 +24,11 @@ import static doom.englsh.QSAVESPOT;
 import static doom.englsh.QSPROMPT;
 import static doom.englsh.SAVEDEAD;
 import static doom.englsh.SWSTRING;
+import static doom.englsh.GAMMALVL0;
+import static doom.englsh.GAMMALVL1;
+import static doom.englsh.GAMMALVL2;
+import static doom.englsh.GAMMALVL3;
+import static doom.englsh.GAMMALVL4;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -1847,9 +1852,9 @@ public class Menu extends AbstractDoomMenu {
     public static final int killthings = 0, toorough = 1, hurtme = 2, violence = 3,
             nightmare = 4, newg_end = 5;
     
-    private static final String[] gammamsg = { "GAMMALVL0",
+    private static final String[] gammamsg = { GAMMALVL0,
 
-        "GAMMALVL1", "GAMMALVL2", "GAMMALVL3", "GAMMALVL4" };
+        GAMMALVL1, GAMMALVL2, GAMMALVL3, GAMMALVL4 };
 
     /** sound_e enum */
     static final int sfx_vol = 0, sfx_empty1 = 1, music_vol = 2, sfx_empty2 = 3,
