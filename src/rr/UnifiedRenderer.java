@@ -11,8 +11,8 @@ import rr.drawfuns.R_DrawColumnBoomOpt;
 import rr.drawfuns.R_DrawColumnBoomOptLow;
 import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
+import rr.drawfuns.R_DrawSpan;
 import rr.drawfuns.R_DrawSpanLow;
-import rr.drawfuns.R_DrawSpanUnrolled;
 import rr.drawfuns.R_DrawTLColumn;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
@@ -104,7 +104,7 @@ public abstract class UnifiedRenderer<T, V>
             
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan=new R_DrawSpanUnrolled.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpan=new R_DrawSpan.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
             DrawSpanLow=new R_DrawSpanLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
             
             
@@ -191,7 +191,7 @@ public abstract class UnifiedRenderer<T, V>
             
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan=new R_DrawSpanUnrolled.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpan=new R_DrawSpan.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
             DrawSpanLow=new R_DrawSpanLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
             
             
@@ -262,7 +262,7 @@ public abstract class UnifiedRenderer<T, V>
             
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan=new R_DrawSpanUnrolled.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpan=new R_DrawSpan.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
             DrawSpanLow=new R_DrawSpanLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
             
             
