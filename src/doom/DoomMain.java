@@ -314,9 +314,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             if (automapactive)
                 y = 4;
             else
-                y = view.getViewWindowY()+4;
-            V.DrawPatchDirect(view.getViewWindowX()+(view.getScaledViewWidth()-68)/2,
-                y,0,W.CachePatchName ("M_PAUSE", PU_CACHE));
+                y = view.getViewWindowY()/vs.getScalingY()+4;
+            V.DrawScaledPatch(view.getViewWindowX()+(view.getScaledViewWidth()-68)/2,
+                y,0,vs,W.CachePatchName ("M_PAUSE", PU_CACHE));
         }
 
 
