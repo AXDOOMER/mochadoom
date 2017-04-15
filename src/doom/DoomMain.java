@@ -58,10 +58,7 @@ import rr.ISpriteManager;
 import rr.SceneRenderer;
 import rr.SpriteManager;
 import rr.TextureManager;
-import rr.UnifiedRenderer;
 import rr.ViewVars;
-import rr.parallel.ParallelRenderer;
-import rr.parallel.ParallelRenderer2;
 import rr.subsector_t;
 import s.IDoomSound;
 import s.IMusic;
@@ -2610,7 +2607,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         this.levelLoader = new BoomLevelLoader(this);
         
         // Renderer, Actions, StatusBar, AutoMap
-        this.sceneRenderer = selectRenderer();
+        this.sceneRenderer = bppMode.sceneRenderer(this);
         this.actions = new Actions(this);
         this.statusBar = new StatusBar(this);
 
@@ -3902,94 +3899,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
 
     protected final Finale<T> selectFinale() {
         return new Finale<>(this);
-    }
-
-    protected final SceneRenderer<T, V> selectRenderer() {
-        // Serial or parallel renderer (serial is default, but can be forced)
-        if (cVarManager.bool(CommandVariable.SERIALRENDERER)) {
-            return selectSerialRenderer();
-        } else { // Parallel. Either with default values (2,1) or user-specified.
-            SceneRenderer<T, V> parallel = selectOneParallelRenderer(CommandVariable.PARALLELRENDERER);
-
-            if (parallel == null) {
-                parallel = selectOneParallelRenderer(CommandVariable.PARALLELRENDERER2);
-            }
-            
-            if (parallel != null) {
-                return parallel;
-            }
-        }
-
-        // Force serial
-        return selectSerialRenderer();
-    }
-    
-    private SceneRenderer<T, V> selectOneParallelRenderer(CommandVariable CVarSwitch) {
-        if (cVarManager.present(CVarSwitch)) {
-            // Next THREE args must be numbers.
-            // Try parsing walls, or default to 1
-            final int walls = cVarManager.get(CVarSwitch, Integer.class, 0).orElse(1);
-            // Try parsing floors. If wall succeeded, but floors not, it will default to 1.
-            final int floors = cVarManager.get(CVarSwitch, Integer.class, 0).orElse(1);
-            // In the worst case, we will use the defaults.
-            final int masked = cVarManager.get(CVarSwitch, Integer.class, 0).orElse(2);
-            // TODO: re-enable parallelrenderer2
-            if (CVarSwitch == CommandVariable.PARALLELRENDERER) {
-                return selectParallelRenderer(walls, floors, masked);
-            } else if (CVarSwitch == CommandVariable.PARALLELRENDERER2) {
-                return selectParallelRenderer2(walls, floors, masked);
-            }
-        }
-        
-        return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private SceneRenderer<T, V> selectSerialRenderer() {
-        switch (this.bppMode) {
-            case HiColor:
-                return (SceneRenderer<T, V>) new UnifiedRenderer
-                    .HiColor((DoomMain<byte[], short[]>) this);
-            case TrueColor:
-                return (SceneRenderer<T, V>) new UnifiedRenderer
-                    .TrueColor((DoomMain<byte[], int[]>) this);
-            case Indexed:
-            default:
-                return (SceneRenderer<T, V>) new UnifiedRenderer
-                    .Indexed((DoomMain<byte[], byte[]>) this);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private SceneRenderer<T, V> selectParallelRenderer(int walls, int floors, int masked) {
-        switch (this.bppMode) {
-            case HiColor:
-                return (SceneRenderer<T, V>) new ParallelRenderer
-                    .HiColor((DoomMain<byte[], short[]>) this, walls, floors, masked);
-            case TrueColor:
-                return (SceneRenderer<T, V>) new ParallelRenderer
-                    .TrueColor((DoomMain<byte[], int[]>) this, walls, floors, masked);
-            case Indexed:
-            default:
-                return (SceneRenderer<T, V>) new ParallelRenderer
-                    .Indexed((DoomMain<byte[], byte[]>) this, walls, floors, masked);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private SceneRenderer<T, V> selectParallelRenderer2(int walls, int floors, int masked) {
-        switch (this.bppMode) {
-            case HiColor:
-                return (SceneRenderer<T, V>) new ParallelRenderer2
-                    .HiColor((DoomMain<byte[], short[]>) this, walls, floors, masked);
-            case TrueColor:
-                return (SceneRenderer<T, V>) new ParallelRenderer2
-                    .TrueColor((DoomMain<byte[], int[]>) this, walls, floors, masked);
-            case Indexed:
-            default:
-                return (SceneRenderer<T, V>) new ParallelRenderer2
-                    .Indexed((DoomMain<byte[], byte[]>) this, walls, floors, masked);
-        }
     }
 
     /**

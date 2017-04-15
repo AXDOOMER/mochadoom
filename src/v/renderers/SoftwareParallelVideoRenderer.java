@@ -23,7 +23,7 @@ abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSyste
     // How many threads it will use, but default it uses all avalable cores
     private static final int[] EMPTY_INT_PALETTED_BLOCK = new int[0];
     private static final short[] EMPTY_SHORT_PALETTED_BLOCK = new short[0];
-    protected static final int PARALLELISM = Game.getConfig().getValue(Settings.parallelism_truecolor_tint, Integer.class);
+    protected static final int PARALLELISM = Game.getConfig().getValue(Settings.parallelism_realcolor_tint, Integer.class);
     protected static final GraphicsConfiguration GRAPHICS_CONF = GraphicsEnvironment.getLocalGraphicsEnvironment()
             .getDefaultScreenDevice().getDefaultConfiguration();
     

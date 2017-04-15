@@ -40,7 +40,7 @@ public class RendererFactory {
     {
         private VideoScale videoScale;
         private BppMode bppMode;
-        private byte[] palette;
+        private byte[] playpal;
         private byte[][] colormap;
         
         @Override
@@ -56,11 +56,11 @@ public class RendererFactory {
         }
 
         @Override
-        public WithPalette<T, V> setPlaypal(byte[] palette) {
-            this.palette = Objects.requireNonNull(palette);
+        public WithPalette<T, V> setPlaypal(byte[] playpal) {
+            this.playpal = Objects.requireNonNull(playpal);
             final int minLength = Palettes.PAL_NUM_COLORS * Palettes.PAL_NUM_STRIDES;
-            if (palette.length < minLength) {
-                throw new IllegalArgumentException("Invalid PLAYPAL: has " + palette.length + " entries instead of " + minLength);
+            if (playpal.length < minLength) {
+                throw new IllegalArgumentException("Invalid PLAYPAL: has " + playpal.length + " entries instead of " + minLength);
             }
             return this;
         }
@@ -75,20 +75,27 @@ public class RendererFactory {
         @Override
         @SuppressWarnings("unchecked")
         public DoomGraphicSystem<T, V> build() {
-            final SoftwareGraphicsSystem ret;
-            switch (bppMode) {
-                case HiColor:
-                    ret = new BufferedRenderer16(videoScale, palette);
-                    break;
-                case TrueColor:
-                    ret = new BufferedRenderer32(videoScale, palette);
-                    break;
-                case Indexed:
-                default:
-                    ret = new BufferedRenderer(videoScale, palette, colormap);
-            }
+            return bppMode.renderGen.apply(this);
+        }
 
-            return ret;
+        @Override
+        public BppMode getBppMode() {
+            return bppMode;
+        }
+
+        @Override
+        public byte[][] getColormap() {
+            return colormap;
+        }
+
+        @Override
+        public byte[] getPlaypal() {
+            return playpal;
+        }
+
+        @Override
+        public VideoScale getVideoScale() {
+            return videoScale;
         }
     }
     
@@ -98,18 +105,27 @@ public class RendererFactory {
 
     public interface WithVideoScale<T, V> {
         WithBppMode<T, V> setBppMode(BppMode bppMode);
+        VideoScale getVideoScale();
     }
     
     public interface WithBppMode<T, V> {
         WithPalette<T, V> setPlaypal(byte[] palette);
+        VideoScale getVideoScale();
+        BppMode getBppMode();
     }
     
     public interface WithPalette<T, V> {
         WithColormap<T, V> setColormap(byte[][] colormap);
+        VideoScale getVideoScale();
+        BppMode getBppMode();
+        byte[] getPlaypal();
     }
     
     public interface WithColormap<T, V> {
         DoomGraphicSystem<T, V> build();
+        VideoScale getVideoScale();
+        BppMode getBppMode();
+        byte[] getPlaypal();
+        byte[][] getColormap();
     }
-
 }

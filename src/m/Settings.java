@@ -7,6 +7,7 @@ import java.util.Optional;
 import utils.QuoteType;
 import v.graphics.Plotter;
 import v.renderers.BppMode;
+import v.renderers.SceneRendererMode;
 import v.tables.GreyscaleFilter;
 
 /**
@@ -15,38 +16,14 @@ import v.tables.GreyscaleFilter;
  * 
  * The file now also contains settings on many features introduced by this new version of Mocha Doom
  *  - Good Sign 2017/04/11
+ * 
+ * TODO: find a trick to separate settings groups in the same file vanilla-compatibly
  */
 public enum Settings {
-    automap_plotter_style(Plotter.Style.Thick),
-    mouse_sensitivity(5),
-    sfx_volume(8),
-    music_volume(8),
-    show_messages(true),
+    /**
+     * Defaults
+     */
     alwaysrun(false), // Always run is OFF
-    key_right((int) KEY_RIGHTARROW),
-    key_left((int) KEY_LEFTARROW),
-    key_up((int) 'w'),
-    key_down((int) 's'),
-    key_strafeleft((int) 'a'),
-    key_straferight((int) 'd'),
-    key_fire((int) KEY_CTRL),
-    key_use((int) ' '),
-    key_strafe((int) KEY_ALT),
-    key_speed((int) KEY_SHIFT),
-    use_mouse(true),
-    mouseb_fire(0),
-    mouseb_strafe(2), // AX: Fixed
-    mouseb_forward(1), // AX: Value inverted with the one above
-    use_joystick(false),
-    joyb_fire(0),
-    joyb_strafe(1),
-    joyb_use(3),
-    joyb_speed(2),
-    screenblocks(10),
-    detaillevel(0),
-    snd_channels(32),
-    usegamma(0),
-    mb_used(2),
     chatmacro0(HUSTR_CHATMACRO0),
     chatmacro1(HUSTR_CHATMACRO1),
     chatmacro2(HUSTR_CHATMACRO2),
@@ -57,20 +34,55 @@ public enum Settings {
     chatmacro7(HUSTR_CHATMACRO7),
     chatmacro8(HUSTR_CHATMACRO8),
     chatmacro9(HUSTR_CHATMACRO9),
-    color_depth(BppMode.Indexed),
+    detaillevel(0),
     fullscreen(false),
-    fix_gamma_ramp(true),
-    fix_gamma_palette(true),
-    fix_sky_palette(false),
-    fix_medi_need(true),
-    fix_ouch_face(true),
-    line_of_sight(LOS.Vanilla),
-    vestrobe(true),
-    parallelism_truecolor_tint(Runtime.getRuntime().availableProcessors()),
-    parallelism_patch_columns(3),
-    scale_screen_tiles(true),
-    scale_melt(true),
-    greyscale_filter(GreyscaleFilter.Average);
+    joyb_fire(0),
+    joyb_strafe(1),
+    joyb_use(3),
+    joyb_speed(2),
+    key_down((int) 's'),
+    key_fire((int) KEY_CTRL),
+    key_left((int) KEY_LEFTARROW),
+    key_right((int) KEY_RIGHTARROW),
+    key_speed((int) KEY_SHIFT),
+    key_strafe((int) KEY_ALT),
+    key_strafeleft((int) 'a'),
+    key_straferight((int) 'd'),
+    key_up((int) 'w'),
+    key_use((int) ' '),
+    mb_used(2),
+    mouse_sensitivity(5),
+    mouseb_fire(0),
+    mouseb_forward(1), // AX: Value inverted with the one above
+    mouseb_strafe(2), // AX: Fixed
+    music_volume(8),
+    screenblocks(10),
+    sfx_volume(8),
+    show_messages(true),
+    snd_channels(32),
+    use_joystick(false),
+    use_mouse(true),
+    usegamma(0),
+
+    /**
+     * Mocha Doom
+     */
+    automap_plotter_style(Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
+    color_depth(BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
+    fix_gamma_ramp(true), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
+    fix_gamma_palette(true), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
+    fix_sky_palette(false), // In vanilla, sky color does not change when under effect of Invulnerability powerup
+    fix_medi_need(true), // In vanilla, message "Picked up a medikit that you REALLY need!" never appears due to bug
+    fix_ouch_face(true), // In vanilla, ouch face displayed only when acuired 25+ health when damaged for 25+ health
+    line_of_sight(LOS.Vanilla), // Deaf monsters when thing pos corellates somehow with map vertex, change desync demos
+    vestrobe(false), // Strobe effect on automap cut off from vanilla
+    scale_screen_tiles(true), // If you scale screen tiles, it looks like vanilla
+    scale_melt(true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
+    
+    parallelism_realcolor_tint(Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
+    parallelism_patch_columns(3), // When drawing screen graphics patches, this speeds up column drawing
+    greyscale_filter(GreyscaleFilter.Average), // Used for FUZZ effect or with -greypal comand line argument (for test)
+    scene_renderer_mode(SceneRendererMode.Serial); // In vanilla, scene renderer is serial. Parallel can be faster
     
     public final static Comparator<Settings> NAME_COMPARATOR = Comparator.comparing(Enum::name, String::compareTo);
 

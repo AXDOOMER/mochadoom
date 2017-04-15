@@ -70,6 +70,7 @@ public enum CommandVariable {
     CLASSICSOUND,
     HICOLOR,
     TRUECOLOR,
+    ALPHATRUECOLOR,
     BLOCKMAP,
     SHOWFPS,
     JAVARANDOM,

@@ -12,7 +12,6 @@ import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import m.Settings;
 import p.mobj_t;
-import rr.SceneRenderer;
 
 /**
  * We need globally shared data structures, for defining the global state
@@ -345,8 +344,6 @@ public abstract class DoomStatus<T,V> {
     // Fields used for selecting variable BPP implementations.
     
     protected abstract Finale<T> selectFinale();
-    
-    protected abstract SceneRenderer<T,V> selectRenderer();
     
     // MAES: Fields specific to DoomGame. A lot of them were
     // duplicated/externalized

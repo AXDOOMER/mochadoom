@@ -1,18 +1,49 @@
+/*
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package v.renderers;
 
 import doom.CVarManager;
 import doom.CommandVariable;
+import doom.DoomMain;
+import java.util.function.Function;
+import rr.SceneRenderer;
 
+/**
+ * This class helps to choose proper components for bit depth
+ * selected in config or through use of command line arguments
+ */
 public enum BppMode {
-    HiColor(5),
-    Indexed(5),
-    TrueColor(8);
+    Indexed(5, BppMode::RGBuffered_8, BppMode::SceneGen_8),
+    HiColor(5, BppMode::RGBuffered_16, BppMode::SceneGen_16),
+    TrueColor(8, BppMode::RGBuffered_32, BppMode::SceneGen_32);
     
-    /** Bits representing color levels. 5 for 32. */
     public final int lightBits;
+    final RenderGen renderGen;
+    final ScenerGen scenerGen;
 
-    private BppMode(int lightBits) {
+    private BppMode(int lightBits, RenderGen renderGen, ScenerGen scenerGen) {
         this.lightBits = lightBits;
+        this.renderGen = renderGen;
+        this.scenerGen = scenerGen;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public <T, V> SceneRenderer<T, V> sceneRenderer(DoomMain<T, V> DOOM) {
+        return scenerGen.apply(DOOM);
     }
 
     public static BppMode chooseBppMode(CVarManager CVM) {
@@ -24,4 +55,32 @@ public enum BppMode {
             return Indexed;
         }
     }
+    
+    private static SceneRenderer SceneGen_8(DoomMain DOOM) {
+        return SceneRendererMode.getMode().indexedGen.apply(DOOM);
+    }
+    
+    private static SceneRenderer SceneGen_16(DoomMain DOOM) {
+        return SceneRendererMode.getMode().hicolorGen.apply(DOOM);
+    }
+    
+    private static SceneRenderer SceneGen_32(DoomMain DOOM) {
+        return SceneRendererMode.getMode().truecolorGen.apply(DOOM);
+    }
+    
+    interface ScenerGen extends Function<DoomMain, SceneRenderer> {}
+
+    private static SoftwareGraphicsSystem RGBuffered_8(RendererFactory.WithColormap rf) {
+        return new BufferedRenderer(rf.getVideoScale(), rf.getPlaypal(), rf.getColormap());
+    }
+    
+    private static SoftwareGraphicsSystem RGBuffered_16(RendererFactory.WithColormap rf) {
+        return new BufferedRenderer16(rf.getVideoScale(), rf.getPlaypal());
+    }
+    
+    private static SoftwareGraphicsSystem RGBuffered_32(RendererFactory.WithColormap rf) {
+        return new BufferedRenderer32(rf.getVideoScale(), rf.getPlaypal());
+    }
+    
+    interface RenderGen extends Function<RendererFactory.WithColormap, SoftwareGraphicsSystem> {}
 }
