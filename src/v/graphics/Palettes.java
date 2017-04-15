@@ -56,6 +56,18 @@ public interface Palettes {
     final int PAL_LIGHTS_24 = 1 << 8;
     
     /**
+     * Default index of inverse colormap. Note that it will be shifted to the actual position
+     * in generated lights map by the difference in lights count between 5 and 8 bits lighting.
+     * I have discovered, that player_t.fixedcolormap property is *stored* by game when writing files,
+     * for example it could be included in savegame or demos.
+     * 
+     * If we preshift inverse colormap, MochaDoom not in TrueColor bppMode or any Vanilla DOOM would crash
+     * when trying to load savegame made when under invulnerabilty in TrueColor bppMode.
+     *  - Good Sign 2017/04/15
+     */
+    final int COLORMAP_INVERSE = 32;
+    
+    /**
      * An index of of the lighted palette in colormap used for FUZZ effect and partial invisibility
      */
     final int COLORMAP_BLURRY = 6;

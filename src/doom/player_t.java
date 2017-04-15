@@ -23,7 +23,6 @@ import rr.sector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.*;
 import v.graphics.Palettes;
-import v.renderers.BppMode;
 import w.DoomBuffer;
 import w.DoomIO;
 import w.IPackableDoomObject;
@@ -87,10 +86,6 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
     public final static int CF_NOMOMENTUM = 4; // Not really a cheat, just a debug aid.
 
-    // Index of the special effects (INVUL inverse) map.
-    public static final int INVERSECOLORMAP_8_16 = 1 << 5;
-    public static final int INVERSECOLORMAP_32 = 1 << 8;
-     
     /** The "mobj state" of the player is stored here, even though he "inherits"
      *  all mobj_t properties (except being a thinker). However, for good or bad,
      *  his mobj properties are modified by accessing player.mo
@@ -197,6 +192,11 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
      */
 
     // public byte[] fixedcolormap;
+    /**
+     * *NOT* preshifted index of colormap in light color maps.
+     * It could be written when the player_t object is packed. Dont shift this value,
+     * do shifts after retrieving this.
+     */
     public int fixedcolormap;
 
     // Player skin colorshift,
@@ -1302,10 +1302,8 @@ SetPsprite
      // Handling colormaps.
      if (eval(player.powers[pw_invulnerability]))
      {
-     if (player.powers[pw_invulnerability] > 4*32
-         || flags(player.powers[pw_invulnerability],8) )
-         player.fixedcolormap = DOOM.bppMode == BppMode.TrueColor
-            ? INVERSECOLORMAP_32 : INVERSECOLORMAP_8_16;
+     if (player.powers[pw_invulnerability] > 4*32 || flags(player.powers[pw_invulnerability],8) )
+         player.fixedcolormap = Palettes.COLORMAP_INVERSE;
      else
          player.fixedcolormap = Palettes.COLORMAP_FIXED;
      }
@@ -1527,6 +1525,13 @@ SetPsprite
         buf.putInt(this.extralight);
         // Current PLAYPAL, ???
         //  can be set to REDCOLORMAP for pain, etc.
+        
+        /**
+         * Here the fixed color map of player is written when player_t object is packed.
+         * Make sure not to write any preshifted value there! Do not scale player_r.fixedcolormap,
+         * scale dependent array accesses.
+         *  - Good Sign 2017/04/15
+         */
         buf.putInt(this.fixedcolormap);
         buf.putInt(this.colormap);
         // PSPDEF _is_ readable.

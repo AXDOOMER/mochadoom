@@ -218,7 +218,7 @@ public abstract class RendererState<T, V>
         sscount = 0;
 
         if (player.fixedcolormap != Palettes.COLORMAP_FIXED) {
-            colormaps.fixedcolormap = colormaps.colormaps[player.fixedcolormap];
+            colormaps.fixedcolormap = colormaps.getFixedColormap(player);
             // Offset by fixedcolomap
             // pfixedcolormap =player.fixedcolormap*256;
 

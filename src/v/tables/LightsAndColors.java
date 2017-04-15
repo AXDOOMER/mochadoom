@@ -1,6 +1,7 @@
 package v.tables;
 
 import doom.DoomMain;
+import doom.player_t;
 import static p.MobjFlags.MF_TRANSLATION;
 import static p.MobjFlags.MF_TRANSSHIFT;
 import v.renderers.BppMode;
@@ -46,10 +47,8 @@ public class LightsAndColors<V> {
     public V[] scalelightfixed;
     public V[][] zlight;
     public V[] spritelights;
-    private final DoomMain<?, V> DM;
 
     public LightsAndColors(final DoomMain<?, V> DM) {
-        this.DM = DM;
         this.LC_DATA = new LCData(DM.bppMode);
     }
 
@@ -87,6 +86,22 @@ public class LightsAndColors<V> {
 
     public int numColorMaps() {
         return LC_DATA.NUMCOLORMAPS;
+    }
+    
+    /**
+     * player_t.fixedcolormap have a range of 0..31 in vanilla.
+     * We must respect it. However, we can have more lightlevels then vanilla.
+     * So we must scale player_t.fixedcolormap by the difference with vanilla lightBits
+     * 
+     * @param player
+     * @return index in rich bit liteColorMaps
+     */
+    public V getFixedColormap(player_t player) {
+        if (LC_DATA.bpp.lightBits > 5) {
+            return colormaps[player.fixedcolormap << (LC_DATA.bpp.lightBits - 5)];
+        }
+        
+        return colormaps[player.fixedcolormap];
     }
 
     public final byte[] getTranslationTable(long mobjflags) {
