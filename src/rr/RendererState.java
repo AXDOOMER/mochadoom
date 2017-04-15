@@ -2883,7 +2883,7 @@ public abstract class RendererState<T, V>
             SM.InitSpriteLumps();
             MyThings.cacheSpriteManager(SM);
             VIS.cacheSpriteManager(SM);
-            System.out.print("\nInitColormaps");
+            System.out.print("\nInitColormaps\t\t");
             InitColormaps();
 
         } catch (IOException e) {

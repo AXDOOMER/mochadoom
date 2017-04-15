@@ -135,8 +135,8 @@ protected final void specificPaletteCreation(byte[] paldata,
         final int stride,
         final int gammalevels){
 
-      System.out.printf("Enough data for %d palettes",maxpalettes);
-      System.out.printf("Enough data for %d gamma levels",maxgammas);
+      System.out.printf("Enough data for %d palettes\n",maxpalettes);
+      System.out.printf("Enough data for %d gamma levels\n",maxgammas);
       
       //this.palettes=new int[maxpalettes*maxgammas][];
       this.palettes=new int[maxpalettes][];

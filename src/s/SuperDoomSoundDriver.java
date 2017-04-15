@@ -139,7 +139,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     public boolean InitSound() {
 
         // Secure and configure sound device first.
-        System.err.println("I_InitSound: ");
+        System.err.print("I_InitSound: ");
 
         // We only need a single data line.
         // PCM, signed, 16-bit, stereo, 22025 KHz, 2048 bytes per "frame",
@@ -159,10 +159,10 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
             }
 
         if (line != null) {
-            System.err.print(" configured audio device\n");
+            System.err.print("configured audio device\n");
             line.start();
         } else {
-        	 System.err.print(" could not configure audio device\n");
+        	 System.err.print("could not configure audio device\n");
         	 return false;
         }
 
@@ -180,7 +180,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
         super.initSound8();
 
-        System.err.print(" pre-cached all sound data\n");
+        System.err.print("pre-cached all sound data\n");
 
         // Finished initialization.
         System.err.print("I_InitSound: sound module ready\n");

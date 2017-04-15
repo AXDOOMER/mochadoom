@@ -1217,7 +1217,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         	this.ISND=new DummySFX();
         }
         
-        if (!(CM.CheckParmBool("-nosound") || (ISND instanceof DummySFX)))// Obviously, nomusic && nosfx = nosound.
+        if (!(CM.CheckParmBool("-nosound") || (ISND instanceof DummySFX && IMUS instanceof DummyMusic)))// Obviously, nomusic && nosfx = nosound.
         	this.S=new AbstractDoomAudio(this,numChannels);
         else
         	// Saves a lot of distance calculations, 
