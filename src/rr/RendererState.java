@@ -2790,7 +2790,7 @@ public abstract class RendererState<T, V>
             DOOM.spriteManager.InitSpriteLumps();
             MyThings.cacheSpriteManager(DOOM.spriteManager);
             VIS.cacheSpriteManager(DOOM.spriteManager);
-            System.out.print("\nInitColormaps");
+            System.out.print("\nInitColormaps\t\t");
             InitColormaps();
 
         } catch (IOException e) {

@@ -1,53 +1,11 @@
 # Mocha Doom
 Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doom to Java has already been done, thanks to Velktron (Maes), but some work remains to do. Most importantly, the network code is missing. Now that Mocha Doom's development has apparently stopped for more than two years (and it's been more than three years since a new version was released), I've decided to maintain it. The main objective will be to write the network code and make the multiplayer work. Secondly, there is going to be some bug fixes and some features will be added. At last, an OpenGL renderer may be added. 
 
-# List of TODOs (for version 1.7)
+# How to run
 
-[ ] - Fix a bug that allows the player to see through walls.
-
-[x] - Fix a crash between Doom II MAP20 and MAP21.
-
-[ ] - Fix game settings not being saved.
-
-[x] - Ajust the default settings.
-
-[ ] - Display the correct quit messages.
-
-[ ] - Fix the different details of rendering.
-
-[ ] - Fix a bug where the player keeps moving forward after the automap has been activated. 
-
-[ ] - Fix other input problems with the keyboard and mouse buttons. 
-
-[x] - Add back the mouse vertical movement. Allow it to be disabled using '-novert'.
-
-[ ] - Detect FreeDM and FreeDoom as IWADs. 
-
-[ ] - Aspect-ratio correction. 
-
-[ ] - Add the nostalgic 'SQUEAK!' sound when the players connect and the multiplayer game starts. 
-
-[ ] - Make sure the .jar file executes without the need to specify where the 'main' is. 
-
-[ ] - Fix the wall-wiggle glitch.
-
-[ ] - Fix the size of the 'pause' message.
-
-[ ] - Make the sound pitch more like Doom v1.2.
-
-[x] - Fix desynch of DEMO1 and DEMO4 of The Ultimate Doom.
-
-[ ] - Restore the classic fuzz-effect.
-
-[ ] - Write the network code.
-
-# List of TODOs (for version 1.8)
-
-[ ] - Add an OpenGL renderer.
-
-
-*These TODO lists may be subject to changes. 
-
+1. Open the project with Eclispe
+2. Delete every file that has errors
+3. Run the project
 
 # Rip and Tear!
 

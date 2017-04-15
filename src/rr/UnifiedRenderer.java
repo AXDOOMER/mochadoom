@@ -8,8 +8,8 @@ import rr.drawfuns.R_DrawColumnBoomOpt;
 import rr.drawfuns.R_DrawColumnBoomOptLow;
 import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
+import rr.drawfuns.R_DrawSpan;
 import rr.drawfuns.R_DrawSpanLow;
-import rr.drawfuns.R_DrawSpanUnrolled;
 import rr.drawfuns.R_DrawTLColumn;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
@@ -88,9 +88,8 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
 
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan = new R_DrawSpanUnrolled.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+            DrawSpan = new R_DrawSpan.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
             DrawSpanLow = new R_DrawSpanLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
-
             // Translated columns are usually sprites-only.
             DrawTranslatedColumn = new R_DrawTranslatedColumn.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
             DrawTranslatedColumnLow = new R_DrawTranslatedColumnLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
@@ -161,9 +160,8 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
 
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan = new R_DrawSpanUnrolled.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+            DrawSpan = new R_DrawSpan.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
             DrawSpanLow = new R_DrawSpanLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
-
             // Translated columns are usually sprites-only.
             DrawTranslatedColumn = new R_DrawTranslatedColumn.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
             DrawTranslatedColumnLow = new R_DrawTranslatedColumnLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
@@ -231,9 +229,8 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
 
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan = new R_DrawSpanUnrolled.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+            DrawSpan = new R_DrawSpan.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
             DrawSpanLow = new R_DrawSpanLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
-
             // Translated columns are usually sprites-only.
             DrawTranslatedColumn = new R_DrawTranslatedColumn.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
             DrawTranslatedColumnLow = new R_DrawTranslatedColumnLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
