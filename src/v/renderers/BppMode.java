@@ -20,6 +20,7 @@ import doom.CVarManager;
 import doom.CommandVariable;
 import doom.DoomMain;
 import i.Game;
+import java.awt.Transparency;
 import java.util.function.Function;
 import m.Settings;
 import rr.SceneRenderer;
@@ -31,7 +32,8 @@ import rr.SceneRenderer;
 public enum BppMode {
     Indexed(5, BppMode::RGBuffered_8, BppMode::SceneGen_8),
     HiColor(5, BppMode::RGBuffered_16, BppMode::SceneGen_16),
-    TrueColor(8, BppMode::RGBuffered_32, BppMode::SceneGen_32);
+    TrueColor(8, BppMode::RGBuffered_24, BppMode::SceneGen_32),
+    AlphaTrueColor(8, BppMode::RGBuffered_32, BppMode::SceneGen_32);
     
     public final int lightBits;
     final RenderGen renderGen;
@@ -55,6 +57,8 @@ public enum BppMode {
             return HiColor;
         } else if (CVM.bool(CommandVariable.INDEXED)) {
             return Indexed;
+        } else if (CVM.bool(CommandVariable.ALPHATRUECOLOR)) {
+            return AlphaTrueColor;
         } else {
             return Game.getConfig().getValue(Settings.color_depth, BppMode.class);
         }
@@ -82,8 +86,12 @@ public enum BppMode {
         return new BufferedRenderer16(rf.getVideoScale(), rf.getPlaypal());
     }
     
+    private static SoftwareGraphicsSystem RGBuffered_24(RendererFactory.WithColormap rf) {
+        return new BufferedRenderer32(rf.getVideoScale(), rf.getPlaypal(), Transparency.OPAQUE);
+    }
+    
     private static SoftwareGraphicsSystem RGBuffered_32(RendererFactory.WithColormap rf) {
-        return new BufferedRenderer32(rf.getVideoScale(), rf.getPlaypal());
+        return new BufferedRenderer32(rf.getVideoScale(), rf.getPlaypal(), Transparency.TRANSLUCENT);
     }
     
     interface RenderGen extends Function<RendererFactory.WithColormap, SoftwareGraphicsSystem> {}

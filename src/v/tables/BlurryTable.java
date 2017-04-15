@@ -16,7 +16,9 @@
  */
 package v.tables;
 
+import i.Game;
 import java.util.TreeMap;
+import m.Settings;
 import v.graphics.Palettes;
 import static v.graphics.Palettes.*;
 
@@ -40,10 +42,13 @@ public class BlurryTable {
     private final byte[] LUT_r8;
     private final byte[] LUT_g8;
     private final byte[] LUT_b8;
+    private final byte[] LUT_a8;
 
     private final byte[] LUT_r5;
     private final byte[] LUT_g5;
     private final byte[] LUT_b5;
+    
+    private final boolean semiTranslucent = Game.getConfig().equals(Settings.semi_translucent_fuzz, Boolean.TRUE);
     
     /**
      * Only support indexed "BLURRYMAP" with indexed colorMap
@@ -56,6 +61,7 @@ public class BlurryTable {
         this.LUT_b8 = null;
         this.LUT_g8 = null;
         this.LUT_r8 = null;
+        this.LUT_a8 = null;
         this.LUT_idx = colorMap[COLORMAP_BLURRY];
     }
 
@@ -70,6 +76,7 @@ public class BlurryTable {
         this.LUT_b8 = null;
         this.LUT_g8 = null;
         this.LUT_r8 = null;
+        this.LUT_a8 = null;
         this.LUT_idx = null;
 
         /**
@@ -106,9 +113,7 @@ public class BlurryTable {
             final short rgb555 = Palettes.toRGB555(i, i, i);
             // now the best part - approximation. we just pick the closest grayscale color ratio
             final float ratio = sortedRatios.floorEntry(rgb555).getValue();
-            LUT_r5[i] = (byte) ((int)(i * ratio) & 0x1F);
-            LUT_g5[i] = (byte) ((int)(i * ratio) & 0x1F);
-            LUT_b5[i] = (byte) ((int)(i * ratio) & 0x1F);
+            LUT_r5[i] = LUT_g5[i] = LUT_b5[i] = (byte) ((int)(i * ratio) & 0x1F);
         }
         // all done
     }
@@ -121,6 +126,7 @@ public class BlurryTable {
         this.LUT_b5 = null;
         this.LUT_g5 = null;
         this.LUT_r5 = null;
+        this.LUT_a8 = new byte[256];
         this.LUT_b8 = new byte[256];
         this.LUT_g8 = new byte[256];
         this.LUT_r8 = new byte[256];
@@ -157,27 +163,49 @@ public class BlurryTable {
         
         // now we have built our sorted maps, time to calculate color component mappings
         for (int i = 0; i <= 0xFF; ++i) {
-            final int rgba = Palettes.toRGB888(i, i, i);
+            final int rgb = Palettes.toRGB888(i, i, i);
             // now the best part - approximation. we just pick the closest grayscale color ratio
-            final float ratio = sortedRatios.floorEntry(rgba).getValue();
-            LUT_r8[i] = (byte) ((int)(i * ratio) & 0xFF);
-            LUT_g8[i] = (byte) ((int)(i * ratio) & 0xFF);
-            LUT_b8[i] = (byte) ((int)(i * ratio) & 0xFF);
+            final float ratio = sortedRatios.floorEntry(rgb).getValue();
+            LUT_r8[i] = LUT_g8[i] = LUT_b8[i] = (byte) ((int)(i * ratio) & 0xFF);
+            // for alpha it is different: we use the same ratio as for greyscale color, but the base alpha is min 50%
+            LUT_a8[i] = (byte) (ratio * (Math.max(i, 0x7F) / (float) 0xFF) * 0xFF);
         }
         // all done
     }
     
+    /**
+     * For indexes
+     */
     public byte computePixel(byte pixel) {
         return LUT_idx[pixel & 0xFF];
     }
     
+    /**
+     * For HiColor pixels
+     */
     public short computePixel(short pixel) {
         final int rgb[] = Palettes.getRGB555(pixel, new int[4]);
         return Palettes.toRGB555(LUT_r5[rgb[0]], LUT_g5[rgb[1]], LUT_b5[rgb[2]]);
     }
     
+    /**
+     * In high detail mode in AlphaTrueColor color mode will compute special greyscale-to-ratio translucency
+     */
     public int computePixel(int pixel) {
-        final int rgb[] = Palettes.getRGB888(pixel, new int[4]);
-        return Palettes.toRGB888(LUT_r8[rgb[0]], LUT_g8[rgb[1]], LUT_b8[rgb[2]]);
+        if (!semiTranslucent) {
+            return computePixelFast(pixel);
+        }
+        final int argb[] = Palettes.getARGB8888(pixel, new int[4]);
+        // the alpha from previous frame would stay until the pixel will not belong to FUZZ holder
+        argb[0] = Math.min(argb[0], GreyscaleFilter.component(argb[1], argb[2], argb[3]));
+        return Palettes.toARGB8888(LUT_a8[argb[0]], LUT_r8[argb[1]], LUT_g8[argb[2]], LUT_b8[argb[3]]);
+    }
+    
+    /**
+     * For low detail mode, do not compute translucency
+     */
+    public int computePixelFast(int pixel) {
+        final int rgb[] = Palettes.getRGB888(pixel, new int[3]);
+        return 0xFF000000 + (Palettes.toRGB888(LUT_r8[rgb[0]], LUT_g8[rgb[1]], LUT_b8[rgb[2]]) & 0xFFFFFF);
     }
 }

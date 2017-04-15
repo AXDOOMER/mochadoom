@@ -297,7 +297,7 @@ public abstract class R_DrawFuzzColumnLow<T, V> extends DoomColumnFunction<T, V>
                     // a pixel that is either one column
                     // left or right of the current one.
                     // Add index from colormap to index.
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    screen[dest] = blurryTable.computePixelFast(screen[dest + fuzzoffset[fuzzpos]]);
                     screen[dest2] = screen[dest];
 
                     // Ironically, "low detail" fuzziness was not really
@@ -312,21 +312,21 @@ public abstract class R_DrawFuzzColumnLow<T, V> extends DoomColumnFunction<T, V>
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
 
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    screen[dest] = blurryTable.computePixelFast(screen[dest + fuzzoffset[fuzzpos]]);
                     screen[dest2] = screen[dest];
                     if (++fuzzpos == FUZZTABLE)
                         fuzzpos = 0;
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
 
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    screen[dest] = blurryTable.computePixelFast(screen[dest + fuzzoffset[fuzzpos]]);
                     screen[dest2] = screen[dest];
                     if (++fuzzpos == FUZZTABLE)
                         fuzzpos = 0;
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
 
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    screen[dest] = blurryTable.computePixelFast(screen[dest + fuzzoffset[fuzzpos]]);
                     screen[dest2] = screen[dest];
                     if (++fuzzpos == FUZZTABLE)
                         fuzzpos = 0;
@@ -336,7 +336,7 @@ public abstract class R_DrawFuzzColumnLow<T, V> extends DoomColumnFunction<T, V>
 
             if (count > 0)
                 do {
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    screen[dest] = blurryTable.computePixelFast(screen[dest + fuzzoffset[fuzzpos]]);
                     screen[dest2] = screen[dest];
 
                     if (++fuzzpos == FUZZTABLE)

@@ -2,7 +2,10 @@ package v.renderers;
 
 import java.awt.Graphics2D;
 import java.awt.Image;
+import static java.awt.Transparency.*;
 import java.awt.image.BufferedImage;
+import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
+import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 import java.awt.image.DataBufferInt;
 import java.awt.image.VolatileImage;
 import java.util.concurrent.BrokenBarrierException;
@@ -61,8 +64,9 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
      * NOTE: this relies on the ability to "tap" into a BufferedImage's backing array, in order to have fast writes
      * without setPixel/getPixel. If that is not possible, then we'll need to use a special renderer.
      */
-    BufferedRenderer32(VideoScale vs, byte[] playpal) {
+    BufferedRenderer32(VideoScale vs, byte[] playpal, int transparency) {
         super(vs, int[].class, playpal);
+
         /**
          * Try to create as accelerated Images as possible - these would not lose
          * more performance from attempt (in contrast to 16-bit ones)
@@ -75,8 +79,8 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
          * still get accelerated
          */
         currentscreen = compatible
-            ? GRAPHICS_CONF.createCompatibleImage(width, height)
-            : new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            ? GRAPHICS_CONF.createCompatibleImage(width, height, transparency)
+            : new BufferedImage(width, height, transparency == TRANSLUCENT ? TYPE_INT_ARGB : TYPE_INT_RGB);
         currentscreen.setAccelerationPriority(1.0f);
         
         // extract raster from the created image
@@ -168,22 +172,22 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
             final byte[] LUT_G = t.LUT_g8[usegamma];
             final byte[] LUT_B = t.LUT_b8[usegamma];
             for (int i = start; i < stop;) {
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
-                raster[i] = ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) | ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) | (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
+                raster[i] = (FG[i] & 0xFF000000) + ((LUT_R[(FG[i] >> 16) & 0xFF] & 0xFF) << 16) + ((LUT_G[(FG[i] >> 8) & 0xFF] & 0xFF) << 8) + (LUT_B[FG[i++] & 0xFF] & 0xFF);
             }
             try {
                 updateBarrier.await();

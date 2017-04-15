@@ -78,6 +78,7 @@ public enum Settings {
     vestrobe(false), // Strobe effect on automap cut off from vanilla
     scale_screen_tiles(true), // If you scale screen tiles, it looks like vanilla
     scale_melt(true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
+    semi_translucent_fuzz(true), // only works in AlphaTrueColor mode
     
     parallelism_realcolor_tint(Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(3), // When drawing screen graphics patches, this speeds up column drawing

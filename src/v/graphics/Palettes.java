@@ -128,90 +128,118 @@ public interface Palettes {
     default int getBaseColor(int color) { return getBaseColor((byte) color); }
     
     /**
-     * Get red from packed argb long word.
+     * Get alpha from packed argb long word.
      *
-     * @param argb
+     * @param argb8888
      * @return
      */
-    static int getRed(int argb) {
-        return (0xFF0000 & argb) >> 16;
+    static int getAlpha(int argb8888) {
+        return (argb8888 >>> 24) & 0xFF;
+    }
+    
+    /**
+     * Get red from packed argb long word.
+     *
+     * @param rgb888
+     * @return
+     */
+    static int getRed(int rgb888) {
+        return (0xFF0000 & rgb888) >> 16;
     }
 
     /**
      * Get red from packed rgb555
      *
-     * @param rgb
+     * @param rgb555
      * @return
      */
-    static int getRed5(int rgb) {
-        return (rgb >> 10) & 0x1F;
+    static int getRed5(int rgb555) {
+        return (rgb555 >> 10) & 0x1F;
     }
 
     /**
      * Get green from packed argb long word.
      *
-     * @param argb
+     * @param rgb888
      * @return
      */
-    static int getGreen(int argb) {
-        return (0xFF00 & argb) >> 8;
+    static int getGreen(int rgb888) {
+        return (0xFF00 & rgb888) >> 8;
     }
 
     /**
      * Get green from packed rgb555
      *
-     * @param rgb
+     * @param rgb555
      * @return
      */
-    static int getGreen5(int rgb) {
-        return (rgb >> 5) & 0x1F;
+    static int getGreen5(int rgb555) {
+        return (rgb555 >> 5) & 0x1F;
     }
 
     /**
      * Get blue from packed argb long word.
      *
-     * @param argb
+     * @param rgb888
      * @return
      */
-    static int getBlue(int argb) {
-        return 0xFF & argb;
+    static int getBlue(int rgb888) {
+        return 0xFF & rgb888;
     }
     
     /**
      * Get blue from packed rgb555
      *
-     * @param rgb
+     * @param rgb555
      * @return
      */
-    static int getBlue5(int rgb) {
-        return rgb & 0x1F;
+    static int getBlue5(int rgb555) {
+        return rgb555 & 0x1F;
     }
 
     /**
-     * Get all three colors into an array
+     * Get all four color channels into an array
      */
-    static int[] getRGB888(int rgb, int[] container) {
-        container[0] = getRed(rgb);
-        container[1] = getGreen(rgb);
-        container[2] = getBlue(rgb);
+    static int[] getARGB8888(int argb8888, int[] container) {
+        container[0] = getAlpha(argb8888);
+        container[1] = getRed(argb8888);
+        container[2] = getGreen(argb8888);
+        container[3] = getBlue(argb8888);
+        return container;
+    }
+    
+    /**
+     * Get all four color channels into an array
+     */
+    static int[] getRGB888(int rgb888, int[] container) {
+        container[0] = getRed(rgb888);
+        container[1] = getGreen(rgb888);
+        container[2] = getBlue(rgb888);
         return container;
     }
     
     /**
      * Get all three colors into an array
      */
-    static int[] getRGB555(int rgb, int[] container) {
-        container[0] = getRed5(rgb);
-        container[1] = getGreen5(rgb);
-        container[2] = getBlue5(rgb);
+    static int[] getRGB555(int rgb555, int[] container) {
+        container[0] = getRed5(rgb555);
+        container[1] = getGreen5(rgb555);
+        container[2] = getBlue5(rgb555);
         return container;
     }
     
     /**
-     * Compose rgb888 color (opaque if rgba)
+     * Compose rgb888 color (opaque)
      */
     static int toRGB888(int r, int g, int b) {
         return 0xFF000000 + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
+    }
+    
+    /**
+     * Compose argb8888 color
+     */
+    static int toARGB8888(int a, int r, int g, int b) {
+        return ((a & 0xFF) << 24) + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
     }
     
     /**
