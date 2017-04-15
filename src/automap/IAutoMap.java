@@ -1,11 +1,9 @@
 package automap;
 
-import i.DoomStatusAware;
-import v.IVideoScaleAware;
 import doom.event_t;
 
-public interface IAutoMap<T,V> extends IVideoScaleAware, DoomStatusAware{
- // Used by ST StatusBar stuff.
+public interface IAutoMap<T,V> {
+    // Used by ST StatusBar stuff.
     public final int AM_MSGHEADER =(('a'<<24)+('m'<<16));
     public final int AM_MSGENTERED= (AM_MSGHEADER | ('e'<<8));
     public final int AM_MSGEXITED= (AM_MSGHEADER | ('x'<<8));
@@ -37,14 +35,13 @@ public interface IAutoMap<T,V> extends IVideoScaleAware, DoomStatusAware{
     // Called by main loop,
     // called instead of view drawer if automap active.
     public void  Drawer ();
+    
+    // Added to be informed of gamma changes - Good Sign 2017/04/05
+    public void Repalette();
 
     // Called to force the automap to quit
     // if the level is completed while it is up.
     public void  Stop ();
 
     public void Start();
-
-    // Should be called in order to set a proper scaled buffer.
-    public void Init();
-    
 }

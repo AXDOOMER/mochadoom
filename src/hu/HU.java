@@ -22,46 +22,27 @@ package hu;
 // -----------------------------------------------------------------------------
 
 import static data.Defines.*;
-import static g.Keys.*;
-
-import defines.*;
 import static data.Limits.*;
-import static doom.englsh.*;
-import i.DoomStatusAware;
-import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import v.IVideoScale;
-import v.IVideoScaleAware;
-import m.IDoomMenu;
-import m.Menu;
-import rr.RendererState;
-import rr.patch_t;
-import s.IDoomSound;
-import w.IWadLoader;
 import data.sounds.sfxenum_t;
+import defines.*;
 import doom.DoomMain;
-import doom.DoomStatus;
+import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
+import static g.Keys.*;
+import java.awt.Rectangle;
+import java.util.Arrays;
+import rr.ViewVars;
+import rr.patch_t;
+import utils.C2JUtils;
+import static v.renderers.DoomScreen.*;
+        
 
-
-public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
-    public final static String rcsid =
-        "$Id: HU.java,v 1.32 2012/09/24 17:16:23 velktron Exp $";
-
+public class HU implements IHeadsUp{
     // MAES: Status and wad data.
-    IWadLoader W;
+    final DoomMain DOOM;
 
-    DoomMain<?,?> DM;
-
-    IDoomMenu M;
-
-    RendererState<?,?> R;
-    
-    DoomVideoRenderer<?,?> V;
-
-    IDoomSound S;
     //
     // Locally used constants, shortcuts.
     // MAES: Some depend on STATE, so moved into constructor.
@@ -380,23 +361,16 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         return ch < 128 ? frenchKeyMap[ch] : ch;
     }
 
-    public HU(DoomStatus DM) {
-    	this.updateStatus(DM);
-    	
-    	this.w_message=new hu_stext_t();
+    public HU(final DoomMain DOOM) {
+        this.DOOM = DOOM;
+        this.w_message = new hu_stext_t();
 
-    	this.w_inputbuffer=new hu_itext_t[MAXPLAYERS];
-    	for (int i=0;i<MAXPLAYERS;i++){
-    		this.w_inputbuffer[i]=new hu_itext_t();
-    	}
-    	this.w_title=new hu_textline_t();
-    	this.w_chat=new hu_itext_t();
-    }
-
-    
-    /** Used only for testing */
-    public HU() {
-
+        this.w_inputbuffer = new hu_itext_t[MAXPLAYERS];
+        for (int i = 0; i < MAXPLAYERS; i++) {
+            this.w_inputbuffer[i] = new hu_itext_t();
+        }
+        this.w_title = new hu_textline_t();
+        this.w_chat = new hu_itext_t();
     }
 
     /**
@@ -407,28 +381,23 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
      */
 
     @Override
-    public void Init()
-             {
-        String xxx = new String("STCFN%03d");
-        int i;
-        int j;
-        String buffer;
-
-        if (DM.language == Language_t.french)
+    public void Init() {
+        if (DOOM.language == Language_t.french) {
             shiftxform = french_shiftxform;
-        else
+        } else {
             shiftxform = english_shiftxform;
+        }
 
         // load the heads-up font
-        j = HU_FONTSTART;
+        int j = HU_FONTSTART;
 
         // So it basically loads a bunch of patch_t's from memory.
-        C2JUtils.initArrayOfObjects(hu_font, patch_t.class);
+        Arrays.setAll(hu_font, i -> new patch_t());
 
-        for (i = 0; i < HU_FONTSIZE; i++) {
-            buffer = String.format(xxx,j++);
+        for (int i = 0; i < HU_FONTSIZE; i++) {
+            final String buffer = String.format("STCFN%03d", j++);
             // hu_font[i] = ((patch_t[]) wd.CacheLumpName(buffer, PU_STATIC);
-            hu_font[i] = (W.CachePatchName(buffer, PU_STATIC));
+            hu_font[i] = (DOOM.wadLoader.CachePatchName(buffer, PU_STATIC));
         }
 
         // MAES: Doom's SC had a really fucked up endianness change for height.
@@ -456,24 +425,24 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         // (typically once per level). They need to be aware of game progress,
         // and episode numbers <1 will cause it to bomb.
         // MAES: hack to handle Betray in XBLA 31/5/2011
-        if ((DM.gamemap>32) && (DM.getGameMode()==GameMode_t.pack_xbla)){
-        this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 2];
+        if ((DOOM.gamemap>32) && (DOOM.getGameMode()==GameMode_t.pack_xbla)){
+        this.HU_TITLE = mapnames[(DOOM.gameepisode - 1) * 9 + DOOM.gamemap - 2];
 
 
-        this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
-        this.HU_TITLEP = mapnamesp[DM.gamemap - 2]; // fixed from HU_TITLEPw
-        this.HU_TITLET = mapnamest[DM.gamemap - 2];
+        this.HU_TITLE2 = mapnames2[DOOM.gamemap - 1];
+        this.HU_TITLEP = mapnamesp[DOOM.gamemap - 2]; // fixed from HU_TITLEPw
+        this.HU_TITLET = mapnamest[DOOM.gamemap - 2];
         } else {
-            this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
-            this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
-            this.HU_TITLEP = mapnamesp[DM.gamemap - 1]; // fixed from HU_TITLEP
-            this.HU_TITLET = mapnamest[DM.gamemap - 1];
+            this.HU_TITLE = mapnames[(DOOM.gameepisode - 1) * 9 + DOOM.gamemap - 1];
+            this.HU_TITLE2 = mapnames2[DOOM.gamemap - 1];
+            this.HU_TITLEP = mapnamesp[DOOM.gamemap - 1]; // fixed from HU_TITLEP
+            this.HU_TITLET = mapnamest[DOOM.gamemap - 1];
         }
 
         if (headsupactive)
             this.Stop();
 
-        plr = DM.players[DM.consoleplayer];
+        plr = DOOM.players[DOOM.consoleplayer];
         message_on[0] = false;
         message_dontfuckwithme = false;
         message_nottobefuckedwith = false;
@@ -486,22 +455,26 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         // create the map title widget
         this.w_title.initTextLine(HU_TITLEX, HU_TITLEY, hu_font, HU_FONTSTART);
 
-        switch (DM.getGameMode()) {
-        case shareware:
-        case registered:
-        case retail:
-            s = HU_TITLE;
-            break;
+        switch (DOOM.getGameMode()) {
+            case shareware:
+            case registered:
+            case retail:
+            case freedoom1:
+                s = HU_TITLE;
+                break;
 
-       case pack_plut: s = HU_TITLEP; 
-           break; 
-       case pack_tnt: s = HU_TITLET;
-       break;
-       
-        case commercial:
-        default:
-            s = HU_TITLE2;
-            break;
+            case pack_plut:
+                s = HU_TITLEP;
+                break;
+            case pack_tnt:
+                s = HU_TITLET;
+                break;
+
+            case commercial:
+            case freedoom2:
+            default:
+                s = HU_TITLE2;
+                break;
         }
 
         // MAES: oh great, more pointer-char magic... oh no you don't, you ugly
@@ -529,7 +502,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public void Drawer() {
         this.w_message.drawSText();
         this.w_chat.drawIText();
-        if (DM.automapactive)
+        if (DOOM.automapactive)
             this.w_title.drawTextLine(false);
     }
 
@@ -553,7 +526,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
             message_nottobefuckedwith = false;
         }
 
-        if (M.getShowMessages() || message_dontfuckwithme) {
+        if (DOOM.menu.getShowMessages() || message_dontfuckwithme) {
 
             // display message if necessary
             if (((plr.message != null) && !message_nottobefuckedwith)
@@ -569,12 +542,12 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         } // else message_on = false;
 
         // check for incoming chat characters
-        if (DM.netgame) {
+        if (DOOM.netgame) {
             for (i = 0; i < MAXPLAYERS; i++) {
-                if (!DM.playeringame[i])
+                if (!DOOM.playeringame[i])
                     continue;
-                if ((i != DM.consoleplayer)
-                        && ((c = DM.players[i].cmd.chatchar) != 0)) {
+                if ((i != DOOM.consoleplayer)
+                        && ((c = DOOM.players[i].cmd.chatchar) != 0)) {
                     if (c <= HU_BROADCAST)
                         chat_dest[i] = c;
                     else {
@@ -583,7 +556,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                         rc = w_inputbuffer[i].keyInIText(c);
                         if (rc && c == KEY_ENTER) {
                             if ((w_inputbuffer[i].l.len != 0)
-                                    && (chat_dest[i] == DM.consoleplayer + 1)
+                                    && (chat_dest[i] == DOOM.consoleplayer + 1)
                                     || (chat_dest[i] == HU_BROADCAST)) {
                                 w_message.addMessageToSText(player_names[i]
                                         , w_inputbuffer[i].l.text.toString());
@@ -591,17 +564,17 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                                 message_nottobefuckedwith = true;
                                 message_on[0] = true;
                                 message_counter = HU_MSGTIMEOUT;
-                                if (DM.isCommercial())
-                                    S.StartSound(null, sfxenum_t.sfx_radio);
+                                if (DOOM.isCommercial())
+                                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_radio);
                                     
                                 else
-                                    S.StartSound(null, sfxenum_t.sfx_tink);
+                                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_tink);
                                     
                             }
                             w_inputbuffer[i].resetIText();
                         }
                     }
-                    DM.players[i].cmd.chatchar = 0;
+                    DOOM.players[i].cmd.chatchar = 0;
                 }
             }
         }
@@ -667,7 +640,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         numplayers = 0;
         // MAES: Adding BOOLEANS to ints, are we ?!
         for (i = 0; i < MAXPLAYERS; i++) {
-            numplayers += (DM.playeringame[i]) ? 1 : 0;
+            numplayers += (DOOM.playeringame[i]) ? 1 : 0;
         }
 
         if (ev.data1 == KEY_SHIFT) {
@@ -686,19 +659,19 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                 message_on[0] = true;
                 message_counter = HU_MSGTIMEOUT;
                 eatkey = true;
-            } else if (DM.netgame && ev.data1 == HU_INPUTTOGGLE) {
+            } else if (DOOM.netgame && ev.data1 == HU_INPUTTOGGLE) {
                 eatkey = chat_on[0] = true;
                 w_chat.resetIText();
                 this.queueChatChar(HU_BROADCAST);
-            } else if (DM.netgame && numplayers > 2) {
+            } else if (DOOM.netgame && numplayers > 2) {
                 for (i = 0; i < MAXPLAYERS; i++) {
                     if (ev.data1 == destination_keys[i]) {
-                        if (DM.playeringame[i] && i != DM.consoleplayer) {
+                        if (DOOM.playeringame[i] && i != DOOM.consoleplayer) {
                             eatkey = chat_on[0] = true;
                             w_chat.resetIText();
                             this.queueChatChar((char) (i + 1));
                             break;
-                        } else if (i == DM.consoleplayer) {
+                        } else if (i == DOOM.consoleplayer) {
                             num_nobrainers++;
                             if (num_nobrainers < 3)
                                 plr.message = HUSTR_TALKTOSELF1;
@@ -741,7 +714,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                 plr.message = lastmessage.toString();
                 eatkey = true;
             } else {
-                if (DM.language == Language_t.french)
+                if (DOOM.language == Language_t.french)
                     c = ForeignTranslation(c);
                 if (shiftdown || (c >= 'a' && c <= 'z'))
                     c = shiftxform[c];
@@ -1145,23 +1118,23 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                 if (c != ' ' && c >= this.sc && c <= '_') {
                     // MAES: fixed a FUCKING STUPID bug caused by SWAP.SHORT
                     w = this.f[c - this.sc].width;
-                    if (x + w > SCREENWIDTH)
+                    if (x + w > DOOM.vs.getScreenWidth())
                         break;
                     
-                    V.DrawScaledPatch(x, y, FG,vs, f[c - sc]);
+                    DOOM.graphicSystem.DrawPatchScaled(FG, f[c - sc], DOOM.vs, x, y);
                     x += w;
                 } else {
                     // Leave a space
                     x += 4;
-                    if (x >= SCREENWIDTH)
+                    if (x >= DOOM.vs.getScreenWidth())
                         break;
                 }
             }
 
             // draw the cursor if requested
             if (drawcursor
-                    && x + this.f['_' - this.sc].width <= SCREENWIDTH) {
-                V.DrawScaledPatch(x, this.y, FG,vs, this.f['_' - this.sc]);
+                    && x + this.f['_' - this.sc].width <= DOOM.vs.getScreenWidth()) {
+                DOOM.graphicSystem.DrawPatchScaled(FG, this.f['_' - this.sc], DOOM.vs, x, this.y);
             }
         }
 
@@ -1169,79 +1142,80 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         // specific or global-ish. Or both.
         protected boolean lastautomapactive = true;
 
-        // sorta called by HU_Erase and just better darn get things straight
+        /**
+         * Erases as little as possible to remove text messages
+         * Only erases when NOT in automap and the screen is reduced,
+         * and the text must either need updating or refreshing
+         * (because of a recent change back from the automap)
+         * 
+         * Rewritten by Good Sign 2017/04/06
+         */
+        @SuppressWarnings("unchecked")
         public void eraseTextLine() {
-            int lh;
+            if (!DOOM.automapactive && DOOM.sceneRenderer.getView().windowx != 0 && this.needsupdate > 0) {
+                final ViewVars active = DOOM.sceneRenderer.getView();
+                final int
+                    // active part of the screen
+                    activeEndX = active.x + active.width,
+                    activeEndY = active.y + active.height,
+                    // scaled text ranges
+                    dupY = DOOM.graphicSystem.getScalingY(),
+                    lineY = y * dupY,
+                    lineHeight = (this.f[0].height + 1) * dupY,
+                    lineEndY = lineY + lineHeight;
 
-            // Only erases when NOT in automap and the screen is reduced,
-            // and the text must either need updating or refreshing
-            // (because of a recent change back from the automap)
+                final Rectangle rect = new Rectangle(0, lineY, DOOM.vs.getScreenWidth(), lineHeight);
 
-            if (!DM.automapactive && (R.view.windowx != 0)
-                    && (this.needsupdate > 0)) {
-                lh = this.f[0].height + 1;
-
-                for (int y = this.y, yoffset = y * SCREENWIDTH; y < this.y + lh; y++, yoffset +=
-                    SCREENWIDTH) {
-                    // Stuff is probably in am_map??
-                    if (y < R.view.windowy
-                            || y >= R.view.windowy + R.view.height)
-                        R.VideoErase(yoffset, SCREENWIDTH); // erase entire
-                    // line
-                    else {
-                        R.VideoErase(yoffset, R.view.windowx); // erase left
-                        // border
-                        R.VideoErase(yoffset + R.view.windowx + R.view.width,
-                            R.view.windowx);
-                        // erase right border
+                // TOP FULL WIDTH
+                if (lineY < active.y) {
+                    if (lineEndY >= active.y) {
+                        rect.height = active.y - lineY;
                     }
+                    DOOM.graphicSystem.CopyRect(BG, rect, FG);
+                }
+                // CENTER SIDES
+                if ((lineEndY >= active.y && lineEndY < activeEndY) || (lineY >= active.y && lineY < activeEndY)) {
+                    if (lineY < active.y) {
+                        rect.y = active.y;
+                        rect.height = lineHeight - rect.height; // = lineHeight - (active.y - lineY);
+                    } else {
+                        rect.y = lineY;
+                        if (lineEndY >= activeEndY) {
+                            rect.height = activeEndY - lineY;
+                        } else {
+                            rect.height = lineHeight;
+                        }
+                    }
+                    // LEFT
+                    rect.width = active.x;
+                    DOOM.graphicSystem.CopyRect(BG, rect, FG);
+                    // RIGHT
+                    rect.width = DOOM.vs.getScreenWidth() - activeEndX;
+                    DOOM.graphicSystem.CopyRect(BG, rect, FG);
+                    rect.width = DOOM.vs.getScreenWidth(); // restore, don't need to bother later
+                }
+                // BOTTOM FULL WIDTH
+                if (lineEndY >= activeEndY) {
+                    if (lineY >= activeEndY) {
+                        rect.y = lineY;
+                    } else {
+                        rect.y = activeEndY;
+                        rect.height = lineHeight - rect.height; // = lineHeight - (activeEndY - lineY);
+                    }
+                    DOOM.graphicSystem.CopyRect(BG, rect, FG);
                 }
             }
-
-            lastautomapactive = DM.automapactive;
+            
+            lastautomapactive = DOOM.automapactive;
             if (this.needsupdate != 0)
                 this.needsupdate--;
-
         }
-
     }
 
     @Override
     public patch_t[] getHUFonts() {        
         return this.hu_font;
     }
-
-	@Override
-	public void updateStatus(DoomStatus<?,?> DM) {
-        this.DM = DM.DM;
-        this.W = DM.W;
-        this.R = (RendererState<?, ?>) DM.R;
-        this.V=DM.V;
-        this.S=DM.S;
-        this.M=(Menu) DM.M;
-		
-	}
-	
-////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
-
-	protected int SCREENWIDTH;
-	protected int SCREENHEIGHT;
-	protected int SAFE_SCALE;
-	protected IVideoScale vs;
-
-
-	@Override
-	public void setVideoScale(IVideoScale vs) {
-	    this.vs=vs;
-	}
-
-	@Override
-	public void initScaling() {
-	    this.SCREENHEIGHT=vs.getScreenHeight();
-	    this.SCREENWIDTH=vs.getScreenWidth();
-	    this.SAFE_SCALE=vs.getSafeScaling();
-	}
-	
 }
 
 //$Log: HU.java,v $

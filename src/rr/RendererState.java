@@ -1,6 +1,6 @@
 package rr;
 
-import static rr.line_t.*;
+import data.Defines;
 import static data.Defines.ANGLETOSKYSHIFT;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.PU_CACHE;
@@ -10,6 +10,7 @@ import static data.Defines.SIL_TOP;
 import static data.Limits.MAXHEIGHT;
 import static data.Limits.MAXSEGS;
 import static data.Limits.MAXWIDTH;
+import data.Tables;
 import static data.Tables.ANG180;
 import static data.Tables.ANG270;
 import static data.Tables.ANG90;
@@ -24,54 +25,42 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import static data.Tables.finetangent;
 import static data.Tables.tantoangle;
+import doom.CommandVariable;
+import doom.DoomMain;
+import doom.player_t;
+import doom.think_t;
+import doom.thinker_t;
+import i.Game;
+import i.IDoomSystem;
+import java.awt.Rectangle;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
+import m.IDoomMenu;
+import m.MenuMisc;
+import m.Settings;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import m.IDoomMenu;
-import m.MenuMisc;
-import p.AbstractLevelLoader;
-import p.UnifiedGameMap;
 import p.mobj_t;
-import rr.UnifiedRenderer.Segs;
 import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.DoomSpanFunction;
-import rr.drawfuns.R_DrawColumnBoom;
-import rr.drawfuns.R_DrawColumnBoomLow;
-import rr.drawfuns.R_DrawColumnBoomOpt;
-import rr.drawfuns.R_DrawColumnBoomOptLow;
-import rr.drawfuns.R_DrawFuzzColumn;
-import rr.drawfuns.R_DrawFuzzColumnLow;
-import rr.drawfuns.R_DrawSpanLow;
-import rr.drawfuns.R_DrawSpanUnrolled;
-import rr.drawfuns.R_DrawTLColumn;
-import rr.drawfuns.R_DrawTranslatedColumn;
-import rr.drawfuns.R_DrawTranslatedColumnLow;
 import rr.drawfuns.SpanVars;
-import i.IDoomSystem;
+import static rr.line_t.*;
 import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import v.IVideoScale;
-import v.IVideoScaleAware;
+import v.graphics.Palettes;
+import static v.renderers.DoomScreen.*;
+import v.tables.BlurryTable;
+import v.tables.LightsAndColors;
 import w.IWadLoader;
-import data.Defines;
-import data.Tables;
-import doom.DoomMain;
-import doom.DoomStatus;
-import doom.IDoomGameNetworking;
-import doom.player_t;
-import doom.think_t;
-import doom.thinker_t;
-import static rr.LightsAndColors.*;
 
 /**
  * Most shared -essential- status information, methods and classes related to
@@ -86,7 +75,7 @@ import static rr.LightsAndColors.*;
  */
 
 public abstract class RendererState<T, V>
-        implements Renderer<T, V>, ILimitResettable {
+        implements SceneRenderer<T, V>, ILimitResettable {
 
     protected static final boolean DEBUG = false;
 
@@ -94,11 +83,7 @@ public abstract class RendererState<T, V>
 
     // ///////////////////// STATUS ////////////////////////
 
-    protected DoomMain<T, V> DM;
-
-    protected IDoomGameNetworking DGN;
-
-    protected AbstractLevelLoader LL;
+    protected DoomMain<T, V> DOOM;
 
     protected ISegDrawer MySegs;
 
@@ -110,17 +95,7 @@ public abstract class RendererState<T, V>
 
     protected IMaskedDrawer<T, V> MyThings;
 
-    protected DoomVideoRenderer<T, V> V;
-
-    protected UnifiedGameMap P;
-
-    public IWadLoader W;
-
-    public ISpriteManager SM;
-
     public IVisSpriteManagement<V> VIS;
-
-    public IDoomSystem I;
 
     protected TextureManager<T> TexMan;
 
@@ -139,11 +114,11 @@ public abstract class RendererState<T, V>
     // The only reason to query scaledviewwidth from outside the renderer, is
     // this.
     public boolean isFullHeight() {
-        return (view.height == SCREENHEIGHT);
+        return (view.height == DOOM.vs.getScreenHeight());
     }
 
     public boolean isFullWidth() {
-        return (view.scaledwidth == SCREENWIDTH);
+        return (view.scaledwidth == DOOM.vs.getScreenWidth());
     }
 
     public boolean isFullScreen() {
@@ -200,7 +175,7 @@ public abstract class RendererState<T, V>
         // With 32 colormaps, a bump of 1 or 2 is normal.
         // With more than 32, it should be obviously higher.
 
-        int bumplight = Math.max(LBITS - 5, 0);
+        int bumplight = colormaps.lightBits();
         // Be a bit more generous, otherwise the effect is not
         // as evident with truecolor maps.
         bumplight += (bumplight > 0) ? 1 : 0;
@@ -215,11 +190,11 @@ public abstract class RendererState<T, V>
         if (setblocks == 11)
             tempCentery =
                 (view.height / 2)
-                        + (int) (view.lookdir * SCREEN_MUL * setblocks) / 11;
+                        + (int) (view.lookdir * DOOM.vs.getScreenMul() * setblocks) / 11;
         else
             tempCentery =
                 (view.height / 2)
-                        + (int) (view.lookdir * SCREEN_MUL * setblocks) / 10;
+                        + (int) (view.lookdir * DOOM.vs.getScreenMul() * setblocks) / 10;
 
         if (view.centery != tempCentery) {
             view.centery = tempCentery;
@@ -242,14 +217,14 @@ public abstract class RendererState<T, V>
 
         sscount = 0;
 
-        if (player.fixedcolormap != 0) {
+        if (player.fixedcolormap != Palettes.COLORMAP_FIXED) {
             colormaps.fixedcolormap = colormaps.colormaps[player.fixedcolormap];
             // Offset by fixedcolomap
             // pfixedcolormap =player.fixedcolormap*256;
 
             colormaps.walllights = colormaps.scalelightfixed;
 
-            for (i = 0; i < MAXLIGHTSCALE; i++)
+            for (i = 0; i < colormaps.maxLightScale(); i++)
                 colormaps.scalelightfixed[i] = colormaps.fixedcolormap;
         } else
             colormaps.fixedcolormap = null;
@@ -281,13 +256,13 @@ public abstract class RendererState<T, V>
         validcount++;
     }
 
-    public RendererState(DoomStatus<T, V> DS) {
-        this.updateStatus(DS);
+    public RendererState(DoomMain<T, V> DOOM) {
+        this.DOOM = (DoomMain<T, V>) DOOM;
 
         // These don't change between implementations, yet.
         this.MyBSP = new BSP();
 
-        this.view = new ViewVars();
+        this.view = new ViewVars(DOOM.vs);
         this.seg_vars = new SegVars();
         this.dcvars=new ColVars<T,V>();
         this.dsvars=new SpanVars<T,V>();        
@@ -297,46 +272,24 @@ public abstract class RendererState<T, V>
         this.colfunchi=new ColFuncs<T,V>();
 
         this.detailaware = new ArrayList<IDetailAware>();
-        this.colormaps=new LightsAndColors<V>();
+        this.colormaps=new LightsAndColors<V>(DOOM);
         // It's better to construct this here
-        this.TexMan = (TextureManager<T>) new SimpleTextureManager(DS);
-        this.SM=new SpriteManager(DS);
+        this.TexMan = (TextureManager<T>) new SimpleTextureManager(DOOM);
 
         // Visplane variables
-        this.vp_vars = new Visplanes(view, TexMan);
-        // Initialize array of minus ones for sprite clipping
-        view.initNegOneArray(SCREENWIDTH);
+        this.vp_vars = new Visplanes(DOOM.vs, view, TexMan);
 
         // Set rendering functions only after screen sizes
         // and stuff have been set.
         
-        this.MyPlanes = new Planes(this);
+        this.MyPlanes = new Planes(DOOM, this);
         this.VIS=new VisSprites<V>(this);
-        this.MyThings = new SimpleThings<T,V>(this);
-        
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void updateStatus(DoomStatus<?, ?> DC) {
-        this.DM = (DoomMain<T, V>) DC.DM;
-        this.DGN = DC.DGN;
-        this.LL = DC.LL;
-        this.W = DC.W;
-        this.P = DC.P;
-        // We must also connect screen to V. Don't forget it. Do it in Init(),
-        // OK?
-        this.V = (DoomVideoRenderer<T, V>) DC.V;
-        this.SM = DC.SM;
-        this.I = DC.I;
-        if (VIS != null)
-            this.VIS.updateStatus(this);
+        this.MyThings = new SimpleThings<T,V>(DOOM.vs, this);
     }
 
     // ////////////////////////////// THINGS ////////////////////////////////
 
-    protected final class BSP
-            extends BSPVars {
+    protected final class BSP extends BSPVars {
 
         /** newend is one past the last valid seg (cliprange_t) */
         int newend;
@@ -345,8 +298,7 @@ public abstract class RendererState<T, V>
 
         public BSP() {
             solidsegs = new cliprange_t[MAXSEGS + 1];
-            C2JUtils.initArrayOfObjects(solidsegs);
-
+            Arrays.setAll(solidsegs, i -> new cliprange_t());
         }
 
         /**
@@ -846,13 +798,13 @@ public abstract class RendererState<T, V>
             subsector_t sub;
 
             if (RANGECHECK) {
-                if (num >= LL.numsubsectors)
-                    I.Error("R_Subsector: ss %d with numss = %d", num,
-                        LL.numsubsectors);
+                if (num >= DOOM.levelLoader.numsubsectors)
+                    DOOM.doomSystem.Error("R_Subsector: ss %d with numss = %d", num,
+                        DOOM.levelLoader.numsubsectors);
             }
 
             sscount++;
-            sub = LL.subsectors[num];
+            sub = DOOM.levelLoader.subsectors[num];
 
             frontsector = sub.sector;
             if (DEBUG)
@@ -892,7 +844,7 @@ public abstract class RendererState<T, V>
                 System.out.println("Enter Addline for SubSector " + num
                         + " count " + count);
             while (count-- > 0) {
-                AddLine(LL.segs[line]);
+                AddLine(DOOM.levelLoader.segs[line]);
                 line++;
             }
             if (DEBUG)
@@ -922,7 +874,7 @@ public abstract class RendererState<T, V>
                 return;
             }
 
-            bsp = LL.nodes[bspnum];
+            bsp = DOOM.levelLoader.nodes[bspnum];
 
             // Decide which side the view point is on.
             side = bsp.PointOnSide(view.x, view.y);
@@ -949,8 +901,7 @@ public abstract class RendererState<T, V>
 
     }
 
-    protected abstract class SegDrawer
-            implements ISegDrawer {
+    protected abstract class SegDrawer implements ISegDrawer {
 
         protected static final int HEIGHTBITS = 12;
 
@@ -986,7 +937,7 @@ public abstract class RendererState<T, V>
 
         /**
          * Clip values are the solid pixel bounding the range. floorclip starts
-         * out SCREENHEIGHT ceilingclip starts out -1
+         * out vs.getScreenHeight() ceilingclip starts out -1
          */
         protected short[] floorclip, ceilingclip;
 
@@ -1071,7 +1022,7 @@ public abstract class RendererState<T, V>
 
             if (RANGECHECK) {
                 if (start >= view.width || start > stop)
-                    I.Error("Bad R_RenderWallRange: %d to %d", start, stop);
+                    DOOM.doomSystem.Error("Bad R_RenderWallRange: %d to %d", start, stop);
             }
 
             seg = seg_vars.drawsegs[seg_vars.ds_p];
@@ -1118,11 +1069,11 @@ public abstract class RendererState<T, V>
             // this is the ONLY place where rw_scale is set.
             seg.scale1 =
                 rw_scale =
-                    ScaleFromGlobalAngle((view.angle + xtoviewangle[start]));
+                    ScaleFromGlobalAngle((view.angle + view.xtoviewangle[start]));
 
             if (stop > start) {
                 seg.scale2 =
-                    ScaleFromGlobalAngle(view.angle + xtoviewangle[stop]);
+                    ScaleFromGlobalAngle(view.angle + view.xtoviewangle[stop]);
                 seg.scalestep =
                     rw_scalestep = (seg.scale2 - rw_scale) / (stop - start);
             } else {
@@ -1320,7 +1271,7 @@ public abstract class RendererState<T, V>
                 // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
                 if (colormaps.fixedcolormap == null) {
                     lightnum =
-                        (MyBSP.frontsector.lightlevel >> LIGHTSEGSHIFT)
+                        (MyBSP.frontsector.lightlevel >> colormaps.lightSegShift())
                                 + colormaps.extralight;
 
                     if (MyBSP.curline.v1y == MyBSP.curline.v2y)
@@ -1330,9 +1281,9 @@ public abstract class RendererState<T, V>
 
                     if (lightnum < 0)
                         colormaps.walllights = colormaps.scalelight[0];
-                    else if (lightnum >= LIGHTLEVELS)
+                    else if (lightnum >= colormaps.lightLevels())
                         colormaps.walllights =
-                            colormaps.scalelight[LIGHTLEVELS - 1];
+                            colormaps.scalelight[colormaps.lightLevels() - 1];
                     else
                         colormaps.walllights = colormaps.scalelight[lightnum];
                 }
@@ -1510,7 +1461,7 @@ public abstract class RendererState<T, V>
                     // not even if accounting for overflow.
                     angle =
                         Tables.toBAMIndex(rw_centerangle
-                                + (int) xtoviewangle[rw_x]);
+                                + (int) view.xtoviewangle[rw_x]);
 
                     // FIXME: We are accessing finetangent here, the code seems
                     // pretty confident in that angle won't exceed 4K no matter
@@ -1528,10 +1479,10 @@ public abstract class RendererState<T, V>
                         rw_offset - FixedMul(finetangent[angle], rw_distance);
                     texturecolumn >>= FRACBITS;
                     // calculate lighting
-                    index = rw_scale >> LIGHTSCALESHIFT;
+                    index = rw_scale >> colormaps.lightScaleShift();
 
-                    if (index >= MAXLIGHTSCALE)
-                        index = MAXLIGHTSCALE - 1;
+                    if (index >= colormaps.maxLightScale())
+                        index = colormaps.maxLightScale() - 1;
 
                     dcvars.dc_colormap = colormaps.walllights[index];
                     dcvars.dc_x = rw_x;
@@ -1656,12 +1607,16 @@ public abstract class RendererState<T, V>
 
         protected column_t col;
 
-        public SegDrawer(Renderer<?, ?> R) {
+        public SegDrawer(SceneRenderer<?, ?> R) {
             this.vp_vars = R.getVPVars();
             this.seg_vars = R.getSegVars();
             col = new column_t();
             seg_vars.drawsegs = new drawseg_t[seg_vars.MAXDRAWSEGS];
-            C2JUtils.initArrayOfObjects(seg_vars.drawsegs);
+            Arrays.setAll(seg_vars.drawsegs, i -> new drawseg_t());
+            this.floorclip = new short[DOOM.vs.getScreenWidth()];
+            this.ceilingclip = new short[DOOM.vs.getScreenWidth()];
+            BLANKFLOORCLIP = new short[DOOM.vs.getScreenWidth()];
+            BLANKCEILINGCLIP = new short[DOOM.vs.getScreenWidth()];
         }
 
         /**
@@ -1714,24 +1669,9 @@ public abstract class RendererState<T, V>
         public void setGlobalAngle(long angle) {
             this.rw_angle1 = angle;
         }
-        
-        public void initScaling() {
-            this.floorclip = new short[vs.getScreenWidth()];
-            this.ceilingclip = new short[vs.getScreenWidth()];
-            BLANKFLOORCLIP = new short[vs.getScreenWidth()];
-            BLANKCEILINGCLIP = new short[vs.getScreenWidth()];
-        }
-
-        @Override
-        public void setVideoScale(IVideoScale vs) {
-            this.vs = vs;
-        }
-
-        IVideoScale vs;
     }
 
-    protected interface IPlaneDrawer
-            extends IVideoScaleAware {
+    protected interface IPlaneDrawer {
 
         void InitPlanes();
 
@@ -1746,8 +1686,7 @@ public abstract class RendererState<T, V>
 
     }
 
-    protected interface ISegDrawer
-            extends IVideoScaleAware, ILimitResettable {
+    protected interface ISegDrawer extends ILimitResettable {
         public void ClearClips();
 
         short[] getBLANKCEILINGCLIP();
@@ -1773,11 +1712,10 @@ public abstract class RendererState<T, V>
         public void sync();
     }
 
-    protected final class Planes
-            extends PlaneDrawer<T, V> {
+    protected final class Planes extends PlaneDrawer<T, V> {
 
-        public Planes(RendererState<T, V> R) {
-            super(R);
+        public Planes(DoomMain<T, V> DOOM, RendererState<T, V> R) {
+            super(DOOM, R);
         }
 
         /**
@@ -1821,12 +1759,17 @@ public abstract class RendererState<T, V>
                     skydcvars.dc_iscale =
                         vpvars.getSkyScale() >> view.detailshift;
 
-                    /*
+                    /**
                      * Sky is allways drawn full bright, i.e. colormaps[0] is
                      * used. Because of this hack, sky is not affected by INVUL
                      * inverse mapping.
+                     * Settings.fixskypalette handles the fix
                      */
-                    skydcvars.dc_colormap = colormap.colormaps[0];
+                    if (DOOM.CM.equals(Settings.fix_sky_palette, Boolean.TRUE) && colormap.fixedcolormap != null) {
+                        skydcvars.dc_colormap = colormap.fixedcolormap;
+                    } else {
+                        skydcvars.dc_colormap = colormap.colormaps[Palettes.COLORMAP_FIXED];
+                    }
                     skydcvars.dc_texturemid = TexMan.getSkyTextureMid();
                     for (x = pln.minx; x <= pln.maxx; x++) {
 
@@ -1835,7 +1778,7 @@ public abstract class RendererState<T, V>
 
                         if (skydcvars.dc_yl <= skydcvars.dc_yh) {
                             angle =
-                                (int) (addAngles(view.angle, xtoviewangle[x]) >>> ANGLETOSKYSHIFT);
+                                (int) (addAngles(view.angle, view.xtoviewangle[x]) >>> ANGLETOSKYSHIFT);
                             skydcvars.dc_x = x;
                             // Optimized: texheight is going to be the same
                             // during normal skies drawing...right?
@@ -1851,10 +1794,10 @@ public abstract class RendererState<T, V>
                 dsvars.ds_source = TexMan.getSafeFlat(pln.picnum);
 
                 planeheight = Math.abs(pln.height - view.z);
-                light = (pln.lightlevel >> LIGHTSEGSHIFT) + colormap.extralight;
+                light = (pln.lightlevel >> colormap.lightSegShift()) + colormap.extralight;
 
-                if (light >= LIGHTLEVELS)
-                    light = LIGHTLEVELS - 1;
+                if (light >= colormap.lightLevels())
+                    light = colormap.lightLevels() - 1;
 
                 if (light < 0)
                     light = 0;
@@ -1962,8 +1905,10 @@ public abstract class RendererState<T, V>
     /**
      * The xtoviewangle[] table maps a screen pixel to the lowest viewangle that
      * maps back to x ranges from clipangle to -clipangle.
+     * 
+     * @see view.xtoviewangle
      */
-    protected long[] xtoviewangle;// MAES: to resize
+    //protected long[] view.xtoviewangle;// MAES: to resize
 
     // UNUSED.
     // The finetangentgent[angle+FINEANGLES/4] table
@@ -2235,55 +2180,30 @@ public abstract class RendererState<T, V>
     // ////////////// r_draw methods //////////////
 
     /**
-     * Copy a screen buffer. Actually, it's hardcoded to copy stuff from screen
-     * 1 to screen 0. Used to overlay stuff like beveled edges that don't need
-     * to be updated that often. * LFB copy. This might not be a good idea if
-     * memcpy is not optiomal, e.g. byte by byte on a 32bit CPU, as GNU
-     * GCC/Linux libc did at one point.
+     * R_DrawViewBorder Draws the border around the view for different size windows
+     * Made use of CopyRect there
+     * - Good Sign 2017/04/06
      */
-    public void VideoErase(int ofs, int count) {
-
-        // memcpy (screens[0]+ofs, screens[1]+ofs, count);
-        System.arraycopy(V.getScreen(DoomVideoRenderer.SCREEN_BG), ofs,
-            V.getScreen(DoomVideoRenderer.SCREEN_FG), ofs, count);
-
-    }
-
-    /*
-     * R_DrawViewBorder Draws the border around the view for different size
-     * windows?
-     */
-
+    @Override
     public void DrawViewBorder() {
-        int top;
-        int side;
-        int ofs;
-        int i;
-
-        if (view.scaledwidth == SCREENWIDTH)
+        if (view.scaledwidth == DOOM.vs.getScreenWidth())
             return;
 
-        top = ((SCREENHEIGHT - DM.ST.getHeight()) - view.height) / 2;
-        side = (SCREENWIDTH - view.scaledwidth) / 2;
-
-        // copy top and one line of left side
-        this.VideoErase(0, top * SCREENWIDTH + side);
-
-        // copy one line of right side and bottom
-        ofs = (view.height + top) * SCREENWIDTH - side;
-        this.VideoErase(ofs, top * SCREENWIDTH + side);
-
-        // copy sides using wraparound
-        ofs = top * SCREENWIDTH + SCREENWIDTH - side;
-        side <<= 1;
-
-        for (i = 1; i < view.height; i++) {
-            this.VideoErase(ofs, side);
-            ofs += SCREENWIDTH;
-        }
-
-        // ?
-        V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT - DM.ST.getHeight());
+        final int top = ((DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()) - view.height) / 2;
+        final int side = (DOOM.vs.getScreenWidth() - view.scaledwidth) / 2;
+        final Rectangle rect;
+        // copy top
+        rect = new Rectangle(0, 0, DOOM.vs.getScreenWidth(), top);
+        DOOM.graphicSystem.CopyRect(BG, rect, FG);
+        // copy left side
+        rect.setBounds(0, top, side, view.height);
+        DOOM.graphicSystem.CopyRect(BG, rect, FG);
+        // copy right side
+        rect.x = side + view.scaledwidth;
+        DOOM.graphicSystem.CopyRect(BG, rect, FG);
+        // copy bottom
+        rect.setBounds(0, top + view.height, DOOM.vs.getScreenWidth(), top);
+        DOOM.graphicSystem.CopyRect(BG, rect, FG);
     }
 
     public void ExecuteSetViewSize() {
@@ -2299,13 +2219,13 @@ public abstract class RendererState<T, V>
         // 11 Blocks means "full screen"
 
         if (setblocks == 11) {
-            view.scaledwidth = SCREENWIDTH;
-            view.height = SCREENHEIGHT;
+            view.scaledwidth = DOOM.vs.getScreenWidth();
+            view.height = DOOM.vs.getScreenHeight();
         } else {
-            view.scaledwidth = setblocks * (SCREENWIDTH / 10);
+            view.scaledwidth = setblocks * (DOOM.vs.getScreenWidth() / 10);
             // Height can only be a multiple of 8.
             view.height =
-                (short) ((setblocks * (SCREENHEIGHT - DM.ST.getHeight()) / 10) & ~7);
+                (short) ((setblocks * (DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()) / 10) & ~7);
         }
 
         skydcvars.viewheight =
@@ -2339,16 +2259,16 @@ public abstract class RendererState<T, V>
         InitTextureMapping();
 
         // psprite scales
-        // pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
-        // pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
+        // pspritescale = FRACUNIT*viewwidth/vs.getScreenWidth();
+        // pspriteiscale = FRACUNIT*vs.getScreenWidth()/viewwidth;
 
         MyThings.setPspriteScale((int) (FRACUNIT
-                * ((float) SCREEN_MUL * view.width) / SCREENWIDTH));
-        MyThings.setPspriteIscale((int) (FRACUNIT * (SCREENWIDTH / (view.width * (float) SCREEN_MUL))));
-        vp_vars.setSkyScale((int) (FRACUNIT * (SCREENWIDTH / (view.width * (float) SCREEN_MUL))));
+                * ((float) DOOM.vs.getScreenMul() * view.width) / DOOM.vs.getScreenWidth()));
+        MyThings.setPspriteIscale((int) (FRACUNIT * (DOOM.vs.getScreenWidth() / (view.width * (float) DOOM.vs.getScreenMul()))));
+        vp_vars.setSkyScale((int) (FRACUNIT * (DOOM.vs.getScreenWidth() / (view.width * (float) DOOM.vs.getScreenMul()))));
 
-        view.BOBADJUST = (int) (this.vs.getSafeScaling() << 15);
-        view.WEAPONADJUST = (int) ((SCREENWIDTH / (2 * SCREEN_MUL)) * FRACUNIT);
+        view.BOBADJUST = (int) (this.DOOM.vs.getSafeScaling() << 15);
+        view.WEAPONADJUST = (int) ((DOOM.vs.getScreenWidth() / (2 * DOOM.vs.getScreenMul())) * FRACUNIT);
 
         // thing clipping
         for (i = 0; i < view.width; i++)
@@ -2369,7 +2289,7 @@ public abstract class RendererState<T, V>
             // pointless, right?
             // MAES: this spot caused the "warped floor bug", now fixed. Don't
             // forget xtoviewangle[i]!
-            cosadj = Math.abs(finecosine(xtoviewangle[i]));
+            cosadj = Math.abs(finecosine(view.xtoviewangle[i]));
             // cosadjf =
             // Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
             MyPlanes.getDistScale()[i] = FixedDiv(FRACUNIT, cosadj);
@@ -2378,15 +2298,15 @@ public abstract class RendererState<T, V>
 
         // Calculate the light levels to use
         // for each level / scale combination.
-        for (i = 0; i < LIGHTLEVELS; i++) {
-            startmap = ((LIGHTLEVELS-LIGHTBRIGHT-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-            for (j = 0; j < MAXLIGHTSCALE; j++) {
+        for (i = 0; i < colormaps.lightLevels(); i++) {
+            startmap = ((colormaps.lightLevels()-colormaps.lightBright()-i)*2)*colormaps.numColorMaps()/colormaps.lightLevels();
+            for (j = 0; j < colormaps.maxLightScale(); j++) {
                 level =
                     startmap - j/ DISTMAP;
                 if (level < 0)
                     level = 0;
-                if (level >= NUMCOLORMAPS)
-                    level = NUMCOLORMAPS - 1;
+                if (level >= colormaps.numColorMaps())
+                    level = colormaps.numColorMaps() - 1;
                 colormaps.scalelight[i][j] = colormaps.colormaps[level];
             }
         }
@@ -2416,66 +2336,58 @@ public abstract class RendererState<T, V>
 
         String name;
 
-        if (view.scaledwidth == SCREENWIDTH)
+        if (view.scaledwidth == DOOM.vs.getScreenWidth())
             return;
 
-        if (DM.isCommercial())
+        if (DOOM.isCommercial())
             name = name2;
         else
             name = name1;
 
         /* This is a flat we're reading here */
-        src = (flat_t) (W.CacheLumpName(name, PU_CACHE, flat_t.class));
+        src = (flat_t) (DOOM.wadLoader.CacheLumpName(name, PU_CACHE, flat_t.class));
 
-        /*
+        /**
          * This part actually draws the border itself, without bevels MAES:
          * improved drawing routine for extended bit-depth compatibility.
+         * 
+         * Now supports configurable vanilla-like scaling of tiles
+         *  - Good Sign 2017/04/09
          */
+        if (Game.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
+            final V scaled = DOOM.graphicSystem.ScaleBlock(DOOM.graphicSystem.convertPalettedBlock(src.data), DOOM.vs, 64, 64);
+            DOOM.graphicSystem.TileScreenArea(BG, new Rectangle(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()),
+                scaled, new Rectangle(0, 0, 64 * DOOM.graphicSystem.getScalingX(), 64 * DOOM.graphicSystem.getScalingY()));
+        } else
+            DOOM.graphicSystem.TileScreenArea(BG, new Rectangle(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()),
+                DOOM.graphicSystem.convertPalettedBlock(src.data), new Rectangle(0, 0, 64, 64));
 
-        for (y = 0; y < SCREENHEIGHT - DM.ST.getHeight(); y += 64) {
-
-            int y_maxdraw = Math.min(SCREENHEIGHT - DM.ST.getHeight() - y, 64);
-
-            // Draw whole blocks.
-            for (x = 0; x < SCREENWIDTH; x += 64) {
-                int x_maxdraw = Math.min(SCREENWIDTH - x, 64);
-                V.DrawBlock(x, y, DoomVideoRenderer.SCREEN_BG, x_maxdraw,
-                    y_maxdraw, (T) src.data);
-            }
-        }
-
-        patch = (patch_t) W.CachePatchName("BRDR_T", PU_CACHE);
-
+        patch = DOOM.wadLoader.CachePatchName("BRDR_T", PU_CACHE);
         for (x = 0; x < view.scaledwidth; x += 8)
-            V.DrawPatch(view.windowx + x, view.windowy - 8, 1, patch);
-        patch = (patch_t) W.CachePatchName("BRDR_B", PU_CACHE);
-
+            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx + x, view.windowy - 8);
+        
+        patch = DOOM.wadLoader.CachePatchName("BRDR_B", PU_CACHE);
         for (x = 0; x < view.scaledwidth; x += 8)
-            V.DrawPatch(view.windowx + x, view.windowy + view.height, 1, patch);
-        patch = (patch_t) W.CachePatchName("BRDR_L", PU_CACHE);
-
+            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx + x, view.windowy + view.height);
+        
+        patch = DOOM.wadLoader.CachePatchName("BRDR_L", PU_CACHE);
         for (y = 0; y < view.height; y += 8)
-            V.DrawPatch(view.windowx - 8, view.windowy + y, 1, patch);
-        patch = (patch_t) W.CachePatchName("BRDR_R", PU_CACHE);
-
+            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx - 8, view.windowy + y);
+        
+        patch = DOOM.wadLoader.CachePatchName("BRDR_R", PU_CACHE);
         for (y = 0; y < view.height; y += 8)
-            V.DrawPatch(view.windowx + view.scaledwidth, view.windowy + y, 1,
-                patch);
+            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx + view.scaledwidth, view.windowy + y);
 
         // Draw beveled edge. Top-left
-        V.DrawPatch(view.windowx - 8, view.windowy - 8, 1,
-            (patch_t) W.CachePatchName("BRDR_TL", PU_CACHE));
+        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_TL", PU_CACHE), view.windowx - 8, view.windowy - 8);
 
         // Top-right.
-        V.DrawPatch(view.windowx + view.scaledwidth, view.windowy - 8, 1,
-            (patch_t) W.CachePatchName("BRDR_TR", PU_CACHE));
+        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_TR", PU_CACHE), view.windowx + view.scaledwidth, view.windowy - 8);
 
         // Bottom-left
-        V.DrawPatch(view.windowx - 8, view.windowy + view.height, 1,
-            (patch_t) W.CachePatchName("BRDR_BL", PU_CACHE));
+        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_BL", PU_CACHE), view.windowx - 8, view.windowy + view.height);
         // Bottom-right.
-        V.DrawPatch(view.windowx + view.width, view.windowy + view.height, 1,
-            (patch_t) W.CachePatchName("BRDR_BR", PU_CACHE));
+        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_BR", PU_CACHE), view.windowx + view.width, view.windowy + view.height);
     }
 
     /**
@@ -2490,7 +2402,7 @@ public abstract class RendererState<T, V>
         // C2JUtils.initArrayOfObjects(drawsegs);
 
         // DON'T FORGET ABOUT MEEEEEE!!!11!!!
-        this.screen = this.V.getScreen(DoomVideoRenderer.SCREEN_FG);
+        this.screen = this.DOOM.graphicSystem.getScreen(FG);
 
         System.out.print("\nR_InitData");
         InitData();
@@ -2501,7 +2413,7 @@ public abstract class RendererState<T, V>
         System.out.print("\nR_InitTables");
         InitTables();
 
-        SetViewSize(DM.M.getScreenBlocks(), DM.M.getDetailLevel());
+        SetViewSize(DOOM.menu.getScreenBlocks(), DOOM.menu.getDetailLevel());
 
         System.out.print("\nR_InitPlanes");
         MyPlanes.InitPlanes();
@@ -2536,21 +2448,21 @@ public abstract class RendererState<T, V>
         // Handle resize,
         // e.g. smaller view windows
         // with border and/or status bar.
-        view.windowx = (SCREENWIDTH - width) >> 1;
+        view.windowx = (DOOM.vs.getScreenWidth() - width) >> 1;
 
         // Column offset. For windows.
         for (i = 0; i < width; i++)
             columnofs[i] = view.windowx + i;
 
         // SamE with base row offset.
-        if (width == SCREENWIDTH)
+        if (width == DOOM.vs.getScreenWidth())
             view.windowy = 0;
         else
-            view.windowy = (SCREENHEIGHT - DM.ST.getHeight() - height) >> 1;
+            view.windowy = (DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight() - height) >> 1;
 
         // Preclaculate all row offsets.
         for (i = 0; i < height; i++)
-            ylookup[i] = /* screens[0] + */(i + view.windowy) * SCREENWIDTH;
+            ylookup[i] = /* screens[0] + */(i + view.windowy) * DOOM.vs.getScreenWidth();
     }
 
     /**
@@ -2579,7 +2491,7 @@ public abstract class RendererState<T, V>
         // after the view angle.
         //
         // Calc focallength
-        // so FIELDOFVIEW angles covers SCREENWIDTH.
+        // so FIELDOFVIEW angles covers vs.getScreenWidth().
         focallength =
             FixedDiv(view.centerxfrac, finetangent[QUARTERMARK + FIELDOFVIEW
                     / 2]);
@@ -2608,7 +2520,7 @@ public abstract class RendererState<T, V>
             i = 0;
             while (viewangletox[i] > x)
                 i++;
-            xtoviewangle[x] = addAngles((i << ANGLETOFINESHIFT), -ANG90);
+            view.xtoviewangle[x] = addAngles((i << ANGLETOFINESHIFT), -ANG90);
         }
 
         // Take out the fencepost cases from viewangletox.
@@ -2622,7 +2534,7 @@ public abstract class RendererState<T, V>
                 viewangletox[i] = view.width;
         }
 
-        clipangle = xtoviewangle[0];
+        clipangle = view.xtoviewangle[0];
         // OPTIMIZE: assign constant for optimization.
         CLIPANGLE2 = (2 * clipangle) & BITS32;
     }
@@ -2642,20 +2554,20 @@ public abstract class RendererState<T, V>
 
         // Calculate the light levels to use
         // for each level / distance combination.
-        for (i = 0; i < LIGHTLEVELS; i++) {
-            startmap = ((LIGHTLEVELS - LIGHTBRIGHT - i) * 2) * NUMCOLORMAPS / LIGHTLEVELS;
-            for (j = 0; j < MAXLIGHTZ; j++) {
-                // CPhipps - use 320 here instead of SCREENWIDTH, otherwise hires is
+        for (i = 0; i < colormaps.lightLevels(); i++) {
+            startmap = ((colormaps.lightLevels() - colormaps.lightBright() - i) * 2) * colormaps.numColorMaps() / colormaps.lightLevels();
+            for (j = 0; j < colormaps.maxLightZ(); j++) {
+                // CPhipps - use 320 here instead of vs.getScreenWidth(), otherwise hires is
                 //           brighter than normal res
                 
-                scale = FixedDiv((320 / 2 * FRACUNIT), (j + 1) << LIGHTZSHIFT);
-                int t, level = startmap - (scale >>= LIGHTSCALESHIFT)/DISTMAP;
+                scale = FixedDiv((320 / 2 * FRACUNIT), (j + 1) << colormaps.lightZShift());
+                int t, level = startmap - (scale >>= colormaps.lightScaleShift())/DISTMAP;
 
                 if (level < 0)
                     level = 0;
 
-                if (level >= NUMCOLORMAPS)
-                    level = NUMCOLORMAPS - 1;
+                if (level >= colormaps.numColorMaps())
+                    level = colormaps.numColorMaps() - 1;
 
                 // zlight[i][j] = colormaps + level*256;
                 colormaps.zlight[i][j] = colormaps.colormaps[level];
@@ -2678,37 +2590,33 @@ public abstract class RendererState<T, V>
      */
 
     protected void R_InitTranMap(int progress) {
-        int lump = W.CheckNumForName("TRANMAP");
+        int lump = DOOM.wadLoader.CheckNumForName("TRANMAP");
 
         long ta = System.nanoTime();
-        int p;
-        String tranmap;
 
         // PRIORITY: a map file has been specified from commandline. Try to read
         // it. If OK, this trumps even those specified in lumps.
 
-        if ((p = DM.CM.CheckParm("-tranmap")) != 0) {
-            if ((tranmap = DM.CM.getArgv(p + 1)) != null) {
-                if (C2JUtils.testReadAccess(tranmap)) {
-                    System.out
-                            .printf(
-                                "Translucency map file %s specified in -tranmap arg. Attempting to use...\n",
-                                tranmap);
-                    main_tranmap = new byte[256 * 256]; // killough 4/11/98
-                    int result = MenuMisc.ReadFile(tranmap, main_tranmap);
-                    if (result > 0)
-                        return;
-                    System.out.print("...failure.\n");
-                }
+        DOOM.cVarManager.with(CommandVariable.TRANMAP, 0, (String tranmap) -> {
+            if (C2JUtils.testReadAccess(tranmap)) {
+                System.out
+                        .printf(
+                            "Translucency map file %s specified in -tranmap arg. Attempting to use...\n",
+                            tranmap);
+                main_tranmap = new byte[256 * 256]; // killough 4/11/98
+                int result = MenuMisc.ReadFile(tranmap, main_tranmap);
+                if (result > 0)
+                    return;
+                System.out.print("...failure.\n");
             }
-        }
+        });
 
         // Next, if a tranlucency filter map lump is present, use it
         if (lump != -1) { // Set a pointer to the translucency filter maps.
             System.out
                     .print("Translucency map found in lump. Attempting to use...");
             // main_tranmap=new byte[256*256]; // killough 4/11/98
-            main_tranmap = W.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC); // killough
+            main_tranmap = DOOM.wadLoader.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC); // killough
                                                                               // 4/11/98
             // Tolerate 64K or more.
             if (main_tranmap.length >= 0x10000)
@@ -2732,7 +2640,7 @@ public abstract class RendererState<T, V>
             System.out
                     .print("Computing translucency map from scratch...that's gonna be SLOW...");
             byte[] playpal =
-                W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
+                DOOM.wadLoader.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
             main_tranmap = new byte[256 * 256]; // killough 4/11/98
             int[] basepal = new int[3 * 256];
             int[] mixedpal = new int[3 * 256 * 256];
@@ -2813,7 +2721,7 @@ public abstract class RendererState<T, V>
      *  but is only safe to do after all constructors have completed.
      */
     
-    protected final void completeInit(){
+    protected void completeInit(){
         this.detailaware.add(MyThings);        
     }
     
@@ -2860,11 +2768,10 @@ public abstract class RendererState<T, V>
      * } } topdelta--; } dc_texturemid = basetexturemid; }
      */
 
-    protected abstract void InitColormaps()
-            throws IOException;
+    protected abstract void InitColormaps() throws IOException;
 
-    // Only used b
-    protected byte[] BLURRY_MAP;
+    // Only used by Fuzz effect
+    protected BlurryTable BLURRY_MAP;
 
     /**
      * R_InitData Locates all the lumps that will be used by all views Must be
@@ -2874,15 +2781,15 @@ public abstract class RendererState<T, V>
     public void InitData() {
         try {
             System.out.print("\nInit Texture and Flat Manager");
-            TexMan = this.DM.TM;
+            TexMan = this.DOOM.textureManager;
             System.out.print("\nInitTextures");
             TexMan.InitTextures();
             System.out.print("\nInitFlats");
             TexMan.InitFlats();
             System.out.print("\nInitSprites");
-            SM.InitSpriteLumps();
-            MyThings.cacheSpriteManager(SM);
-            VIS.cacheSpriteManager(SM);
+            DOOM.spriteManager.InitSpriteLumps();
+            MyThings.cacheSpriteManager(DOOM.spriteManager);
+            VIS.cacheSpriteManager(DOOM.spriteManager);
             System.out.print("\nInitColormaps");
             InitColormaps();
 
@@ -2911,12 +2818,12 @@ public abstract class RendererState<T, V>
         int i, j, k;
         int lump;
 
-        final spritedef_t[] sprites = SM.getSprites();
-        final int numsprites = SM.getNumSprites();
+        final spritedef_t[] sprites = DOOM.spriteManager.getSprites();
+        final int numsprites = DOOM.spriteManager.getNumSprites();
 
         spritepresent = new boolean[numsprites];
 
-        for (th = P.getThinkerCap().next; th != P.getThinkerCap(); th = th.next) {
+        for (th = DOOM.actions.getThinkerCap().next; th != DOOM.actions.getThinkerCap(); th = th.next) {
             if (th.function == think_t.P_MobjThinker)
                 spritepresent[((mobj_t) th).sprite.ordinal()] = true;
         }
@@ -2929,9 +2836,9 @@ public abstract class RendererState<T, V>
             for (j = 0; j < sprites[i].numframes; j++) {
                 sf = sprites[i].spriteframes[j];
                 for (k = 0; k < 8; k++) {
-                    lump = SM.getFirstSpriteLump() + sf.lump[k];
-                    spritememory += W.GetLumpInfo(lump).size;
-                    W.CacheLumpNum(lump, PU_CACHE, patch_t.class);
+                    lump = DOOM.spriteManager.getFirstSpriteLump() + sf.lump[k];
+                    spritememory += DOOM.wadLoader.GetLumpInfo(lump).size;
+                    DOOM.wadLoader.CacheLumpNum(lump, PU_CACHE, patch_t.class);
                 }
             }
         }
@@ -3052,7 +2959,7 @@ public abstract class RendererState<T, V>
     }
 
     public IDoomSystem getDoomSystem() {
-        return this.I;
+        return this.DOOM.doomSystem;
     }
 
     public Visplanes getVPVars() {
@@ -3065,11 +2972,11 @@ public abstract class RendererState<T, V>
     }
 
     public IWadLoader getWadLoader() {
-        return this.W;
+        return this.DOOM.wadLoader;
     }
     
     public ISpriteManager getSpriteManager(){
-        return this.SM;
+        return this.DOOM.spriteManager;
     }
 
     public BSPVars getBSPVars(){
@@ -3078,47 +2985,6 @@ public abstract class RendererState<T, V>
 
     public IVisSpriteManagement<V> getVisSpriteManager(){
         return this.VIS;
-    }
-
-    // //////////////VIDEO SCALE STUFF ///////////////////////
-
-    protected int SCREENWIDTH;
-
-    protected int SCREENHEIGHT;
-
-    protected float SCREEN_MUL;
-
-    protected IVideoScale vs;
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        this.vs = vs;
-    }
-
-    @Override
-    public void initScaling() {
-        this.SCREENHEIGHT = vs.getScreenHeight();
-        this.SCREENWIDTH = vs.getScreenWidth();
-        this.SCREEN_MUL = vs.getScreenMul();
-
-        // Pre-scale stuff.
-
-        view.negonearray = new short[SCREENWIDTH]; // MAES: in scaling
-        view.screenheightarray = new short[SCREENWIDTH];// MAES: in scaling
-        // Mirror in view
-        view.xtoviewangle = xtoviewangle = new long[SCREENWIDTH + 1];
-
-        // Initialize children objects\
-        MySegs.setVideoScale(vs);
-        MyPlanes.setVideoScale(vs);
-        vp_vars.setVideoScale(vs);
-        MyThings.setVideoScale(vs);
-
-        MySegs.initScaling();
-        MyPlanes.initScaling();
-        vp_vars.initScaling();
-        MyThings.initScaling();
-
     }
 
     /**
@@ -3148,6 +3014,7 @@ public abstract class RendererState<T, V>
      * for most cases.
      */
 
+    @Override
     public void RenderPlayerView(player_t player) {
 
         // Viewing variables are set according to the player's mobj. Interesting
@@ -3163,27 +3030,27 @@ public abstract class RendererState<T, V>
         VIS.ClearSprites();
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
 
         // The head node is the last node output.
-        MyBSP.RenderBSPNode(LL.numnodes - 1);
+        MyBSP.RenderBSPNode(DOOM.levelLoader.numnodes - 1);
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
 
         // FIXME: "Warped floor" fixed, now to fix same-height visplane
         // bleeding.
         MyPlanes.DrawPlanes();
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
 
         MyThings.DrawMasked();
 
         colfunc.main = colfunc.base;
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
     }
 
 }

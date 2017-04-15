@@ -1,10 +1,9 @@
 package s;
 
-import static data.sounds.S_sfx;
-import m.FixedFloat;
 import data.sfxinfo_t;
 import data.sounds;
-import doom.DoomStatus;
+import static data.sounds.S_sfx;
+import doom.DoomMain;
 
 /**
  * Functionality and fields that are common among the various "sound drivers"
@@ -13,12 +12,11 @@ import doom.DoomStatus;
  * @author Maes
  */
 
-public abstract class AbstractSoundDriver
-        implements ISoundDriver {
+public abstract class AbstractSoundDriver implements ISoundDriver {
 
     protected final static boolean D = false; // debug
     
-    protected final DoomStatus<?,?> DS;
+    protected final DoomMain<?,?> DM;
 
     /**
      * The global mixing buffer. Basically, samples from all active internal
@@ -69,8 +67,8 @@ public abstract class AbstractSoundDriver
     // protected final static DataLine.Info info = new DataLine.Info(Clip.class,
     // format);
 
-    public AbstractSoundDriver(DoomStatus<?,?> DS, int numChannels) {
-        this.DS = DS;
+    public AbstractSoundDriver(DoomMain<?,?> DM, int numChannels) {
+        this.DM = DM;
         this.numChannels = numChannels;
         channelids = new int[numChannels];
         channelhandles = new int[numChannels];
@@ -138,12 +136,12 @@ public abstract class AbstractSoundDriver
         // I do not do runtime patches to that
         // variable. Instead, we will use a
         // default sound for replacement.
-        if (DS.W.CheckNumForName(name) == -1)
-            sfxlump = DS.W.GetNumForName("dspistol");
+        if (DM.wadLoader.CheckNumForName(name) == -1)
+            sfxlump = DM.wadLoader.GetNumForName("dspistol");
         else
-            sfxlump = DS.W.GetNumForName(name);
+            sfxlump = DM.wadLoader.GetNumForName(name);
 
-        DMXSound dmx= DS.W.CacheLumpNum(sfxlump, 0, DMXSound.class);
+        DMXSound dmx= DM.wadLoader.CacheLumpNum(sfxlump, 0, DMXSound.class);
         
         // KRUDE
         if (dmx.speed==SAMPLERATE/2){
@@ -175,7 +173,7 @@ public abstract class AbstractSoundDriver
             paddedsfx[i] = (byte) 127;
 
         // Remove the cached lump.
-        DS.W.UnlockLumpNum(sfxlump);
+        DM.wadLoader.UnlockLumpNum(sfxlump);
 
         if (D) System.out.printf("SFX %d name %s size %d speed %d padded to %d\n", index, S_sfx[index].name, dmx.datasize,dmx.speed,paddedsize);
         // Preserve padded length.
@@ -217,14 +215,14 @@ public abstract class AbstractSoundDriver
         // I do not do runtime patches to that
         // variable. Instead, we will use a
         // default sound for replacement.
-        if (DS.W.CheckNumForName(name) == -1)
-            sfxlump = DS.W.GetNumForName("dspistol");
+        if (DM.wadLoader.CheckNumForName(name) == -1)
+            sfxlump = DM.wadLoader.GetNumForName("dspistol");
         else
-            sfxlump = DS.W.GetNumForName(name);
+            sfxlump = DM.wadLoader.GetNumForName(name);
 
-        size = DS.W.LumpLength(sfxlump);
+        size = DM.wadLoader.LumpLength(sfxlump);
 
-        sfx = DS.W.CacheLumpNumAsRawBytes(sfxlump, 0);
+        sfx = DM.wadLoader.CacheLumpNumAsRawBytes(sfxlump, 0);
 
         // Size blown up to accommodate two channels and 16 bits.
         // Sampling rate stays the same.
@@ -248,7 +246,7 @@ public abstract class AbstractSoundDriver
         }
 
         // Remove the cached lump.
-        DS.W.UnlockLumpNum(sfxlump);
+        DM.wadLoader.UnlockLumpNum(sfxlump);
 
         // Preserve padded length.
         len[index] = paddedsize;
@@ -309,7 +307,7 @@ public abstract class AbstractSoundDriver
 
         int lump;
         try {
-            lump = DS.W.GetNumForName(namebuf);
+            lump = DM.wadLoader.GetNumForName(namebuf);
         } catch (Exception e) {
             e.printStackTrace();
             return -1;

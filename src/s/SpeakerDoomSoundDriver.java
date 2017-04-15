@@ -1,7 +1,6 @@
 package s;
 
-import w.DoomBuffer;
-import doom.DoomStatus;
+import doom.DoomMain;
 
 /** A variation of the Classic Sound Driver, decoding the DP-lumps
  *  instead of the DS. A better way would be to build-in an 
@@ -13,8 +12,8 @@ import doom.DoomStatus;
 
 public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
 
-    public SpeakerDoomSoundDriver(DoomStatus DS, int numChannels) {
-        super(DS, numChannels);
+    public SpeakerDoomSoundDriver(DoomMain DM, int numChannels) {
+        super(DM, numChannels);
         // TODO Auto-generated constructor stub
     }
 	
@@ -47,14 +46,14 @@ public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
         // I do not do runtime patches to that
         //  variable. Instead, we will use a
         //  default sound for replacement.
-        if ( DS.W.CheckNumForName(name) == -1 )
-            sfxlump = DS.W.GetNumForName("dppistol");
+        if ( DM.wadLoader.CheckNumForName(name) == -1 )
+            sfxlump = DM.wadLoader.GetNumForName("dppistol");
         else
-            sfxlump = DS.W.GetNumForName(name);
+            sfxlump = DM.wadLoader.GetNumForName(name);
 
         // We must first load and convert it to raw samples.
         
-        SpeakerSound SP=(SpeakerSound) DS.W.CacheLumpNum(sfxlump, 0,SpeakerSound.class);
+        SpeakerSound SP=(SpeakerSound) DM.wadLoader.CacheLumpNum(sfxlump, 0,SpeakerSound.class);
         
         sfx = SP.toRawSample();
         
@@ -82,7 +81,7 @@ public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
             paddedsfx[i] = (byte) 127;
 
         // Remove the cached lump.
-        DS.W.UnlockLumpNum(sfxlump);
+        DM.wadLoader.UnlockLumpNum(sfxlump);
 
         if (D) System.out.printf("SFX %d size %d padded to %d\n",index,size,paddedsize);
         // Preserve padded length.

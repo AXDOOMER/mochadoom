@@ -170,85 +170,138 @@ package automap;
 //
 // -----------------------------------------------------------------------------
 
-import static g.Keys.*;
+import static data.Defines.*;
 import static data.Limits.*;
-import static m.fixed_t.*;
-import static doom.englsh.*;
 import static data.Tables.*;
-import p.AbstractLevelLoader;
-import p.mobj_t;
 import doom.DoomMain;
-import doom.DoomStatus;
+import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
-import rr.patch_t;
-import st.IDoomStatusBar;
-import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import static v.DoomVideoRenderer.V_NOSCALESTART;
-import v.IVideoScale;
-import w.IWadLoader;
+import static g.Keys.*;
+import java.awt.Rectangle;
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import m.cheatseq_t;
+import static m.fixed_t.*;
+import p.mobj_t;
 import static rr.line_t.*;
-import static data.Defines.*;
+import rr.patch_t;
+import static utils.GenericCopy.*;
+import static v.DoomGraphicSystem.*;
+import static v.renderers.DoomScreen.*;
+import v.graphics.Plotter;
 
-public abstract class Map<T, V>
-        implements IAutoMap<T, V> {
+public class Map<T, V> implements IAutoMap<T, V> {
 
-    // ///////////////// Status objects ///////////////////
+    /////////////////// Status objects ///////////////////
+    final DoomMain<T, V> DOOM;
 
-    IDoomStatusBar ST;
+    /**
+     * Configurable colors - now an enum
+     *  - Good Sign 2017/04/05
+     * 
+     * Use colormap-specific colors to support extended modes.
+     * Moved hardcoding in here. Potentially configurable.
+     */
+    enum Color {
+        CLOSE_TO_BLACK(1, (byte) 246),
+        REDS(16, (byte) 176 /*(256 - 5 * 16)*/),
+        BLUES(8, (byte) 200 /*(256 - 4 * 16 + 8)*/),
+        GREENS(16, (byte) 112 /*(7 * 16)*/),
+        GRAYS(16, (byte) 96 /*(6 * 16)*/),
+        BROWNS(16, (byte) 64 /*(4 * 16)*/),
+        YELLOWS(8, (byte) 160 /*(256 - 32)*/),
+        BLACK(1, (byte) 0),
+        WHITE(1, (byte) 4),
+        GRAYS_DARKER_25(13, (byte)(GRAYS.value + 4)),
+        DARK_GREYS(8, (byte)(GRAYS.value + GRAYS.range / 2)),
+        DARK_REDS(8, (byte)(REDS.value + REDS.range / 2));
 
-    IWadLoader W;
+        final static int NUM_LITES = 8;
+        final static int[] LITE_LEVELS_FULL_RANGE = { 0, 4, 7, 10, 12, 14, 15, 15 };
+        final static int[] LITE_LEVELS_HALF_RANGE = { 0, 2, 3, 5, 6, 6, 7, 7 };
+        final byte[] liteBlock;
+        final byte value;
+        final int range;
 
-    DoomMain<T, V> DM;
-
-    DoomVideoRenderer<T,V> V;
-
-    AbstractLevelLoader LL;
-
-    public final String rcsid =
-        "$Id: Map.java,v 1.37 2012/09/24 22:36:28 velktron Exp $";
-
+        Color(int range, byte value) {
+            this.range = range;
+            this.value = value;
+            if (range >= NUM_LITES) {
+                this.liteBlock = new byte[NUM_LITES];
+            } else {
+                this.liteBlock = null;
+            }
+        }
+        
+        static {
+            for (Color c: values()) {
+                switch(c.range) {
+                    case 16:
+                        for (int i = 0; i < NUM_LITES; ++i) {
+                            c.liteBlock[i] = (byte) (c.value + LITE_LEVELS_FULL_RANGE[i]);
+                        }
+                        break;
+                    case 8:
+                        for (int i = 0; i < LITE_LEVELS_HALF_RANGE.length; ++i) {
+                            c.liteBlock[i] = (byte) (c.value + LITE_LEVELS_HALF_RANGE[i]);
+                        }
+                }
+            }
+        }
+    }
     // For use if I do walls with outsides/insides
 
-    public int REDS, BLUES, GREENS, GRAYS, BROWNS, YELLOWS, BLACK, WHITE;
-
     // Automap colors
-    public int BACKGROUND, YOURCOLORS, WALLCOLORS, TSWALLCOLORS, FDWALLCOLORS,
-            CDWALLCOLORS, THINGCOLORS, SECRETWALLCOLORS, GRIDCOLORS,
-            XHAIRCOLORS;
+    final static Color 
+        BACKGROUND = Color.BLACK,
+        YOURCOLORS = Color.WHITE,
+        WALLCOLORS = Color.REDS,
+        TELECOLORS = Color.DARK_REDS,
+        TSWALLCOLORS = Color.GRAYS,
+        FDWALLCOLORS = Color.BROWNS,
+        CDWALLCOLORS = Color.YELLOWS,
+        THINGCOLORS = Color.GREENS,
+        SECRETWALLCOLORS = Color.REDS,
+        GRIDCOLORS = Color.DARK_GREYS,
+        MAPPOWERUPSHOWNCOLORS = Color.GRAYS,
+        CROSSHAIRCOLORS = Color.GRAYS;
 
+    final static EnumSet<Color> GENERATE_LITE_LEVELS_FOR = EnumSet.of(
+        TELECOLORS,
+        WALLCOLORS,
+        FDWALLCOLORS,
+        CDWALLCOLORS,
+        TSWALLCOLORS,
+        SECRETWALLCOLORS,
+        MAPPOWERUPSHOWNCOLORS,
+        THINGCOLORS
+    );
+    
+    final static Color THEIR_COLORS[] = {
+        Color.GREENS,
+        Color.GRAYS,
+        Color.BROWNS,
+        Color.REDS
+    };
+    
     // drawing stuff
-    public static final int FB = 0;
-
     public static final char AM_PANDOWNKEY = KEY_DOWNARROW;
-
     public static final char AM_PANUPKEY = KEY_UPARROW;
-
     public static final char AM_PANRIGHTKEY = KEY_RIGHTARROW;
-
     public static final char AM_PANLEFTKEY = KEY_LEFTARROW;
-
     public static final char AM_ZOOMINKEY = '=';
-
     public static final char AM_ZOOMOUTKEY = '-';
-
     public static final char AM_STARTKEY = KEY_TAB; // KEY_TAB
-
     public static final char AM_ENDKEY = KEY_TAB; // KEY_TAB
-
     public static final char AM_GOBIGKEY = '0';
-
     public static final char AM_FOLLOWKEY = 'f';
-
     public static final char AM_GRIDKEY = 'g';
-
     public static final char AM_MARKKEY = 'm';
-
     public static final char AM_CLEARMARKKEY = 'c';
-
     public static final int AM_NUMMARKPOINTS = 10;
 
     // (fixed_t) scale on entry
@@ -265,71 +318,66 @@ public abstract class Map<T, V>
     // how much zoom-out per tic
     // pulls out to 0.5x in 1 second
     public static final int M_ZOOMOUT = ((int) (FRACUNIT / 1.02));
+    
+    final EnumMap<Color, V> fixedColorSources = new EnumMap<>(Color.class);
+    final EnumMap<Color, V> litedColorSources = new EnumMap<>(Color.class);
 
-    public Map(DoomStatus<T, V> DS) {
-
-        this.updateStatus(DS);
+    public Map(final DoomMain<T, V> DOOM) {
         // Some initializing...
+        this.DOOM = DOOM;
         this.markpoints = new mpoint_t[AM_NUMMARKPOINTS];
-        C2JUtils.initArrayOfObjects(markpoints, mpoint_t.class);
+        Arrays.setAll(markpoints, i -> new mpoint_t());
 
         f_oldloc = new mpoint_t();
         m_paninc = new mpoint_t();
 
-        this.plr = DM.players[DM.displayplayer];
-
+        this.plotter = DOOM.graphicSystem.createPlotter(FG);
+        this.plr = DOOM.players[DOOM.displayplayer];
+        Repalette();
+        // Pre-scale stuff.
+        finit_width = DOOM.vs.getScreenWidth();
+        finit_height = DOOM.vs.getScreenHeight() - 32 * DOOM.vs.getSafeScaling();
     }
-
+    
     @Override
-    public void Init() {
-
-        // Use colormap-specific colors to support extended modes.
-        // Moved hardcoding in here. Potentially configurable.
-
-        REDS = 256 - 5 * 16;
-        BLUES = 256 - 4 * 16 + 8;
-        GREENS = 7 * 16;
-        GRAYS = 6 * 16;
-        BROWNS = 4 * 16;
-        YELLOWS = 256 - 32 + 7;
-        BLACK = 0;
-        WHITE = 4;
-
-        // Automap colors
-        BACKGROUND = BLACK;
-        YOURCOLORS = WHITE;
-        WALLCOLORS = REDS;
-        TSWALLCOLORS = GRAYS;
-        FDWALLCOLORS = BROWNS;
-        CDWALLCOLORS = YELLOWS;
-        THINGCOLORS = GREENS;
-        SECRETWALLCOLORS = WALLCOLORS;
-        GRIDCOLORS = (GRAYS + GRAYSRANGE / 2);
-        XHAIRCOLORS = GRAYS;
-
-        their_colors = new int[] { GREENS, GRAYS, BROWNS, REDS };
+    public final void Repalette() {
+        GENERATE_LITE_LEVELS_FOR.stream()
+            .forEach((c) -> {
+                if (c.liteBlock != null) {
+                    litedColorSources.put(c, DOOM.graphicSystem.convertPalettedBlock(c.liteBlock));
+                }
+            });
+        
+        Arrays.stream(Color.values())
+            .forEach((c) -> {
+                V converted = DOOM.graphicSystem.convertPalettedBlock(c.value);
+                @SuppressWarnings("unchecked")
+                V extended = (V) Array.newInstance(converted.getClass().getComponentType(), Color.NUM_LITES);
+                memset(extended, 0, Color.NUM_LITES, converted, 0, 1);
+                fixedColorSources.put(c, extended);
+            });
     }
 
     /** translates between frame-buffer and map distances */
-    private final int FTOM(int x) {
+    private int FTOM(int x) {
         return FixedMul(((x) << 16), scale_ftom);
     }
 
     /** translates between frame-buffer and map distances */
-    private final int MTOF(int x) {
+    private int MTOF(int x) {
         return FixedMul((x), scale_mtof) >> 16;
     }
 
     /** translates between frame-buffer and map coordinates */
-    private final int CXMTOF(int x) {
+    private int CXMTOF(int x) {
         return (f_x + MTOF((x) - m_x));
     }
 
     /** translates between frame-buffer and map coordinates */
-    private final int CYMTOF(int y) {
+    private int CYMTOF(int y) {
         return (f_y + (f_h - MTOF((y) - m_y)));
     }
-
+    
     // the following is crap
     public static final short LINE_NEVERSEE = ML_DONTDRAW;
 
@@ -436,12 +484,20 @@ public abstract class Map<T, V>
     protected int f_w;
 
     protected int f_h;
+    
+    protected Rectangle f_rect;
 
     /** used for funky strobing effect */
     protected int lightlev;
 
     /** pseudo-frame buffer */
-    protected V fb;
+    //protected V fb;
+    
+    /**
+     * I've made this awesome change to draw map lines on the renderer
+     *  - Good Sign 2017/04/05
+     */
+    protected final Plotter<V> plotter;
 
     protected int amclock;
 
@@ -497,10 +553,10 @@ public abstract class Map<T, V>
     protected player_t plr;
 
     /** numbers used for marking by the automap */
-    private patch_t[] marknums = new patch_t[10];
+    private final patch_t[] marknums = new patch_t[10];
 
     /** where the points are */
-    private mpoint_t[] markpoints;
+    private final mpoint_t[] markpoints;
 
     /** next point to be assigned */
     private int markpointnum = 0;
@@ -514,16 +570,16 @@ public abstract class Map<T, V>
 
     // MAES: STROBE cheat. It's not even cheating, strictly speaking.
 
-    private char cheat_strobe_seq[] = { 0x6e, 0xa6, 0xea, 0x2e, 0x6a, 0xf6,
+    private final char cheat_strobe_seq[] = { 0x6e, 0xa6, 0xea, 0x2e, 0x6a, 0xf6,
             0x62, 0xa6, 0xff // vestrobe
         };
 
-    private cheatseq_t cheat_strobe = new cheatseq_t(cheat_strobe_seq, 0);
+    private final cheatseq_t cheat_strobe = new cheatseq_t(cheat_strobe_seq, 0);
 
     private boolean stopped = true;
 
     // extern boolean viewactive;
-    // extern byte screens[][SCREENWIDTH*SCREENHEIGHT];
+    // extern byte screens[][DOOM.vs.getScreenWidth()*DOOM.vs.getScreenHeight()];
 
     /**
      * Calculates the slope and slope according to the x-axis of a line segment
@@ -562,6 +618,11 @@ public abstract class Map<T, V>
         m_y -= m_h / 2;
         m_x2 = m_x + m_w;
         m_y2 = m_y + m_h;
+        
+        plotter.setThickness(
+            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingX()),
+            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingY())
+        );
     }
 
     //
@@ -591,6 +652,11 @@ public abstract class Map<T, V>
         // Change the scaling multipliers
         scale_mtof = FixedDiv(f_w << FRACBITS, m_w);
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+
+        plotter.setThickness(
+            Math.min(MTOF(FRACUNIT), Color.NUM_LITES),
+            Math.min(MTOF(FRACUNIT), Color.NUM_LITES)
+        );
     }
 
     /**
@@ -616,16 +682,16 @@ public abstract class Map<T, V>
         min_x = min_y = MAXINT;
         max_x = max_y = -MAXINT;
 
-        for (int i = 0; i < LL.numvertexes; i++) {
-            if (LL.vertexes[i].x < min_x)
-                min_x = LL.vertexes[i].x;
-            else if (LL.vertexes[i].x > max_x)
-                max_x = LL.vertexes[i].x;
+        for (int i = 0; i < DOOM.levelLoader.numvertexes; i++) {
+            if (DOOM.levelLoader.vertexes[i].x < min_x)
+                min_x = DOOM.levelLoader.vertexes[i].x;
+            else if (DOOM.levelLoader.vertexes[i].x > max_x)
+                max_x = DOOM.levelLoader.vertexes[i].x;
 
-            if (LL.vertexes[i].y < min_y)
-                min_y = LL.vertexes[i].y;
-            else if (LL.vertexes[i].y > max_y)
-                max_y = LL.vertexes[i].y;
+            if (DOOM.levelLoader.vertexes[i].y < min_y)
+                min_y = DOOM.levelLoader.vertexes[i].y;
+            else if (DOOM.levelLoader.vertexes[i].y > max_y)
+                max_y = DOOM.levelLoader.vertexes[i].y;
         }
 
         max_w = max_x - min_x;
@@ -671,11 +737,9 @@ public abstract class Map<T, V>
     }
 
     public final void initVariables() {
-        int pnum = 0;
+        int pnum;
 
-        DM.automapactive = true;
-        fb = V.getScreen(DoomVideoRenderer.SCREEN_FG);
-
+        DOOM.automapactive = true;
         f_oldloc.x = MAXINT;
         amclock = 0;
         lightlev = 0;
@@ -688,13 +752,13 @@ public abstract class Map<T, V>
         m_h = FTOM(f_h);
 
         // find player to center on initially
-        if (!DM.playeringame[pnum = DM.consoleplayer])
+        if (!DOOM.playeringame[pnum = DOOM.consoleplayer])
             for (pnum = 0; pnum < MAXPLAYERS; pnum++) {
                 System.out.println(pnum);
-                if (DM.playeringame[pnum])
+                if (DOOM.playeringame[pnum])
                     break;
             }
-        plr = DM.players[pnum];
+        plr = DOOM.players[pnum];
         m_x = plr.mo.x - m_w / 2;
         m_y = plr.mo.y - m_h / 2;
         this.changeWindowLoc();
@@ -706,8 +770,7 @@ public abstract class Map<T, V>
         old_m_h = m_h;
 
         // inform the status bar of the change
-        ST.Responder(st_notify);
-
+        DOOM.statusBar.Responder(st_notify);
     }
 
     //
@@ -719,7 +782,7 @@ public abstract class Map<T, V>
 
         for (i = 0; i < 10; i++) {
             namebuf = ("AMMNUM" + i);
-            marknums[i] = W.CachePatchName(namebuf);
+            marknums[i] = DOOM.wadLoader.CachePatchName(namebuf);
         }
 
     }
@@ -728,7 +791,7 @@ public abstract class Map<T, V>
         int i;
 
         for (i = 0; i < 10; i++) {
-            W.UnlockLumpNum(marknums[i]);
+            DOOM.wadLoader.UnlockLumpNum(marknums[i]);
         }
     }
 
@@ -750,6 +813,7 @@ public abstract class Map<T, V>
         f_x = f_y = 0;
         f_w = finit_width;
         f_h = finit_height;
+        f_rect = new Rectangle(0, 0, f_w, f_h);
 
         // scanline=new byte[f_h*f_w];
 
@@ -760,46 +824,47 @@ public abstract class Map<T, V>
         if (scale_mtof > max_scale_mtof)
             scale_mtof = min_scale_mtof;
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+        
+        plotter.setThickness(
+            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingX()),
+            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingY())
+        );
     }
 
     //
     //
     //
 
-    protected final event_t st_notify = new event_t(evtype_t.ev_keyup,
-            AM_MSGENTERED);
+    protected final event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED);
 
     // MAES: Was a "method static variable"...but what's the point? It's never
     // modified.
     protected final event_t st_notify_ex = new event_t(evtype_t.ev_keyup,
             AM_MSGEXITED);
 
+    @Override
     public final void Stop() {
-
         this.unloadPics();
-        DM.automapactive = false;
+        DOOM.automapactive = false;
         // This is the only way to notify the status bar responder that we're
         // exiting the automap.
-        ST.Responder(st_notify_ex);
+        DOOM.statusBar.Responder(st_notify_ex);
         stopped = true;
     }
-
-    //
-    //
-    //
 
     // More "static" stuff.
     protected int lastlevel = -1, lastepisode = -1;
 
+    @Override
     public final void Start() {
-
         if (!stopped)
             Stop();
+
         stopped = false;
-        if (lastlevel != DM.gamemap || lastepisode != DM.gameepisode) {
+        if (lastlevel != DOOM.gamemap || lastepisode != DOOM.gameepisode) {
             this.LevelInit();
-            lastlevel = DM.gamemap;
-            lastepisode = DM.gameepisode;
+            lastlevel = DOOM.gamemap;
+            lastepisode = DOOM.gameepisode;
         }
         this.initVectorGraphics();
         this.LevelInit();
@@ -813,6 +878,7 @@ public abstract class Map<T, V>
     public final void minOutWindowScale() {
         scale_mtof = min_scale_mtof;
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+        plotter.setThickness(DOOM.graphicSystem.getScalingX(), DOOM.graphicSystem.getScalingY());
         this.activateNewScale();
     }
 
@@ -823,6 +889,7 @@ public abstract class Map<T, V>
     public final void maxOutWindowScale() {
         scale_mtof = max_scale_mtof;
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+        plotter.setThickness(0, 0);
         this.activateNewScale();
     }
 
@@ -832,24 +899,20 @@ public abstract class Map<T, V>
     /** static char buffer[20] in AM_Responder */
     protected String buffer;
 
-    /** MAES: brought back strobe effect */
-    private boolean strobe = false;
-
     /**
      * Handle events (user inputs) in automap mode
      */
 
+    @Override
     public final boolean Responder(event_t ev) {
-
         boolean rc;
-
         rc = false;
 
         // System.out.println(ev.data1==AM_STARTKEY);
-        if (!DM.automapactive) {
+        if (!DOOM.automapactive) {
             if ((ev.data1 == AM_STARTKEY) && (ev.type == evtype_t.ev_keyup)) {
                 this.Start();
-                DM.viewactive = false;
+                DOOM.viewactive = false;
                 rc = true;
             }
         }
@@ -921,12 +984,16 @@ public abstract class Map<T, V>
                 cheatstate = false;
                 rc = false;
             }
-            if (!DM.deathmatch && cheat_amap.CheckCheat((char) ev.data1)) {
+            if (!DOOM.deathmatch && cheat_amap.CheckCheat((char) ev.data1)) {
                 rc = false;
                 cheating = (cheating + 1) % 3;
             }
+            /** 
+             * MAES: brought back strobe effect
+             * Good Sign: setting can be saved/loaded from config and is now default
+             */
             if (cheat_strobe.CheckCheat((char) ev.data1)) {
-                strobe = !strobe;
+                DOOM.mapstrobe = !DOOM.mapstrobe;
             }
         }
 
@@ -956,7 +1023,7 @@ public abstract class Map<T, V>
                 break;
             case AM_ENDKEY:
                 bigstate = false;
-                DM.viewactive = true;
+                DOOM.viewactive = true;
                 this.Stop();
                 break;
             }
@@ -969,7 +1036,7 @@ public abstract class Map<T, V>
     /**
      * Zooming
      */
-    private final void changeWindowScale() {
+    private void changeWindowScale() {
 
         // Change the scaling multipliers
         scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
@@ -987,7 +1054,7 @@ public abstract class Map<T, V>
     //
     //
     //
-    private final void doFollowPlayer() {
+    private void doFollowPlayer() {
 
         if (f_oldloc.x != plr.mo.x || f_oldloc.y != plr.mo.y) {
             m_x = FTOM(MTOF(plr.mo.x)) - m_w / 2;
@@ -1006,34 +1073,28 @@ public abstract class Map<T, V>
 
     }
 
-    //
-    //
-    //
-
-    protected int nexttic = 0;
-
-    protected int[] litelevels = { 0, 4, 7, 10, 12, 14, 15, 15 };
-
-    protected int litelevelscnt = 0;
-
-    private final void updateLightLev() {
-
+    private void updateLightLev() {
         // Change light level
-        if (amclock > nexttic) {
-            lightlev = litelevels[litelevelscnt++];
-            if (litelevelscnt == litelevels.length)
-                litelevelscnt = 0;
-            nexttic = amclock + 6 - (amclock % 6);
+        // no more buggy nexttic - Good Sign 2017/04/01
+        // no more additional lightlevelcnt - Good Sign 2017/04/05
+        // no more even lightlev and changed to array access - Good Sign 2017/04/08
+        if (amclock % 6 == 0) {
+            final int sourceLength = Color.NUM_LITES;
+            final V intermeditate = DOOM.graphicSystem.convertPalettedBlock((byte) 0);
+            litedColorSources.forEach((c, source) -> {
+                memcpy(source, sourceLength - 1, intermeditate, 0, 1);
+                memcpy(source, 0, source, 1, sourceLength - 1);
+                memcpy(intermeditate, 0, source, 0, 1);
+            });
         }
-
     }
 
     /**
      * Updates on Game Tick
      */
+    @Override
     public final void Ticker() {
-
-        if (!DM.automapactive)
+        if (!DOOM.automapactive || DOOM.menuactive)
             return;
 
         amclock++;
@@ -1050,9 +1111,8 @@ public abstract class Map<T, V>
             this.changeWindowLoc();
 
         // Update light level
-        if (strobe)
+        if (DOOM.mapstrobe)
             updateLightLev();
-
     }
 
     // private static int BUFFERSIZE=f_h*f_w;
@@ -1064,7 +1124,7 @@ public abstract class Map<T, V>
      */
     private int tmpx, tmpy;// =new fpoint_t();
 
-    private final boolean clipMline(mline_t ml, fline_t fl) {
+    private boolean clipMline(mline_t ml, fline_t fl) {
 
         // System.out.print("Asked to clip from "+FixedFloat.toFloat(ml.a.x)+","+FixedFloat.toFloat(ml.a.y));
         // System.out.print(" to clip "+FixedFloat.toFloat(ml.b.x)+","+FixedFloat.toFloat(ml.b.y)+"\n");
@@ -1178,7 +1238,7 @@ public abstract class Map<T, V>
      * @param my
      */
 
-    private final int DOOUTCODE(int mx, int my) {
+    private int DOOUTCODE(int mx, int my) {
         int oc = 0;
         if ((my) < 0)
             (oc) |= TOP;
@@ -1194,110 +1254,41 @@ public abstract class Map<T, V>
     /** Not my idea ;-) */
     protected int fuck = 0;
 
-    //
-    // Classic Bresenham w/ whatever optimizations needed for speed
-    //
-    private final void drawFline(fline_t fl, int color) {
-
-        // MAES: wish they were registers...
-        int x;
-        int y;
-        int dx;
-        int dy;
-        int sx;
-        int sy;
-        int ax;
-        int ay;
-        int d;
-
-        // For debugging only
-
-        /*
-         * ======= /*if ( fl.ax < 0 || fl.ax >= f_w || fl.ay < 0 || fl.ay >= f_h
-         * || fl.bx < 0 || fl.bx >= f_w || fl.by < 0 || fl.by >= f_h) >>>>>>>
-         * 1.11 { System.err.println("fuck "+(fuck++)+" \r"); return; <<<<<<<
-         * Map.java }
-         */
-
-        dx = fl.bx - fl.ax;
-        ax = 2 * (dx < 0 ? -dx : dx);
-        sx = dx < 0 ? -1 : 1;
-
-        dy = fl.by - fl.ay;
-        ay = 2 * (dy < 0 ? -dy : dy);
-        sy = dy < 0 ? -1 : 1;
-
-        x = fl.ax;
-        y = fl.ay;
-        final int c = color;
-
-        if (ax > ay) {
-            d = ay - ax / 2;
-
-            while (true) {
-                PUTDOT(x, y, c);
-                if (x == fl.bx)
-                    return;
-                if (d >= 0) {
-                    y += sy;
-                    d -= ax;
-                }
-                x += sx;
-                d += ay;
-            }
-        } else {
-            d = ax - ay / 2;
-            while (true) {
-                PUTDOT(x, y, c);
-                if (y == fl.by)
-                    return;
-                if (d >= 0) {
-                    x += sx;
-                    d -= ay;
-                }
-                y += sy;
-                d += ax;
-            }
-        }
-    }
-
-    /** Hopefully inlined */
-
-    protected abstract void PUTDOT(int xx, int yy, int cc);
-
     /**
      * Clip lines, draw visible parts of lines.
      */
     protected int singlepixel = 0;
 
-    private final void drawMline(mline_t ml, int color) {
-
+    private void drawMline(mline_t ml, V colorSource) {
         // fl.reset();
-
         if (this.clipMline(ml, fl)) {
             // if ((fl.a.x==fl.b.x)&&(fl.a.y==fl.b.y)) singlepixel++;
-            this.drawFline(fl, color); // draws it on frame buffer using fb
-                                       // coords
+            // draws the line using coords
+            DOOM.graphicSystem
+                .drawLine(plotter
+                    .setColorSource(colorSource, 0)
+                    .setPosition(fl.ax, fl.ay),
+                fl.bx, fl.by);
         }
     }
 
-    private final fline_t fl = new fline_t();
+    private fline_t fl = new fline_t();
 
-    private final mline_t ml = new mline_t();
+    private mline_t ml = new mline_t();
 
     /**
      * Draws flat (floor/ceiling tile) aligned grid lines.
      */
-    private final void drawGrid(int color) {
+    private void drawGrid(V colorSource) {
         int x, y; // fixed_t
         int start, end; // fixed_t
 
         // Figure out start of vertical gridlines
         start = m_x;
-        if (((start - LL.bmaporgx) % (MAPBLOCKUNITS << FRACBITS)) != 0)
+        if (((start - DOOM.levelLoader.bmaporgx) % (MAPBLOCKUNITS << FRACBITS)) != 0)
             start +=
                 (MAPBLOCKUNITS << FRACBITS)
-                        - ((start - LL.bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
+                        - ((start - DOOM.levelLoader.bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
         end = m_x + m_w;
 
         // draw vertical gridlines
@@ -1306,15 +1297,15 @@ public abstract class Map<T, V>
         for (x = start; x < end; x += (MAPBLOCKUNITS << FRACBITS)) {
             ml.ax = x;
             ml.bx = x;
-            drawMline(ml, color);
+            drawMline(ml, colorSource);
         }
 
         // Figure out start of horizontal gridlines
         start = m_y;
-        if (((start - LL.bmaporgy) % (MAPBLOCKUNITS << FRACBITS)) != 0)
+        if (((start - DOOM.levelLoader.bmaporgy) % (MAPBLOCKUNITS << FRACBITS)) != 0)
             start +=
                 (MAPBLOCKUNITS << FRACBITS)
-                        - ((start - LL.bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
+                        - ((start - DOOM.levelLoader.bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
         end = m_y + m_h;
 
         // draw horizontal gridlines
@@ -1323,7 +1314,7 @@ public abstract class Map<T, V>
         for (y = start; y < end; y += (MAPBLOCKUNITS << FRACBITS)) {
             ml.ay = y;
             ml.by = y;
-            drawMline(ml, color);
+            drawMline(ml, colorSource);
         }
 
     }
@@ -1335,48 +1326,49 @@ public abstract class Map<T, V>
      * based.
      */
 
-    private final void drawWalls() {
+    private void drawWalls() {
 
-        final int wallcolor = V.getBaseColor(WALLCOLORS + lightlev);
-        final int fdwallcolor = V.getBaseColor(FDWALLCOLORS + lightlev);
-        final int cdwallcolor = V.getBaseColor(CDWALLCOLORS + lightlev);
-        final int tswallcolor = V.getBaseColor(CDWALLCOLORS + lightlev);
-        final int secretwallcolor = V.getBaseColor(SECRETWALLCOLORS + lightlev);
+        final V teleColorSource = litedColorSources.get(TELECOLORS);
+        final V wallColorSource = litedColorSources.get(WALLCOLORS);
+        final V fdWallColorSource = litedColorSources.get(FDWALLCOLORS);
+        final V cdWallColorSource = litedColorSources.get(CDWALLCOLORS);
+        final V tsWallColorSource = litedColorSources.get(TSWALLCOLORS);
+        final V secretWallColorSource = litedColorSources.get(SECRETWALLCOLORS);
 
-        for (int i = 0; i < LL.numlines; i++) {
-            l.ax = LL.lines[i].v1x;
-            l.ay = LL.lines[i].v1y;
-            l.bx = LL.lines[i].v2x;
-            l.by = LL.lines[i].v2y;
-            if ((cheating | (LL.lines[i].flags & ML_MAPPED)) != 0) {
-                if (((LL.lines[i].flags & LINE_NEVERSEE) & ~cheating) != 0)
+        for (int i = 0; i < DOOM.levelLoader.numlines; i++) {
+            l.ax = DOOM.levelLoader.lines[i].v1x;
+            l.ay = DOOM.levelLoader.lines[i].v1y;
+            l.bx = DOOM.levelLoader.lines[i].v2x;
+            l.by = DOOM.levelLoader.lines[i].v2y;
+            if ((cheating | (DOOM.levelLoader.lines[i].flags & ML_MAPPED)) != 0) {
+                if (((DOOM.levelLoader.lines[i].flags & LINE_NEVERSEE) & ~cheating) != 0)
                     continue;
-                if (LL.lines[i].backsector == null) {
-                    drawMline(l, wallcolor);
+                if (DOOM.levelLoader.lines[i].backsector == null) {
+                    drawMline(l, wallColorSource);
                 } else {
-                    if (LL.lines[i].special == 39) { // teleporters
-                        drawMline(l, WALLCOLORS + WALLRANGE / 2);
-                    } else if ((LL.lines[i].flags & ML_SECRET) != 0) // secret
+                    if (DOOM.levelLoader.lines[i].special == 39) { // teleporters
+                        drawMline(l, teleColorSource);
+                    } else if ((DOOM.levelLoader.lines[i].flags & ML_SECRET) != 0) // secret
                                                                      // door
                     {
                         if (cheating != 0)
-                            drawMline(l, secretwallcolor);
+                            drawMline(l, secretWallColorSource);
                         else
-                            drawMline(l, wallcolor);
-                    } else if (LL.lines[i].backsector.floorheight != LL.lines[i].frontsector.floorheight) {
-                        drawMline(l, fdwallcolor); // floor level change
-                    } else if (LL.lines[i].backsector.ceilingheight != LL.lines[i].frontsector.ceilingheight) {
-                        drawMline(l, cdwallcolor); // ceiling level change
+                            drawMline(l, wallColorSource);
+                    } else if (DOOM.levelLoader.lines[i].backsector.floorheight != DOOM.levelLoader.lines[i].frontsector.floorheight) {
+                        drawMline(l, fdWallColorSource); // floor level change
+                    } else if (DOOM.levelLoader.lines[i].backsector.ceilingheight != DOOM.levelLoader.lines[i].frontsector.ceilingheight) {
+                        drawMline(l, cdWallColorSource); // ceiling level change
                     } else if (cheating != 0) {
-                        drawMline(l, tswallcolor);
+                        drawMline(l, tsWallColorSource);
                     }
                 }
             }
             // If we have allmap...
             else if (plr.powers[pw_allmap] != 0) {
                 // Some are never seen even with that!
-                if ((LL.lines[i].flags & LINE_NEVERSEE) == 0)
-                    drawMline(l, GRAYS + 3);
+                if ((DOOM.levelLoader.lines[i].flags & LINE_NEVERSEE) == 0)
+                    drawMline(l, litedColorSources.get(MAPPOWERUPSHOWNCOLORS));
             }
         }
 
@@ -1401,7 +1393,7 @@ public abstract class Map<T, V>
      *        angle_t -> this should be a LUT-ready BAM.
      */
 
-    private final void rotate(int x, int y, int a) {
+    private void rotate(int x, int y, int a) {
         // int tmpx;
 
         rotx = FixedMul(x, finecosine[a]) - FixedMul(y, finesine[a]);
@@ -1411,10 +1403,11 @@ public abstract class Map<T, V>
         // rotx.val = tmpx;
     }
 
-    private final void drawLineCharacter(mline_t[] lineguy, int lineguylines,
+    private void drawLineCharacter(mline_t[] lineguy, int lineguylines,
             int scale, // fixed_t
             int angle, // This should be a LUT-ready angle.
-            int color, int x, // fixed_t
+            V colorSource,
+            int x, // fixed_t
             int y // fixed_t
     ) {
         int i;
@@ -1458,63 +1451,60 @@ public abstract class Map<T, V>
             l.bx += x;
             l.by += y;
 
-            drawMline(l, color);
+            drawMline(l, colorSource);
         }
     }
-
-    protected int their_colors[];
 
     public final void drawPlayers() {
         player_t p;
 
         int their_color = -1;
-        int color;
+        V colorSource;
 
         // System.out.println(Long.toHexString(plr.mo.angle));
 
-        if (!DM.netgame) {
+        if (!DOOM.netgame) {
             if (cheating != 0)
                 drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-                    toBAMIndex(plr.mo.angle), V.getBaseColor(WHITE), plr.mo.x,
+                    toBAMIndex(plr.mo.angle), fixedColorSources.get(Color.WHITE), plr.mo.x,
                     plr.mo.y);
             else
                 drawLineCharacter(player_arrow, NUMPLYRLINES, 0,
-                    toBAMIndex(plr.mo.angle), V.getBaseColor(WHITE), plr.mo.x,
+                    toBAMIndex(plr.mo.angle), fixedColorSources.get(Color.WHITE), plr.mo.x,
                     plr.mo.y);
             return;
         }
 
         for (int i = 0; i < MAXPLAYERS; i++) {
             their_color++;
-            p = DM.players[i];
+            p = DOOM.players[i];
 
-            if ((DM.deathmatch && !DM.singledemo) && p != plr)
+            if ((DOOM.deathmatch && !DOOM.singledemo) && p != plr)
                 continue;
 
-            if (!DM.playeringame[i])
+            if (!DOOM.playeringame[i])
                 continue;
 
             if (p.powers[pw_invisibility] != 0)
-                color = 246; // *close* to black
+                colorSource = fixedColorSources.get(Color.CLOSE_TO_BLACK);
             else
-                color = their_colors[their_color];
+                colorSource = fixedColorSources.get(THEIR_COLORS[their_color]);
 
-            drawLineCharacter(player_arrow, NUMPLYRLINES, 0, (int) p.mo.angle,
-                V.getBaseColor(color), p.mo.x, p.mo.y);
+            drawLineCharacter(player_arrow, NUMPLYRLINES, 0, (int) p.mo.angle, colorSource, p.mo.x, p.mo.y);
         }
 
     }
 
-    public final void drawThings(int colors, int colorrange) {
+    final void drawThings(Color colors, int colorrange) {
         mobj_t t;
-        int color = V.getBaseColor(colors + lightlev); // Ain't gonna change
+        V colorSource = litedColorSources.get(colors); // Ain't gonna change
 
-        for (int i = 0; i < LL.numsectors; i++) {
+        for (int i = 0; i < DOOM.levelLoader.numsectors; i++) {
             // MAES: get first on the list.
-            t = LL.sectors[i].thinglist;
+            t = DOOM.levelLoader.sectors[i].thinglist;
             while (t != null) {
                 drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-                    16 << FRACBITS, toBAMIndex(t.angle), color, t.x, t.y);
+                    16 << FRACBITS, toBAMIndex(t.angle), colorSource, t.x, t.y);
                 t = (mobj_t) t.snext;
             }
         }
@@ -1534,112 +1524,41 @@ public abstract class Map<T, V>
                 fx = CXMTOF(markpoints[i].x);
                 fy = CYMTOF(markpoints[i].y);
                 if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-                    V.DrawScaledPatch(fx, fy, FB | V_NOSCALESTART, vs,
-                        marknums[i]);
+                    DOOM.graphicSystem.DrawPatchScaled(FG, marknums[i], DOOM.vs, fx, fy, V_NOSCALESTART);
             }
         }
 
     }
 
-    protected abstract void drawCrosshair(int color);
+    private void drawCrosshair(V colorSource) {
+        /*plotter.setPosition(
+                DOOM.videoRenderer.getScreenWidth() / 2,
+                DOOM.videoRenderer.getScreenHeight()/ 2
+            ).setColorSource(colorSource, 0)
+            .plot();*/
+        //fb[(f_w * (f_h + 1)) / 2] = (short) color; // single point for now
+    }
 
+    @Override
     public final void Drawer() {
-        if (!DM.automapactive)
+        if (!DOOM.automapactive)
             return;
         // System.out.println("Drawing map");
         if (overlay < 1)
-            V.FillRect(BACKGROUND, FB, 0, 0, f_w, f_h); // BACKGROUND
+            DOOM.graphicSystem.FillRect(FG, f_rect, BACKGROUND.value); // BACKGROUND
+        
         if (grid)
-            drawGrid(V.getBaseColor(GRIDCOLORS));
+            drawGrid(fixedColorSources.get(GRIDCOLORS));
+        
         drawWalls();
         drawPlayers();
         if (cheating == 2)
             drawThings(THINGCOLORS, THINGRANGE);
-        drawCrosshair(V.getBaseColor(XHAIRCOLORS));
+        drawCrosshair(fixedColorSources.get(CROSSHAIRCOLORS));
 
         drawMarks();
 
-        V.MarkRect(f_x, f_y, f_w, f_h);
+        //DOOM.videoRenderer.MarkRect(f_x, f_y, f_w, f_h);
 
     }
-
-    @Override
-    public void updateStatus(DoomStatus<?,?> DC) {
-        this.V = (DoomVideoRenderer<T, V>) DC.V;
-        this.W = DC.W;
-        this.LL = DC.LL;
-        this.DM = (DoomMain<T, V>) DC.DM;
-        this.ST = DC.ST;
-    }
-
-    // //////////////////////////VIDEO SCALE STUFF
-    // ////////////////////////////////
-
-    protected int SCREENWIDTH;
-
-    protected int SCREENHEIGHT;
-
-    protected IVideoScale vs;
-
-    public void setVideoScale(IVideoScale vs) {
-        this.vs = vs;
-    }
-
-    public void initScaling() {
-        this.SCREENHEIGHT = vs.getScreenHeight();
-        this.SCREENWIDTH = vs.getScreenWidth();
-
-        // Pre-scale stuff.
-        finit_width = SCREENWIDTH;
-        finit_height = SCREENHEIGHT - 32 * vs.getSafeScaling();
-    }
-
-    public static final class HiColor
-            extends Map<byte[], short[]> {
-
-        public HiColor(DoomStatus<byte[], short[]> DS) {
-            super(DS);
-        }
-
-        protected final void PUTDOT(int xx, int yy, int cc) {
-            fb[(yy) * f_w + (xx)] = (short) (cc);
-        }
-
-        protected final void drawCrosshair(int color) {
-            fb[(f_w * (f_h + 1)) / 2] = (short) color; // single point for now
-        }
-    }
-
-    public static final class Indexed
-            extends Map<byte[], byte[]> {
-
-        public Indexed(DoomStatus<byte[], byte[]> DS) {
-            super(DS);
-        }
-
-        protected final void PUTDOT(int xx, int yy, int cc) {
-            fb[(yy) * f_w + (xx)] = (byte) (cc);
-        }
-
-        protected final void drawCrosshair(int color) {
-            fb[(f_w * (f_h + 1)) / 2] = (byte) color; // single point for now
-        }
-    }
-            
-     public static final class TrueColor
-            extends Map<byte[], int[]> {
-
-        public TrueColor(DoomStatus<byte[], int[]> DS) {
-            super(DS);
-        }
-
-        protected final void PUTDOT(int xx, int yy, int cc) {
-            fb[(yy) * f_w + (xx)] = (int) (cc);
-        }
-
-        protected final void drawCrosshair(int color) {
-            fb[(f_w * (f_h + 1)) / 2] = (int) color; // single point for now
-        }
-    }
-
 }

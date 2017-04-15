@@ -1,29 +1,27 @@
 package f;
 
-import i.DoomStatusAware;
-import v.IVideoScaleAware;
-import w.animenum_t;
 import static data.Defines.TICRATE;
+import w.animenum_t;
 
-public abstract class AbstractEndLevel implements DoomStatusAware, IVideoScaleAware{
+public abstract class AbstractEndLevel {
 	
 	//NET GAME STUFF
 
-	public static final int NG_STATSY       =50;
-	public static final int NG_SPACINGX        = 64;
+    public static final int NG_STATSY = 50;
+    public static final int NG_SPACINGX = 64;
 
-	//DEATHMATCH STUFF
-	public static final int DM_MATRIXX = 42;
-	public static final int DM_MATRIXY =     68;
+    //DEATHMATCH STUFF
+    public static final int DM_MATRIXX = 42;
+    public static final int DM_MATRIXY = 68;
 
-	public static final int DM_SPACINGX =    40;
+    public static final int DM_SPACINGX = 40;
 
-	public static final int DM_TOTALSX =     269;
+    public static final int DM_TOTALSX = 269;
 
-	public static final int DM_KILLERSX  =   10;
-	public static final int DM_KILLERSY   =  100;
-	public static final int DM_VICTIMSX    =     5;
-	public static final int DM_VICTIMSY    = 50;
+    public static final int DM_KILLERSX = 10;
+    public static final int DM_KILLERSY = 100;
+    public static final int DM_VICTIMSX = 5;
+    public static final int DM_VICTIMSY = 50;
 
 	// static point_t lnodes[NUMEPISODES][NUMMAPS] 
 	final static public point_t[][] lnodes =
@@ -121,7 +119,7 @@ public abstract class AbstractEndLevel implements DoomStatusAware, IVideoScaleAw
 
 	// MAES: cute, but we can do it in a more Java-friendly way :-p
 
-	public static final int[] NUMANIMS={epsd0animinfo.length,epsd1animinfo.length,epsd2animinfo.length};
+    public static final int[] NUMANIMS = {epsd0animinfo.length, epsd1animinfo.length, epsd2animinfo.length};
 
 	/** ATTENTION: there's a difference between these "anims" and those used in p_spec.c */
 

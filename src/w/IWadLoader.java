@@ -1,7 +1,12 @@
 package w;
 
+import data.Defines;
+import doom.CommandVariable;
+import i.Game;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import rr.patch_t;
+import v.tables.Playpal;
 
 public interface IWadLoader {
 
@@ -273,4 +278,37 @@ public interface IWadLoader {
 
     void ReadLump(int lump, byte[] buf, int offset);
 	
+    default byte[] LoadPlaypal() {
+        boolean graypal = Game.getCVM().bool(CommandVariable.GREYPAL);
+
+        // Copy over the one you read from disk...
+        int pallump = GetNumForName("PLAYPAL");
+        byte[] tmppal = CacheLumpNumAsRawBytes(pallump, Defines.PU_STATIC);
+
+        /**
+         * Why not restore support for grayscale palette?
+         *  - Good Sign 2017/04/12
+         */
+        byte[] pal = graypal ? Playpal.greypal() : Playpal.properPlaypal(tmppal);
+        InjectLumpNum(pallump, new DoomBuffer(ByteBuffer.wrap(pal)));
+        return pal;
+    }
+    
+    default byte[][] LoadColormap() {
+        // Load in the light tables,
+        // 256 byte align tables.
+        final int lump = GetNumForName("COLORMAP");
+        final int length = LumpLength(lump) + 256;
+        final byte[][] colormap = new byte[(length / 256)][256];
+        System.out.println("Colormaps: " + colormap.length);
+
+        final byte[] tmp = new byte[length];
+        ReadLump(lump, tmp);
+
+        for (int i = 0; i < colormap.length; i++) {
+            System.arraycopy(tmp, i * 256, colormap[i], 0, 256);
+        }
+        
+        return colormap;
+    }
 }

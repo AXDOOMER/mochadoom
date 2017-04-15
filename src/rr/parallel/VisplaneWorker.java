@@ -2,16 +2,13 @@ package rr.parallel;
 
 import static data.Defines.ANGLETOSKYSHIFT;
 import static data.Tables.addAngles;
-import static m.fixed_t.FRACBITS;
-import static rr.LightsAndColors.LIGHTLEVELS;
-import static rr.LightsAndColors.LIGHTSEGSHIFT;
+import doom.DoomMain;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-
+import static m.fixed_t.FRACBITS;
 import rr.IDetailAware;
 import rr.PlaneDrawer;
-import rr.Renderer;
-import rr.visplane_t;
+import rr.SceneRenderer;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.DoomSpanFunction;
@@ -20,6 +17,8 @@ import rr.drawfuns.R_DrawColumnBoomOptLow;
 import rr.drawfuns.R_DrawSpanLow;
 import rr.drawfuns.R_DrawSpanUnrolled;
 import rr.drawfuns.SpanVars;
+import rr.visplane_t;
+import v.graphics.Palettes;
 
 /** Visplane worker which shares work in an equal-visplane number strategy
  *  with other workers. Might be unbalanced if one worker gets too large
@@ -53,31 +52,30 @@ public abstract class VisplaneWorker<T,V> extends PlaneDrawer<T,V> implements Ru
     protected DoomColumnFunction<T,V> vpw_skyfunchi;
     protected DoomColumnFunction<T,V> vpw_skyfunclow;
         
-    public VisplaneWorker(int id,int SCREENWIDTH, int SCREENHEIGHT, Renderer<T,V> R,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
-        super(R); 
+    public VisplaneWorker(DoomMain<T,V> DOOM,int id,int SCREENWIDTH, int SCREENHEIGHT, SceneRenderer<T,V> R,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
+        super(DOOM, R); 
         this.barrier=visplanebarrier;
         this.id=id;
         this.NUMFLOORTHREADS=NUMFLOORTHREADS;
     }
 
-    public static final class HiColor extends VisplaneWorker<byte[],short[]>{
+    public static final class HiColor extends VisplaneWorker<byte[], short[]> {
 
-        public HiColor(int id, int SCREENWIDTH, int SCREENHEIGHT,Renderer<byte[],short[]> R,
+        public HiColor(DoomMain<byte[],short[]> DOOM,int id, int SCREENWIDTH, int SCREENHEIGHT, SceneRenderer<byte[], short[]> R,
                 int[] columnofs, int[] ylookup, short[] screen,
                 CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
-            super(id, SCREENWIDTH, SCREENHEIGHT, R,  visplanebarrier, NUMFLOORTHREADS);
+            super(DOOM, id, SCREENWIDTH, SCREENHEIGHT, R, visplanebarrier, NUMFLOORTHREADS);
             // Alias to those of Planes.
 
+            vpw_dsvars = new SpanVars<byte[], short[]>();
+            vpw_dcvars = new ColVars<byte[], short[]>();
+            vpw_spanfunc = vpw_spanfunchi = new R_DrawSpanUnrolled.HiColor(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_spanfunclow = new R_DrawSpanLow.HiColor(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_skyfunc = vpw_skyfunchi = new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, vpw_dcvars, screen, I);
+            vpw_skyfunclow = new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, vpw_dcvars, screen, I);
 
-            vpw_dsvars=new SpanVars<byte[],short[]>();
-            vpw_dcvars=new ColVars<byte[],short[]>();
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_spanfunclow=new R_DrawSpanLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
-            
         }
-        
+
     }
     
     public void setDetail(int detailshift) {
@@ -127,7 +125,7 @@ public abstract class VisplaneWorker<T,V> extends PlaneDrawer<T,V> implements Ru
              vpw_dcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;                 
              vpw_dcvars.dc_iscale = vpvars.getSkyScale()>>view.detailshift;
              
-             vpw_dcvars.dc_colormap = colormap.colormaps[0];
+             vpw_dcvars.dc_colormap = colormap.colormaps[Palettes.COLORMAP_FIXED];
              vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
              for (x=pln.minx ; x <= pln.maxx ; x++)
              {
@@ -151,10 +149,10 @@ public abstract class VisplaneWorker<T,V> extends PlaneDrawer<T,V> implements Ru
          vpw_dsvars.ds_source = TexMan.getSafeFlat(pln.picnum);
 
          vpw_planeheight = Math.abs(pln.height-view.z);
-         light = (pln.lightlevel >>> LIGHTSEGSHIFT)+colormap.extralight;
+         light = (pln.lightlevel >>> colormap.lightSegShift())+colormap.extralight;
 
-         if (light >= LIGHTLEVELS)
-             light = LIGHTLEVELS-1;
+         if (light >= colormap.lightLevels())
+             light = colormap.lightLevels()-1;
 
          if (light < 0)
              light = 0;

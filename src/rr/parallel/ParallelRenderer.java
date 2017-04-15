@@ -1,21 +1,10 @@
 package rr.parallel;
 
-import static rr.LightsAndColors.LIGHTLEVELS;
-import static rr.LightsAndColors.MAXLIGHTSCALE;
-import static rr.LightsAndColors.MAXLIGHTZ;
-
+import doom.DoomMain;
+import doom.player_t;
 import java.io.IOException;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
-import rr.IDetailAware;
-import rr.PlaneDrawer;
 import rr.SimpleThings;
-import rr.patch_t;
 import rr.drawfuns.ColVars;
-import rr.drawfuns.DcFlags;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomLow;
 import rr.drawfuns.R_DrawColumnBoomOpt;
@@ -27,10 +16,6 @@ import rr.drawfuns.R_DrawSpanUnrolled;
 import rr.drawfuns.R_DrawTLColumn;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
-import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import doom.DoomMain;
-import doom.player_t;
 
 /**
  * This is Mocha Doom's famous parallel software renderer. It builds on the
@@ -46,8 +31,7 @@ import doom.player_t;
  * @author admin
  */
 
-public abstract class ParallelRenderer<T, V>
-        extends AbstractParallelRenderer<T, V> {
+public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T, V> {
 
     public ParallelRenderer(DoomMain<T, V> DM, int wallthread,
             int floorthreads, int nummaskedthreads) {
@@ -58,8 +42,7 @@ public abstract class ParallelRenderer<T, V>
         this.MySegs = tmp;
         RWIs= tmp;
         
-        this.MyThings =
-                new SimpleThings<T,V>(this);
+        this.MyThings = new SimpleThings<>(DM.vs, this);
         //this.MyPlanes = new Planes(this);// new ParallelPlanes<T, V>(DM.R);
 
     }
@@ -105,23 +88,23 @@ public abstract class ParallelRenderer<T, V>
         MySegs.ClearClips();
         VIS.ClearSprites();
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
 
         // The head node is the last node output.
-        MyBSP.RenderBSPNode(LL.numnodes - 1);
+        MyBSP.RenderBSPNode(DOOM.levelLoader.numnodes - 1);
 
         // System.out.printf("Submitted %d RWIs\n",RWIcount);
 
         MySegs.CompleteRendering();
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
 
         // "Warped floor" fixed, same-height visplane merging fixed.
         MyPlanes.DrawPlanes();
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
 
         MySegs.sync();
         MyPlanes.sync();
@@ -139,162 +122,141 @@ public abstract class ParallelRenderer<T, V>
          */
 
         // Check for new console commands.
-        DGN.NetUpdate();
+        DOOM.gameNetworking.NetUpdate();
     }
 
-    public static final class Indexed
-            extends ParallelRenderer<byte[], byte[]> {
+    public static final class Indexed extends ParallelRenderer<byte[], byte[]> {
 
         public Indexed(DoomMain<byte[], byte[]> DM, int wallthread,
                 int floorthreads, int nummaskedthreads) {
             super(DM, wallthread, floorthreads, nummaskedthreads);
 
             // Init light levels
-            colormaps.scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
-            colormaps.scalelightfixed = new byte[MAXLIGHTSCALE][];
-            colormaps.zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
-            
+            colormaps.scalelight = new byte[colormaps.lightLevels()][colormaps.maxLightScale()][];
+            colormaps.scalelightfixed = new byte[colormaps.maxLightScale()][];
+            colormaps.zlight = new byte[colormaps.lightLevels()][colormaps.maxLightZ()][];
+
             completeInit();
-        
+
         }
-        
+
         /**
          * R_InitColormaps
-         * 
+         *
          * @throws IOException
          */
+        @Override
         protected void InitColormaps() throws IOException {
-            int lump, length;
-
             // Load in the light tables,
             // 256 byte align tables.
-            lump = W.GetNumForName("COLORMAP");
-            length = W.LumpLength(lump) + 256;
-            colormaps.colormaps = new byte[(length / 256)][256];
-            System.out.println("Colormaps: " + colormaps.colormaps.length);
+            colormaps.colormaps = DOOM.graphicSystem.getColorMap();
 
-            byte[] tmp = new byte[length];
-            W.ReadLump(lump,tmp);
-
-            for (int i = 0; i < colormaps.colormaps.length; i++) {
-                System.arraycopy(tmp, i * 256, colormaps.colormaps[i], 0, 256);
-            }
-            
             // MAES: blurry effect is hardcoded to this colormap.
-            BLURRY_MAP=colormaps.colormaps[6];
+            BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
             // colormaps = (byte *)( ((int)colormaps + 255)&~0xff);     
-
-            
         }
 
- protected void R_InitDrawingFunctions(){            
-            
+        protected void R_InitDrawingFunctions() {
+
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan=new R_DrawSpanUnrolled.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
-            DrawSpanLow=new R_DrawSpanLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
-            
-            
+            DrawSpan = new R_DrawSpanUnrolled.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+            DrawSpanLow = new R_DrawSpanLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+
             // Translated columns are usually sprites-only.
-            DrawTranslatedColumn=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-          //  DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawTranslatedColumn = new R_DrawTranslatedColumn.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawTranslatedColumnLow = new R_DrawTranslatedColumnLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            //  DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
             // Fuzzy columns. These are also masked.
-            DrawFuzzColumn=new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
-            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
-            
+            DrawFuzzColumn = new R_DrawFuzzColumn.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem, BLURRY_MAP);
+            DrawFuzzColumnLow = new R_DrawFuzzColumnLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem, BLURRY_MAP);
+
             // Regular draw for solid columns/walls. Full optimizations.
-            DrawColumn=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-            DrawColumnLow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-            
+            DrawColumn = new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, DOOM.doomSystem);
+            DrawColumnLow = new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, DOOM.doomSystem);
+
             // Non-optimized stuff for masked.
-            DrawColumnMasked=new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawColumnMaskedLow=new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawColumnMasked = new R_DrawColumnBoom.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawColumnMaskedLow = new R_DrawColumnBoomLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+
             // Player uses masked
-            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
-            
+            DrawColumnPlayer = DrawColumnMasked; // Player normally uses masked.
+
             // Skies use their own. This is done in order not to stomp parallel threads.
-            
-            DrawColumnSkies=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-            
+            DrawColumnSkies = new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, skydcvars, screen, DOOM.doomSystem);
+            DrawColumnSkiesLow = new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, skydcvars, screen, DOOM.doomSystem);
+
             super.R_InitDrawingFunctions();
         }
-        
+
+        protected void completeInit() {
+            super.completeInit();
+            InitMaskedWorkers();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
         protected void InitMaskedWorkers() {
+            maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-                maskedworkers[i] =
-                    new MaskedWorker.Indexed(this, i, SCREENWIDTH,
-                            SCREENHEIGHT, ylookup, columnofs, NUMMASKEDTHREADS,
-                            screen, maskedbarrier, BLURRY_MAP);
+                maskedworkers[i] = new MaskedWorker.Indexed(
+                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
+                    screen, maskedbarrier, BLURRY_MAP
+                );
+                
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
-                maskedworkers[i].cacheSpriteManager(SM);
+                maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
             }
         }
 
-		@Override
-		public RenderWallExecutor<byte[], byte[]>[] InitRWIExecutors(
-				int num,ColVars<byte[], byte[]>[] RWI) {
-				RenderWallExecutor<byte[],byte[]>[] tmp=
-						new RenderWallExecutor.Indexed[num];
-				
-				for (int i=0;i<num;i++)
-					tmp[i]=new RenderWallExecutor.Indexed(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, drawsegsbarrier);
-			
-				return tmp;
-		}
+        @Override
+        public RenderWallExecutor<byte[], byte[]>[] InitRWIExecutors(
+                int num, ColVars<byte[], byte[]>[] RWI) {
+            RenderWallExecutor<byte[], byte[]>[] tmp
+                    = new RenderWallExecutor.Indexed[num];
+
+            for (int i = 0; i < num; i++) {
+                tmp[i] = new RenderWallExecutor.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), columnofs, ylookup, screen, RWI, drawsegsbarrier);
+            }
+
+            return tmp;
+        }
 
     }
 
     @Override
     protected void InitParallelStuff() {
 
+        // ...yeah, it works.
+        if (!(RWIs == null)) {
+            ColVars<T, V>[] RWI = RWIs.getRWI();
+            RenderWallExecutor<T, V>[] RWIExec = InitRWIExecutors(NUMWALLTHREADS, RWI);
+            RWIs.setExecutors(RWIExec);
 
-    	// ...yeah, it works.
-    	if (!(RWIs==null)){ 
-    		ColVars<T,V>[] RWI=RWIs.getRWI();
-    		RenderWallExecutor<T,V>[] RWIExec=InitRWIExecutors(NUMWALLTHREADS,RWI);
-    		RWIs.setExecutors(RWIExec);
-    		
             for (int i = 0; i < NUMWALLTHREADS; i++) {
-            	
+
                 detailaware.add(RWIExec[i]);
             }
-    		}
-    		
-    	
+        }
+
         // CATCH: this must be executed AFTER screen is set, and
         // AFTER we initialize the RWI themselves,
         // before V is set (right?)
-
-    	
         // This actually only creates the necessary arrays and
         // barriers. Things aren't "wired" yet.
-
         // Using "render wall instruction" subsystem
-
         // Using masked sprites
-       // RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];
-
+        // RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];
         // Using
         //vpw = new Runnable[NUMFLOORTHREADS];
         //maskedworkers = new MaskedWorker.Indexed[NUMMASKEDTHREADS];
-
-
-
-
-
-
         // RWIcount = 0;
-
         // InitRWISubsystem();
         // InitRMISubsystem();
         // InitPlaneWorkers();
         // InitMaskedWorkers();
-
         // If using masked threads, set these too.
         TexMan.setSMPVars(NUMMASKEDTHREADS);
 
@@ -307,11 +269,6 @@ public abstract class ParallelRenderer<T, V>
      * //vpw[i].id = i; detailaware.add((IDetailAware) vpw[i]); } }
      */
 
-    @Override
-    public void initScaling() {
-    	
-    	super.initScaling();
-    	
 
         /*
          * TODO: relay to dependent objects. super.initScaling();
@@ -321,193 +278,192 @@ public abstract class ParallelRenderer<T, V>
          * SCREENWIDTH * 6);
          */
 
-    }
-
     protected abstract void InitMaskedWorkers();
 
-    public static final class HiColor
-            extends ParallelRenderer<byte[], short[]> {
+    public static final class HiColor extends ParallelRenderer<byte[], short[]> {
 
         public HiColor(DoomMain<byte[], short[]> DM, int wallthread,
                 int floorthreads, int nummaskedthreads) {
             super(DM, wallthread, floorthreads, nummaskedthreads);
-            
+
             // Init light levels
-            colormaps.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
-            colormaps.scalelightfixed = new short[MAXLIGHTSCALE][];
-            colormaps.zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
+            colormaps.scalelight = new short[colormaps.lightLevels()][colormaps.maxLightScale()][];
+            colormaps.scalelightfixed = new short[colormaps.maxLightScale()][];
+            colormaps.zlight = new short[colormaps.lightLevels()][colormaps.maxLightZ()][];
+
+            completeInit();
         }
 
         protected void InitMaskedWorkers() {
+            maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-                maskedworkers[i] =
-                    new MaskedWorker.HiColor(this, i, SCREENWIDTH,
-                            SCREENHEIGHT, ylookup, columnofs, NUMMASKEDTHREADS,
-                            screen, maskedbarrier);
+                maskedworkers[i] = new MaskedWorker.HiColor(
+                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
+                    screen, maskedbarrier, BLURRY_MAP
+                );
+                
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
-                maskedworkers[i].cacheSpriteManager(SM);
+                maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
             }
         }
 
         /**
          * R_InitColormaps This is VERY different for hicolor.
-         * 
+         *
          * @throws IOException
          */
-        protected void InitColormaps()
-                throws IOException {
+        protected void InitColormaps() throws IOException {
 
-            colormaps.colormaps = V.getColorMaps();
-            System.out.println("COLORS15 Colormaps: "
-                    + colormaps.colormaps.length);
+            colormaps.colormaps = DOOM.graphicSystem.getColorMap();
+            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite
             // processing works just fine.
-            BLURRY_MAP = null;// colormaps[0];
+            BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
         }
-        
-        protected void R_InitDrawingFunctions(){            
-            
+
+        protected void R_InitDrawingFunctions() {
+
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan=new R_DrawSpanUnrolled.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
-            DrawSpanLow=new R_DrawSpanLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
-            
-            
+            DrawSpan = new R_DrawSpanUnrolled.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+            DrawSpanLow = new R_DrawSpanLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+
             // Translated columns are usually sprites-only.
-            DrawTranslatedColumn=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawTranslatedColumn = new R_DrawTranslatedColumn.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawTranslatedColumnLow = new R_DrawTranslatedColumnLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawTLColumn = new R_DrawTLColumn(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+
             // Fuzzy columns. These are also masked.
-            DrawFuzzColumn=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawFuzzColumn = new R_DrawFuzzColumn.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem, BLURRY_MAP);
+            DrawFuzzColumnLow = new R_DrawFuzzColumnLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem, BLURRY_MAP);
+
             // Regular draw for solid columns/walls. Full optimizations.
-            DrawColumn=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-            DrawColumnLow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-            
+            DrawColumn = new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, DOOM.doomSystem);
+            DrawColumnLow = new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, DOOM.doomSystem);
+
             // Non-optimized stuff for masked.
-            DrawColumnMasked=new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawColumnMaskedLow=new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawColumnMasked = new R_DrawColumnBoom.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawColumnMaskedLow = new R_DrawColumnBoomLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+
             // Player uses masked
-            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
-            
+            DrawColumnPlayer = DrawColumnMasked; // Player normally uses masked.
+
             // Skies use their own. This is done in order not to stomp parallel threads.
-            
-            DrawColumnSkies=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-            
+            DrawColumnSkies = new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, skydcvars, screen, DOOM.doomSystem);
+            DrawColumnSkiesLow = new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, skydcvars, screen, DOOM.doomSystem);
+
             super.R_InitDrawingFunctions();
         }
 
-		@Override
-		public RenderWallExecutor<byte[], short[]>[] InitRWIExecutors(
-				int num,ColVars<byte[], short[]>[] RWI) {
-				RenderWallExecutor<byte[],short[]>[] tmp=
-						new RenderWallExecutor.HiColor[num];
-				
-				for (int i=0;i<num;i++)
-					tmp[i]=new RenderWallExecutor.HiColor(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, drawsegsbarrier);
-			
-				return tmp;
-		}
+        @Override
+        public RenderWallExecutor<byte[], short[]>[] InitRWIExecutors(
+                int num, ColVars<byte[], short[]>[] RWI) {
+            RenderWallExecutor<byte[], short[]>[] tmp
+                    = new RenderWallExecutor.HiColor[num];
+
+            for (int i = 0; i < num; i++) {
+                tmp[i] = new RenderWallExecutor.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), columnofs, ylookup, screen, RWI, drawsegsbarrier);
+            }
+
+            return tmp;
+        }
 
     }
 
-    public static final class TrueColor
-            extends ParallelRenderer<byte[], int[]> {
+    public static final class TrueColor extends ParallelRenderer<byte[], int[]> {
 
         public TrueColor(DoomMain<byte[], int[]> DM, int wallthread,
                 int floorthreads, int nummaskedthreads) {
             super(DM, wallthread, floorthreads, nummaskedthreads);
-            
+
             // Init light levels
-            colormaps.scalelight = new int[LIGHTLEVELS][MAXLIGHTSCALE][];
-            colormaps.scalelightfixed = new int[MAXLIGHTSCALE][];
-            colormaps.zlight = new int[LIGHTLEVELS][MAXLIGHTZ][];
+            colormaps.scalelight = new int[colormaps.lightLevels()][colormaps.maxLightScale()][];
+            colormaps.scalelightfixed = new int[colormaps.maxLightScale()][];
+            colormaps.zlight = new int[colormaps.lightLevels()][colormaps.maxLightZ()][];
+
+            completeInit();
         }
-        
-  protected void R_InitDrawingFunctions(){            
-            
+
+        protected void R_InitDrawingFunctions() {
+
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
-            DrawSpan=new R_DrawSpanUnrolled.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
-            DrawSpanLow=new R_DrawSpanLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
-            
-            
+            DrawSpan = new R_DrawSpanUnrolled.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+            DrawSpanLow = new R_DrawSpanLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dsvars, screen, DOOM.doomSystem);
+
             // Translated columns are usually sprites-only.
-            DrawTranslatedColumn=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTranslatedColumn = new R_DrawTranslatedColumn.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawTranslatedColumnLow = new R_DrawTranslatedColumnLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
             //DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+
             // Fuzzy columns. These are also masked.
-            DrawFuzzColumn=new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawFuzzColumn = new R_DrawFuzzColumn.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem, BLURRY_MAP);
+            DrawFuzzColumnLow = new R_DrawFuzzColumnLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem, BLURRY_MAP);
+
             // Regular draw for solid columns/walls. Full optimizations.
-            DrawColumn=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-            DrawColumnLow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-            
+            DrawColumn = new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, DOOM.doomSystem);
+            DrawColumnLow = new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, DOOM.doomSystem);
+
             // Non-optimized stuff for masked.
-            DrawColumnMasked=new R_DrawColumnBoom.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            DrawColumnMaskedLow=new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            
+            DrawColumnMasked = new R_DrawColumnBoom.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+            DrawColumnMaskedLow = new R_DrawColumnBoomLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, maskedcvars, screen, DOOM.doomSystem);
+
             // Player uses masked
-            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
-            
+            DrawColumnPlayer = DrawColumnMasked; // Player normally uses masked.
+
             // Skies use their own. This is done in order not to stomp parallel threads.
-            
-            DrawColumnSkies=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-            
+            DrawColumnSkies = new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, skydcvars, screen, DOOM.doomSystem);
+            DrawColumnSkiesLow = new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, skydcvars, screen, DOOM.doomSystem);
+
             super.R_InitDrawingFunctions();
         }
 
         /**
          * R_InitColormaps This is VERY different for hicolor.
-         * 
+         *
          * @throws IOException
          */
         protected void InitColormaps()
                 throws IOException {
 
-            colormaps.colormaps = V.getColorMaps();
-            System.out.println("COLORS15 Colormaps: "
-                    + colormaps.colormaps.length);
+            colormaps.colormaps = DOOM.graphicSystem.getColorMap();
+            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite
             // processing works just fine.
-            BLURRY_MAP = null;// colormaps[0];
+            BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
         }
-        
+
         protected void InitMaskedWorkers() {
+            maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-                maskedworkers[i] =
-                    new MaskedWorker.TrueColor(this,i, SCREENWIDTH, SCREENHEIGHT,
-                            ylookup, columnofs, NUMMASKEDTHREADS, screen,
-                            maskedbarrier);
+                maskedworkers[i] = new MaskedWorker.TrueColor(
+                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS, screen,
+                    maskedbarrier, BLURRY_MAP
+                );
+                
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
-                maskedworkers[i].cacheSpriteManager(SM);
+                maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
             }
         }
-        
-		@Override
-		public RenderWallExecutor<byte[], int[]>[] InitRWIExecutors(
-				int num,ColVars<byte[], int[]>[] RWI) {
-			RenderWallExecutor<byte[],int[]>[] tmp=
-					new RenderWallExecutor.TrueColor[num];
-			
-			for (int i=0;i<num;i++)
-				tmp[i]=new RenderWallExecutor.TrueColor(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, drawsegsbarrier);
-		
-			return tmp;
-		}
+
+        @Override
+        public RenderWallExecutor<byte[], int[]>[] InitRWIExecutors(
+                int num, ColVars<byte[], int[]>[] RWI) {
+            RenderWallExecutor<byte[], int[]>[] tmp
+                    = new RenderWallExecutor.TrueColor[num];
+
+            for (int i = 0; i < num; i++) {
+                tmp[i] = new RenderWallExecutor.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), columnofs, ylookup, screen, RWI, drawsegsbarrier);
+            }
+
+            return tmp;
+        }
 
     }
 

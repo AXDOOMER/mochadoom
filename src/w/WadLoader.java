@@ -24,6 +24,8 @@
 
 package w;
 
+import static data.Defines.*;
+import i.*;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -32,35 +34,30 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
 import rr.patch_t;
-
 import utils.C2JUtils;
-
-import static data.Defines.*;
-import i.*;
 
 public class WadLoader implements IWadLoader {
 
-	protected IDoomSystem I;
+    protected IDoomSystem I;
 
-	///// CONSTRUCTOR
-	
-	   public WadLoader(IDoomSystem I) {
-	        this();
-	        this.I = I;
-	    }
+    ///// CONSTRUCTOR
+    public WadLoader(IDoomSystem I) {
+        this();
+        this.I = I;
+    }
 
-	    public WadLoader() {
-	        lumpinfo = new lumpinfo_t[0];
-	        zone= new Hashtable<CacheableDoomObject, Integer>();
-	        wadfiles=new ArrayList<wadfile_info_t>();
-	        this.I=new DummySystem();
-	    }
+    public WadLoader() {
+        lumpinfo = new lumpinfo_t[0];
+        zone = new Hashtable<>();
+        wadfiles = new ArrayList<>();
+        this.I = new DummySystem();
+    }
 	
 	
 	//// FIELDS
@@ -263,7 +260,7 @@ public class WadLoader implements IWadLoader {
 			lumpinfo_t[] newlumpinfo = new lumpinfo_t[numlumps];
 
 			try {
-				C2JUtils.initArrayOfObjects(newlumpinfo, lumpinfo_t.class);
+                Arrays.setAll(newlumpinfo, i -> new lumpinfo_t());
 				System.arraycopy(lumpinfo, 0, newlumpinfo, 0, oldsize);
 			} catch (Exception e) {
 				// if (!lumpinfo)
@@ -273,7 +270,7 @@ public class WadLoader implements IWadLoader {
 			// Bye bye, old lumpinfo!
 			lumpinfo = newlumpinfo;
 
-			// MAES: lump_p was an alias for lumpinfo[startlump]. I know it's a
+			// MAES: lum_p was an alias for lumpinfo[startlump]. I know it's a
 			// bit crude as an approximation but heh...
 
 			lump_p = startlump;
@@ -1124,10 +1121,10 @@ public class WadLoader implements IWadLoader {
 		// lump order, so that the last lump of a given name appears first
 		// in any chain, observing pwad ordering rules. killough
 
-		for (int i = 0; i < numlumps; i++) { // hash function:
-			doomhash.put(lumpinfo[i].name.toUpperCase(), new Integer(i));
-		    }
-	}
+        for (int i = 0; i < numlumps; i++) { // hash function:
+            doomhash.put(lumpinfo[i].name.toUpperCase(), new Integer(i));
+        }
+    }
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CheckNumForName(java.lang.String)

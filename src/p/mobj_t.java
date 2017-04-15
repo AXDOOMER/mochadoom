@@ -3,22 +3,8 @@ package p;
 import static data.Defines.FLOATSPEED;
 import static data.Defines.GRAVITY;
 import static data.Defines.VIEWHEIGHT;
-import static data.info.states;
-import static p.MapUtils.AproxDistance;
-import static utils.C2JUtils.pointer;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import rr.subsector_t;
-import s.ISoundOrigin;
-import w.IPackableDoomObject;
-import w.IReadableDoomObject;
-import w.IWritableDoomObject;
 import data.Tables;
+import static data.info.states;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -28,6 +14,18 @@ import data.state_t;
 import defines.*;
 import doom.player_t;
 import doom.thinker_t;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import static p.MapUtils.AproxDistance;
+import rr.subsector_t;
+import s.ISoundOrigin;
+import static utils.C2JUtils.pointer;
+import w.IPackableDoomObject;
+import w.IReadableDoomObject;
+import w.IWritableDoomObject;
 
 /**
  * 
@@ -303,6 +301,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 
 			// Modified handling.
 			// Call action functions when the state is set
+            // TODO: try find a bug
 
 			if (st.acp1 != null) {
 				st.acp1.invoke(this);
@@ -367,7 +366,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 					// after hitting the ground (hard),
 					// and utter appropriate sound.
 					player.deltaviewheight = momz >> 3;
-					A.S.StartSound(this, sfxenum_t.sfx_oof);
+					A.DOOM.doomSound.StartSound(this, sfxenum_t.sfx_oof);
 				}
 				momz = 0;
 			}

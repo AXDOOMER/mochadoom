@@ -1,6 +1,7 @@
 package rr.drawfuns;
 
 import i.IDoomSystem;
+import v.tables.BlurryTable;
 
 /** Prototype for 
  * 
@@ -19,7 +20,7 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
     protected final IDoomSystem I;
     protected final int[] ylookup;
     protected final int[] columnofs;
-    protected T BLURRY_MAP;
+    protected BlurryTable blurryTable;
     protected int flags;
     
     public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
@@ -31,19 +32,19 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
         this.dcvars = dcvars;
         this.screen = screen;
         this.I=I;
-        this.BLURRY_MAP=null;
+        this.blurryTable=null;
     }
     
     public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
-            int[] columnofs, ColVars<T,V> dcvars, V screen,IDoomSystem I,T BLURRY_MAP) {
+            int[] columnofs, ColVars<T,V> dcvars, V screen,IDoomSystem I, BlurryTable BLURRY_MAP) {
         SCREENWIDTH = sCREENWIDTH;
         SCREENHEIGHT = sCREENHEIGHT;
-        this.ylookup=ylookup;
-        this.columnofs=columnofs;
+        this.ylookup = ylookup;
+        this.columnofs = columnofs;
         this.dcvars = dcvars;
         this.screen = screen;
-        this.I=I;
-        this.BLURRY_MAP=BLURRY_MAP;
+        this.I = I;
+        this.blurryTable = BLURRY_MAP;
     }
 
     protected final void performRangeCheck(){
@@ -64,11 +65,11 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
     }
 
     protected final int blockyDest1() {
-        return ylookup[dcvars.dc_yl] + columnofs[dcvars.dc_x<<1];
+        return ylookup[dcvars.dc_yl] + columnofs[dcvars.dc_x << 1];
     }
 
     protected final int blockyDest2() {
-        return  ylookup[dcvars.dc_yl] + columnofs[(dcvars.dc_x<<1)+1];
+        return ylookup[dcvars.dc_yl] + columnofs[(dcvars.dc_x << 1) + 1];
     }
 
     @Override
@@ -77,6 +78,7 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
         invoke();
     }
     
+    @Override
     public final int getFlags(){
         return this.flags;
     }

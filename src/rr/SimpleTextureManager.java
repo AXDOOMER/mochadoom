@@ -3,11 +3,8 @@ package rr;
 import static data.Defines.PU_CACHE;
 import static data.Defines.PU_STATIC;
 import static data.Defines.SKYFLATNAME;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
-
+import doom.DoomMain;
 import i.IDoomSystem;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -15,8 +12,9 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
 import p.AbstractLevelLoader;
-import doom.DoomStatus;
 import w.DoomBuffer;
 import w.IWadLoader;
 import w.li_namespace;
@@ -37,7 +35,7 @@ public class SimpleTextureManager
     IWadLoader W;
     IDoomSystem I;
     AbstractLevelLoader LL;
-    DoomStatus<?,?> DM;
+    DoomMain<?,?> DM;
     
     //
     // Graphics.
@@ -99,11 +97,11 @@ public class SimpleTextureManager
     // This is also in DM, but one is enough, really.
     protected int skytexture,skytexturemid,skyflatnum;
     
-    public SimpleTextureManager(DoomStatus<?,?> DC) {
+    public SimpleTextureManager(DoomMain<?,?> DC) {
         this.DM=DC;
-        this.W=DM.W;
-        this.I=DM.I;
-        this.LL=DM.LL;
+        this.W=DM.wadLoader;
+        this.I=DM.doomSystem;
+        this.LL=DM.levelLoader;
         FlatPatchCache=new Hashtable<Integer, patch_t>();
     }
   

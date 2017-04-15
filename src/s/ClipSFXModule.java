@@ -1,20 +1,16 @@
 package s;
 
 import static data.sounds.S_sfx;
-
+import data.sounds.sfxenum_t;
+import doom.DoomMain;
 import java.util.Collection;
 import java.util.HashMap;
-
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.FloatControl.Type;
-
-import w.DoomBuffer;
-import data.sounds.sfxenum_t;
-import doom.DoomStatus;
+import javax.sound.sampled.LineUnavailableException;
 
 /** Experimental Clip based driver. It does work, but it has no
  *  tangible advantages over the Audioline or Classic one. If the
@@ -47,8 +43,8 @@ public class ClipSFXModule extends AbstractSoundDriver{
 	
 	public final float[] linear2db;
 	
-	public ClipSFXModule(DoomStatus DS, int numChannels) {
-		super(DS,numChannels);
+	public ClipSFXModule(DoomMain DM, int numChannels) {
+		super(DM,numChannels);
 		linear2db=computeLinear2DB();		
 		}
 	
@@ -125,14 +121,14 @@ public class ClipSFXModule extends AbstractSoundDriver{
 	        // I do not do runtime patches to that
 	        // variable. Instead, we will use a
 	        // default sound for replacement.
-	        if (DS.W.CheckNumForName(name) == -1)
-	            sfxlump = DS.W.GetNumForName("dspistol");
+	        if (DM.wadLoader.CheckNumForName(name) == -1)
+	            sfxlump = DM.wadLoader.GetNumForName("dspistol");
 	        else
-	            sfxlump = DS.W.GetNumForName(name);
+	            sfxlump = DM.wadLoader.GetNumForName(name);
 
-	        size = DS.W.LumpLength(sfxlump);
+	        size = DM.wadLoader.LumpLength(sfxlump);
 
-	        sfx = DS.W.CacheLumpNumAsRawBytes(sfxlump, 0);
+	        sfx = DM.wadLoader.CacheLumpNumAsRawBytes(sfxlump, 0);
 
 	        // Size blown up to accommodate two channels and 16 bits.
 	        // Sampling rate stays the same.
@@ -155,7 +151,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 	        }
 	        
 	        // Remove the cached lump.
-	        DS.W.UnlockLumpNum(sfxlump);
+	        DM.wadLoader.UnlockLumpNum(sfxlump);
 
 	        // Return allocated padded data.
 	        // So the first 8 bytes are useless?
@@ -277,7 +273,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 		int		i;
 		int		rc = -1;
 
-		int		oldest = DS.gametic;
+		int		oldest = DM.gametic;
 		int		oldestnum = 0;
 		int		slot;
 
@@ -344,7 +340,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 		channelhandles[slot]= rc = handlenums--;
 
 		// Should be gametic, I presume.
-		channelstart[slot] = DS.gametic;
+		channelstart[slot] = DM.gametic;
 
 		// Get the proper lookup table piece
 		//  for this volume level???

@@ -1,6 +1,5 @@
 package p;
 
-import static rr.line_t.*;
 import static data.Defines.ITEMQUESIZE;
 import static data.Defines.MELEERANGE;
 import static data.Defines.NF_SUBSECTOR;
@@ -12,6 +11,7 @@ import static data.Defines.pw_invisibility;
 import static data.Defines.pw_invulnerability;
 import static data.Defines.pw_ironfeet;
 import static data.Defines.pw_strength;
+import data.Limits;
 import static data.Limits.BUTTONTIME;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
@@ -26,6 +26,13 @@ import static data.Tables.ANG90;
 import static data.Tables.BITS32;
 import static data.info.mobjinfo;
 import static data.info.states;
+import data.mapthing_t;
+import data.mobjtype_t;
+import data.sounds.sfxenum_t;
+import defines.ammotype_t;
+import defines.card_t;
+import defines.statenum_t;
+import doom.DoomMain;
 import static doom.englsh.GOTARMBONUS;
 import static doom.englsh.GOTARMOR;
 import static doom.englsh.GOTBACKPACK;
@@ -64,79 +71,58 @@ import static doom.englsh.GOTVISOR;
 import static doom.englsh.GOTYELWCARD;
 import static doom.englsh.GOTYELWSKUL;
 import static doom.items.weaponinfo;
-import static m.fixed_t.FRACUNIT;
-import static m.fixed_t.MAPFRACUNIT;
-import static m.fixed_t.FixedDiv;
-import static m.fixed_t.FixedMul;
-import static p.DoorDefines.SLOWDARK;
-import static p.MapUtils.AproxDistance;
-import static p.MapUtils.InterceptVector;
-import static p.MobjFlags.*;
-import static utils.C2JUtils.eval;
-import static utils.C2JUtils.flags;
-import java.util.Arrays;
-
-import hu.HU;
-import i.DoomStatusAware;
-import i.IDoomSystem;
-import m.IRandom;
-import rr.ISpriteManager;
-import rr.Renderer;
-import rr.TextureManager;
-import rr.line_t;
-import rr.node_t;
-import rr.sector_t;
-import rr.side_t;
-import rr.subsector_t;
-import s.IDoomSound;
-import st.StatusBar;
-import utils.C2JUtils;
-import w.IWadLoader;
-import automap.IAutoMap;
-import data.Limits;
-import data.mapthing_t;
-import data.mobjtype_t;
-import data.state_t;
-import data.sounds.sfxenum_t;
-import defines.ammotype_t;
-import defines.card_t;
-import defines.statenum_t;
-import doom.DoomMain;
-import doom.DoomStatus;
-import doom.IDoomGame;
 import doom.player_t;
 import doom.th_class;
 import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
+import java.util.Arrays;
+import m.Settings;
+import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.FixedDiv;
+import static m.fixed_t.MAPFRACUNIT;
+import static p.DoorDefines.SLOWDARK;
+import static p.MapUtils.AproxDistance;
+import static p.MapUtils.InterceptVector;
+import static p.MobjFlags.*;
+import rr.ISpriteManager;
+import rr.line_t;
+import static rr.line_t.*;
+import rr.node_t;
+import rr.sector_t;
+import rr.side_t;
+import rr.subsector_t;
+import utils.C2JUtils;
+import static utils.C2JUtils.eval;
+import static utils.C2JUtils.flags;
 
 // // FROM SIGHT
 
-public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
+public abstract class UnifiedGameMap<T, V> implements ThinkerList {
     
     
-    public UnifiedGameMap(DoomStatus<?,?> DS){
-        this.SW=new Switches();
-        this.LEV=new Lights();
-        this.SPECS=new Specials();
-        this.PEV=new Plats();
-        this.See=new Sight(); // Didn't initialize that.
-        this.EN=new Enemies();
-        this.thinkercap=new thinker_t();
+    public UnifiedGameMap(DoomMain<T, V> DOOM){
+        this.SW = new Switches();
+        this.LEV = new Lights();
+        this.SPECS = new Specials();
+        this.PEV = new Plats();
+        this.See = new Sight(); // Didn't initialize that.
+        this.EN = new Enemies();
+        this.thinkercap = new thinker_t();
         for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i]=new thinker_t();
         
         this.RemoveThinkerDelayed=new P_RemoveThinkerDelayed();
         
         intercepts = new intercept_t[MAXINTERCEPTS];
-        C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
+        Arrays.setAll(intercepts, i -> new intercept_t());
 
-        this.updateStatus(DS);
         // Normally unused. It clashes with line attribute 124, and looks like ass
         // anyway. However it's fully implemented.
         //this.SL=new SlideDoor(DS);
         //DS.SL=SL;
-        this.FUNS=new ActionFunctions(DS,EN);
+        this.DOOM = DOOM;
+        this.FUNS = new ActionFunctions(this.DOOM, EN);
         
         // "Wire" all states to the proper functions.
         for (int i=0;i<states.length;i++){
@@ -148,53 +134,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     /////////////////// STATUS ///////////////////
 
-    IWadLoader W;
+    final DoomMain<T, V> DOOM;
 
-    IAutoMap<?,?> AM;
-
-    IRandom RND;
-
-    Renderer<?,?> R;
-    
-    TextureManager<?> TM;
-
-    AbstractLevelLoader LL;
-
-    DoomMain<?,?> DM;
-
-    IDoomGame DG;
-    
-    StatusBar ST;
-
-    HU HU;
-    
-    IDoomSystem I;
-    
-    IDoomSound S;
-    
-    ISpriteManager SM;
-
-    @Override
-    public void updateStatus(DoomStatus<?,?> DC) {
-            this.I=DC.I;
-            this.DG=DC.DG;
-            this.S=DC.S;
-            this.LL=DC.LL;
-            this.RND=DC.RND;
-            this.DM=DC.DM;
-            this.R=DC.R;
-            this.W=DC.W;
-            this.AM=DC.AM;
-            this.ST= (StatusBar) DC.ST;
-            this.AM=DC.AM;
-            this.HU=DC.HU;
-            this.TM=DC.TM;
-            this.SM=DC.SM;
-            if (FUNS!=null)
-            FUNS.updateStatus(DC);
-            
-            }
-      
     
     // //////////// Internal singletons //////////////
     public Actions A;
@@ -237,7 +178,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // the line number, and the side (0/1) that you want.
     //
     side_t getSide(int currentSector, int line, int side) {
-        return LL.sides[(LL.sectors[currentSector].lines[line]).sidenum[side]];
+        return DOOM.levelLoader.sides[(DOOM.levelLoader.sectors[currentSector].lines[line]).sidenum[side]];
     }
 
     /**
@@ -248,7 +189,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      */
     
     sector_t getSector(int currentSector, int line, int side) {
-        return LL.sides[(LL.sectors[currentSector].lines[line]).sidenum[side]].sector;
+        return DOOM.levelLoader.sides[(DOOM.levelLoader.sectors[currentSector].lines[line]).sidenum[side]].sector;
     }
 
     /**
@@ -258,7 +199,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      */
     
     protected boolean twoSided(int sector, int line) {
-        return eval((LL.sectors[sector].lines[line]).flags& ML_TWOSIDED);
+        return eval((DOOM.levelLoader.sectors[sector].lines[line]).flags& ML_TWOSIDED);
     }
 
     /**
@@ -268,8 +209,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     protected int FindSectorFromLineTag(line_t line, int start) {
         int i;
 
-        for (i = start + 1; i < LL.numsectors; i++)
-            if (LL.sectors[i].tag == line.tag)
+        for (i = start + 1; i < DOOM.levelLoader.numsectors; i++)
+            if (DOOM.levelLoader.sectors[i].tag == line.tag)
                 return i;
 
         return -1;
@@ -351,12 +292,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (thing.bprev != null)
                 ((mobj_t) thing.bprev).bnext = thing.bnext;
             else {
-                blockx = LL.getSafeBlockX(thing.x - LL.bmaporgx);
-                blocky = LL.getSafeBlockY(thing.y - LL.bmaporgy);
+                blockx = DOOM.levelLoader.getSafeBlockX(thing.x - DOOM.levelLoader.bmaporgx);
+                blocky = DOOM.levelLoader.getSafeBlockY(thing.y - DOOM.levelLoader.bmaporgy);
                 
-                if (blockx >= 0 && blockx < LL.bmapwidth && blocky >= 0
-                        && blocky < LL.bmapheight) {
-                    LL.blocklinks[blocky * LL.bmapwidth + blockx] =
+                if (blockx >= 0 && blockx < DOOM.levelLoader.bmapwidth && blocky >= 0
+                        && blocky < DOOM.levelLoader.bmapheight) {
+                    DOOM.levelLoader.blocklinks[blocky * DOOM.levelLoader.bmapwidth + blockx] =
                         (mobj_t) thing.bnext;
                 }
             }
@@ -483,7 +424,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             secnum = -1;
             while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
-                sec = LL.sectors[secnum];
+                sec = DOOM.levelLoader.sectors[secnum];
                 if (sec.specialdata != null)
                     continue;
 
@@ -501,8 +442,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             sector_t tsec;
             line_t templine;
 
-            for (int j = 0; j < LL.numsectors; j++) {
-                sector = LL.sectors[j];
+            for (int j = 0; j < DOOM.levelLoader.numsectors; j++) {
+                sector = DOOM.levelLoader.sectors[j];
                 if (sector.tag == line.tag) {
 
                     min = sector.lightlevel;
@@ -528,8 +469,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             sector_t temp;
             line_t templine;
 
-            for (int i = 0; i < LL.numsectors; i++) {
-                sector = LL.sectors[i];
+            for (int i = 0; i < DOOM.levelLoader.numsectors; i++) {
+                sector = DOOM.levelLoader.sectors[i];
                 if (sector.tag == line.tag) {
                     // bright = 0 means to search
                     // for highest light level
@@ -644,7 +585,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (actor.type == mobjtype_t.MT_CYBORG && dist > 160)
                 dist = 160;
 
-            if (RND.P_Random() < dist)
+            if (DOOM.random.P_Random() < dist)
                 return false;
 
             return true;
@@ -667,12 +608,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             // Determine subsector entries in REJECT table.
             s1 = t1.subsector.sector.id; // (t1.subsector.sector - sectors);
             s2 = t2.subsector.sector.id;// - sectors);
-            pnum = s1 * LL.numsectors + s2;
+            pnum = s1 * DOOM.levelLoader.numsectors + s2;
             bytenum = pnum >> 3;
             bitnum = 1 << (pnum & 7);
 
             // Check in REJECT table.
-            if (eval(LL.rejectmatrix[bytenum]& bitnum)) {
+            if (eval(DOOM.levelLoader.rejectmatrix[bytenum]& bitnum)) {
                 See.sightcounts[0]++;
 
                 // can't possibly be connected
@@ -683,7 +624,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             // Now look from eyes of t1 to any part of t2.
             See.sightcounts[1]++;
 
-            R.increaseValidCount(1);
+            DOOM.sceneRenderer.increaseValidCount(1);
 
             See.sightzstart = t1.z + t1.height - (t1.height >> 2);
             topslope = (t2.z + t2.height) - See.sightzstart;
@@ -697,7 +638,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             See.strace.dy = t2.y - t1.y;
 
             // the head node is the last node output
-            return See.CrossBSPNode(LL.numnodes - 1);
+            return See.CrossBSPNode(DOOM.levelLoader.numnodes - 1);
         }
 
         //
@@ -714,17 +655,17 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             sector_t other;
 
             // wake up all monsters in this sector
-            if (sec.validcount == R.getValidCount()
+            if (sec.validcount == DOOM.sceneRenderer.getValidCount()
                     && sec.soundtraversed <= soundblocks + 1) {
                 return; // already flooded
             }
 
-            sec.validcount = R.getValidCount();
+            sec.validcount = DOOM.sceneRenderer.getValidCount();
             sec.soundtraversed = soundblocks + 1;
             sec.soundtarget = soundtarget;
 
             // "peg" to the level loader for syntactic sugar
-            side_t[] sides = LL.sides;
+            side_t[] sides = DOOM.levelLoader.sides;
 
             for (i = 0; i < sec.linecount; i++) {
                 check = sec.lines[i];
@@ -757,7 +698,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         
         void NoiseAlert(mobj_t target, mobj_t emmiter) {
             soundtarget = target;
-            R.increaseValidCount(1);
+            DOOM.sceneRenderer.increaseValidCount(1);
             RecursiveSound(emmiter.subsector.sector, 0);
         }
 
@@ -806,7 +747,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             stop = (actor.lastlook - 1) & 3;
 
             for (;; actor.lastlook = (actor.lastlook + 1) & 3) {
-                if (!DM.playeringame[actor.lastlook])
+                if (!DOOM.playeringame[actor.lastlook])
                     continue;
 
                 if (c++ == 2 || actor.lastlook == stop) {
@@ -814,7 +755,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     return false;
                 }
 
-                player = DM.players[actor.lastlook];
+                player = DOOM.players[actor.lastlook];
 
                 if (player.health[0] <= 0)
                     continue; // dead
@@ -824,7 +765,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                 if (!allaround) {
                     an =
-                        (R.PointToAngle2(actor.x, actor.y, player.mo.x,
+                        (DOOM.sceneRenderer.PointToAngle2(actor.x, actor.y, player.mo.x,
                             player.mo.y)
                                 - actor.angle)&BITS32;
 
@@ -876,7 +817,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             }
 
             while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
-                sec = LL.sectors[secnum];
+                sec = DOOM.levelLoader.sectors[secnum];
 
                 if (sec.specialdata != null)
                     continue;
@@ -897,24 +838,24 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 switch (type) {
                 case raiseToNearestAndChange:
                     plat.speed = PLATSPEED / 2;
-                    sec.floorpic = LL.sides[line.sidenum[0]].sector.floorpic;
+                    sec.floorpic = DOOM.levelLoader.sides[line.sidenum[0]].sector.floorpic;
                     plat.high = sec.FindNextHighestFloor(sec.floorheight);
                     plat.wait = 0;
                     plat.status = plat_e.up;
                     // NO MORE DAMAGE, IF APPLICABLE
                     sec.special = 0;
 
-                    S.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
+                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
                     break;
 
                 case raiseAndChange:
                     plat.speed = PLATSPEED / 2;
-                    sec.floorpic = LL.sides[line.sidenum[0]].sector.floorpic;
+                    sec.floorpic = DOOM.levelLoader.sides[line.sidenum[0]].sector.floorpic;
                     plat.high = sec.floorheight + amount * FRACUNIT;
                     plat.wait = 0;
                     plat.status = plat_e.up;
 
-                    S.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
+                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
                     break;
 
                 case downWaitUpStay:
@@ -927,7 +868,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     plat.high = sec.floorheight;
                     plat.wait = 35 * PLATWAIT;
                     plat.status = plat_e.down;
-                    S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
+                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
                     break;
 
                 case blazeDWUS:
@@ -940,7 +881,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     plat.high = sec.floorheight;
                     plat.wait = 35 * PLATWAIT;
                     plat.status = plat_e.down;
-                    S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
+                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
                     break;
 
                 case perpetualRaise:
@@ -957,9 +898,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                     plat.wait = 35 * PLATWAIT;
                     // Guaranteed to be 0 or 1.
-                    plat.status = plat_e.values()[RND.P_Random() & 1];
+                    plat.status = plat_e.values()[DOOM.random.P_Random() & 1];
 
-                    S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);;
+                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
                     break;
                 }
                 AddActivePlat(plat);
@@ -1016,7 +957,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                     return;
                 }
-            I.Error("P_RemoveActivePlat: can't find plat!");
+            DOOM.doomSystem.Error("P_RemoveActivePlat: can't find plat!");
         }
 
 		public void initActivePlats() {
@@ -1070,25 +1011,25 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             int slope;
 
             if (RANGECHECK) {
-                if (num >= LL.numsubsectors)
-                    I.Error("P_CrossSubsector: ss %d with numss = %d",
-                        num, LL.numsubsectors);
+                if (num >= DOOM.levelLoader.numsubsectors)
+                    DOOM.doomSystem.Error("P_CrossSubsector: ss %d with numss = %d",
+                        num, DOOM.levelLoader.numsubsectors);
             }
 
-            sub = LL.subsectors[num];
+            sub = DOOM.levelLoader.subsectors[num];
 
             // check lines
             count = sub.numlines;
             seg = sub.firstline;// LL.segs[sub.firstline];
 
             for (; count > 0; seg++, count--) {
-                line = LL.segs[seg].linedef;
+                line = DOOM.levelLoader.segs[seg].linedef;
 
                 // allready checked other side?
-                if (line.validcount == R.getValidCount())
+                if (line.validcount == DOOM.sceneRenderer.getValidCount())
                     continue;
 
-                line.validcount = R.getValidCount();
+                line.validcount = DOOM.sceneRenderer.getValidCount();
 
                 //v1 = line.v1;
                 //v2 = line.v2;
@@ -1116,8 +1057,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     return false;
 
                 // crosses a two sided line
-                front = LL.segs[seg].frontsector;
-                back = LL.segs[seg].backsector;
+                front = DOOM.levelLoader.segs[seg].frontsector;
+                back = DOOM.levelLoader.segs[seg].backsector;
 
                 // no wall to block sight with?
                 if (front.floorheight == back.floorheight
@@ -1178,7 +1119,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     return CrossSubsector(bspnum & (~NF_SUBSECTOR));
             }
 
-            bsp = LL.nodes[bspnum];
+            bsp = DOOM.levelLoader.nodes[bspnum];
 
             // decide which side the start point is on
             side = bsp.DivlineSide(strace.x, strace.y);
@@ -1287,7 +1228,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (levelTimer == true) {
                 levelTimeCount--;
                 if (levelTimeCount == 0)
-                    DG.ExitLevel();
+                    DOOM.ExitLevel();
             }
 
             // ANIMATE FLATS AND TEXTURES GLOBALLY
@@ -1298,11 +1239,11 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 for (int i = anim.basepic; i < anim.basepic + anim.numpics; i++) {
                     pic =
                         anim.basepic
-                                + ((DM.leveltime / anim.speed + i) % anim.numpics);
+                                + ((DOOM.leveltime / anim.speed + i) % anim.numpics);
                     if (anim.istexture)
-                        TM.setTextureTranslation(i,pic);
+                        DOOM.textureManager.setTextureTranslation(i,pic);
                     else
-                        TM.setFlatTranslation(i,pic);
+                        DOOM.textureManager.setFlatTranslation(i,pic);
                 }
             }
 
@@ -1312,7 +1253,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 switch (line.special) {
                 case 48:
                     // EFFECT FIRSTCOL SCROLL +
-                    LL.sides[line.sidenum[0]].textureoffset += MAPFRACUNIT;
+                    DOOM.levelLoader.sides[line.sidenum[0]].textureoffset += MAPFRACUNIT;
                     break;
                 }
             }
@@ -1322,7 +1263,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         }
 
         public void InitPicAnims() {
-        	C2JUtils.initArrayOfObjects(anims);
+            Arrays.setAll(anims, i -> new anim_t());
             anim_t lstanim; 
             // Init animation. MAES: sneaky base pointer conversion ;-)
             this.lastanim = 0;
@@ -1331,25 +1272,25 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             	lstanim= anims[this.lastanim];
                 if (animdefs[i].istexture) {
                     // different episode ?
-                    if (TM.CheckTextureNumForName(animdefs[i].startname) == -1)
+                    if (DOOM.textureManager.CheckTextureNumForName(animdefs[i].startname) == -1)
                         continue;
                     // So, if it IS a valid texture, it goes straight into anims.
-                    lstanim.picnum = TM.TextureNumForName(animdefs[i].endname);
-                    lstanim.basepic = TM.TextureNumForName(animdefs[i].startname);
+                    lstanim.picnum = DOOM.textureManager.TextureNumForName(animdefs[i].endname);
+                    lstanim.basepic = DOOM.textureManager.TextureNumForName(animdefs[i].startname);
                 } else { // If not a texture, it's a flat.
-                    if (W.CheckNumForName(animdefs[i].startname) == -1)
+                    if (DOOM.wadLoader.CheckNumForName(animdefs[i].startname) == -1)
                         continue;
                     System.out.println(animdefs[i]);
                     // Otherwise, lstanim seems to go nowhere :-/
-                    lstanim.picnum = TM.FlatNumForName(animdefs[i].endname);
-                    lstanim.basepic = TM.FlatNumForName(animdefs[i].startname);
+                    lstanim.picnum = DOOM.textureManager.FlatNumForName(animdefs[i].endname);
+                    lstanim.basepic = DOOM.textureManager.FlatNumForName(animdefs[i].startname);
                 }
 
                 lstanim.istexture = animdefs[i].istexture;
                 lstanim.numpics = lstanim.picnum - lstanim.basepic + 1;
 
                 if (lstanim.numpics < 2)
-                    I.Error("P_InitPicAnims: bad cycle from %s to %s",
+                    DOOM.doomSystem.Error("P_InitPicAnims: bad cycle from %s to %s",
                         animdefs[i].startname, animdefs[i].endname);
 
                 lstanim.speed = animdefs[i].speed;
@@ -1377,21 +1318,21 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     if (!eval(buttonlist[i].btimer)) {
                         switch (buttonlist[i].where) {
                         case top:
-                            LL.sides[buttonlist[i].line.sidenum[0]].toptexture =
+                            DOOM.levelLoader.sides[buttonlist[i].line.sidenum[0]].toptexture =
                                 (short) buttonlist[i].btexture;
                             break;
 
                         case middle:
-                            LL.sides[buttonlist[i].line.sidenum[0]].midtexture =
+                            DOOM.levelLoader.sides[buttonlist[i].line.sidenum[0]].midtexture =
                                 (short) buttonlist[i].btexture;
                             break;
 
                         case bottom:
-                            LL.sides[buttonlist[i].line.sidenum[0]].bottomtexture =
+                            DOOM.levelLoader.sides[buttonlist[i].line.sidenum[0]].bottomtexture =
                                 (short) buttonlist[i].btexture;
                             break;
                         }
-                        S.StartSound(buttonlist[i].soundorg,sfxenum_t.sfx_swtchn);
+                        DOOM.doomSound.StartSound(buttonlist[i].soundorg,sfxenum_t.sfx_swtchn);
                         buttonlist[i].reset();
                     }
                 }
@@ -1469,9 +1410,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             // MAES: if this isn't changed Ultimate Doom's switches
             // won't work visually.
-            if (DM.isRegistered())
+            if (DOOM.isRegistered())
                 episode = 2;
-            else if (DM.isCommercial())
+            else if (DOOM.isCommercial())
                 episode = 3;
 
             for (index = 0, i = 0; i < MAXSWITCHES; i++) {
@@ -1498,9 +1439,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                      * R_TextureNumForName(alphSwitchList[i].name1);
                      */
                     switchlist[index++] =
-                        TM.TextureNumForName(alphSwitchList[i].name1);
+                        DOOM.textureManager.TextureNumForName(alphSwitchList[i].name1);
                     switchlist[index++] =
-                        TM.TextureNumForName(alphSwitchList[i].name2);
+                        DOOM.textureManager.TextureNumForName(alphSwitchList[i].name2);
                 }
             }
         }
@@ -1558,9 +1499,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!useAgain)
                 line.special = 0;
 
-            texTop = LL.sides[line.sidenum[0]].toptexture;
-            texMid = LL.sides[line.sidenum[0]].midtexture;
-            texBot = LL.sides[line.sidenum[0]].bottomtexture;
+            texTop = DOOM.levelLoader.sides[line.sidenum[0]].toptexture;
+            texMid = DOOM.levelLoader.sides[line.sidenum[0]].midtexture;
+            texBot = DOOM.levelLoader.sides[line.sidenum[0]].bottomtexture;
 
             sound = sfxenum_t.sfx_swtchn.ordinal();
 
@@ -1570,8 +1511,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             for (i = 0; i < numswitches * 2; i++) {
                 if (switchlist[i] == texTop) {
-                    S.StartSound(buttonlist[0].soundorg,sound);
-                    LL.sides[line.sidenum[0]].toptexture =
+                    DOOM.doomSound.StartSound(buttonlist[0].soundorg,sound);
+                    DOOM.levelLoader.sides[line.sidenum[0]].toptexture =
                         (short) switchlist[i ^ 1];
 
                     if (useAgain)
@@ -1581,8 +1522,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     return;
                 } else {
                     if (switchlist[i] == texMid) {
-                    	 S.StartSound(buttonlist[0].soundorg,sound);
-                        LL.sides[line.sidenum[0]].midtexture =
+                    	 DOOM.doomSound.StartSound(buttonlist[0].soundorg,sound);
+                        DOOM.levelLoader.sides[line.sidenum[0]].midtexture =
                             (short) switchlist[i ^ 1];
 
                         if (useAgain)
@@ -1592,8 +1533,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                         return;
                     } else {
                         if (switchlist[i] == texBot) {
-                        	 S.StartSound(buttonlist[0].soundorg,sound);
-                            LL.sides[line.sidenum[0]].bottomtexture =
+                        	 DOOM.doomSound.StartSound(buttonlist[0].soundorg,sound);
+                            DOOM.levelLoader.sides[line.sidenum[0]].bottomtexture =
                                 (short) switchlist[i ^ 1];
 
                             if (useAgain)
@@ -1786,7 +1727,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         // MAES 9/5/2011: using mobj code for that.
         mo.SetMobjState(mobjinfo[mo.type.ordinal()].deathstate);
 
-        mo.tics -= RND.P_Random() & 3;
+        mo.tics -= DOOM.random.P_Random() & 3;
 
         if (mo.tics < 1)
             mo.tics = 1;
@@ -1794,7 +1735,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         mo.flags &= ~MF_MISSILE;
 
         if (mo.info.deathsound != null)
-        S.StartSound(mo, mo.info.deathsound);
+        DOOM.doomSound.StartSound(mo, mo.info.deathsound);
     }
 
     //
@@ -1813,7 +1754,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 && (mobj.type != mobjtype_t.MT_INV)
                 && (mobj.type != mobjtype_t.MT_INS)) {
             itemrespawnque[iquehead] = mobj.spawnpoint;
-            itemrespawntime[iquehead] = DM.leveltime;
+            itemrespawntime[iquehead] = DOOM.leveltime;
             iquehead = (iquehead + 1) & (ITEMQUESIZE - 1);
 
             // lose one off the end?
@@ -1825,7 +1766,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         UnsetThingPosition(mobj);
         
         // stop any playing sound
-        S.StopSound (mobj);
+        DOOM.doomSound.StopSound (mobj);
         
         // free block
         RemoveThinker((thinker_t) mobj);
@@ -1994,7 +1935,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     public void Init() {
         SW.InitSwitchList();
         SPECS.InitPicAnims();
-        SM.InitSprites(ISpriteManager.doomsprnames);
+        DOOM.spriteManager.InitSprites(ISpriteManager.doomsprnames);
     }
 
     /**
@@ -2064,7 +2005,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             break;
 
         case SPR_MEGA:
-            if (!DM.isCommercial())
+            if (!DOOM.isCommercial())
                 return;
             player.health[0] = 200;
             player.mo.health = player.health[0];
@@ -2079,7 +2020,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!player.cards[card_t.it_bluecard.ordinal()])
                 player.message = GOTBLUECARD;
             player.GiveCard(card_t.it_bluecard);
-            if (!DM.netgame)
+            if (!DOOM.netgame)
                 break;
             return;
 
@@ -2087,7 +2028,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!player.cards[card_t.it_yellowcard.ordinal()])
                 player.message = GOTYELWCARD;
             player.GiveCard(card_t.it_yellowcard);
-            if (!DM.netgame)
+            if (!DOOM.netgame)
                 break;
             return;
 
@@ -2095,7 +2036,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!player.cards[card_t.it_redcard.ordinal()])
                 player.message = GOTREDCARD;
             player.GiveCard(card_t.it_redcard);
-            if (!DM.netgame)
+            if (!DOOM.netgame)
                 break;
             return;
 
@@ -2103,7 +2044,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!player.cards[card_t.it_blueskull.ordinal()])
                 player.message = GOTBLUESKUL;
             player.GiveCard(card_t.it_blueskull);
-            if (!DM.netgame)
+            if (!DOOM.netgame)
                 break;
             return;
 
@@ -2111,7 +2052,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!player.cards[card_t.it_yellowskull.ordinal()])
                 player.message = GOTYELWSKUL;
             player.GiveCard(card_t.it_yellowskull);
-            if (!DM.netgame)
+            if (!DOOM.netgame)
                 break;
             return;
 
@@ -2119,7 +2060,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (!player.cards[card_t.it_redskull.ordinal()])
                 player.message = GOTREDSKULL;
             player.GiveCard(card_t.it_redskull);
-            if (!DM.netgame)
+            if (!DOOM.netgame)
                 break;
             return;
 
@@ -2131,13 +2072,21 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             break;
 
         case SPR_MEDI:
+            /**
+             * Another fix with switchable option to enable
+             * - Good Sign 2017/04/03
+             */
+            boolean need = player.health[0] < 25;
+            
             if (!player.GiveBody(25))
                 return;
-
-            if (player.health[0] < 25)
-                player.message = GOTMEDINEED;
-            else
-                player.message = GOTMEDIKIT;
+            
+            if (DOOM.CM.equals(Settings.fix_medi_need, Boolean.FALSE))
+                // default behavior - with bug
+                player.message = player.health[0] < 25 ? GOTMEDINEED : GOTMEDIKIT;
+            else //proper behavior
+                player.message = need ? GOTMEDINEED : GOTMEDIKIT;
+            
             break;
 
         // power ups
@@ -2304,15 +2253,15 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             break;
 
         default:
-            I.Error("P_SpecialThing: Unknown gettable thing");
+            DOOM.doomSystem.Error("P_SpecialThing: Unknown gettable thing");
         }
 
         if ((special.flags & MF_COUNTITEM) != 0)
             player.itemcount++;
         RemoveMobj(special);
         player.bonuscount += player_t.BONUSADD;
-        if (player == DM.players[DM.consoleplayer])
-        S.StartSound (null, sound);
+        if (player == DOOM.players[DOOM.consoleplayer])
+        DOOM.doomSound.StartSound (null, sound);
     }
 
     

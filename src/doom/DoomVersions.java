@@ -1,10 +1,8 @@
 package doom;
 
-import java.util.Hashtable;
-
-import utils.C2JUtils;
-
 import defines.GameMode_t;
+import java.util.Hashtable;
+import utils.C2JUtils;
 
 public class DoomVersions {
 
@@ -18,6 +16,9 @@ public class DoomVersions {
 		VersionChecker.put("plutonia.wad",GameMode_t.pack_plut);
 		VersionChecker.put("doom1.wad",GameMode_t.shareware);
 		VersionChecker.put("xbla.wad",GameMode_t.pack_xbla);
+        VersionChecker.put("freedoom1.wad", GameMode_t.freedoom1); 
+        VersionChecker.put("freedoom2.wad", GameMode_t.freedoom2); 
+
 	}
 	
 	public DoomVersions(){
@@ -30,38 +31,44 @@ public class DoomVersions {
 	
 	public void tryThemAll(String doomwaddir){
 		 // Commercial.
-        doom2wad = (doomwaddir+ "/doom2.wad");
+        doom2wad = (doomwaddir + "/doom2.wad");
 
         // Retail.
-        doomuwad = (doomwaddir+ "/doomu.wad");    
+        doomuwad = (doomwaddir + "/doomu.wad");
 
         // Registered.
-        doomwad = (doomwaddir+ "/doom.wad");
+        doomwad = (doomwaddir + "/doom.wad");
 
         // Shareware.
-        doom1wad = (doomwaddir+ "/doom1.wad");
+        doom1wad = (doomwaddir + "/doom1.wad");
 
         // Bug, dear Shawn.
         // Insufficient malloc, caused spurious realloc errors.
-        plutoniawad = (doomwaddir+ "/plutonia.wad");
+        plutoniawad = (doomwaddir + "/plutonia.wad");
 
-        tntwad = (doomwaddir+ "/tnt.wad");
+        tntwad = (doomwaddir + "/tnt.wad");
 
-        xblawad = (doomwaddir+ "/xbla.wad");
-        
+        xblawad = (doomwaddir + "/xbla.wad");
+
         // French stuff.
-        doom2fwad=(doomwaddir+ "/doom2f.wad");
+        doom2fwad = (doomwaddir + "/doom2f.wad");
+
+        freedoom1wad = (doomwaddir + "/freedoom1.wad");
+        
+        freedoom2wad = (doomwaddir + "/freedoom2.wad");
 	}
 	
 	public String 
-	doom1wad,
-    doomwad,
-    doomuwad,
-    doom2wad,
-    doom2fwad,
-    plutoniawad,    
-    tntwad,
-    xblawad;
+        doom1wad,
+        doomwad,
+        doomuwad,
+        doom2wad,
+        doom2fwad,
+        plutoniawad,    
+        tntwad,
+        xblawad,
+        freedoom1wad,
+        freedoom2wad;
 	
 	/** Try only one IWAD. 
 	 * 

@@ -1,8 +1,5 @@
 package m;
 
-import v.IVideoScaleAware;
-import i.DoomStatusAware;
-import doom.DoomStatus;
 import doom.event_t;
 
 // Emacs style mode select -*- C++ -*-
@@ -31,7 +28,7 @@ import doom.event_t;
  * 
  */
 
-public interface IDoomMenu extends IVideoScaleAware, DoomStatusAware{
+public interface IDoomMenu {
 
     //
     // MENUS

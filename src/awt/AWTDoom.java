@@ -1,254 +1,57 @@
 package awt;
 
-import java.awt.Canvas;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import v.DoomVideoRenderer;
 import doom.DoomMain;
+import java.awt.Canvas;
 
-/** A simple Doom display & keyboard driver for AWT.
- *  Uses a Canvas for painting and implements some
- *  of the IVideo methods.
- * 
- *  Uses 8-bit buffered images and switchable IndexColorModels.
- *  
- *  It's really basic, but allows testing and user interaction.
- *  Heavily based on the original LinuxDoom X11 implementation, and
- *  is similar in goals: just a functional, reference implementation
- *  to build upon whatever fancy extensions you like.
- *  
- *  The only "hitch" is that this implementation expects to be 
- *  initialized upon a BufferedRenderer with multiple images per 
- *  screen buffer in order to perform the palette switching trick.
- *  
- *  The images themselves don't have to be "BufferedImage",
- *  and in theory it could be possible to use e.g. MemoryImageSource
- *  for the same purpose . Oh well.
- *    
- *  
- * 
+/**
+ * A simple Doom display & keyboard driver for AWT. Uses a Canvas for painting and implements some of the IVideo
+ * methods.
+ *
+ * Uses 8-bit buffered images and switchable IndexColorModels.
+ *
+ * It's really basic, but allows testing and user interaction. Heavily based on the original LinuxDoom X11
+ * implementation, and is similar in goals: just a functional, reference implementation to build upon whatever fancy
+ * extensions you like.
+ *
+ * The only "hitch" is that this implementation expects to be initialized upon a BufferedRenderer with multiple images
+ * per screen buffer in order to perform the palette switching trick.
+ *
+ * The images themselves don't have to be "BufferedImage", and in theory it could be possible to use e.g.
+ * MemoryImageSource for the same purpose . Oh well.
+ *
+ *
+ *
  * @author Velktron
  *
  */
-public abstract class AWTDoom<V> extends DoomFrame<V> {
-
-
-		/**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-
-        /** Gimme some raw palette RGB data.
-		 *  I will do the rest
-		 *  
-		 *  (hint: read this from the PLAYPAL
-		 *   lump in the IWAD!!!).
-		 * 
-		 */
-     
-        public AWTDoom(DoomMain<?,V> DM, DoomVideoRenderer<?,V> V) {
-      		super(DM, V);
-      		drawhere=new Canvas();
-      		gelatine=new Canvas();
-        // Don't do anything yet until InitGraphics is called.
-        }
-        
-    	public void SetGamma(int level){
-    		if (D) System.err.println("Setting gamma "+level);
-    		V.setUsegamma(level);
-    		screen=V.getCurrentScreen(); // Refresh screen after change.
-    		RAWSCREEN=V.getScreen(DoomVideoRenderer.SCREEN_FG);
-    	}
-        
-public static final class HiColor extends AWTDoom<short[]>{
+class AWTDoom<V> extends DoomFrame<V> {
     
     /**
-     * 
+     * Gimme some raw palette RGB data. I will do the rest
+     *
+     * (hint: read this from the PLAYPAL lump in the IWAD!!!).
      */
-    private static final long serialVersionUID = 1L;
-
-    public HiColor(DoomMain<?, short[]> DM, DoomVideoRenderer<?,short[]> V) {
-        super(DM, V);
+    AWTDoom(DoomMain<?, V> DM) {
+        super(DM);
     }
 
     @Override
-    public void ReadScreen(short[] scr) {
-        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
+    protected Canvas createCanvas() {
+        return this.drawhere = new Canvas();
+    }
+
+    @Override
+    public void SetGamma(int level) {
+        if (D) {
+            System.err.println("Setting gamma " + level);
         }
-    
+        DOOM.graphicSystem.setUsegamma(level);
+    }
+
     @Override
     public void FinishUpdate() {
-        int     tics;
-        int     i;
-        
-        // draws little dots on the bottom of the screen
-        /*if (true)
-        {
-
-        i = I.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics > 20) tics = 20;
-        if (tics < 1) tics = 1;
-
-        for (i=0 ; i<tics*2 ; i+=2)
-            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
-        
-        } */
-
-        if (true)
-        {
-
-        i = TICK.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics<1) 
-            frames++;
-        else
-        {
-        //frames*=35;
-        for (i=0 ; i<frames*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = (short) 0xffff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = 0x0;
-        frames=0;
-        }
-        }
-
         this.update(null);
-        //this.getInputContext().selectInputMethod(java.util.Locale.US);
-        
     }
-}
-
-public static final class Indexed extends AWTDoom<byte[]>{
-    
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-
-    public Indexed(DoomMain<?,byte[]> DM, DoomVideoRenderer<?,byte[]> V) {
-        super(DM, V);
-    }
-
-    @Override
-    public void ReadScreen(byte[] scr) {
-        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
-        }
-    
-    @Override
-    public void FinishUpdate() {
-        int     tics;
-        int     i;
-        
-        // draws little dots on the bottom of the screen
-        /*if (true)
-        {
-
-        i = I.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics > 20) tics = 20;
-        if (tics < 1) tics = 1;
-
-        for (i=0 ; i<tics*2 ; i+=2)
-            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
-        
-        } */
-
-        if (true)
-        {
-
-        i = TICK.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics<1) 
-            frames++;
-        else
-        {
-        //frames*=35;
-        for (i=0 ; i<frames*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = (short) 0xffff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = 0x0;
-        frames=0;
-        }
-        }
-
-        this.update(null);
-        //this.getInputContext().selectInputMethod(java.util.Locale.US);
-        
-    }
-}
-
-public static final class TrueColor extends AWTDoom<int[]>{
-    
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
-
-    public TrueColor(DoomMain<?, int[]> DM, DoomVideoRenderer<?,int[]> V) {
-        super(DM, V);
-    }
-
-    @Override
-    public void ReadScreen(int[] scr) {
-        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
-        }
-    
-    @Override
-    public void FinishUpdate() {
-        int     tics;
-        int     i;
-        
-        // draws little dots on the bottom of the screen
-        /*if (true)
-        {
-
-        i = I.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics > 20) tics = 20;
-        if (tics < 1) tics = 1;
-
-        for (i=0 ; i<tics*2 ; i+=2)
-            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
-        
-        } */
-
-        if (true)
-        {
-
-        i = TICK.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics<1) 
-            frames++;
-        else
-        {
-        //frames*=35;
-        for (i=0 ; i<frames*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = (short) 0xffff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = 0x0;
-        frames=0;
-        }
-        }
-
-        this.update(null);
-        //this.getInputContext().selectInputMethod(java.util.Locale.US);
-        
-    }
-}
-
 }
 
 //$Log: AWTDoom.java,v $

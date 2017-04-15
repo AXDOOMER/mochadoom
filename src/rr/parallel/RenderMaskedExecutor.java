@@ -1,10 +1,8 @@
 package rr.parallel;
 
 import i.IDoomSystem;
-
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-
 import rr.IDetailAware;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
@@ -15,6 +13,7 @@ import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
+import v.tables.BlurryTable;
 
 /**
  * This is what actual executes the RenderWallInstruction. Essentially it's a
@@ -134,7 +133,7 @@ public abstract class RenderMaskedExecutor<T,V>
 
         public HiColor(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
                 int[] ylookup, short[] screen, ColVars<byte[], short[]>[] RMI,
-                CyclicBarrier barrier,IDoomSystem I) {
+                CyclicBarrier barrier,IDoomSystem I, BlurryTable BLURRY_MAP) {
             super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
             
             // Regular masked columns
@@ -142,8 +141,8 @@ public abstract class RenderMaskedExecutor<T,V>
             this.colfunclow = new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
             
             // Fuzzy columns
-            this.fuzzfunchi= new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
-            this.fuzzfunclow =new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.fuzzfunchi= new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I,BLURRY_MAP);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I,BLURRY_MAP);
 
             // Translated columns
             this.transfunchi=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
@@ -157,7 +156,7 @@ public abstract class RenderMaskedExecutor<T,V>
 
         public Indexed(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
                 int[] ylookup, byte[] screen, ColVars<byte[], byte[]>[] RMI,
-                CyclicBarrier barrier,IDoomSystem I,byte[] BLURRY_MAP) {
+                CyclicBarrier barrier,IDoomSystem I, BlurryTable BLURRY_MAP) {
             super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
             
             // Regular masked columns
@@ -180,7 +179,7 @@ public abstract class RenderMaskedExecutor<T,V>
 
         public TrueColor(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
                 int[] ylookup, int[] screen, ColVars<byte[], int[]>[] RMI,
-                CyclicBarrier barrier,IDoomSystem I) {
+                CyclicBarrier barrier,IDoomSystem I, BlurryTable BLURRY_MAP) {
             super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
             
             // Regular masked columns
@@ -188,8 +187,8 @@ public abstract class RenderMaskedExecutor<T,V>
             this.colfunclow = new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
             
             // Fuzzy columns
-            this.fuzzfunchi= new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
-            this.fuzzfunclow =new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.fuzzfunchi= new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I,BLURRY_MAP);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I,BLURRY_MAP);
 
             // Translated columns
             this.transfunchi=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);

@@ -10,16 +10,17 @@ public class MilliTicker
      * returns time in 1/70th second tics
      */
    
-    @Override    public int GetTime ()
-    {
-        long    tp;
+    @Override
+    public int GetTime() {
+        long tp;
         //struct timezone   tzp;
-        int         newtics;
-        
-        tp=System.currentTimeMillis();
-        if (basetime==0)
-        basetime = tp;
-        newtics = (int) (((tp-basetime)*TICRATE)/1000);
+        int newtics;
+
+        tp = System.currentTimeMillis();
+        if (basetime == 0) {
+            basetime = tp;
+        }
+        newtics = (int) (((tp - basetime) * TICRATE) / 1000);
         return newtics;
     }
     

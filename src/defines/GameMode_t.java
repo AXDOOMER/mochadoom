@@ -14,5 +14,7 @@ retail,   // DOOM 1 retail, E4, M36
 pack_tnt, // TNT mission pack
 pack_plut,    // Plutonia pack
 pack_xbla,    // XBLA Doom. How you got hold of it, I don't care :-p
+freedoom1,    // Freedoom phase 1 
+freedoom2,    // Freedoom phase 2
 indetermined  // Well, no IWAD found.  
 } ;

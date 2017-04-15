@@ -1,21 +1,18 @@
 package s;
 
 import static data.sounds.S_sfx;
-
+import data.sounds.sfxenum_t;
+import doom.DoomMain;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
-
 import pooling.AudioChunkPool;
-import data.sounds.sfxenum_t;
-import doom.DoomStatus;
 
 /**
  * A spiffy new sound system, based on the Classic sound driver.
@@ -39,8 +36,7 @@ import doom.DoomStatus;
  * @author Maes
  */
 
-public class SuperDoomSoundDriver extends AbstractSoundDriver
-         {
+public class SuperDoomSoundDriver extends AbstractSoundDriver {
 
     protected final Semaphore produce;
 
@@ -61,8 +57,8 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
     protected final Timer MIXTIMER;
         
-    public SuperDoomSoundDriver(DoomStatus DS, int numChannels) {
-    	super(DS,numChannels);
+    public SuperDoomSoundDriver(DoomMain DM, int numChannels) {
+    	super(DM,numChannels);
         channels = new boolean[numChannels];
         produce = new Semaphore(1);
         consume = new Semaphore(1);
@@ -194,7 +190,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         int i;
         int rc = -1;
 
-        int oldest = DS.gametic;
+        int oldest = DM.gametic;
         int oldestnum = 0;
         int slot;
 
@@ -284,7 +280,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         // ???
         m.remainder = 0;
         // Should be gametic, I presume.
-        channelstart[slot] = DS.gametic;
+        channelstart[slot] = DM.gametic;
 
         // Separation, that is, orientation/stereo.
         // range is: 1 - 256
@@ -300,10 +296,10 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         // Sanity check, clamp volume.
 
         if (rightvol < 0 || rightvol > 127)
-            DS.I.Error("rightvol out of bounds");
+            DM.doomSystem.Error("rightvol out of bounds");
 
         if (leftvol < 0 || leftvol > 127)
-            DS.I.Error("leftvol out of bounds");
+            DM.doomSystem.Error("leftvol out of bounds");
 
         // Get the proper lookup table piece
         // for this volume level???
@@ -619,7 +615,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
 	                    // Get the raw data from the channel.
 	                    // Maes: this is supposed to be an 8-bit unsigned value.
-	                        sample = 0x00FF & channels[chan][channel_pointer];
+                        sample = 0x00FF & channels[chan][channel_pointer];
 	                        
 	                    // Add left and right part for this channel (sound)
 	                    // to the current data. Adjust volume accordingly.                        
@@ -886,10 +882,10 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         // Sanity check, clamp volume.
 
         if (rightvol < 0 || rightvol > 127)
-            DS.I.Error("rightvol out of bounds");
+            DM.doomSystem.Error("rightvol out of bounds");
 
         if (leftvol < 0 || leftvol > 127)
-            DS.I.Error("leftvol out of bounds");
+            DM.doomSystem.Error("leftvol out of bounds");
 
         MixMessage m=new MixMessage();
         

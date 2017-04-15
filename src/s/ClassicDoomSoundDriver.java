@@ -1,19 +1,16 @@
 package s;
 
 import static data.sounds.S_sfx;
-
+import data.sounds.sfxenum_t;
+import doom.DoomMain;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
-
 import pooling.AudioChunkPool;
-import data.sounds.sfxenum_t;
-import doom.DoomStatus;
 
 /**
  * A close recreation of the classic linux doom sound mixer.
@@ -48,8 +45,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     protected HashMap<Integer, byte[]> cachedSounds =
         new HashMap<Integer, byte[]>();
 
-    public ClassicDoomSoundDriver(DoomStatus<?,?> DS, int numChannels) {
-    	super(DS,numChannels);
+    public ClassicDoomSoundDriver(DoomMain<?,?> DM, int numChannels) {
+    	super(DM,numChannels);
         channelleftvol_lookup = new int[numChannels][];
         channelrightvol_lookup = new int[numChannels][];
         channelstep = new int[numChannels];
@@ -350,7 +347,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         int i;
         int rc = -1;
 
-        int oldest = DS.gametic;
+        int oldest = DM.gametic;
         int oldestnum = 0;
         int slot;
 
@@ -431,7 +428,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // ???
         channelstepremainder[slot] = 0;
         // Should be gametic, I presume.
-        channelstart[slot] = DS.gametic;
+        channelstart[slot] = DM.gametic;
 
         // Separation, that is, orientation/stereo.
         // range is: 1 - 256
@@ -667,10 +664,10 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // Sanity check, clamp volume.
 
         if (rightvol < 0 || rightvol > 127)
-            DS.I.Error("rightvol out of bounds");
+            DM.doomSystem.Error("rightvol out of bounds");
 
         if (leftvol < 0 || leftvol > 127)
-            DS.I.Error("leftvol out of bounds");
+            DM.doomSystem.Error("leftvol out of bounds");
 
         // Get the proper lookup table piece
         // for this volume level???

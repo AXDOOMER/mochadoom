@@ -5,14 +5,13 @@ import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MAPBLOCKUNITS;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.PU_LEVEL;
+import data.Limits;
+import data.mapthing_t;
+import doom.DoomMain;
+import m.BBox;
 import static m.fixed_t.FRACBITS;
 import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
-import static utils.C2JUtils.flags;
-import m.BBox;
-import i.IDoomSystem;
-import rr.Renderer;
-import rr.TextureManager;
 import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
@@ -20,13 +19,8 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
-import s.IDoomSound;
 import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import w.IWadLoader;
-import data.Limits;
-import data.mapthing_t;
-import doom.DoomStatus;
+import static utils.C2JUtils.flags;
 
 /**
  * The idea is to lump common externally readable properties that need DIRECT
@@ -39,57 +33,29 @@ import doom.DoomStatus;
  * @author velktron
  */
 
-public abstract class AbstractLevelLoader
-        implements ILevelLoader {
+public abstract class AbstractLevelLoader implements ILevelLoader {
 
     // ///////////////// Status objects ///////////////////
 
-    IDoomSystem I;
-
-    IWadLoader W;
-
-    DoomStatus<?,?> DM;
-
-    DoomVideoRenderer<?,?> V;
-
-    Renderer<?,?> R;
-
-    TextureManager<?> TM;
-
-    Actions P;
-
-    IDoomSound S;
+    final DoomMain<?,?> DOOM;
 
     //
     // MAP related Lookup tables.
     // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
     //
     public int numvertexes;
-
     public vertex_t[] vertexes;
-
     public int numsegs;
-
     public seg_t[] segs;
-
     public int numsectors;
-
     public sector_t[] sectors;
-
     public int numsubsectors;
-
     public subsector_t[] subsectors;
-
     public int numnodes;
-
     public node_t[] nodes;
-
     public int numlines;
-
     public line_t[] lines;
-
     public int numsides;
-
     public side_t[] sides;
 
     // BLOCKMAP
@@ -141,20 +107,8 @@ public abstract class AbstractLevelLoader
 
     protected mapthing_t[] playerstarts = new mapthing_t[Limits.MAXPLAYERS];
 
-    public AbstractLevelLoader(DoomStatus<?,?> DC) {
-        this.updateStatus(DC);
-    }
-
-    @Override
-    public void updateStatus(DoomStatus<?,?> DC) {
-        this.W = DC.W;
-        this.DM = DC;
-        this.P = DC.P;
-        this.R = DC.R;
-        this.I = DC.I;
-        this.S = DC.S;
-        this.TM = DC.TM;
-
+    public AbstractLevelLoader(DoomMain<?,?> DOOM) {
+        this.DOOM = DOOM;
     }
 
     /**
@@ -834,7 +788,7 @@ public abstract class AbstractLevelLoader
         // _D_: uncommented the rejectmatrix variable, this permitted changing
         // level to work
         try {
-            tmpreject = W.CacheLumpNumAsRawBytes(lumpnum, PU_LEVEL);
+            tmpreject = DOOM.wadLoader.CacheLumpNumAsRawBytes(lumpnum, PU_LEVEL);
         } catch (Exception e) {
             // Any exception at this point means missing REJECT lump. Fuck that,
             // and move on.

@@ -23,20 +23,9 @@ package st;
 //
 //-----------------------------------------------------------------------------
 
-import i.DoomStatusAware;
-import v.IVideoScaleAware;
 import doom.event_t;
 
-public interface IDoomStatusBar extends IVideoScaleAware,DoomStatusAware{
-
-    
-    
-    /** Points to "screen 4" which is treated as a buffer */
-    static final int BG =4;
-
-    /** Points to "screen 0" which is what you actually see */
-     static final int FG =0;
-
+public interface IDoomStatusBar {
     //
     // STATUS BAR
     //

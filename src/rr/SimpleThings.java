@@ -1,5 +1,7 @@
 package rr;
 
+import v.scale.VideoScale;
+
 /**
  * A very "simple" things class which just does serial rendering and uses all
  * the base methods from AbstractThings.
@@ -10,15 +12,14 @@ package rr;
  */
 
 
-public final class SimpleThings<T,V>
-        extends AbstractThings<T,V> {
+public final class SimpleThings<T,V> extends AbstractThings<T,V> {
 
-    public SimpleThings(Renderer<T, V> R) {
-        super(R);
+    public SimpleThings(VideoScale vs, SceneRenderer<T, V> R) {
+        super(vs, R);
     }
 
     @Override
     public void completeColumn() {
         colfunc.invoke();
-        }
+    }
 }

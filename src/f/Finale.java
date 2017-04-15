@@ -1,42 +1,38 @@
 package f;
 
+import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.HU_FONTSIZE;
 import static data.Defines.HU_FONTSTART;
 import static data.Defines.PU_CACHE;
 import static data.Defines.PU_LEVEL;
-import static data.Defines.FF_FRAMEMASK;
 import static data.Limits.MAXPLAYERS;
 import static data.info.mobjinfo;
 import static data.info.states;
+import data.mobjtype_t;
+import data.sounds.musicenum_t;
+import data.sounds.sfxenum_t;
+import data.state_t;
+import defines.*;
+import doom.DoomMain;
 import static doom.englsh.*;
-import static utils.C2JUtils.*;
-import hu.HU;
-import i.DoomStatusAware;
-
+import doom.event_t;
+import doom.evtype_t;
+import doom.gameaction_t;
+import i.Game;
+import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import rr.ISpriteManager;
+import m.Settings;
 import rr.flat_t;
 import rr.patch_t;
 import rr.spritedef_t;
 import rr.spriteframe_t;
-import s.IDoomSound;
 import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import v.IVideoScale;
-import v.IVideoScaleAware;
-import w.IWadLoader;
-import data.mobjtype_t;
-import data.sounds.musicenum_t;
-import data.state_t;
-import defines.*;
-import data.sounds.sfxenum_t;
-import doom.DoomStatus;
-import doom.IDoomGame;
-import doom.event_t;
-import doom.evtype_t;
-import doom.gameaction_t;
+import static utils.C2JUtils.*;
+import static v.DoomGraphicSystem.*;
+import v.renderers.DoomScreen;
+import static v.renderers.DoomScreen.*;
+import v.graphics.Blocks;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -60,17 +56,11 @@ import doom.gameaction_t;
 //
 //-----------------------------------------------------------------------------
 
-public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
+public class Finale<T> {
 
 	public static final String rcsid = "$Id: Finale.java,v 1.28 2012/09/24 17:16:23 velktron Exp $";
 
-	IDoomGame DG;
-	DoomStatus<?,?> DS;
-	DoomVideoRenderer<T,?> V;
-	IDoomSound S;
-	HU HU;
-	IWadLoader W;
-	ISpriteManager SM;
+	final DoomMain<T, ?> DOOM;
 
 	int finalestage;
 
@@ -93,16 +83,17 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 	 * F_StartFinale
 	 */
 	public void StartFinale() {
-		DG.setGameAction(gameaction_t.ga_nothing);
-		DS.gamestate = gamestate_t.GS_FINALE;
-		DS.viewactive = false;
-		DS.automapactive = false;
+		DOOM.setGameAction(gameaction_t.ga_nothing);
+		DOOM.gamestate = gamestate_t.GS_FINALE;
+		DOOM.viewactive = false;
+		DOOM.automapactive = false;
 		String[] texts = null;
 
 		// Pick proper text.
-		switch (DS.getGameMode()) {
+		switch (DOOM.getGameMode()) {
 		case commercial:
 		case pack_xbla:
+        case freedoom2:
 			texts = doom2_text;
 			break;
 		case pack_tnt:
@@ -114,6 +105,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		case shareware:
 		case registered:
 		case retail:
+        case freedoom1:
 			texts = doom_text;
 			break;
 		}
@@ -121,15 +113,16 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		// Okay - IWAD dependend stuff.
 		// This has been changed severly, and
 		// some stuff might have changed in the process.
-		switch (DS.getGameMode()) {
+		switch (DOOM.getGameMode()) {
 
 		// DOOM 1 - E1, E3 or E4, but each nine missions
+        case freedoom1:
 		case shareware:
 		case registered:
 		case retail: {
-			S.ChangeMusic(musicenum_t.mus_victor, true);
+			DOOM.doomSound.ChangeMusic(musicenum_t.mus_victor, true);
 
-			switch (DS.gameepisode) {
+			switch (DOOM.gameepisode) {
 			case 1:
 				finaleflat = "FLOOR4_8";
 				finaletext = texts[0];
@@ -154,13 +147,14 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		}
 
 			// DOOM II and missions packs with E1, M34
+        case freedoom2:
 		case commercial:
 		case pack_xbla:
 		case pack_tnt:
 		case pack_plut: {
-			S.ChangeMusic(musicenum_t.mus_read_m, true);
+			DOOM.doomSound.ChangeMusic(musicenum_t.mus_read_m, true);
 
-			switch (DS.gamemap) {
+			switch (DOOM.gamemap) {
 			case 6:
 				finaleflat = "SLIME16";
 				finaletext = texts[0];
@@ -194,10 +188,9 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 
 			// Indeterminate.
 		default:
-			S.ChangeMusic(musicenum_t.mus_read_m, true);
+			DOOM.doomSound.ChangeMusic(musicenum_t.mus_read_m, true);
 			finaleflat = "F_SKY1"; // Not used anywhere else.
 			finaletext = doom2_text[1];
-			; // FIXME - other text, music?
 			break;
 		}
 
@@ -221,17 +214,17 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		int i;
 
 		// check for skipping
-		if ((DS.isCommercial()) && (finalecount > 50)) {
+		if ((DOOM.isCommercial()) && (finalecount > 50)) {
 			// go on to the next level
 			for (i = 0; i < MAXPLAYERS; i++)
-				if (DS.players[i].cmd.buttons != 0)
+				if (DOOM.players[i].cmd.buttons != 0)
 					break;
 
 			if (i < MAXPLAYERS) {
-				if (DS.gamemap == 30)
+				if (DOOM.gamemap == 30)
 					StartCast();
 				else
-					DG.setGameAction(gameaction_t.ga_worlddone);
+					DOOM.setGameAction(gameaction_t.ga_worlddone);
 			}
 		}
 
@@ -243,17 +236,17 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 			return;
 		}
 
-		if (DS.isCommercial())
+		if (DOOM.isCommercial())
 			return;
 		// MAES: this is when we can transition to bunny.
 		if ((finalestage == 0)
 				&& finalecount > finaletext.length() * TEXTSPEED + TEXTWAIT) {
 			finalecount = 0;
 			finalestage = 1;
-			DS.wipegamestate = gamestate_t.GS_MINUS_ONE; // force a wipe
-			if (DS.gameepisode == 3)
+			DOOM.wipegamestate = gamestate_t.GS_MINUS_ONE; // force a wipe
+			if (DOOM.gameepisode == 3)
 
-				S.StartMusic(musicenum_t.mus_bunny);
+				DOOM.doomSound.StartMusic(musicenum_t.mus_bunny);
 		}
 	}
 
@@ -266,7 +259,6 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 
 	@SuppressWarnings("unchecked")
     public void TextWrite() {
-		T src;
 		//V dest;
 		int w;
 		int count;
@@ -276,22 +268,14 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		int cy;
 
 		// erase the entire screen to a tiled background
-		src = (T)((flat_t) W.CacheLumpName(finaleflat, PU_CACHE, flat_t.class)).data;
-		//dest = V.getScreen(DoomVideoRenderer.SCREEN_FG);
-
-		for (int y = 0; y < SCREENHEIGHT; y+=64) {
-			
-			int y_maxdraw=Math.min(SCREENHEIGHT-y, 64);
-			
-			// Draw whole blocks.
-			for (int x = 0; x < SCREENWIDTH; x+=64) {
-				int x_maxdraw=Math.min(SCREENWIDTH-x, 64);
-				V.DrawBlock(x, y, DoomVideoRenderer.SCREEN_FG, x_maxdraw,y_maxdraw,
-						src);
-			}
-		}
-
-		V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT);
+		byte[] src = DOOM.wadLoader.CacheLumpName(finaleflat, PU_CACHE, flat_t.class).data;
+        if (Game.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
+            final Object scaled = ((Blocks<Object, DoomScreen>) DOOM.graphicSystem)
+                .ScaleBlock(DOOM.graphicSystem.convertPalettedBlock(src), 64, 64, DOOM.graphicSystem.getScalingX(), DOOM.graphicSystem.getScalingY());
+            
+            ((Blocks<Object, DoomScreen>) DOOM.graphicSystem).TileScreen(FG, scaled, new Rectangle(0, 0, 64 * DOOM.graphicSystem.getScalingX(), 64 * DOOM.graphicSystem.getScalingY()));
+        } else
+            ((Blocks<Object, DoomScreen>) DOOM.graphicSystem).TileScreen(FG, DOOM.graphicSystem.convertPalettedBlock(src), new Rectangle(0, 0, 64, 64));
 
 		// draw some of the text onto the screen
 		cx = 10;
@@ -323,9 +307,9 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 			}
 
 			w = hu_font[c].width;
-			if (cx + w > SCREENWIDTH)
+			if (cx + w > DOOM.vs.getScreenWidth())
 				break;
-			V.DrawScaledPatch(cx, cy, 0, vs, hu_font[c]);
+			DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, cx, cy);
 			cx += w;
 		}
 
@@ -347,7 +331,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 	// extern gamestate_t wipegamestate;
 
 	public void StartCast() {
-		DS.wipegamestate = gamestate_t.GS_MINUS_ONE; // force a screen wipe
+		DOOM.wipegamestate = gamestate_t.GS_MINUS_ONE; // force a screen wipe
 		castnum = 0;
 		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate
 				.ordinal()];
@@ -357,7 +341,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		castframes = 0;
 		castonmelee = 0;
 		castattacking = false;
-		S.ChangeMusic(musicenum_t.mus_evil, true);
+		DOOM.doomSound.ChangeMusic(musicenum_t.mus_evil, true);
 	}
 
 	//
@@ -379,7 +363,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 				castnum = 0;
 			if (mobjinfo[castorder[castnum].type.ordinal()].seesound.ordinal() != 0)
 				;
-			S.StartSound(null,
+			DOOM.doomSound.StartSound(null,
 					mobjinfo[castorder[castnum].type.ordinal()].seesound);
 			caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate
 					.ordinal()];
@@ -464,7 +448,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 			}
 
 			if (sfx != null) // Fixed mute thanks to _D_ 8/6/2011
-				S.StartSound(null, sfx);
+				DOOM.doomSound.StartSound(null, sfx);
 		}
 
 		if (castframes == 12) {
@@ -530,7 +514,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		castframes = 0;
 		castattacking = false;
 		if (mobjinfo[castorder[castnum].type.ordinal()].deathsound != null)
-			S.StartSound(null,
+			DOOM.doomSound.StartSound(null,
 					mobjinfo[castorder[castnum].type.ordinal()].deathsound);
 
 		return true;
@@ -575,7 +559,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 			}
 
 			w = hu_font[c].width;
-			V.DrawScaledPatch(cx, 180, 0, vs, hu_font[c]);
+			DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, cx, 180);
 			cx += w;
 		}
 
@@ -597,26 +581,24 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		patch_t patch = null;
 
 		// erase the entire screen to a background
-		V.DrawPatchSolidScaled(0, 0, SAFE_SCALE, SAFE_SCALE, 0,
-				W.CachePatchName("BOSSBACK", PU_CACHE));
+		DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("BOSSBACK", PU_CACHE), DOOM.vs, 0, 0);
 
 		this.CastPrint(castorder[castnum].name);
 
 		// draw the current frame in the middle of the screen
-		sprdef = SM.getSprite(caststate.sprite.ordinal());
+		sprdef = DOOM.spriteManager.getSprite(caststate.sprite.ordinal());
 		sprframe = sprdef.spriteframes[caststate.frame & FF_FRAMEMASK];
 		lump = sprframe.lump[0];
 		flip = eval(sprframe.flip[0]);
 		// flip=false;
 		// lump=0;
 
-		patch = W.CachePatchNum(lump + SM.getFirstSpriteLump());
+		patch = DOOM.wadLoader.CachePatchNum(lump + DOOM.spriteManager.getFirstSpriteLump());
 
 		if (flip)
-			V.DrawScaledPatch(160, 170, 0 | DoomVideoRenderer.V_FLIPPEDPATCH,
-					vs, patch);
+			DOOM.graphicSystem.DrawPatchScaled(FG, patch, DOOM.vs, 160, 170, V_FLIPPEDPATCH);
 		else
-			V.DrawScaledPatch(160, 170, 0, vs, patch);
+			DOOM.graphicSystem.DrawPatchScaled(FG, patch, DOOM.vs, 160, 170);
 	}
 
 	protected int laststage;
@@ -632,10 +614,10 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		String name;
 		int stage;
 
-		p1 = W.CachePatchName("PFUB2", PU_LEVEL);
-		p2 = W.CachePatchName("PFUB1", PU_LEVEL);
+		p1 = DOOM.wadLoader.CachePatchName("PFUB2", PU_LEVEL);
+		p2 = DOOM.wadLoader.CachePatchName("PFUB1", PU_LEVEL);
 
-		V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT);
+		//V.MarkRect(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight());
 
 		scrolled = 320 - (finalecount - 230) / 2;
 		if (scrolled > 320)
@@ -644,17 +626,17 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 			scrolled = 0;
 
 		for (x = 0; x < 320; x++) {
-			if (x + scrolled < 320)
-				V.DrawPatchColScaled(x, p1, x + scrolled, vs, 0);
-			else
-				V.DrawPatchColScaled(x, p2, x + scrolled - 320, vs, 0);
+			if (x + scrolled < 320) {
+                DOOM.graphicSystem.DrawPatchColScaled(FG, p1, DOOM.vs, x, x + scrolled);
+            } else {
+                DOOM.graphicSystem.DrawPatchColScaled(FG, p2, DOOM.vs, x, x + scrolled - 320);
+            }
 		}
 
-		if (finalecount < 1130)
+		if (finalecount < 1130) {
 			return;
-		if (finalecount < 1180) {
-			V.DrawScaledPatch((320 - 13 * 8) / 2, (320 - 8 * 8) / 2, 0, vs,
-					W.CachePatchName("END0", PU_CACHE));
+        } else if (finalecount < 1180) {
+			DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("END0", PU_CACHE), DOOM.vs, (320 - 13 * 8) / 2, ((200 - 8 * 8) / 2));
 			laststage = 0;
 			return;
 		}
@@ -663,13 +645,12 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		if (stage > 6)
 			stage = 6;
 		if (stage > laststage) {
-			S.StartSound(null, sfxenum_t.sfx_pistol);
+			DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pistol);
 			laststage = stage;
 		}
 
 		name = ("END" + stage);
-		V.DrawScaledPatch((320 - 13 * 8) / 2, (320 - 8 * 8) / 2, 0, vs,
-				W.CachePatchName(name, PU_CACHE));
+		DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(name, PU_CACHE), DOOM.vs, (320 - 13 * 8) / 2, ((200 - 8 * 8) / 2));
 	}
 
 	//
@@ -681,31 +662,25 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 			return;
 		}
 
-		if (finalestage == 0)
+		if (finalestage == 0) {
 			TextWrite();
-		else {
-			switch (DS.gameepisode) {
+        } else {
+			switch (DOOM.gameepisode) {
 			case 1:
-				if (DS.isCommercial() || DS.isRegistered())
-					V.DrawPatchSolidScaled(0, 0, this.SAFE_SCALE,
-							this.SAFE_SCALE, 0,
-							W.CachePatchName("CREDIT", PU_CACHE));
+				if (DOOM.isCommercial() || DOOM.isRegistered())
+					DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("CREDIT", PU_CACHE), this.DOOM.vs, 0, 0);
 				else
 					// Fun fact: Registered/Ultimate Doom has no "HELP2" lump.
-					V.DrawPatchSolidScaled(0, 0, this.SAFE_SCALE,
-							this.SAFE_SCALE, 0,
-							W.CachePatchName("HELP2", PU_CACHE));
+					DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("HELP2", PU_CACHE), this.DOOM.vs, 0, 0);
 				break;
 			case 2:
-				V.DrawPatchSolidScaled(0, 0, this.SAFE_SCALE, this.SAFE_SCALE,
-						0, W.CachePatchName("VICTORY2", PU_CACHE));
+				DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("VICTORY2", PU_CACHE), this.DOOM.vs, 0, 0);
 				break;
 			case 3:
 				BunnyScroll();
 				break;
 			case 4:
-				V.DrawPatchSolidScaled(0, 0, this.SAFE_SCALE, this.SAFE_SCALE,
-						0, W.CachePatchName("ENDPIC", PU_CACHE));
+				DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("ENDPIC", PU_CACHE), this.DOOM.vs, 0, 0);
 				break;
 			}
 		}
@@ -713,9 +688,9 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Finale(DoomStatus DC) {
-		this.updateStatus(DC);
-		hu_font = HU.getHUFonts();
+	public Finale(DoomMain DOOM) {
+		this.DOOM = DOOM;
+		hu_font = DOOM.handsUp.getHUFonts();
 
 		castinfo_t shit = new castinfo_t(CC_ZOMBIE, mobjtype_t.MT_POSSESSED);
 
@@ -744,41 +719,6 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		crap.toArray(castorder);
 
 	}
-
-	@Override
-	public void updateStatus(DoomStatus<?,?> DC) {
-		this.DG = DC.DG;
-		this.DS = DC.DM;
-		V = (DoomVideoRenderer<T,?>) DC.V;
-		S = DC.S;
-		HU = DC.HU;
-		W = DC.W;
-		SM = DC.SM;
-	}
-
-	// //////////////////////////VIDEO SCALE STUFF
-	// ////////////////////////////////
-
-	protected int SCREENWIDTH;
-	protected int SCREENHEIGHT;
-	protected int SAFE_SCALE;
-	protected IVideoScale vs;
-
-	@Override
-	public void setVideoScale(IVideoScale vs) {
-		this.vs = vs;
-	}
-
-	@Override
-	public void initScaling() {
-		this.SCREENHEIGHT = vs.getScreenHeight();
-		this.SCREENWIDTH = vs.getScreenWidth();
-		this.SAFE_SCALE = vs.getSafeScaling();
-
-		// Pre-scale stuff.
-
-	}
-
 }
 
 // /$Log

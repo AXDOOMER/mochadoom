@@ -1,15 +1,14 @@
 package rr;
 
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FixedMul;
-import static utils.C2JUtils.eval;
-
+import i.Game;
 import java.util.Arrays;
-
-import p.Resettable;
-import utils.C2JUtils;
 import m.BBox;
 import m.ISyncLogger;
+import m.Settings;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedMul;
+import p.Resettable;
+import static utils.C2JUtils.eval;
 
 /** BSP node.
  * 
@@ -17,12 +16,10 @@ import m.ISyncLogger;
  *
  */
 public class node_t implements Resettable{
-
-    
-    public node_t(){
-        bbox=new BBox[2];
-        children= new int[2];
-        C2JUtils.initArrayOfObjects(bbox, BBox.class);
+    public node_t() {
+        bbox = new BBox[2];
+        children = new int[2];
+        Arrays.setAll(bbox, i -> new BBox());
     }
     
      public node_t(int x, int y, int dx, int dy, BBox[] bbox,
@@ -175,72 +172,24 @@ public class node_t implements Resettable{
      }
 
   /**
-   * Clone of divline_t's method. Same contract, but working on node_t's to avoid casts.
    * P_DivlineSide
    * Returns side 0 (front), 1 (back), or 2 (on).
+   * Clone of divline_t's method. Same contract, but working on node_t's to avoid casts.
+   * Boom-style code. Da fack.
+   * [Maes]: using it leads to very different DEMO4 UD behavior.
    */
- 	public int
- 	DivlineSide
- 	( int	x,
- 	  int	y)
- 	{
- 	    
- 	      int left,right;
- 	        // Boom-style code. Da fack.
- 	      // [Maes]: using it leads to very different DEMO4 UD behavior.
- 	        
- 	       return
- 	      (this.dx==0) ? x == this.x ? 2 : x <= this.x ? eval(this.dy > 0) : eval(this.dy < 0) :
- 	      (this.dy==0) ? (olddemo ? x : y) == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
- 	      (this.dy==0) ? y == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
- 	      (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS)) <
- 	      (left  = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 :
- 	      right == left ? 2 : 1;
- 	      
- 	    
- 	      /*
- 	    int	dx; // fixed_t
- 	    int	dy;
+ 	public int DivlineSide(int x, int y) {
+        int left,right;
+        return
+            (this.dx==0) ? x == this.x ? 2 : x <= this.x ? eval(this.dy > 0) : eval(this.dy < 0) :
+            (this.dy==0) ? (olddemo ? x : y) == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
+            (this.dy==0) ? y == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
+            (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS)) <
+            (left  = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 :
+            right == left ? 2 : 1;
+    }
 
- 	    if (this.dx==0)
- 	    {
- 		if (x==this.x)
- 		    return 2;
- 		
- 		if (x <= this.x)
- 		    return (this.dy > 0)?1:0;
-
- 		return (this.dy < 0)?1:0;
- 	    }
- 	    
- 	    if (this.dy==0)
- 	    {
- 		if (x==this.y)
- 		    return 2;
-
- 		if (y <= this.y)
- 		    return (this.dx < 0)?1:0;
-
- 		return (this.dx > 0)?1:0;
- 	    }
- 		
- 	    dx = (x - this.x);
- 	    dy = (y - this.y);
-
- 	    left =  (this.dy>>FRACBITS) * (dx>>FRACBITS);
- 	    right = (dy>>FRACBITS) * (this.dx>>FRACBITS);
- 		
- 	    if (right < left)
- 		return 0;	// front side
- 	    
- 	    if (left == right)
- 		return 2;
- 	    return 1;		// back side
- 	    */
- 	    
- 	}
- 	
- 	private static final boolean olddemo = true;
+    private static final boolean olddemo = Game.getConfig().equals(Settings.line_of_sight, Settings.LOS.Vanilla);
  	
  	  public int
  	    DivlineSide

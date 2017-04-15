@@ -2,11 +2,10 @@ package p;
 
 import java.io.IOException;
 
-import i.DoomStatusAware;
 import rr.subsector_t;
 import defines.skill_t;
 
-public interface ILevelLoader extends DoomStatusAware {
+public interface ILevelLoader {
 
 	// Lump order in a map WAD: each map needs a couple of lumps
     // to provide a complete scene geometry description.

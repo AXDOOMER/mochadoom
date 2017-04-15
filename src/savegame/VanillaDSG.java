@@ -1,8 +1,10 @@
 package savegame;
 import static data.Limits.*;
-import i.DoomStatusAware;
-import i.IDoomSystem;
-
+import data.info;
+import doom.DoomMain;
+import doom.player_t;
+import doom.think_t;
+import doom.thinker_t;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,15 +13,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-
-import data.info;
-import doom.DoomStatus;
-import doom.player_t;
-import doom.think_t;
-import doom.thinker_t;
-
-import p.AbstractLevelLoader;
-import p.Actions;
 import p.ThinkerList;
 import p.ceiling_t;
 import p.floormove_t;
@@ -34,18 +27,14 @@ import rr.sector_t;
 import rr.side_t;
 import utils.C2JUtils;
 
-public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
+public class VanillaDSG<T, V> implements IDoomSaveGame {
     
     VanillaDSGHeader header;
-    DoomStatus<?,?> DS;
-    AbstractLevelLoader LL;
-    Actions A;
-    IDoomSystem I;
+    final DoomMain<T, V> DOOM;
     
-    public VanillaDSG(){
-        
+    public VanillaDSG(DoomMain<T, V> DOOM){
+        this.DOOM = DOOM;
     }
-    
 
     @Override
     public void setThinkerList(ThinkerList li) {
@@ -105,27 +94,27 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      for (i=0 ; i<MAXPLAYERS ; i++)
      {
      // Multiplayer savegames are different!
-     if (!DS.playeringame[i])
+     if (!DOOM.playeringame[i])
          continue;
      PADSAVEP(f,maxsize); // this will move us on the 52th byte, instead of 50th.
-     DS.players[i].read(f);
+     DOOM.players[i].read(f);
      
      //memcpy (&players[i],save_p, sizeof(player_t));
      //save_p += sizeof(player_t);
      
      // will be set when unarc thinker
-     DS.players[i].mo = null;   
-     DS.players[i].message = null;
-     DS.players[i].attacker = null;
+     DOOM.players[i].mo = null;   
+     DOOM.players[i].message = null;
+     DOOM.players[i].attacker = null;
 
      
      for (j=0 ; j<player_t.NUMPSPRITES ; j++)
      {
-         if (C2JUtils.eval(DS.players[i].psprites[j].state))
+         if (C2JUtils.eval(DOOM.players[i].psprites[j].state))
          {
              // MAES HACK to accomoadate state_t type punning a-posteriori
-             DS.players[i].psprites[j].state =
-             info.states[DS.players[i].psprites[j].readstate];
+             DOOM.players[i].psprites[j].state =
+             info.states[DOOM.players[i].psprites[j].readstate];
          }
      }
      }
@@ -140,13 +129,13 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      for (int i=0 ; i<MAXPLAYERS ; i++)
      {
      // Multiplayer savegames are different!
-     if (!DS.playeringame[i])
+     if (!DOOM.playeringame[i])
          continue;
      
      PADSAVEP(fo); // this will move us on the 52th byte, instead of 50th.
 
      // State will have to be serialized when saving.
-     DS.players[i].write(fo);
+     DOOM.players[i].write(fo);
 
      //System.out.printf("Player %d has mobj hashcode %d",(1+i),DS.players[i].mo.hashCode());
      }
@@ -164,13 +153,13 @@ protected void ArchiveWorld () throws IOException
   side_t     si;
   
   // do sectors (allocate 14 bytes per sector)
-  ByteBuffer buffer=ByteBuffer.allocate(LL.numsectors*14);
+  ByteBuffer buffer=ByteBuffer.allocate(DOOM.levelLoader.numsectors*14);
   buffer.order(ByteOrder.LITTLE_ENDIAN);
   
   deAdaptSectors();
-  for (i=0; i<LL.numsectors ; i++)
+  for (i=0; i<DOOM.levelLoader.numsectors ; i++)
   {
-      sec=LL.sectors[i];
+      sec=DOOM.levelLoader.sectors[i];
       // MAES: sectors are actually carefully
       // marshalled, so we don't just read/write
       // their entire memory footprint to disk.
@@ -182,23 +171,23 @@ protected void ArchiveWorld () throws IOException
   
   // do lines 
   // Allocate for the worst-case scenario (6+20 per line)
-  buffer=ByteBuffer.allocate(LL.numlines*(6+20));
+  buffer=ByteBuffer.allocate(DOOM.levelLoader.numlines*(6+20));
   buffer.order(ByteOrder.LITTLE_ENDIAN);
   buffer.position(0); 
   
   //final side_t test1=new side_t(0x11111111,0x11111111,(short) 0x1111,(short)0x1111,(short)0x1111,null);
   //final side_t test2=new side_t(0x22222222,0x22222222,(short) 0x2222,(short)0x2222,(short)0x2222,null);
   
-  for (i=0; i<LL.numlines ; i++)
+  for (i=0; i<DOOM.levelLoader.numlines ; i++)
   {
-  li=LL.lines[i];
+  li=DOOM.levelLoader.lines[i];
   li.pack(buffer);
 
   for (j=0 ; j<2 ; j++)
   {
       if (li.sidenum[j] == line_t.NO_INDEX)
       continue;
-      si = LL.sides[li.sidenum[j]];
+      si = DOOM.levelLoader.sides[li.sidenum[j]];
       si.pack(buffer);
       //if (j==0) test1.pack(buffer);
       //else test2.pack(buffer);
@@ -226,9 +215,9 @@ protected final void UnArchiveWorld () throws IOException
 
   //List<sector_t> sectors=new ArrayList<sector_t>();
   // do sectors
-  for (i=0; i<LL.numsectors ; i++)
+  for (i=0; i<DOOM.levelLoader.numsectors ; i++)
   {
-      sec=LL.sectors[i];
+      sec=DOOM.levelLoader.sectors[i];
       // MAES: sectors were actually carefully
       // unmarshalled, so we don't just read/write
       // their entire memory footprint to disk.
@@ -238,9 +227,9 @@ protected final void UnArchiveWorld () throws IOException
   }
   adaptSectors();
   // do lines
-  for (i=0 ; i<LL.numlines ; i++)
+  for (i=0 ; i<DOOM.levelLoader.numlines ; i++)
   {
-  li=LL.lines[i];
+  li=DOOM.levelLoader.lines[i];
   // MAES: something similar occurs with lines, too.
   li.read(f);
   //System.out.println("Line "+i+": "+li);
@@ -256,7 +245,7 @@ protected final void UnArchiveWorld () throws IOException
       }
       // Similarly, sides also get a careful unmarshalling even
       // in vanilla. No "dumb" block reads here.
-      si = LL.sides[li.sidenum[j]];
+      si = DOOM.levelLoader.sides[li.sidenum[j]];
       si.read(f);
 
   }
@@ -271,11 +260,11 @@ protected final void UnArchiveWorld () throws IOException
 
 protected void adaptSectors(){
 	sector_t sec;
-	switch(DS.getGameMode()){
+	switch(DOOM.getGameMode()){
 	case registered:
 	case shareware:
-	for (int i=0;i<LL.numsectors;i++){
-		sec=LL.sectors[i];
+	for (int i=0;i<DOOM.levelLoader.numsectors;i++){
+		sec=DOOM.levelLoader.sectors[i];
 		// Between the F1_START and F1_END mark (in vanilla)
 		if (sec.floorpic<=54){
 			sec.floorpic-=1;
@@ -296,8 +285,8 @@ protected void adaptSectors(){
 	case pack_plut:
 	case pack_tnt:
 		
-		for (int i=0;i<LL.numsectors;i++){
-			sec=LL.sectors[i];
+		for (int i=0;i<DOOM.levelLoader.numsectors;i++){
+			sec=DOOM.levelLoader.sectors[i];
 			// Between the F1_START and F1_END mark (in vanilla)
 			if (sec.floorpic<=54){
 				sec.floorpic-=1;
@@ -328,11 +317,11 @@ protected void adaptSectors(){
 
 protected void deAdaptSectors(){
     sector_t sec;
-    switch(DS.getGameMode()){
+    switch(DOOM.getGameMode()){
     case registered:
     case shareware:
-    for (int i=0;i<LL.numsectors;i++){
-        sec=LL.sectors[i];
+    for (int i=0;i<DOOM.levelLoader.numsectors;i++){
+        sec=DOOM.levelLoader.sectors[i];
         // Between the F1_START and F1_END mark (in vanilla)
         if (sec.floorpic<54){
             sec.floorpic+=1;
@@ -353,8 +342,8 @@ protected void deAdaptSectors(){
     case pack_plut:
     case pack_tnt:
         
-        for (int i=0;i<LL.numsectors;i++){
-            sec=LL.sectors[i];
+        for (int i=0;i<DOOM.levelLoader.numsectors;i++){
+            sec=DOOM.levelLoader.sectors[i];
             // Between the F1_START and F1_END mark (in vanilla)
             if (sec.floorpic<54){
                 sec.floorpic+=1;
@@ -400,7 +389,7 @@ protected void ArchiveThinkers () throws IOException
     mobj_t     mobj;
 
 // save off the current thinkers
-for (th = A.getThinkerCap().next ; th != A.getThinkerCap(); th=th.next)
+for (th = DOOM.actions.getThinkerCap().next ; th != DOOM.actions.getThinkerCap(); th=th.next)
 {
 if (th.function!=null && th.function==think_t.P_MobjThinker)
 {
@@ -444,13 +433,13 @@ protected void UnArchiveThinkers () throws IOException
  
  // remove all the current thinkers
  
- currentthinker = A.getThinkerCap().next;
- while (currentthinker!=null && currentthinker != A.getThinkerCap())
+ currentthinker = DOOM.actions.getThinkerCap().next;
+ while (currentthinker!=null && currentthinker != DOOM.actions.getThinkerCap())
  {
  next = currentthinker.next;
  
  if (currentthinker.function ==  think_t.P_MobjThinker)
-     A.RemoveMobj ((mobj_t)currentthinker);
+     DOOM.actions.RemoveMobj ((mobj_t)currentthinker);
  else{
      //currentthinker.next.prev=currentthinker.prev;
      //currentthinker.prev.next=currentthinker.next;
@@ -460,7 +449,7 @@ protected void UnArchiveThinkers () throws IOException
  currentthinker = next;
  }
  
- A.InitThinkers ();
+ DOOM.actions.InitThinkers ();
  
  // read in saved thinkers
  boolean end=false;
@@ -477,7 +466,7 @@ protected void UnArchiveThinkers () throws IOException
          
    case tc_mobj:
      PADSAVEP(f,maxsize);     
-     mobj=new mobj_t(A);
+     mobj=new mobj_t(DOOM.actions);
      mobj.read(f);
      mobj.id=++id;
      TL.add(mobj);
@@ -485,20 +474,20 @@ protected void UnArchiveThinkers () throws IOException
      mobj.target = null;
      if (mobj.playerid!=0)
      {
-     mobj.player = DS.players[mobj.playerid-1];
+     mobj.player = DOOM.players[mobj.playerid-1];
      mobj.player.mo = mobj;
 
      }
-     LL.SetThingPosition (mobj);
+     DOOM.levelLoader.SetThingPosition (mobj);
      mobj.info = info.mobjinfo[mobj.type.ordinal()];
      mobj.floorz = mobj.subsector.sector.floorheight;
      mobj.ceilingz = mobj.subsector.sector.ceilingheight;
      mobj.function = think_t.P_MobjThinker;
-     A.AddThinker (mobj);
+     DOOM.actions.AddThinker (mobj);
      break;
          
    default:
-     I.Error ("Unknown tclass %d in savegame",tclass);
+     DOOM.doomSystem.Error ("Unknown tclass %d in savegame",tclass);
  }
  
  }
@@ -602,7 +591,7 @@ ByteBuffer buffer=ByteBuffer.allocate(128);
 buffer.order(ByteOrder.LITTLE_ENDIAN);
 
 // save off the current thinkers
-for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.next){
+for (thinker_t th = DOOM.actions.getThinkerCap().next ; th != DOOM.actions.getThinkerCap() ; th=th.next){
     
     // Write out any pending objects.
     if (buffer.position()>0){
@@ -617,8 +606,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     // So ceilings don't think?
     if (th.function== null) {
         // i maintains status between iterations
-        for (i = 0; i < A.getMaxCeilings();i++)
-        if ((th instanceof ceiling_t) && (A.getActiveCeilings()[i] == (ceiling_t)th))
+        for (i = 0; i < DOOM.actions.getMaxCeilings();i++)
+        if ((th instanceof ceiling_t) && (DOOM.actions.getActiveCeilings()[i] == (ceiling_t)th))
             break;
         
         if (i<MAXCEILINGS)
@@ -733,8 +722,8 @@ protected void UnArchiveSpecials () throws IOException
  
  //List<thinker_t> A=new ArrayList<thinker_t>();
  
- A.ClearPlatsBeforeLoading();
- A.ClearCeilingsBeforeLoading();
+ DOOM.actions.ClearPlatsBeforeLoading();
+ DOOM.actions.ClearCeilingsBeforeLoading();
  
  // read in saved thinkers
  while (true)
@@ -751,61 +740,61 @@ protected void UnArchiveSpecials () throws IOException
      PADSAVEP(f,maxsize);
      ceiling = new ceiling_t();
      ceiling.read(f);
-     ceiling.sector = LL.sectors[ceiling.sectorid];
+     ceiling.sector = DOOM.levelLoader.sectors[ceiling.sectorid];
      ceiling.sector.specialdata = ceiling;
 
      if (ceiling.functionid!=0)
      ceiling.function = think_t.T_MoveCeiling;
 
-     A.AddThinker (ceiling);
-     A.AddActiveCeiling(ceiling);
+     DOOM.actions.AddThinker (ceiling);
+     DOOM.actions.AddActiveCeiling(ceiling);
      break;
              
    case tc_door:
      PADSAVEP(f,maxsize);
      door=new vldoor_t();
      door.read(f);
-     door.sector = LL.sectors[door.sectorid];
+     door.sector = DOOM.levelLoader.sectors[door.sectorid];
      door.sector.specialdata = door;
      door.function = think_t.T_VerticalDoor;
      
-     A.AddThinker (door);
+     DOOM.actions.AddThinker (door);
      break;
              
    case tc_floor:
      PADSAVEP(f,maxsize);
      floor=new floormove_t();
      floor.read(f);
-     floor.sector = LL.sectors[floor.sectorid];
+     floor.sector = DOOM.levelLoader.sectors[floor.sectorid];
      floor.sector.specialdata = floor;
      floor.function = think_t.T_MoveFloor;
      
-     A.AddThinker (floor);
+     DOOM.actions.AddThinker (floor);
      break;
              
    case tc_plat:
      PADSAVEP(f,maxsize);
      plat=new plat_t();
      plat.read(f);
-     plat.sector = LL.sectors[plat.sectorid];
+     plat.sector = DOOM.levelLoader.sectors[plat.sectorid];
      plat.sector.specialdata = plat;
 
      if (plat.functionid!=0)
      plat.function =  think_t.T_PlatRaise;
      
-     A.AddThinker (plat);
-     A.AddActivePlat(plat);
+     DOOM.actions.AddThinker (plat);
+     DOOM.actions.AddActivePlat(plat);
      break;
              
    case tc_flash:
      PADSAVEP(f,maxsize);
-     flash=new lightflash_t(this.DS.RND);
+     flash=new lightflash_t(this.DOOM.random);
      flash.read(f);
      
-     flash.sector =LL.sectors[flash.sectorid];
+     flash.sector =DOOM.levelLoader.sectors[flash.sectorid];
      flash.function =  think_t.T_LightFlash;
      
-     A.AddThinker (flash);
+     DOOM.actions.AddThinker (flash);
      break;
              
    case tc_strobe:
@@ -813,24 +802,24 @@ protected void UnArchiveSpecials () throws IOException
      
      strobe = new strobe_t();
      strobe.read(f);
-     strobe.sector = LL.sectors[strobe.sectorid];
+     strobe.sector = DOOM.levelLoader.sectors[strobe.sectorid];
      strobe.function =  think_t.T_StrobeFlash;
      
-     A.AddThinker (strobe);
+     DOOM.actions.AddThinker (strobe);
      break;
              
    case tc_glow:
      PADSAVEP(f,maxsize);
      glow = new glow_t();
      glow.read(f);
-     glow.sector = LL.sectors[glow.sectorid];
+     glow.sector = DOOM.levelLoader.sectors[glow.sectorid];
      glow.function = think_t.T_Glow;
      
-     A.AddThinker (glow);
+     DOOM.actions.AddThinker (glow);
      break;
              
    default:
-     I.Error ("P_UnarchiveSpecials:Unknown tclass %d in savegame",tmp);
+     DOOM.doomSystem.Error ("P_UnarchiveSpecials:Unknown tclass %d in savegame",tmp);
  }
  }
  
@@ -868,14 +857,6 @@ protected void UnArchiveSpecials () throws IOException
         	f.write(0);
         return padding;        
         }
-
-    @Override
-    public void updateStatus(DoomStatus<?,?> DS) {
-        this.DS=DS;
-        this.LL=DS.LL;
-        this.A=DS.P;       
-    	}
-
 
     @Override
     public boolean doSave(DataOutputStream f) {

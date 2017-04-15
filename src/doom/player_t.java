@@ -1,42 +1,33 @@
 package doom;
 
-import i.DoomStatusAware;
-import i.IDoomSystem;
-
+import static data.Defines.*;
+import static data.Limits.*;
+import data.Tables;
+import static data.Tables.*;
+import static data.info.*;
+import data.sounds.sfxenum_t;
+import data.state_t;
+import defines.*;
+import static doom.items.weaponinfo;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-
-import m.IRandom;
-
-import data.Tables;
-import data.state_t;
-import defines.*;
-import data.sounds.sfxenum_t;
-import static data.Defines.*;
-import static data.Tables.*;
 import static m.fixed_t.*;
-import static data.info.*;
-import static p.mobj_t.*;
-import p.Actions;
 import p.mobj_t;
+import static p.mobj_t.*;
 import p.pspdef_t;
-import rr.LightsAndColors;
-import rr.Renderer;
 import rr.sector_t;
-import s.IDoomSound;
 import utils.C2JUtils;
+import static utils.C2JUtils.*;
+import v.graphics.Palettes;
+import v.renderers.BppMode;
 import w.DoomBuffer;
 import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
-import static utils.C2JUtils.*;
-import static data.Limits.*;
-import static doom.items.weaponinfo;
-import static p.mobj_t.MF_SHADOW;
 
 /**
  * Extended player object info: player_t The player data structure depends on a
@@ -59,18 +50,10 @@ import static p.mobj_t.MF_SHADOW;
  * #include "d_ticcmd.h"
  */
 
-public class player_t /*extends mobj_t */
-        implements Cloneable ,DoomStatusAware, IReadableDoomObject, IPackableDoomObject
-        {
+public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObject, IPackableDoomObject {
 	
     /** Probably doomguy needs to know what the fuck is going on */
-    private DoomStatus DS;
-    private IDoomGame DG;
-    private Actions P;
-    private Renderer<?,?> R;
-    private IRandom RND;
-    private IDoomSystem I;
-    private IDoomSound S;
+    private final DoomMain DOOM;
 	
     /* Fugly hack to "reset" the player. Not worth the fugliness.
     public static player_t nullplayer;
@@ -79,7 +62,8 @@ public class player_t /*extends mobj_t */
     }
     */
 
-    public player_t() {
+    public player_t(DoomMain DOOM) {
+        this.DOOM = DOOM;
         powers = new int[NUMPOWERS];
         frags = new int[MAXPLAYERS];
         ammo = new int[NUMAMMO];
@@ -88,7 +72,7 @@ public class player_t /*extends mobj_t */
         cards = new boolean[card_t.NUMCARDS.ordinal()];
         weaponowned = new boolean[NUMWEAPONS];
         psprites = new pspdef_t[NUMPSPRITES];
-        C2JUtils.initArrayOfObjects(psprites);
+        Arrays.setAll(psprites, i -> new pspdef_t());
         this.mo=new mobj_t();
         // If a player doesn't reference himself through his object, he will have an existential crisis.
         this.mo.player=this;
@@ -103,7 +87,10 @@ public class player_t /*extends mobj_t */
 
     public final static int CF_NOMOMENTUM = 4; // Not really a cheat, just a debug aid.
 
-    
+    // Index of the special effects (INVUL inverse) map.
+    public static final int INVERSECOLORMAP_8_16 = 1 << 5;
+    public static final int INVERSECOLORMAP_32 = 1 << 8;
+     
     /** The "mobj state" of the player is stored here, even though he "inherits"
      *  all mobj_t properties (except being a thinker). However, for good or bad,
      *  his mobj properties are modified by accessing player.mo
@@ -399,7 +386,7 @@ public class player_t /*extends mobj_t */
             return false;
 
         if (ammo < 0 || ammo > NUMAMMO)
-            I.Error("P_GiveAmmo: bad type %i", ammo);
+            DOOM.doomSystem.Error("P_GiveAmmo: bad type %i", ammo);
 
         if (this.ammo[ammo] == maxammo[ammo])
             return false;
@@ -409,8 +396,8 @@ public class player_t /*extends mobj_t */
         else
             num = clipammo[ammo] / 2;
 
-        if (DS.gameskill == skill_t.sk_baby
-                ||DS.gameskill == skill_t.sk_nightmare) {
+        if (DOOM.gameskill == skill_t.sk_baby
+                ||DOOM.gameskill == skill_t.sk_nightmare) {
             // give double ammo in trainer mode,
             // you'll need in nightmare
             num <<= 1;
@@ -481,7 +468,7 @@ public class player_t /*extends mobj_t */
         boolean gaveweapon;
         int weapon = weapn.ordinal();
 
-        if (DS.netgame && (DS.deathmatch != true) // ???? was "2"
+        if (DOOM.netgame && (DOOM.deathmatch != true) // ???? was "2"
                 && !dropped) {
             // leave placed weapons forever on net games
             if (weaponowned[weapon])
@@ -490,14 +477,14 @@ public class player_t /*extends mobj_t */
             bonuscount += BONUSADD;
             weaponowned[weapon] = true;
 
-            if (DS.deathmatch)
+            if (DOOM.deathmatch)
                 GiveAmmo(weaponinfo[weapon].ammo, 5);
             else
                 GiveAmmo(weaponinfo[weapon].ammo, 2);
             pendingweapon = weapn;
 
-            if (this ==DS.players[DS.consoleplayer])
-                S.StartSound (null, sfxenum_t.sfx_wpnup);
+            if (this ==DOOM.players[DOOM.consoleplayer])
+                DOOM.doomSound.StartSound (null, sfxenum_t.sfx_wpnup);
                 return false;
         }
 
@@ -622,7 +609,7 @@ public class player_t /*extends mobj_t */
         Arrays.fill(cards,false);       
         mo.flags &= ~mobj_t.MF_SHADOW;     // cancel invisibility 
         extralight = 0;          // cancel gun flashes 
-        fixedcolormap = 0;       // cancel ir gogles 
+        fixedcolormap = Palettes.COLORMAP_FIXED;       // cancel ir gogles 
         damagecount = 0;         // no palette changes 
         bonuscount = 0;
         lookdir = 0; // From heretic
@@ -651,15 +638,15 @@ public class player_t /*extends mobj_t */
           case 5:
         // HELLSLIME DAMAGE
         if (powers[pw_ironfeet]==0)
-            if (!flags(DS.leveltime,0x1f))
-                P.DamageMobj (mo,null, null, 10);
+            if (!flags(DOOM.leveltime,0x1f))
+                DOOM.actions.DamageMobj (mo,null, null, 10);
         break;
         
           case 7:
         // NUKAGE DAMAGE
         if (powers[pw_ironfeet]==0)
-            if (!flags(DS.leveltime,0x1f))
-                P.DamageMobj (mo, null, null, 5);
+            if (!flags(DOOM.leveltime,0x1f))
+                DOOM.actions.DamageMobj (mo, null, null, 5);
         break;
         
           case 16:
@@ -667,10 +654,10 @@ public class player_t /*extends mobj_t */
           case 4:
         // STROBE HURT
         if (!eval(powers[pw_ironfeet])
-            || (RND.P_Random()<5) )
+            || (DOOM.random.P_Random()<5) )
         {
-            if (!flags(DS.leveltime,0x1f))
-            P.DamageMobj (mo, null, null, 20);
+            if (!flags(DOOM.leveltime,0x1f))
+            DOOM.actions.DamageMobj (mo, null, null, 20);
         }
         break;
                 
@@ -684,24 +671,19 @@ public class player_t /*extends mobj_t */
         // EXIT SUPER DAMAGE! (for E1M8 finale)
         cheats &= ~CF_GODMODE;
 
-        if (!flags(DS.leveltime,0x1f))
-            P.DamageMobj (mo, null, null, 20);
+        if (!flags(DOOM.leveltime,0x1f))
+            DOOM.actions.DamageMobj (mo, null, null, 20);
 
         if (health[0] <= 10)
-            DG.ExitLevel();
+            DOOM.ExitLevel();
         break;
                 
           default:
-        I.Error ("P_PlayerInSpecialSector: unknown special %d", sector.special);
+        DOOM.doomSystem.Error ("P_PlayerInSpecialSector: unknown special %d", sector.special);
         break;
         };
     }    
-   
- // Index of the special effects (INVUL inverse) map.
-public static final int INVERSECOLORMAP		=LightsAndColors.LIGHTLEVELS;
-    
 
- 
  //
 //P_CalcHeight
 //Calculate the walking / running height adjustment
@@ -740,7 +722,7 @@ public void CalcHeight ()
   return;
   }
       
-  angle = (FINEANGLES/20*DS.leveltime)&FINEMASK;
+  angle = (FINEANGLES/20*DOOM.leveltime)&FINEMASK;
   bob = FixedMul ( this.bob/2, finesine[angle]);
 
   
@@ -807,7 +789,7 @@ public void DeathThink ()
   
   if (attacker!=null && attacker != mo)
   {
-  angle = R.PointToAngle2 (mo.x,
+  angle = DOOM.sceneRenderer.PointToAngle2 (mo.x,
                mo.y,
                attacker.x,
                attacker.y);
@@ -933,8 +915,8 @@ SetPsprite
         if (id>=0) return id;
         int i;    
         // Let's assume that we know jack.
-            for (i=0;i<DS.players.length;i++)
-                if (this==DS.players[i]) break;
+            for (i=0;i<DOOM.players.length;i++)
+                if (this==DOOM.players[i]) break;
             
             return id=i;
         
@@ -1031,10 +1013,10 @@ SetPsprite
 
         swing = this.bob;
 
-        angle = (FINEANGLES/70*DS.leveltime)&FINEMASK;
+        angle = (FINEANGLES/70*DOOM.leveltime)&FINEMASK;
         swingx = FixedMul ( swing, finesine[angle]);
 
-        angle = (FINEANGLES/70*DS.leveltime+FINEANGLES/2)&FINEMASK;
+        angle = (FINEANGLES/70*DOOM.leveltime+FINEANGLES/2)&FINEMASK;
         swingy = -FixedMul ( swingx, finesine[angle]);
     }
 
@@ -1054,7 +1036,7 @@ SetPsprite
         pendingweapon = readyweapon;
             
         if (pendingweapon == weapontype_t.wp_chainsaw)
-        S.StartSound (mo, sfxenum_t.sfx_sawup);
+        DOOM.doomSound.StartSound (mo, sfxenum_t.sfx_sawup);
             
         newstate = weaponinfo[pendingweapon.ordinal()].upstate;
 
@@ -1096,13 +1078,13 @@ SetPsprite
         {
         if (weaponowned[weapontype_t.wp_plasma.ordinal()]
             && (this.ammo[ammotype_t.am_cell.ordinal()]!=0)
-            && !DS.isShareware() )
+            && !DOOM.isShareware() )
         {
             pendingweapon = weapontype_t.wp_plasma;
         }
         else if (weaponowned[weapontype_t.wp_supershotgun.ordinal()] 
              && this.ammo[ammotype_t.am_shell.ordinal()]>2
-             && DS.isCommercial() )
+             && DOOM.isCommercial() )
         {
             pendingweapon = weapontype_t.wp_supershotgun;
         }
@@ -1131,7 +1113,7 @@ SetPsprite
         }
         else if (weaponowned[weapontype_t.wp_bfg.ordinal()]
              && this.ammo[ammotype_t.am_cell.ordinal()]>40
-             && !DS.isShareware() )
+             && !DOOM.isShareware() )
         {
             pendingweapon = weapontype_t.wp_bfg;
         }
@@ -1253,7 +1235,7 @@ SetPsprite
      
      // Will switch between SG and SSG in Doom 2.
      
-     if ( DS.isCommercial()
+     if ( DOOM.isCommercial()
          && newweapon == weapontype_t.wp_shotgun 
          && player.weaponowned[weapontype_t.wp_supershotgun.ordinal()]
          && player.readyweapon != weapontype_t.wp_supershotgun)
@@ -1269,7 +1251,7 @@ SetPsprite
          //  even if cheated.
          if ((newweapon != weapontype_t.wp_plasma
           && newweapon != weapontype_t.wp_bfg)
-         || !DS.isShareware() )
+         || !DOOM.isShareware() )
          {
          player.pendingweapon = newweapon;
          }
@@ -1281,7 +1263,7 @@ SetPsprite
      {
      if (!player.usedown)
      {
-         P.UseLines (player);
+         DOOM.actions.UseLines (player);
          player.usedown = true;
      }
      }
@@ -1322,9 +1304,10 @@ SetPsprite
      {
      if (player.powers[pw_invulnerability] > 4*32
          || flags(player.powers[pw_invulnerability],8) )
-         player.fixedcolormap = player_t.INVERSECOLORMAP;
+         player.fixedcolormap = DOOM.bppMode == BppMode.TrueColor
+            ? INVERSECOLORMAP_32 : INVERSECOLORMAP_8_16;
      else
-         player.fixedcolormap = 0;
+         player.fixedcolormap = Palettes.COLORMAP_FIXED;
      }
      else if (eval(player.powers[pw_infrared]))
      {
@@ -1332,13 +1315,13 @@ SetPsprite
          || flags(player.powers[pw_infrared],8) )
      {
          // almost full bright
-         player.fixedcolormap = 1;
+         player.fixedcolormap = Palettes.COLORMAP_BULLBRIGHT;
      }
      else
-         player.fixedcolormap = 0;
+         player.fixedcolormap = Palettes.COLORMAP_FIXED;
      }
      else
-     player.fixedcolormap = 0;
+     player.fixedcolormap = Palettes.COLORMAP_FIXED;
     }
 
     /**
@@ -1396,17 +1379,6 @@ SetPsprite
     public void PlayerThink() {
         PlayerThink(this);       
     }
-
-	@Override
-	public void updateStatus(DoomStatus DS) {
-	    this.DS=DS;
-	    this.DG=DS.DG;
-	    this.P=DS.P;
-	    this.R=DS.R;
-	    this.RND=DS.RND;
-	    this.I=DS.I;
-	    this.S=DS.S;
-	}
 
 	public String toString(){
 		sb.setLength(0);
@@ -1563,5 +1535,4 @@ SetPsprite
         buf.putInt(this.didsecret?1:0);
         
     }
-        
-    }
+}

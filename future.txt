@@ -1,0 +1,4 @@
+== Parallel [width][height] renderer ==
+
+- There is n + 1 workers where n is parallelism level
+- Workers 0..(n-1) are rendering columns, while worker n System.arraycopying the screen

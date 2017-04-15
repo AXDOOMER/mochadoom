@@ -1,18 +1,16 @@
 package s;
 
+import data.sounds;
+import data.sounds.sfxenum_t;
+import doom.DoomMain;
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
-
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.FloatControl.Type;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.FloatControl.Type;
-
-import data.sounds;
-import data.sounds.sfxenum_t;
-import doom.DoomStatus;
 
 /** David Martel's sound driver for Mocha Doom. Excellent work!
  * 
@@ -43,8 +41,8 @@ public class DavidSFXModule extends AbstractSoundDriver{
 	private SoundWorker[] channels;
 	private Thread[] soundThread;
 	
-	public DavidSFXModule(DoomStatus DS,int numChannels) {
-		super(DS,numChannels);
+	public DavidSFXModule(DoomMain DM,int numChannels) {
+		super(DM,numChannels);
 		linear2db=computeLinear2DB();
 		
 		}
@@ -279,7 +277,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 		int		i;
 		int		rc = -1;
 
-		int		oldest = DS.gametic;
+		int		oldest = DM.gametic;
 		int		oldestnum = 0;
 		int		slot;
 
@@ -345,7 +343,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 		// Assign current handle number.
 		// Preserved so sounds could be stopped (unused).
 		channelhandles[slot]= rc = handlenums--;
-		channelstart[slot] = DS.gametic;
+		channelstart[slot] = DM.gametic;
 
 		// Separation, that is, orientation/stereo.
 		//  range is: 1 - 256
@@ -364,10 +362,10 @@ public class DavidSFXModule extends AbstractSoundDriver{
 		// Sanity check, clamp volume.
 
 		if (rightvol < 0 || rightvol > 127)
-			DS.I.Error("rightvol out of bounds");
+			DM.doomSystem.Error("rightvol out of bounds");
 
 		if (leftvol < 0 || leftvol > 127)
-			DS.I.Error("leftvol out of bounds"); 
+			DM.doomSystem.Error("leftvol out of bounds"); 
 
 		// Preserve sound SFX id,
 		//  e.g. for avoiding duplicates of chainsaw.

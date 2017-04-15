@@ -1,16 +1,8 @@
 package awt;
 
-import i.InputListener;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.event.InputEvent;
-import javax.swing.JPanel;
-
-import v.DoomVideoRenderer;
 import doom.DoomMain;
-import doom.event_t;
+import java.awt.Rectangle;
+import javax.swing.JPanel;
 
 /** A simple Doom display & keyboard driver for AWT.
  *  Uses a Canvas for painting and implements some
@@ -36,60 +28,32 @@ import doom.event_t;
  * @author Velktron
  *
  */
-public class SwingDoom extends DoomFrame<byte[]> {
-
+public abstract class SwingDoom extends DoomFrame<byte[]> {
 
     private static final long serialVersionUID = 3118508722502652276L;
 
-    
+    JPanel drawhere;
 
-		JPanel drawhere;
+    /**
+     * Gimme some raw palette RGB data. I will do the rest
+     *
+     * (hint: read this from the PLAYPAL lump in the IWAD!!!).
+     *
+     */
+    public SwingDoom(DoomMain<?, byte[]> DM) {
+        super(DM);
+        drawhere = new JPanel();
+    }
 
-		/** Gimme some raw palette RGB data.
-		 *  I will do the rest
-		 *  
-		 *  (hint: read this from the PLAYPAL
-		 *   lump in the IWAD!!!).
-		 * 
-		 */
-     
-        @SuppressWarnings("unchecked")
-		public SwingDoom(DoomMain DM, DoomVideoRenderer<?> V) {
-        	super(DM,(DoomVideoRenderer<byte[]>) V);
-        	drawhere=new JPanel();
-        	}
-        
-        Point center;
-        Rectangle rect;
+    Rectangle rect;
 
-        
-        public String processEvents(){
-            StringBuffer tmp=new StringBuffer();
-            event_t event;
-            while ( (event=InputListener.nextEvent()) != null ) {
-                tmp.append(event.type.ordinal()+"\n");
-            }
-            return tmp.toString();
-        }
-        
-        
-        
-        
-        // This stuff should NOT get through in keyboard events.
-        protected final int UNACCEPTABLE_MODIFIERS=(int) (InputEvent.ALT_GRAPH_DOWN_MASK+
-        										 InputEvent.META_DOWN_MASK+
-        										 InputEvent.META_MASK+
-        										 InputEvent.WINDOW_EVENT_MASK+
-        										 InputEvent.WINDOW_FOCUS_EVENT_MASK);
-	
+    @Override
+    public void FinishUpdate() {
+        int tics;
+        int i;
 
-	@Override
-	public void FinishUpdate() {
-	    int		tics;
-	    int		i;
-	    
-	    // draws little dots on the bottom of the screen
-	    /*if (true)
+        // draws little dots on the bottom of the screen
+        /*if (true)
 	    {
 
 		i = I.GetTime();
@@ -104,37 +68,29 @@ public class SwingDoom extends DoomFrame<byte[]> {
 			RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
 	    
 	    } */
+        /*if (true) {
 
-	    if (true)
-        {
+            i = TICK.GetTime();
+            tics = i - lasttic;
+            lasttic = i;
+            if (tics < 1) {
+                frames++;
+            } else {
+                //frames*=35;
+                for (i = 0; i < frames * 2; i += 2) {
+                    RAWSCREEN[(height - 1) * width + i] = (byte) 0xff;
+                }
+                for (; i < 20 * 2; i += 2) {
+                    RAWSCREEN[(height - 1) * width + i] = 0x0;
+                }
+                frames = 0;
+            }
+        }*/
 
-        i = TICK.GetTime();
-        tics = i - lasttic;
-        lasttic = i;
-        if (tics<1) 
-            frames++;
-        else
-        {
-        //frames*=35;
-        for (i=0 ; i<frames*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = (byte) 0xff;
-        for ( ; i<20*2 ; i+=2)
-            RAWSCREEN[ (height-1)*width + i] = 0x0;
-        frames=0;
-        }
-        }
+        this.update(null);
+        //this.getInputContext().selectInputMethod(java.util.Locale.US);
 
-	    this.update(null);
-	    //this.getInputContext().selectInputMethod(java.util.Locale.US);
-		
-	}
-	
-    @Override
-    public void ReadScreen(byte[] scr) {
-        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
-        }
-
-
+    }
 }
 
 //$Log: SwingDoom.java,v $

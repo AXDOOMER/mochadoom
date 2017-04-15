@@ -5,20 +5,16 @@ import static data.Defines.FF_FULLBRIGHT;
 import static data.Limits.MAXVISSPRITES;
 import static data.Tables.ANG45;
 import static data.Tables.BITS32;
+import java.util.Arrays;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
-import static p.mobj_t.MF_SHADOW;
-import static rr.LightsAndColors.*;
-import static rr.Renderer.MINZ;
-
-import i.IDoomSystem;
-
-import java.util.Arrays;
-
 import p.mobj_t;
+import static p.mobj_t.MF_SHADOW;
+import static rr.SceneRenderer.MINZ;
 import utils.C2JUtils;
+import v.graphics.Palettes;
 
 /** Visualized sprite manager. Depends on: SpriteManager, DoomSystem,
  *  Colormaps, Current View.
@@ -35,29 +31,12 @@ public final class VisSprites<V>
 
     private final static boolean RANGECHECK = false;
 
-    protected IDoomSystem I;
+    protected final RendererState<?, V> rendererState;
 
-    protected ISpriteManager SM;
-
-    protected ViewVars view;
-
-    protected LightsAndColors<V> colormaps;
-
-    protected RendererState<?, V> R;
-
-    public VisSprites(RendererState<?, V> R) {
-        updateStatus(R);
+    public VisSprites(RendererState<?, V> rendererState) {
         vissprite_t<V> tmp = new vissprite_t<V>();
         vissprites = C2JUtils.createArrayOfObjects(tmp, MAXVISSPRITES);
-    }
-
-    public void updateStatus(RendererState<?, V> R) {
-        this.R = R;
-        this.view = R.view;
-        this.I = R.I;
-        this.SM = R.SM;
-        this.colormaps = R.colormaps;
-
+        this.rendererState = rendererState;
     }
 
     protected vissprite_t<V>[] vissprites;
@@ -88,20 +67,20 @@ public final class VisSprites<V>
         // A sector might have been split into several
         // subsectors during BSP building.
         // Thus we check whether its already added.
-        if (sec.validcount == R.getValidCount())
+        if (sec.validcount == rendererState.getValidCount())
             return;
 
         // Well, now it will be done.
-        sec.validcount = R.getValidCount();
+        sec.validcount = rendererState.getValidCount();
 
-        lightnum = (sec.lightlevel >> LIGHTSEGSHIFT) + colormaps.extralight;
+        lightnum = (sec.lightlevel >> rendererState.colormaps.lightSegShift()) + rendererState.colormaps.extralight;
 
         if (lightnum < 0)
-            colormaps.spritelights = colormaps.scalelight[0];
-        else if (lightnum >= LIGHTLEVELS)
-            colormaps.spritelights = colormaps.scalelight[LIGHTLEVELS - 1];
+            rendererState.colormaps.spritelights = rendererState.colormaps.scalelight[0];
+        else if (lightnum >= rendererState.colormaps.lightLevels())
+            rendererState.colormaps.spritelights = rendererState.colormaps.scalelight[rendererState.colormaps.lightLevels() - 1];
         else
-            colormaps.spritelights = colormaps.scalelight[lightnum];
+            rendererState.colormaps.spritelights = rendererState.colormaps.scalelight[lightnum];
 
         // Handle all things in sector.
         for (thing = sec.thinglist; thing != null; thing = (mobj_t) thing.snext)
@@ -135,11 +114,11 @@ public final class VisSprites<V>
         int iscale;
 
         // transform the origin point
-        tr_x = thing.x - view.x;
-        tr_y = thing.y - view.y;
+        tr_x = thing.x - rendererState.view.x;
+        tr_y = thing.y - rendererState.view.y;
 
-        gxt = FixedMul(tr_x, view.cos);
-        gyt = -FixedMul(tr_y, view.sin);
+        gxt = FixedMul(tr_x, rendererState.view.cos);
+        gyt = -FixedMul(tr_y, rendererState.view.sin);
 
         tz = gxt - gyt;
 
@@ -147,10 +126,10 @@ public final class VisSprites<V>
         if (tz < MINZ)
             return;
         /* MAES: so projection/tz gives horizontal scale */
-        xscale = FixedDiv(view.projection, tz);
+        xscale = FixedDiv(rendererState.view.projection, tz);
 
-        gxt = -FixedMul(tr_x, view.sin);
-        gyt = FixedMul(tr_y, view.cos);
+        gxt = -FixedMul(tr_x, rendererState.view.sin);
+        gyt = FixedMul(tr_y, rendererState.view.cos);
         tx = -(gyt + gxt);
 
         // too far off the side?
@@ -159,21 +138,21 @@ public final class VisSprites<V>
 
         // decide which patch to use for sprite relative to player
         if (RANGECHECK) {
-            if (thing.sprite.ordinal() >= SM.getNumSprites())
-                I.Error("R_ProjectSprite: invalid sprite number %d ",
+            if (thing.sprite.ordinal() >= rendererState.DOOM.spriteManager.getNumSprites())
+                rendererState.DOOM.doomSystem.Error("R_ProjectSprite: invalid sprite number %d ",
                     thing.sprite);
         }
-        sprdef = SM.getSprite(thing.sprite.ordinal());
+        sprdef = rendererState.DOOM.spriteManager.getSprite(thing.sprite.ordinal());
         if (RANGECHECK) {
             if ((thing.frame & FF_FRAMEMASK) >= sprdef.numframes)
-                I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
+                rendererState.DOOM.doomSystem.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
                     thing.sprite, thing.frame);
         }
         sprframe = sprdef.spriteframes[thing.frame & FF_FRAMEMASK];
 
         if (sprframe.rotate != 0) {
             // choose a different rotation based on player view
-            ang = view.PointToAngle(thing.x, thing.y);
+            ang = rendererState.view.PointToAngle(thing.x, thing.y);
             rot = (int) ((ang - thing.angle + (ANG45 * 9) / 2) & BITS32) >>> 29;
             lump = sprframe.lump[rot];
             flip = (boolean) (sprframe.flip[rot] != 0);
@@ -185,14 +164,14 @@ public final class VisSprites<V>
 
         // calculate edges of the shape
         tx -= spriteoffset[lump];
-        x1 = (view.centerxfrac + FixedMul(tx, xscale)) >> FRACBITS;
+        x1 = (rendererState.view.centerxfrac + FixedMul(tx, xscale)) >> FRACBITS;
 
         // off the right side?
-        if (x1 > view.width)
+        if (x1 > rendererState.view.width)
             return;
 
         tx += spritewidth[lump];
-        x2 = ((view.centerxfrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
+        x2 = ((rendererState.view.centerxfrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
 
         // off the left side
         if (x2 < 0)
@@ -201,14 +180,14 @@ public final class VisSprites<V>
         // store information in a vissprite
         vis = NewVisSprite();
         vis.mobjflags = thing.flags;
-        vis.scale = xscale << view.detailshift;
+        vis.scale = xscale << rendererState.view.detailshift;
         vis.gx = thing.x;
         vis.gy = thing.y;
         vis.gz = thing.z;
         vis.gzt = thing.z + spritetopoffset[lump];
-        vis.texturemid = vis.gzt - view.z;
+        vis.texturemid = vis.gzt - rendererState.view.z;
         vis.x1 = x1 < 0 ? 0 : x1;
-        vis.x2 = x2 >= view.width ? view.width - 1 : x2;
+        vis.x2 = x2 >= rendererState.view.width ? rendererState.view.width - 1 : x2;
         /*
          * This actually determines the general sprite scale) iscale = 1/xscale,
          * if this was floating point.
@@ -231,24 +210,24 @@ public final class VisSprites<V>
         if ((thing.flags & MF_SHADOW) != 0) {
             // shadow draw
             vis.colormap = null;
-        } else if (colormaps.fixedcolormap != null) {
+        } else if (rendererState.colormaps.fixedcolormap != null) {
             // fixed map
-            vis.colormap = (V) colormaps.fixedcolormap;
+            vis.colormap = (V) rendererState.colormaps.fixedcolormap;
             // vis.pcolormap=0;
         } else if ((thing.frame & FF_FULLBRIGHT) != 0) {
             // full bright
-            vis.colormap = (V) colormaps.colormaps[0];
+            vis.colormap = (V) rendererState.colormaps.colormaps[Palettes.COLORMAP_FIXED];
             // vis.pcolormap=0;
         }
 
         else {
             // diminished light
-            index = xscale >> (LIGHTSCALESHIFT - view.detailshift);
+            index = xscale >> (rendererState.colormaps.lightScaleShift() - rendererState.view.detailshift);
 
-            if (index >= MAXLIGHTSCALE)
-                index = MAXLIGHTSCALE - 1;
+            if (index >= rendererState.colormaps.maxLightScale())
+                index = rendererState.colormaps.maxLightScale() - 1;
 
-            vis.colormap = colormaps.spritelights[index];
+            vis.colormap = rendererState.colormaps.spritelights[index];
             // vis.pcolormap=index;
         }
     }

@@ -1,27 +1,24 @@
 package rr;
 
+import v.tables.LightsAndColors;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.SIL_BOTTOM;
 import static data.Defines.SIL_TOP;
 import static data.Defines.pw_invisibility;
 import static doom.player_t.NUMPSPRITES;
+import i.IDoomSystem;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static p.mobj_t.MF_TRANSLATION;
-import static p.mobj_t.MF_TRANSSHIFT;
-import static rr.LightsAndColors.LIGHTLEVELS;
-import static rr.LightsAndColors.LIGHTSCALESHIFT;
-import static rr.LightsAndColors.LIGHTSEGSHIFT;
-import static rr.LightsAndColors.MAXLIGHTSCALE;
-import static rr.line_t.ML_DONTPEGBOTTOM;
-import i.IDoomSystem;
 import p.pspdef_t;
 import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.ColumnFunction;
-import v.IVideoScale;
+import static rr.line_t.ML_DONTPEGBOTTOM;
+import v.graphics.Palettes;
+import v.scale.VideoScale;
 import w.IWadLoader;
 
 /**
@@ -38,8 +35,7 @@ import w.IWadLoader;
  * 
  */
 
-public abstract class AbstractThings<T,V>
-        implements IMaskedDrawer<T,V> {
+public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
 
     private final static boolean RANGECHECK=false;
     
@@ -78,7 +74,8 @@ public abstract class AbstractThings<T,V>
     protected ColumnFunction<T,V> colfunc;
     protected ColFuncs<T,V> colfuncs;
     protected ColFuncs<T,V> colfuncshi;
-    protected ColFuncs<T,V> colfuncslow;    
+    protected ColFuncs<T,V> colfuncslow;
+    protected final VideoScale vs;
     protected final LightsAndColors<V> colormaps;
     protected final ViewVars view;
     protected final SegVars seg_vars;
@@ -90,21 +87,23 @@ public abstract class AbstractThings<T,V>
     protected final IWadLoader W;
     protected final vissprite_t<V> avis;
     
-    public AbstractThings(Renderer<T,V> R) {
-        this.colfuncshi=R.getColFuncsHi();
-        this.colfuncslow=R.getColFuncsLow();
-        this.colormaps=R.getColorMap();
-        this.view=R.getView();
-        this.seg_vars=R.getSegVars();
-        this.TexMan=R.getTextureManager();
-        this.I=R.getDoomSystem();
-        this.SM=R.getSpriteManager();
-        this.MyBSP=R.getBSPVars();
-        this.VIS=R.getVisSpriteManager();
-        this.W=R.getWadLoader();
-        this.avis=new vissprite_t<V>();
-        this.maskedcvars=R.getMaskedDCVars();
-        
+    public AbstractThings(VideoScale vs, SceneRenderer<T,V> R) {
+        this.colfuncshi = R.getColFuncsHi();
+        this.colfuncslow = R.getColFuncsLow();
+        this.colormaps = R.getColorMap();
+        this.view = R.getView();
+        this.seg_vars = R.getSegVars();
+        this.TexMan = R.getTextureManager();
+        this.I = R.getDoomSystem();
+        this.SM = R.getSpriteManager();
+        this.MyBSP = R.getBSPVars();
+        this.VIS = R.getVisSpriteManager();
+        this.W = R.getWadLoader();
+        this.avis = new vissprite_t<V>();
+        this.maskedcvars = R.getMaskedDCVars();
+        this.vs = vs;
+        clipbot = new short[vs.getScreenWidth()];
+        cliptop = new short[vs.getScreenWidth()];
     }
 
     @Override
@@ -112,30 +111,6 @@ public abstract class AbstractThings<T,V>
         this.spritewidth = SM.getSpriteWidth();
         this.spriteoffset = SM.getSpriteOffset();
         this.spritetopoffset = SM.getSpriteTopOffset();
-    }
-
-    // ///////////// VIDEO SCALE STUFF /////////////////////
-
-    protected int SCREENWIDTH;
-
-    protected int SCREENHEIGHT;
-
-    protected IVideoScale vs;
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        this.vs = vs;
-    }
-
-    @Override
-    public void initScaling() {
-        this.SCREENHEIGHT = vs.getScreenHeight();
-        this.SCREENWIDTH = vs.getScreenWidth();
-
-        // Pre-scale stuff.
-
-        clipbot = new short[SCREENWIDTH];
-        cliptop = new short[SCREENWIDTH];
     }
 
     /**
@@ -215,7 +190,7 @@ public abstract class AbstractThings<T,V>
         texnum = TexMan.getTextureTranslation(MyBSP.curline.sidedef.midtexture);
         // System.out.print(" for texture "+textures[texnum].name+"\n:");
         lightnum =
-            (frontsector.lightlevel >> LIGHTSEGSHIFT) + colormaps.extralight;
+            (frontsector.lightlevel >> colormaps.lightSegShift()) + colormaps.extralight;
 
         if (MyBSP.curline.v1y == MyBSP.curline.v2y)
             lightnum--;
@@ -224,7 +199,7 @@ public abstract class AbstractThings<T,V>
 
         // Killough code.
         colormaps.walllights =
-            lightnum >= LIGHTLEVELS ? colormaps.scalelight[LIGHTLEVELS - 1]
+            lightnum >= colormaps.lightLevels() ? colormaps.scalelight[colormaps.lightLevels() - 1]
                     : lightnum < 0 ? colormaps.scalelight[0]
                             : colormaps.scalelight[lightnum];
 
@@ -270,10 +245,10 @@ public abstract class AbstractThings<T,V>
             // calculate lighting
             if (maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x] != Short.MAX_VALUE) {
                 if (colormaps.fixedcolormap == null) {
-                    index = spryscale >>> LIGHTSCALESHIFT;
+                    index = spryscale >>> colormaps.lightScaleShift();
 
-                    if (index >= MAXLIGHTSCALE)
-                        index = MAXLIGHTSCALE - 1;
+                    if (index >= colormaps.maxLightScale())
+                        index = colormaps.maxLightScale() - 1;
 
                     maskedcvars.dc_colormap = colormaps.walllights[index];
                 }
@@ -391,11 +366,11 @@ public abstract class AbstractThings<T,V>
             // vis.pcolormap=0;
         } else if ((psp.state.frame & FF_FULLBRIGHT) != 0) {
             // full bright
-            vis.colormap = colormaps.colormaps[0];
+            vis.colormap = colormaps.colormaps[Palettes.COLORMAP_FIXED];
             // vis.pcolormap=0;
         } else {
             // local light
-            vis.colormap = colormaps.spritelights[MAXLIGHTSCALE - 1];
+            vis.colormap = colormaps.spritelights[colormaps.maxLightScale() - 1];
         }
 
         // System.out.println("Weapon draw "+vis);
@@ -424,13 +399,13 @@ public abstract class AbstractThings<T,V>
 
         // get light level
         lightnum =
-            (view.player.mo.subsector.sector.lightlevel >> LIGHTSEGSHIFT)
+            (view.player.mo.subsector.sector.lightlevel >> colormaps.lightSegShift())
                     + colormaps.extralight;
 
         if (lightnum < 0)
             colormaps.spritelights = colormaps.scalelight[0];
-        else if (lightnum >= LIGHTLEVELS)
-            colormaps.spritelights = colormaps.scalelight[LIGHTLEVELS - 1];
+        else if (lightnum >= colormaps.lightLevels())
+            colormaps.spritelights = colormaps.scalelight[colormaps.lightLevels() - 1];
         else
             colormaps.spritelights = colormaps.scalelight[lightnum];
 
@@ -453,7 +428,7 @@ public abstract class AbstractThings<T,V>
         }
     }
 
-    // MAES: Scale to SCREENWIDTH
+    // MAES: Scale to vs.getScreenWidth()
     protected short[] clipbot;
 
     protected short[] cliptop;

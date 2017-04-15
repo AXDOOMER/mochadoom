@@ -3,13 +3,13 @@ package data;
 //import m.define;
 import static data.Limits.MAXINT;
 import static data.Limits.MININT;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
-import static m.fixed_t.MAPFRACUNIT;
-import g.Keys;
 import defines.ammotype_t;
 import defines.card_t;
 import doom.weapontype_t;
+import g.Keys;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -48,6 +48,8 @@ public final class Defines{
     
     /** Seems to be 109 for shareware 1.9, wtf is this*/
 public static final int VERSION =  109 ;
+
+public static final int JAVARANDOM_MASK = 0x80;
 
 /** Some parts of the code may actually be better used as if in a UNIX environment */
 
@@ -189,11 +191,6 @@ public static final int PU_CACHE     =   101;
 
 
 // From hu_lib.h:
-
-//background and foreground screen numbers
-//different from other modules.
-public static final int BG     =     1;
-public static final int FG     =     0;
 
 //font stuff
 static public final char HU_CHARERASE  =  Keys.KEY_BACKSPACE;

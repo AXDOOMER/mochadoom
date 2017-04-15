@@ -1,19 +1,18 @@
 package rr;
 
+import v.tables.LightsAndColors;
 import static data.Tables.ANGLETOFINESHIFT;
 import static data.Tables.BITS32;
 import static data.Tables.finecosine;
 import static data.Tables.finesine;
-import static m.fixed_t.FixedMul;
-import static rr.LightsAndColors.*;
-
+import doom.DoomMain;
 import i.IDoomSystem;
-
+import static m.fixed_t.FixedMul;
 import rr.RendererState.IPlaneDrawer;
 import rr.drawfuns.SpanVars;
-import v.IVideoScale;
+import v.scale.VideoScale;
 
-public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
+public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
 
     private static final boolean DEBUG2=false;
 
@@ -49,9 +48,10 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
     protected final LightsAndColors<V> colormap;
     protected final TextureManager<T> TexMan;
     protected final IDoomSystem I;
+    protected final VideoScale vs;
     
     
-    protected PlaneDrawer(Renderer<T,V> R){
+    protected PlaneDrawer(DoomMain<T, V> DOOM, SceneRenderer<T,V> R){
         this.view=R.getView();
         this.vpvars=R.getVPVars();
         this.dsvars=R.getDSVars();
@@ -59,6 +59,19 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
         this.colormap=R.getColorMap();
         this.TexMan=R.getTextureManager();
         this.I=R.getDoomSystem();
+        this.vs = DOOM.vs;
+        // Pre-scale stuff.
+
+        spanstart = new int[vs.getScreenHeight()];
+        spanstop = new int[vs.getScreenHeight()];
+        distscale = new int[vs.getScreenWidth()];        
+        cacheddistance = new int[vs.getScreenHeight()];
+        cachedxstep = new int[vs.getScreenHeight()];
+        cachedystep = new int[vs.getScreenHeight()];
+
+        // HACK: visplanes are initialized globally.
+        visplane_t.setVideoScale(vs);
+        vpvars.initVisplanes();
     }
 
     /**
@@ -106,10 +119,10 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
         if (colormap.fixedcolormap != null)
             dsvars.ds_colormap = colormap.fixedcolormap;
         else {
-            index = distance >>> LIGHTZSHIFT;
+            index = distance >>> colormap.lightZShift();
 
-            if (index >= MAXLIGHTZ)
-                index = MAXLIGHTZ - 1;
+            if (index >= colormap.maxLightZ())
+                index = colormap.maxLightZ() - 1;
 
             dsvars.ds_colormap = planezlight[index];
         }
@@ -186,42 +199,11 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
      * R_InitPlanes Only at game startup.
      */
 
+    @Override
     public void InitPlanes() {
         // Doh!
     }
 
-   /////////// VIDEO SCALE STUFF ///////////
-
-    protected int SCREENWIDTH;
-    protected int SCREENHEIGHT;
-    protected IVideoScale vs;
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        this.vs = vs;
-    }
-
-    @Override
-    public void initScaling() {
-        this.SCREENHEIGHT = vs.getScreenHeight();
-        this.SCREENWIDTH = vs.getScreenWidth();
-
-        // Pre-scale stuff.
-
-        spanstart = new int[SCREENHEIGHT];
-        spanstop = new int[SCREENHEIGHT];
-        distscale = new int[SCREENWIDTH];        
-        cacheddistance = new int[SCREENHEIGHT];
-        cachedxstep = new int[SCREENHEIGHT];
-        cachedystep = new int[SCREENHEIGHT];
-
-        // HACK: visplanes are initialized globally.
-        visplane_t.setVideoScale(vs);
-        visplane_t.initScaling();
-        vpvars.initVisplanes();
-
-    }
-    
     protected final void rangeCheckErrors(){
         if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
             I.Error("R_DrawPlanes: drawsegs overflow (%d)", seg_vars.ds_p);

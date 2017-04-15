@@ -3,6 +3,9 @@ package s;
 import data.sfxinfo_t;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
+import doom.CVarManager;
+import doom.CommandVariable;
+import doom.DoomMain;
 import p.mobj_t;
 
 // Emacs style mode select   -*- C++ -*- 
@@ -33,6 +36,19 @@ import p.mobj_t;
 //-----------------------------------------------------------------------------
 
 public interface IDoomSound {
+
+    static IDoomSound chooseSoundIsPresent(DoomMain DM, CVarManager CVM, ISoundDriver ISND) {
+        if (!CVM.bool(CommandVariable.NOSOUND) || (ISND instanceof DummySFX)) {
+            return new AbstractDoomAudio(DM, DM.numChannels);
+        } else {
+            /**
+             * Saves a lot of distance calculations,
+             * if we're not to output any sound at all.
+             * TODO: create a Dummy that can handle music alone.
+             */
+            return new DummySoundDriver();
+        }
+    }
 
 	class channel_t{
 

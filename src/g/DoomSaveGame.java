@@ -2,15 +2,12 @@ package g;
 
 import static data.Defines.VERSION;
 import static data.Limits.*;
-
-
+import defines.*;
+import doom.DoomStatus;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import defines.*;
-import doom.DoomStatus;
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
@@ -27,8 +24,7 @@ import w.IWritableDoomObject;
  */
 
 
-public class DoomSaveGame
-        implements CacheableDoomObject, IReadableDoomObject, IWritableDoomObject{
+public class DoomSaveGame implements CacheableDoomObject, IReadableDoomObject, IWritableDoomObject{
     
     public DoomSaveGame(){
         playeringame=new boolean[MAXPLAYERS];
@@ -49,8 +45,7 @@ public class DoomSaveGame
    
 
     @Override
-    public void unpack(ByteBuffer buf)
-            throws IOException {
+    public void unpack(ByteBuffer buf) throws IOException {
         name=DoomBuffer.getNullTerminatedString(buf, SAVESTRINGSIZE);
         vcheck=DoomBuffer.getNullTerminatedString(buf, VERSIONSIZE);
         String vcheckb= ("version "+VERSION);
@@ -86,8 +81,7 @@ public class DoomSaveGame
     
    
     @Override
-    public void write(DataOutputStream f)
-            throws IOException {
+    public void write(DataOutputStream f) throws IOException {
         DoomIO.writeString(f,name,SAVESTRINGSIZE);
         DoomIO.writeString(f,vcheck,VERSIONSIZE);
         f.writeByte(gameskill); 
@@ -117,8 +111,7 @@ public class DoomSaveGame
     } 
     
     @Override
-    public void read(DataInputStream f)
-            throws IOException {
+    public void read(DataInputStream f) throws IOException {
         name=DoomIO.readNullTerminatedString(f,SAVESTRINGSIZE);
         vcheck=DoomIO.readNullTerminatedString(f,VERSIONSIZE);
         String vcheckb= ("version "+VERSION);

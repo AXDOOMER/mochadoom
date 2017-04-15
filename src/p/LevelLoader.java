@@ -1,30 +1,8 @@
 package p;
 
-import static rr.line_t.ML_TWOSIDED;
 import static data.Defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
-import static m.BBox.BOXBOTTOM;
-import static m.BBox.BOXLEFT;
-import static m.BBox.BOXRIGHT;
-import static m.BBox.BOXTOP;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FixedDiv;
-import static utils.C2JUtils.flags;
-import java.io.IOException;
-import java.nio.ByteOrder;
-
-import m.BBox;
-import rr.line_t;
-import rr.node_t;
-import rr.sector_t;
-import rr.seg_t;
-import rr.side_t;
-import rr.subsector_t;
-import rr.vertex_t;
-import s.degenmobj_t;
-import utils.C2JUtils;
-import w.DoomBuffer;
 import data.maplinedef_t;
 import data.mapnode_t;
 import data.mapsector_t;
@@ -34,7 +12,29 @@ import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
 import defines.*;
-import doom.DoomStatus;
+import doom.CommandVariable;
+import doom.DoomMain;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import m.BBox;
+import static m.BBox.BOXBOTTOM;
+import static m.BBox.BOXLEFT;
+import static m.BBox.BOXRIGHT;
+import static m.BBox.BOXTOP;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedDiv;
+import rr.line_t;
+import static rr.line_t.ML_TWOSIDED;
+import rr.node_t;
+import rr.sector_t;
+import rr.seg_t;
+import rr.side_t;
+import rr.subsector_t;
+import rr.vertex_t;
+import s.degenmobj_t;
+import utils.C2JUtils;
+import static utils.C2JUtils.flags;
+import w.DoomBuffer;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -59,13 +59,13 @@ import doom.DoomStatus;
 //
 //-----------------------------------------------------------------------------
 
-public class LevelLoader extends AbstractLevelLoader{
+public class LevelLoader extends AbstractLevelLoader {
 
 public static final String  rcsid = "$Id: LevelLoader.java,v 1.44 2012/09/24 17:16:23 velktron Exp $";
 
 
-public LevelLoader(DoomStatus<?,?> DC) {
-		super(DC);
+public LevelLoader(DoomMain<?,?> DM) {
+		super(DM);
 		// Traditional loader sets limit.
 		deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
 	}
@@ -80,12 +80,12 @@ public LevelLoader(DoomStatus<?,?> DC) {
       
       // Determine number of lumps:
       //  total lump length / vertex record length.
-      numvertexes = W.LumpLength (lump) / mapvertex_t.sizeOf();
+      numvertexes = DOOM.wadLoader.LumpLength (lump) / mapvertex_t.sizeOf();
 
       // Load data into cache.
       // MAES: we now have a mismatch between memory/disk: in memory, we need an array.
       // On disk, we have a single lump/blob. Thus, we need to find a way to deserialize this...
-      vertexes=W.CacheLumpNumIntoArray(lump,numvertexes,vertex_t.class);
+      vertexes=DOOM.wadLoader.CacheLumpNumIntoArray(lump,numvertexes,vertex_t.class);
       
      // Copy and convert vertex coordinates,
      // MAES: not needed. Intermediate mapvertex_t struct skipped.
@@ -109,9 +109,9 @@ public LevelLoader(DoomStatus<?,?> DC) {
       int         side;
       
       // Another disparity between disk/memory. Treat it the same as VERTEXES.
-      numsegs = W.LumpLength (lump) / mapseg_t.sizeOf();
+      numsegs = DOOM.wadLoader.LumpLength (lump) / mapseg_t.sizeOf();
       segs = C2JUtils.createArrayOfObjects(seg_t.class,numsegs);
-      data = W.CacheLumpNumIntoArray(lump,numsegs,mapseg_t.class);
+      data = DOOM.wadLoader.CacheLumpNumIntoArray(lump,numsegs,mapseg_t.class);
       
 
       // We're not done yet!
@@ -158,11 +158,11 @@ public LevelLoader(DoomStatus<?,?> DC) {
       subsector_t    ss;
       mapsubsector_t[] data;
       
-      numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();      
+      numsubsectors = DOOM.wadLoader.LumpLength (lump) / mapsubsector_t.sizeOf();      
       subsectors = C2JUtils.createArrayOfObjects(subsector_t.class,numsubsectors);
 
       // Read "mapsubsectors"
-      data=W.CacheLumpNumIntoArray(lump,numsubsectors, mapsubsector_t.class);
+      data=DOOM.wadLoader.CacheLumpNumIntoArray(lump,numsubsectors, mapsubsector_t.class);
       
       for (int i=0 ; i<numsubsectors ; i++)
       {
@@ -184,11 +184,11 @@ public LevelLoader(DoomStatus<?,?> DC) {
       mapsector_t    ms;
       sector_t       ss;
       
-      numsectors = W.LumpLength (lump) / mapsector_t.sizeOf();
+      numsectors = DOOM.wadLoader.LumpLength (lump) / mapsector_t.sizeOf();
       sectors = C2JUtils.createArrayOfObjects(sector_t.class,numsectors);
      
       // Read "mapsectors"
-      data=W.CacheLumpNumIntoArray(lump,numsectors,mapsector_t.class);
+      data=DOOM.wadLoader.CacheLumpNumIntoArray(lump,numsectors,mapsector_t.class);
 
       for (int i=0 ; i<numsectors ; i++)
       {
@@ -196,15 +196,15 @@ public LevelLoader(DoomStatus<?,?> DC) {
           ss = sectors[i];
       ss.floorheight = ms.floorheight<<FRACBITS;
       ss.ceilingheight = ms.ceilingheight<<FRACBITS;
-      ss.floorpic = (short) TM.FlatNumForName(ms.floorpic);
-      ss.ceilingpic = (short) TM.FlatNumForName(ms.ceilingpic);
+      ss.floorpic = (short) DOOM.textureManager.FlatNumForName(ms.floorpic);
+      ss.ceilingpic = (short) DOOM.textureManager.FlatNumForName(ms.ceilingpic);
       ss.lightlevel = ms.lightlevel;
       ss.special = ms.special;
       ss.tag = ms.tag;
       ss.thinglist = null;
       ss.id=i;
-      ss.TL=this.P;
-      ss.RND=this.DM.RND;
+      ss.TL=this.DOOM.actions;
+      ss.RND=this.DOOM.random;
       }
 
   }
@@ -224,11 +224,11 @@ public LevelLoader(DoomStatus<?,?> DC) {
       mapnode_t  mn;
       node_t no;
       
-      numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
+      numnodes = DOOM.wadLoader.LumpLength (lump) / mapnode_t.sizeOf();
       nodes = C2JUtils.createArrayOfObjects(node_t.class,numnodes);
 
       // Read "mapnodes"
-      data = W.CacheLumpNumIntoArray(lump,numnodes,mapnode_t.class);
+      data = DOOM.wadLoader.CacheLumpNumIntoArray(lump,numnodes,mapnode_t.class);
       
       for (i=0 ; i<numnodes ; i++)
       {
@@ -283,12 +283,12 @@ public LevelLoader(DoomStatus<?,?> DC) {
       int         numthings;
       boolean     spawn;      
       
-      numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
+      numthings = DOOM.wadLoader.LumpLength (lump) / mapthing_t.sizeOf();
       // VERY IMPORTANT: since now caching is near-absolute,
       // the mapthing_t instances must be CLONED rather than just
       // referenced, otherwise missing mobj bugs start  happening.
       
-      data=W.CacheLumpNumIntoArray(lump,numthings,mapthing_t.class);
+      data=DOOM.wadLoader.CacheLumpNumIntoArray(lump,numthings,mapthing_t.class);
       
       for (int i=0 ; i<numthings ; i++)
       {
@@ -296,7 +296,7 @@ public LevelLoader(DoomStatus<?,?> DC) {
       spawn = true;
 
       // Do not spawn cool, new monsters if !commercial
-      if ( !DM.isCommercial())
+      if ( !DOOM.isCommercial())
       {
           switch(mt.type)
           {
@@ -327,7 +327,7 @@ public LevelLoader(DoomStatus<?,?> DC) {
       
       //System.out.printf("Spawning %d %s\n",i,mt.type);
       
-      P.SpawnMapThing (mt);
+      DOOM.actions.SpawnMapThing (mt);
       }
       
       // Status may have changed. It's better to release the resources anyway
@@ -349,13 +349,13 @@ public LevelLoader(DoomStatus<?,?> DC) {
       vertex_t       v1;
       vertex_t       v2;
       
-      numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
+      numlines = DOOM.wadLoader.LumpLength (lump) / maplinedef_t.sizeOf();
       lines = C2JUtils.createArrayOfObjects(line_t.class,numlines);
       // Check those actually used in sectors, later on.
       used_lines=new boolean[numlines]; 
 
       // read "maplinedefs"
-      data = W.CacheLumpNumIntoArray(lump,numlines,maplinedef_t.class);
+      data = DOOM.wadLoader.CacheLumpNumIntoArray(lump,numlines,maplinedef_t.class);
       
       for (int i=0 ; i<numlines ; i++)
       {
@@ -458,10 +458,10 @@ public LevelLoader(DoomStatus<?,?> DC) {
       mapsidedef_t   msd;
       side_t     sd;
       
-      numsides = W.LumpLength (lump) / mapsidedef_t.sizeOf();
+      numsides = DOOM.wadLoader.LumpLength (lump) / mapsidedef_t.sizeOf();
       sides = C2JUtils.createArrayOfObjects(side_t.class,numsides);
       
-      data= W.CacheLumpNumIntoArray(lump,numsides,mapsidedef_t.class);
+      data= DOOM.wadLoader.CacheLumpNumIntoArray(lump,numsides,mapsidedef_t.class);
       
       for (int i=0 ; i<numsides ; i++)
       {
@@ -470,9 +470,9 @@ public LevelLoader(DoomStatus<?,?> DC) {
           
       sd.textureoffset = (msd.textureoffset)<<FRACBITS;
       sd.rowoffset = (msd.rowoffset)<<FRACBITS;
-      sd.toptexture = (short) TM.TextureNumForName(msd.toptexture);
-      sd.bottomtexture = (short) TM.TextureNumForName(msd.bottomtexture);
-      sd.midtexture = (short) TM.TextureNumForName(msd.midtexture);
+      sd.toptexture = (short) DOOM.textureManager.TextureNumForName(msd.toptexture);
+      sd.bottomtexture = (short) DOOM.textureManager.TextureNumForName(msd.bottomtexture);
+      sd.midtexture = (short) DOOM.textureManager.TextureNumForName(msd.midtexture);
       if (msd.sector<0) sd.sector=dummy_sector;
       else
       sd.sector = sectors[msd.sector];
@@ -497,13 +497,13 @@ public LevelLoader(DoomStatus<?,?> DC) {
   {
       int     count=0;
       
-      if (DM.CM.CheckParmBool("-blockmap") || W.LumpLength(lump) < 8
-              || (count = W.LumpLength(lump) / 2) >= 0x10000) // e6y
+      if (DOOM.cVarManager.bool(CommandVariable.BLOCKMAP) || DOOM.wadLoader.LumpLength(lump) < 8
+              || (count = DOOM.wadLoader.LumpLength(lump) / 2) >= 0x10000) // e6y
           CreateBlockMap();
       else {
       
-      DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
-      count=W.LumpLength(lump)/2;
+      DoomBuffer data=(DoomBuffer)DOOM.wadLoader.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
+      count=DOOM.wadLoader.LumpLength(lump)/2;
       blockmaplump=new int[count];
 
       data.setOrder(ByteOrder.LITTLE_ENDIAN);
@@ -670,7 +670,7 @@ public LevelLoader(DoomStatus<?,?> DC) {
       }
       
       if (addedlines != sector.linecount)
-    	  I.Error ("P_GroupLines: miscounted");
+    	  DOOM.doomSystem.Error ("P_GroupLines: miscounted");
               
       // set the degenmobj_t to the middle of the bounding box
       sector.soundorg=new degenmobj_t(((bbox[BOXRIGHT]+bbox[BOXLEFT])/2),
@@ -710,20 +710,20 @@ public LevelLoader(DoomStatus<?,?> DC) {
       int     lumpnum;
    
       try{
-      DM.totalkills = DM.totalitems = DM.totalsecret = DM.wminfo.maxfrags = 0;
-      DM.wminfo.partime = 180;
+      DOOM.totalkills = DOOM.totalitems = DOOM.totalsecret = DOOM.wminfo.maxfrags = 0;
+      DOOM.wminfo.partime = 180;
       for (i=0 ; i<MAXPLAYERS ; i++)
       {
-      DM.players[i].killcount = DM.players[i].secretcount 
-          = DM.players[i].itemcount = 0;
+      DOOM.players[i].killcount = DOOM.players[i].secretcount 
+          = DOOM.players[i].itemcount = 0;
       }
 
       // Initial height of PointOfView
       // will be set by player think.
-      DM.players[DM.consoleplayer].viewz = 1; 
+      DOOM.players[DOOM.consoleplayer].viewz = 1; 
 
       // Make sure all sounds are stopped before Z_FreeTags.
-      S.Start ();         
+      DOOM.doomSound.Start ();         
 
   /*    
   #if 0 // UNUSED
@@ -739,13 +739,13 @@ public LevelLoader(DoomStatus<?,?> DC) {
 
 
       // UNUSED W_Profile ();
-      P.InitThinkers ();
+      DOOM.actions.InitThinkers ();
 
       // if working with a development map, reload it
-      W.Reload ();            
+      DOOM.wadLoader.Reload ();            
          
       // find map name
-      if ( DM.isCommercial())
+      if ( DOOM.isCommercial())
       {
       if (map<10)
           lumpname="MAP0"+map;
@@ -761,11 +761,11 @@ public LevelLoader(DoomStatus<?,?> DC) {
       );
       }
 
-      lumpnum = W.GetNumForName (lumpname);
+      lumpnum = DOOM.wadLoader.GetNumForName (lumpname);
       
-      DM.leveltime = 0;
+      DOOM.leveltime = 0;
       
-      if (!W.verifyLumpName(lumpnum+ML_BLOCKMAP, LABELS[ML_BLOCKMAP]))
+      if (!DOOM.wadLoader.verifyLumpName(lumpnum+ML_BLOCKMAP, LABELS[ML_BLOCKMAP]))
           System.err.println("Blockmap missing!");
       
       // note: most of this ordering is important
@@ -788,37 +788,37 @@ public LevelLoader(DoomStatus<?,?> DC) {
       
       this.GroupLines ();
 
-      DM.bodyqueslot = 0;
+      DOOM.bodyqueslot = 0;
       // Reset to "deathmatch starts"
-      DM.deathmatch_p = 0;
+      DOOM.deathmatch_p = 0;
       this.LoadThings (lumpnum+ML_THINGS);
       
       // if deathmatch, randomly spawn the active players
-      if (DM.deathmatch)
+      if (DOOM.deathmatch)
       {
       for (i=0 ; i<MAXPLAYERS ; i++)
-          if (DM.playeringame[i])
+          if (DOOM.playeringame[i])
           {
-          DM.players[i].mo = null;
+          DOOM.players[i].mo = null;
        //   DM.DeathMatchSpawnPlayer (i);
           }
               
       }
 
       // clear special respawning que
-      P.iquehead = P.iquetail = 0;        
+      DOOM.actions.iquehead = DOOM.actions.iquetail = 0;        
       
       // set up world state
-      P.SpawnSpecials ();
+      DOOM.actions.SpawnSpecials ();
       
       // build subsector connect matrix
       //  UNUSED P_ConnectSubsectors ();
 
       // preload graphics
-      if (DM.precache){
-      TM.PrecacheLevel ();
+      if (DOOM.precache){
+      DOOM.textureManager.PrecacheLevel ();
       // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
-      R.PreCacheThinkers();
+      DOOM.sceneRenderer.PreCacheThinkers();
       
       }
 

@@ -1,0 +1,6 @@
+-truecolor
+-noblockmap
+-novert disable
+-multiply 5
+-showfps
+-greypal

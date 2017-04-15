@@ -1,20 +1,12 @@
 package rr;
 
 import static data.Defines.PU_CACHE;
-import static m.fixed_t.FRACBITS;
-
-import i.DoomStatusAware;
-import i.IDoomSystem;
-
+import doom.DoomMain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
-
-import doom.DoomStatus;
-
-import utils.C2JUtils;
-import w.IWadLoader;
+import static m.fixed_t.FRACBITS;
 import w.lumpinfo_t;
 
 /** An stand-alone sprite loader. Surprisingly, it is quite a 
@@ -27,21 +19,19 @@ import w.lumpinfo_t;
  *
  */
 
-public class SpriteManager implements ISpriteManager, DoomStatusAware{
+public class SpriteManager<T, V> implements ISpriteManager {
 	    
 	    /** There seems to be an arbitrary limit of 29 distinct frames per THING */
 	    public static final int MAX_SPRITE_FRAMES = 29;
 	    
-        private SpriteManager(){
+        public SpriteManager(DoomMain<T, V> DOOM){
             sprtemp = new spriteframe_t[MAX_SPRITE_FRAMES];
-            C2JUtils.initArrayOfObjects(sprtemp);
+            Arrays.setAll(sprtemp, i -> new spriteframe_t());
+            this.DOOM = DOOM;
         }
+        
+        private final DoomMain<T, V> DOOM;
 	    
-        public SpriteManager(DoomStatus DC) {
-            this();
-            this.updateStatus(DC);
-        }
-
         // Temporarily contains the frames of a given sprite before they are
         // registered with the rendering system. Apparently, a maximum of 29 frames
         // per sprite is allowed.
@@ -103,7 +93,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
             numsprites = i;
 
             sprites = new spritedef_t[numsprites];
-            C2JUtils.initArrayOfObjects(sprites);
+            Arrays.setAll(sprites, j -> new spritedef_t());
 
             // Create hash table based on just the first four letters of each
             // sprite
@@ -120,7 +110,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
             // lumps
             // trump previous ones in order.
             for (i = numentries - 1; i >= 0; i--) {
-                int hashcode = SpriteNameHash(W.GetLumpInfo(i + firstspritelump).name);
+                int hashcode = SpriteNameHash(DOOM.wadLoader.GetLumpInfo(i + firstspritelump).name);
                 // Create chain list for each sprite class (e.g. TROO, POSS,
                 // etc.)
                 //
@@ -167,7 +157,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
 
                     for (Integer j : list) {
 
-                        lumpinfo_t lump = W.GetLumpInfo(j + firstspritelump);
+                        lumpinfo_t lump = DOOM.wadLoader.GetLumpInfo(j + firstspritelump);
 
                         // We don't know a-priori which frames exist.
                         // However, we do know how to interpret existing ones,
@@ -206,7 +196,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
                             switch ((int) sprtemp[frame].rotate) {
                             case -1:
                                 // no rotations were found for that frame at all
-                                I.Error("R_InitSprites: No patches found for %s frame %c",
+                                DOOM.doomSystem.Error("R_InitSprites: No patches found for %s frame %c",
                                         namelist[i], frame + 'A');
                                 break;
 
@@ -220,7 +210,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
                                 int rotation;
                                 for (rotation = 0; rotation < 8; rotation++)
                                     if (sprtemp[frame].lump[rotation] == -1)
-                                        I.Error("R_InitSprites: Sprite %s frame %c is missing rotations",
+                                        DOOM.doomSystem.Error("R_InitSprites: Sprite %s frame %c is missing rotations",
                                                 namelist[i], frame + 'A');
                                 break;
                             }
@@ -247,8 +237,8 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
             int i;
             patch_t patch;
 
-            firstspritelump = W.GetNumForName("S_START") + 1;
-            lastspritelump = W.GetNumForName("S_END") - 1;
+            firstspritelump = DOOM.wadLoader.GetNumForName("S_START") + 1;
+            lastspritelump = DOOM.wadLoader.GetNumForName("S_END") - 1;
 
             numspritelumps = lastspritelump - firstspritelump + 1;
             spritewidth = new int[numspritelumps];
@@ -259,7 +249,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
                 if ((i & 63) == 0)
                     System.out.print(".");
 
-                patch = (patch_t) W.CacheLumpNum(firstspritelump + i, PU_CACHE,
+                patch = (patch_t) DOOM.wadLoader.CacheLumpNum(firstspritelump + i, PU_CACHE,
                         patch_t.class);
                 spritewidth[i] = patch.width << FRACBITS;
                 spriteoffset[i] = patch.leftoffset << FRACBITS;
@@ -277,7 +267,7 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
         public final void InstallSpriteLump(int lump, int frame,
                 int rotation, boolean flipped) {
             if (frame >= MAX_SPRITE_FRAMES || rotation > 8)
-                I.Error("R_InstallSpriteLump: Bad frame characters in lump %d",
+                DOOM.doomSystem.Error("R_InstallSpriteLump: Bad frame characters in lump %d",
                         lump);
 
             if ((int) frame > maxframe)
@@ -371,20 +361,6 @@ public class SpriteManager implements ISpriteManager, DoomStatusAware{
         public final int getSpriteTopOffset(int index) {
             return spritetopoffset[index];
         }
-
-        /////////// STATUS ///////////
-        
-        @Override
-        public void updateStatus(DoomStatus DC) {
-            this.W=DC.W;
-            this.I=DC.I;
-            }
-        
-        protected IWadLoader W;
-        protected IDoomSystem I;
-
-
-
 
         // Some unused shit
          

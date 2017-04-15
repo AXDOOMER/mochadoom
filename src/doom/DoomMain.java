@@ -1,11 +1,37 @@
 package doom;
 
+import automap.IAutoMap;
+import awt.DoomVideoInterface;
+import static data.Defines.*;
+import static data.Limits.*;
+import data.Tables;
+import static data.Tables.*;
+import data.dstrings;
+import static data.dstrings.*;
+import static data.info.mobjinfo;
+import static data.info.states;
+import data.mapthing_t;
+import data.mobjtype_t;
+import data.sounds.musicenum_t;
+import data.sounds.sfxenum_t;
+import defines.*;
+import demo.IDemoTicCmd;
+import demo.VanillaDoomDemo;
+import demo.VanillaTiccmd;
+import static doom.NetConsts.*;
+import static doom.englsh.*;
+import f.EndLevel;
+import f.Finale;
+import f.Wiper;
+import static g.Keys.*;
+import hu.HU;
 import i.DiskDrawer;
-import i.DoomStatusAware;
 import i.DoomSystem;
-import i.DoomVideoInterface;
+import i.Game;
+import i.IDiskDrawer;
+import i.IDoomSystem;
 import i.Strings;
-
+import java.awt.Rectangle;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -14,97 +40,50 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import m.DelegateRandom;
+import m.IDoomMenu;
+import m.Menu;
+import m.MenuMisc;
+import m.Settings;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.MAPFRACUNIT;
+import n.DoomSystemNetworking;
 import n.DummyNetworkDriver;
-import static data.dstrings.*;
+import p.AbstractLevelLoader;
 import p.Actions;
 import p.BoomLevelLoader;
 import p.mobj_t;
-import automap.IAutoMap;
-import automap.Map;
-import awt.AWTDoom;
-import f.EndLevel;
-import f.Finale;
-import f.Wiper;
-import hu.HU;
-import m.Menu;
-import m.MenuMisc;
-import m.DoomRandom;
-import m.Settings;
-import m.VarsManager;
-import static doom.NetConsts.*;
-import static doom.englsh.*;
-import data.Tables;
-import data.dstrings;
-import data.mapthing_t;
-import data.mobjtype_t;
-import defines.*;
-import demo.IDemoTicCmd;
-import demo.IDoomDemo;
-import demo.VanillaDoomDemo;
-import demo.VanillaTiccmd;
-import data.sounds.musicenum_t;
-import data.sounds.sfxenum_t;
-import static data.Defines.BACKUPTICS;
-import static g.Keys.*;
-import static data.Defines.NORMALUNIX;
-import static data.Defines.PU_STATIC;
-import static data.Defines.VERSION;
-import rr.Renderer;
-import rr.SimpleTextureManager;
+import rr.ISpriteManager;
+import rr.SceneRenderer;
 import rr.SpriteManager;
+import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.ViewVars;
-import rr.subsector_t;
 import rr.parallel.ParallelRenderer;
 import rr.parallel.ParallelRenderer2;
-import s.AbstractDoomAudio;
-import s.ClassicDoomSoundDriver;
-import s.ClipSFXModule;
-import s.DavidMusicModule;
-import s.DavidSFXModule;
-import s.DummyMusic;
-import s.DummySFX;
-import s.DummySoundDriver;
-import s.SpeakerDoomSoundDriver;
-import s.SuperDoomSoundDriver;
-//import s.SpeakerDoomSoundDriver;
-
+import rr.subsector_t;
+import s.IDoomSound;
+import s.IMusic;
+import s.ISoundDriver;
 import savegame.IDoomSaveGame;
 import savegame.IDoomSaveGameHeader;
 import savegame.VanillaDSG;
 import savegame.VanillaDSGHeader;
+import st.AbstractStatusBar;
 import st.StatusBar;
-import timing.FastTicker;
 import timing.ITicker;
 import timing.MilliTicker;
-import timing.NanoTicker;
 import utils.C2JUtils;
-import v.BufferedRenderer;
-import v.BufferedRenderer16;
-import v.BufferedRenderer32;
-import v.ColorTint;
-import v.DoomVideoRenderer;
-import v.GammaTables;
-import v.IVideoScale;
-import v.IVideoScaleAware;
-import v.PaletteGenerator;
-//import v.VideoScaleInfo;
-import v.VisualSettings;
-import w.DoomBuffer;
-import w.WadLoader;
-import static data.Defines.*;
-import static data.Limits.*;
-import static data.Tables.*;
-import static data.dstrings.SAVEGAMENAME;
-import static data.info.mobjinfo;
-import static data.info.states;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.MAPFRACUNIT;
 import static utils.C2JUtils.*;
+import v.DoomGraphicSystem;
+import v.renderers.BppMode;
+import static v.renderers.DoomScreen.*;
+import v.renderers.RendererFactory;
+import v.scale.VideoScale;
+import v.scale.VisualSettings;
+import w.IWadLoader;
+import w.WadLoader;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -133,9 +112,16 @@ import static utils.C2JUtils.*;
 //
 //-----------------------------------------------------------------------------
 
-public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
+@SuppressWarnings({
+    "UseOfSystemOutOrSystemErr",
+    "MalformedFormatString",
+    "CallToPrintStackTrace",
+    "override",
+    "StringBufferMayBeStringBuilder"
+})
+public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom {
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $";
+    public static final String RCSID = "$Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -143,9 +129,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     // Events are asynchronous inputs generally generated by the game user.
     // Events can be discarded if no responder claims them
     //
-    public event_t[]         events=new event_t[MAXEVENTS];
-    public int             eventhead;
-    public int 		eventtail;
+    public final event_t[] events = new event_t[MAXEVENTS];
+    public int eventhead;
+    public int eventtail;
 
     /**
      * D_PostEvent
@@ -172,13 +158,13 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // IF STORE DEMO, DO NOT ACCEPT INPUT
 
         if ( ( isCommercial() )
-                && (W.CheckNumForName("MAP01")<0) )
+                && (wadLoader.CheckNumForName("MAP01")<0) )
             return; 
 
         for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
         {
             ev = events[eventtail];
-            if (M.Responder (ev)){
+            if (menu.Responder (ev)){
                 //epool.checkIn(ev);
                 continue;               // menu ate the event
             }
@@ -218,86 +204,86 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         redrawsbar = false;
 
         // change the view size if needed
-        if (R.getSetSizeNeeded())
+        if (sceneRenderer.getSetSizeNeeded())
         {
-            R.ExecuteSetViewSize ();
+            sceneRenderer.ExecuteSetViewSize ();
             oldgamestate = gamestate_t.GS_MINUS_ONE;                      // force background redraw
             borderdrawcount = 3;
         }
 
         // save the current screen if about to wipe
-        if (wipe=(gamestate != wipegamestate))
+        wipe = (gamestate != wipegamestate);
+        if (wipe)
         {
-            wipe = true;
-            WIPE.StartScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
+            wiper.StartScreen(0, 0, vs.getScreenWidth(), vs.getScreenHeight());
         }
-        else
-            wipe = false;
 
         if (gamestate == gamestate_t.GS_LEVEL && eval(gametic))
-            HU.Erase();
-
+            handsUp.Erase();
+        
         // do buffered drawing
-        switch (gamestate)
-        {
-        case GS_LEVEL:
-            if (!eval(gametic))
+        switch (gamestate) {
+            case GS_LEVEL:
+                if (!eval(gametic)) {
+                        break;
+                }
+                if (automapactive) {
+                    autoMap.Drawer();
+                }
+                if (wipe || (!sceneRenderer.isFullHeight() && fullscreen)
+                        || (inhelpscreensstate && !inhelpscreens)
+                        || (diskDrawer.justDoneReading())) {
+                    redrawsbar = true; // just put away the help screen
+                }
+                statusBar.Drawer(sceneRenderer.isFullHeight(), redrawsbar);
+                fullscreen = sceneRenderer.isFullHeight();
                 break;
-            if (automapactive)
-                AM.Drawer ();
-            if (wipe || (!R.isFullHeight() && fullscreen) ||
-            		(inhelpscreensstate && !inhelpscreens)
-            		|| (DD.justDoneReading()))
-                redrawsbar = true; // just put away the help screen
-            ST.Drawer (R.isFullHeight(), redrawsbar );
-            fullscreen = R.isFullHeight();
-            break;
 
-        case GS_INTERMISSION:
-            WI.Drawer ();
-            break;
+            case GS_INTERMISSION:
+                endLevel.Drawer();
+                break;
 
-        case GS_FINALE:
-            F.Drawer ();
-            break;
+            case GS_FINALE:
+                finale.Drawer();
+                break;
 
-        case GS_DEMOSCREEN:
-            PageDrawer ();
-            break;
+            case GS_DEMOSCREEN:
+                PageDrawer();
+                break;
         }
 
         // draw the view directly
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
         	if (flashing_hom){
-                V.FillRect(gametic%256,0,view.getViewWindowX(),view.getViewWindowY(),
-                    view.getScaledViewWidth(),view.getScaledViewHeight());
+                graphicSystem.FillRect(FG, new Rectangle(view.getViewWindowX(), view.getViewWindowY(),
+                        view.getScaledViewWidth(), view.getScaledViewHeight()), gametic % 256);
         	    }
-            R.RenderPlayerView (players[displayplayer]);
+            sceneRenderer.RenderPlayerView (players[displayplayer]);
         	}
 
         // Automap was active, update only HU.    
         if (gamestate == gamestate_t.GS_LEVEL && eval(gametic))
-            HU.Drawer ();
+            handsUp.Drawer ();
 
         // clean up border stuff
         if (gamestate != oldgamestate && gamestate != gamestate_t.GS_LEVEL)
-            VI.SetPalette (0);
+            videoInterface.SetPalette (0);
 
         // see if the border needs to be initially drawn
         if (gamestate == gamestate_t.GS_LEVEL && oldgamestate != gamestate_t.GS_LEVEL)
         {
             viewactivestate = false;        // view was not active
-            R.FillBackScreen ();    // draw the pattern into the back screen
+            sceneRenderer.FillBackScreen ();    // draw the pattern into the back screen
         }
 
         // see if the border needs to be updated to the screen
-        if (gamestate == gamestate_t.GS_LEVEL && !automapactive && !R.isFullScreen())
+        if (gamestate == gamestate_t.GS_LEVEL && !automapactive && !sceneRenderer.isFullScreen())
         {
             if (menuactive || menuactivestate || !viewactivestate)
                 borderdrawcount = 3;
             if (eval(borderdrawcount))
             {
-                R.DrawViewBorder ();    // erase old menu stuff
+                sceneRenderer.DrawViewBorder ();    // erase old menu stuff
                 borderdrawcount--;
             }
 
@@ -312,52 +298,55 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         if (paused)
         {
             if (automapactive)
-                y = 4;
+                y = 4 * graphicSystem.getScalingY();
             else
-                y = view.getViewWindowY()+4;
-            V.DrawPatchDirect(view.getViewWindowX()+(view.getScaledViewWidth()-68)/2,
-                y,0,W.CachePatchName ("M_PAUSE", PU_CACHE));
+                y = view.getViewWindowY() + 4 * graphicSystem.getScalingY();
+            
+            graphicSystem.DrawPatchCenteredScaled(FG,
+                wadLoader.CachePatchName ("M_PAUSE", PU_CACHE), vs, y,
+                DoomGraphicSystem.V_NOSCALESTART);
         }
 
 
         // menus go directly to the screen
-        M.Drawer ();          // menu is drawn even on top of everything
+        menu.Drawer ();          // menu is drawn even on top of everything
         NetUpdate ();         // send out any new accumulation
 
         // Disk access goes after everything.
-        DD.Drawer();
+        diskDrawer.Drawer();
         
         // normal update
         if (!wipe)
         {
-            //System.out.print("Tick "+DM.gametic+"\t");
-            //System.out.print(DM.players[0]);
-            VI.FinishUpdate ();              // page flip or blit buffer
+            //System.out.print("Tick "+gametic+"\t");
+            //System.out.print(players[0]);
+            videoInterface.FinishUpdate ();              // page flip or blit buffer
             return;
         }
 
         // wipe update. At this point, AT LEAST one frame of the game must have been
         // rendered for this to work. 22/5/2011: Fixed a vexing bug with the wiper.
         // Jesus Christ with a Super Shotgun!
-        WIPE.EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
+        wiper.EndScreen(0, 0, vs.getScreenWidth(), vs.getScreenHeight());
 
-        wipestart = TICK.GetTime () - 1;
+        wipestart = ticker.GetTime () - 1;
 
         do
         {
             do
             {
-                nowtime = TICK.GetTime ();
+                nowtime = ticker.GetTime ();
                 tics = nowtime - wipestart;
             } while (tics==0); // Wait until a single tic has passed.
             wipestart = nowtime;
-            done = WIPE.ScreenWipe(Wiper.wipe.Melt.ordinal()
-                , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
-            ISND.UpdateSound();
-            ISND.SubmitSound();             // update sounds after one wipe tic.
-            VI.UpdateNoBlit ();
-            M.Drawer ();                    // menu is drawn even on top of wipes
-            VI.FinishUpdate ();             // page flip or blit buffer
+            Wiper.Wipe wipeType = CM.equals(Settings.scale_melt, Boolean.TRUE)
+                ?  Wiper.Wipe.ScaledMelt : Wiper.Wipe.Melt;
+            
+            done = wiper.ScreenWipe(wipeType, 0, 0, vs.getScreenWidth(), vs.getScreenHeight(), tics);
+            soundDriver.UpdateSound();
+            soundDriver.SubmitSound();             // update sounds after one wipe tic.
+            menu.Drawer ();                    // menu is drawn even on top of wipes
+            videoInterface.FinishUpdate ();             // page flip or blit buffer
         } while (!done);
 
     }
@@ -374,16 +363,14 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      *  calls I_GetTime, I_StartFrame, and I_StartTic
      * @throws IOException 
      */
+    public void DoomLoop() throws IOException {
+        if (demorecording) {
+            BeginRecording();
+        }
 
-    public void DoomLoop () throws IOException
-    {
-        if (demorecording)
-            BeginRecording ();
-
-        if (eval(CM.CheckParm ("-debugfile")))
-        {
-            String    filename="debug"+consoleplayer+".txt";
-            System.out.println("debug output to: "+filename);
+        if (cVarManager.bool(CommandVariable.DEBUGFILE)) {
+            String filename = "debug" + consoleplayer + ".txt";
+            System.out.println("debug output to: " + filename);
             try {
                 debugfile = new OutputStreamWriter(new FileOutputStream(filename));
             } catch (FileNotFoundException e) {
@@ -391,48 +378,41 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 e.printStackTrace();
             }
         }
-        
-        view=R.getView();
-        
-        while (true)
-        {
-            // frame syncronous IO operations
-            VI.StartFrame ();                
 
+        view = sceneRenderer.getView();
+
+        while (true) {
             // process one or more tics
-            if (singletics)
-            {
-                VI.StartTic ();
-                ProcessEvents ();
-                BuildTiccmd (netcmds[consoleplayer][maketic%BACKUPTICS]);
-                if (advancedemo)
-                    DoAdvanceDemo ();
-                M.Ticker ();
-                Ticker ();
+            if (singletics) {
+                videoInterface.StartTic();
+                ProcessEvents();
+                BuildTiccmd(netcmds[consoleplayer][maketic % BACKUPTICS]);
+                if (advancedemo) {
+                    DoAdvanceDemo();
+                }
+                menu.Ticker();
+                Ticker();
                 gametic++;
                 maketic++;
-            }
-            else
-            {
-                DGN.TryRunTics (); // will run at least one tic (in NET)
+            } else {
+                gameNetworking.TryRunTics(); // will run at least one tic (in NET)
 
             }
 
-            S.UpdateSounds (players[consoleplayer].mo);// move positional sounds
+            doomSound.UpdateSounds(players[consoleplayer].mo);// move positional sounds
 
             // Update display, next frame, with current state.
-            Display ();
-            
-//#ifndef SNDSERV
-	// Sound mixing for the buffer is snychronous.
-	ISND.UpdateSound();
-//#endif	
-	// Synchronous sound output is explicitly called.
-//#ifndef SNDINTR
-	// Update sound output.
-	ISND.SubmitSound();
-//#endif
-             
+            Display();
+
+            //#ifndef SNDSERV
+            // Sound mixing for the buffer is snychronous.
+            soundDriver.UpdateSound();
+            //#endif	
+            // Synchronous sound output is explicitly called.
+            //#ifndef SNDINTR
+            // Update sound output.
+            soundDriver.SubmitSound();
+            //#endif
         }
     }
     
@@ -469,7 +449,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // FIXME: this check wasn't necessary in vanilla, since pagename was 
         // guaranteed(?) not to be null or had a safe default value.  
         if (pagename != null)
-            V.DrawPatchSolidScaled (0,0, SAFE_SCALE, SAFE_SCALE,0,W.CachePatchName(pagename, PU_CACHE));
+            graphicSystem.DrawPatchScaled(FG, wadLoader.CachePatchName(pagename, PU_CACHE), vs, 0, 0, DoomGraphicSystem.V_SAFESCALE);
     }
 
 
@@ -477,94 +457,88 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      * D_AdvanceDemo
      * Called after each demo or intro demosequence finishes
      */
-
     public void AdvanceDemo ()
     {
         advancedemo = true;
     }
 
-
-    //
-    // This cycles through the demo sequences.
-    // FIXME - version dependant demo numbers?
-    //
-    public void DoAdvanceDemo ()
-    {
+    /**
+     * This cycles through the demo sequences.
+     * FIXME - version dependant demo numbers?
+     */
+    public void DoAdvanceDemo() {
         players[consoleplayer].playerstate = PST_LIVE;  // not reborn
         advancedemo = false;
         usergame = false;               // no save / end game here
         paused = false;
         gameaction = gameaction_t.ga_nothing;
-        
-        if ( isRetail()) // Allows access to a 4th demo.
-            demosequence = (demosequence+1)%7;
-        else
-            demosequence = (demosequence+1)%6;
 
-        switch (demosequence)
+        if (isRetail()) // Allows access to a 4th demo.
         {
-        case 0:
-            if ( isCommercial() )
-                pagetic = 35 * 11;
-            else
-                pagetic = 170;
-            gamestate = gamestate_t.GS_DEMOSCREEN;
-            
-            
-            if (W.CheckNumForName("TITLEPIC")!=-1){
-                pagename = "TITLEPIC";    
-            } else {
-                if (W.CheckNumForName("DMENUPIC")!=-1){
-                    pagename = "DMENUPIC";
+            demosequence = (demosequence + 1) % 7;
+        } else {
+            demosequence = (demosequence + 1) % 6;
+        }
+
+        switch (demosequence) {
+            case 0:
+                if (isCommercial()) {
+                    pagetic = 35 * 11;
+                } else {
+                    pagetic = 170;
                 }
-            }
-            
-            if ( isCommercial() )
-                S.StartMusic(musicenum_t.mus_dm2ttl);
+                gamestate = gamestate_t.GS_DEMOSCREEN;
 
-            else
-                S.StartMusic (musicenum_t.mus_intro); 
-            break;
-        case 1:
-            DeferedPlayDemo ("demo1");
-            break;
-        case 2:
-            pagetic = 200;
-            gamestate = gamestate_t.GS_DEMOSCREEN;
-            pagename = "CREDIT";
-            break;
-        case 3:
-            DeferedPlayDemo ("demo2");
-            break;
-        case 4:
-            gamestate = gamestate_t.GS_DEMOSCREEN;
-            if ( isCommercial())
-            {
-                pagetic = 35 * 11;
-                pagename = "TITLEPIC";
-                S.StartMusic(musicenum_t.mus_dm2ttl);
-            }
-            else
-            {
+                if (wadLoader.CheckNumForName("TITLEPIC") != -1) {
+                    pagename = "TITLEPIC";
+                } else {
+                    if (wadLoader.CheckNumForName("DMENUPIC") != -1) {
+                        pagename = "DMENUPIC";
+                    }
+                }
+
+                if (isCommercial()) {
+                    doomSound.StartMusic(musicenum_t.mus_dm2ttl);
+                } else {
+                    doomSound.StartMusic(musicenum_t.mus_intro);
+                }
+                break;
+            case 1:
+                DeferedPlayDemo("demo1");
+                break;
+            case 2:
                 pagetic = 200;
+                gamestate = gamestate_t.GS_DEMOSCREEN;
+                pagename = "CREDIT";
+                break;
+            case 3:
+                DeferedPlayDemo("demo2");
+                break;
+            case 4:
+                gamestate = gamestate_t.GS_DEMOSCREEN;
+                if (isCommercial()) {
+                    pagetic = 35 * 11;
+                    pagename = "TITLEPIC";
+                    doomSound.StartMusic(musicenum_t.mus_dm2ttl);
+                } else {
+                    pagetic = 200;
 
-                if ( isRetail() )
-                    pagename = "CREDIT";
-                else
-                    pagename = "HELP1";
-            }
-            break;
-        case 5:
-            DeferedPlayDemo ("demo3");
-            break;
+                    if (isRetail()) {
+                        pagename = "CREDIT";
+                    } else {
+                        pagename = "HELP1";
+                    }
+                }
+                break;
+            case 5:
+                DeferedPlayDemo("demo3");
+                break;
             // THE DEFINITIVE DOOM Special Edition demo
-        case 6:
-            DeferedPlayDemo ("demo4");
-            break;
+            case 6:
+                DeferedPlayDemo("demo4");
+                break;
         }
     }
-
-
 
     /**
      * D_StartTitle
@@ -577,35 +551,24 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         AdvanceDemo ();
     }
 
-
-
-
     //      print title for every printed line
-    StringBuffer            title=new StringBuffer();
-
-
+    StringBuffer title = new StringBuffer();
 
     /**
      * D_AddFile
-     * 
+     *
      * Adds file to the end of the wadfiles[] list.
      * Quite crude, we could use a listarray instead.
-     * 
+     *
      * @param file
      */
-    void AddFile (String file)
-    {
-        int     numwadfiles;
-        String newfile;
-
-        for (numwadfiles = 0 ; eval(wadfiles[numwadfiles]) ; numwadfiles++)
-            ;
-
-        newfile = new String(file);
-
-        wadfiles[numwadfiles] = newfile;
+    private void AddFile(String file) {
+        int numwadfiles;
+        for (numwadfiles = 0; eval(wadfiles[numwadfiles]); numwadfiles++) {
+        }
+        wadfiles[numwadfiles] = file;
     }
-    
+
 
     /**
      * IdentifyVersion
@@ -614,171 +577,174 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      * should be executed (notably loading PWAD's).
      */
 
-    public String IdentifyVersion ()
-    {
-
-        String home;
+    public final String IdentifyVersion() {
         String doomwaddir;
-        DoomVersions vcheck=new DoomVersions();
-        
+        DoomVersions vcheck = new DoomVersions();
+
         // By default.
-        language=Language_t.english;
-        
+        language = Language_t.english;
+
         // First, check for -iwad parameter.
         // If valid, then it trumps all others.
-        
-        int p;
-        p=CM.CheckParm("-iwad");
-        if (eval(p))
-        {
-        	System.out.println("-iwad specified. Will be used with priority\n");
-            String test=CM.getArgv(p+1);
-            
+        if (cVarManager.present(CommandVariable.IWAD)) {
+            System.out.println("-iwad specified. Will be used with priority\n");
             // It might be quoted.
-            test=C2JUtils.unquoteIfQuoted(test,'"');
-            
-            String separator=System.getProperty("file.separator");
-            doomwaddir=test.substring(0, 1+test.lastIndexOf(separator));
-            String iwad=test.substring( 1+test.lastIndexOf(separator));
-            GameMode_t attempt=vcheck.tryOnlyOne(iwad,doomwaddir);
+            final String test = C2JUtils.unquoteIfQuoted(cVarManager.get(CommandVariable.IWAD, String.class, 0).get(), '"');
+            final String separator = System.getProperty("file.separator");
+            final String iwad = test.substring(1 + test.lastIndexOf(separator));
+            doomwaddir = test.substring(0, 1 + test.lastIndexOf(separator));
+            final GameMode_t attempt = vcheck.tryOnlyOne(iwad, doomwaddir);
             // Note: at this point we can't distinguish between "doom" retail
             // and "doom" ultimate yet.
-            if (attempt!=null) {
-            	AddFile(doomwaddir+iwad);
-            	this.setGameMode(attempt);
-            	return (doomwaddir+iwad);
+            if (attempt != null) {
+                AddFile(doomwaddir + iwad);
+                this.setGameMode(attempt);
+                return (doomwaddir + iwad);
             }
         } else {
-        // Unix-like checking. Might come in handy sometimes.   
-        // This should ALWAYS be activated, else doomwaddir etc. won't be defined.
+            // Unix-like checking. Might come in handy sometimes.   
+            // This should ALWAYS be activated, else doomwaddir etc. won't be defined.
 
-        doomwaddir = System.getenv("DOOMWADDIR");
-        if (doomwaddir!=null){
+            doomwaddir = System.getenv("DOOMWADDIR");
+            if (doomwaddir != null) {
                 System.out.println("DOOMWADDIR found. Will be used with priority\n");
-        }
-        
-        home = System.getenv("HOME");
-        if (NORMALUNIX){
-            if (!eval(home))
-                I.Error("Please set $HOME to your home directory");
-        }
-        
-        Settings.basedefault=home+"/.doomrc";   
+            }
 
-        // None found, using current.
-        if (!eval(doomwaddir))
-            doomwaddir = ".";
-    
-        	vcheck.tryThemAll(doomwaddir);
+            // None found, using current.
+            if (!eval(doomwaddir)) {
+                doomwaddir = ".";
+            }
+
+            vcheck.tryThemAll(doomwaddir);
         }
 
         // MAES: Interesting. I didn't know of that :-o
-        if (eval(CM.CheckParm ("-shdev")))
-        {
+        if (cVarManager.bool(CommandVariable.SHDEV)) {
             setGameMode(GameMode_t.shareware);
             devparm = true;
-            AddFile (dstrings.DEVDATA+"doom1.wad");
-            AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
-            AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
-            Settings.basedefault=dstrings.DEVDATA+"default.cfg";
-            return (dstrings.DEVDATA+"doom1.wad");
+            AddFile(dstrings.DEVDATA + "doom1.wad");
+            AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
+            CM.setCofigBase(dstrings.DEVDATA);
+            return (dstrings.DEVDATA + "doom1.wad");
         }
 
-        if (eval(CM.CheckParm ("-regdev")))
-        {
+        if (cVarManager.bool(CommandVariable.REGDEV)) {
             setGameMode(GameMode_t.registered);
             devparm = true;
-            AddFile (dstrings.DEVDATA+"doom.wad");
-            AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
-            AddFile (dstrings.DEVMAPS+"data_se/texture2.lmp");
-            AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
-            Settings.basedefault=dstrings.DEVDATA+"default.cfg";
-            return (dstrings.DEVDATA+"doom.wad");
+            AddFile(dstrings.DEVDATA + "doom.wad");
+            AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
+            CM.setCofigBase(dstrings.DEVDATA);
+            return (dstrings.DEVDATA + "doom.wad");
         }
 
-        if (eval(CM.CheckParm ("-comdev")))
-        {
+        if (cVarManager.bool(CommandVariable.FR1DEV)) {
+            setGameMode(GameMode_t.freedoom1);
+            devparm = true;
+            AddFile(dstrings.DEVDATA + "freedoom1.wad");
+            AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
+            CM.setCofigBase(dstrings.DEVDATA);
+            return (dstrings.DEVDATA + "freedoom1.wad");
+        }
+
+        if (cVarManager.bool(CommandVariable.FR2DEV)) {
+            setGameMode(GameMode_t.freedoom2);
+            devparm = true;
+            AddFile(dstrings.DEVDATA + "freedoom2.wad");
+            AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
+            CM.setCofigBase(dstrings.DEVDATA);
+            return (dstrings.DEVDATA + "freedoom2.wad");
+        }
+
+        if (cVarManager.bool(CommandVariable.COMDEV)) {
             setGameMode(GameMode_t.commercial);
             devparm = true;
-            /* I don't bother
-	if(plutonia)
-	    D_AddFile (DEVDATA"plutonia.wad");
-	else if(tnt)
-	    D_AddFile (DEVDATA"tnt.wad");
-	else*/
+            /** I don't bother
+             * if(plutonia)
+             *  D_AddFile (DEVDATA"plutonia.wad");
+             * else if(tnt)
+             *  D_AddFile (DEVDATA"tnt.wad");
+             * else
+             */
 
-            AddFile (dstrings.DEVDATA+"doom2.wad");	    
-            AddFile (dstrings.DEVMAPS+"cdata/texture1.lmp");
-            AddFile (dstrings.DEVMAPS+"cdata/pnames.lmp");
-            Settings.basedefault=dstrings.DEVDATA+"default.cfg";
-            return (dstrings.DEVDATA+"doom2.wad");
+            AddFile(dstrings.DEVDATA + "doom2.wad");
+            AddFile(dstrings.DEVMAPS + "cdata/texture1.lmp");
+            AddFile(dstrings.DEVMAPS + "cdata/pnames.lmp");
+            CM.setCofigBase(dstrings.DEVDATA);
+            return (dstrings.DEVDATA + "doom2.wad");
         }
 
-
-        if ( testReadAccess(vcheck.doom2fwad))
-        {
+        if (testReadAccess(vcheck.doom2fwad)) {
             setGameMode(GameMode_t.commercial);
             // C'est ridicule!
             // Let's handle languages in config files, okay?
             language = Language_t.french;
             System.out.println("French version\n");
-            AddFile (vcheck.doom2fwad);
+            AddFile(vcheck.doom2fwad);
             return vcheck.doom2fwad;
         }
 
-
-        if ( testReadAccess(vcheck.doom2wad))
-        {
+        if (testReadAccess(vcheck.doom2wad)) {
             setGameMode(GameMode_t.commercial);
-            AddFile (vcheck.doom2wad);
+            AddFile(vcheck.doom2wad);
             return vcheck.doom2wad;
         }
 
-        if ( testReadAccess (vcheck.plutoniawad) )
-        {
+        if (testReadAccess(vcheck.plutoniawad)) {
             setGameMode(GameMode_t.pack_plut);
-            AddFile (vcheck.plutoniawad);
+            AddFile(vcheck.plutoniawad);
             return vcheck.plutoniawad;
         }
 
-        if ( testReadAccess ( vcheck.tntwad) )
-        {
+        if (testReadAccess(vcheck.tntwad)) {
             setGameMode(GameMode_t.pack_tnt);
-            AddFile (vcheck.tntwad);
+            AddFile(vcheck.tntwad);
             return vcheck.tntwad;
         }
-        
-        if ( testReadAccess ( vcheck.tntwad) )
-        {
+
+        if (testReadAccess(vcheck.tntwad)) {
             setGameMode(GameMode_t.pack_xbla);
-            AddFile (vcheck.xblawad);
+            AddFile(vcheck.xblawad);
             return vcheck.xblawad;
         }
 
-        if ( testReadAccess (vcheck.doomuwad) )
-        {
+        if (testReadAccess(vcheck.doomuwad)) {
             // TODO auto-detect ultimate Doom even from doom.wad
-        	// Maes: this is done later on.
+            // Maes: this is done later on.
             setGameMode(GameMode_t.retail);
-            AddFile (vcheck.doomuwad);
+            AddFile(vcheck.doomuwad);
             return vcheck.doomuwad;
         }
 
-        if ( testReadAccess (vcheck.doomwad) )
-        {
+        if (testReadAccess(vcheck.doomwad)) {
             setGameMode(GameMode_t.registered);
-            AddFile (vcheck.doomwad);
+            AddFile(vcheck.doomwad);
             return vcheck.doomwad;
         }
 
-        if ( testReadAccess (vcheck.doom1wad) )
-        {
+        if (testReadAccess(vcheck.doom1wad)) {
             setGameMode(GameMode_t.shareware);
-            AddFile (vcheck.doom1wad);
+            AddFile(vcheck.doom1wad);
             return vcheck.doom1wad;
         }
 
-        // MAES: Maybe we should add FreeDoom here later.
+        if (testReadAccess(vcheck.freedoom1wad)) {
+            setGameMode(GameMode_t.freedoom1);
+            AddFile(vcheck.freedoom1wad);
+            return vcheck.freedoom1wad;
+        }
+
+        if (testReadAccess(vcheck.freedoom2wad)) {
+            setGameMode(GameMode_t.freedoom2);
+            AddFile(vcheck.freedoom2wad);
+            return vcheck.freedoom2wad;
+        }
 
         System.out.println("Game mode indeterminate.\n");
         setGameMode(GameMode_t.indetermined);
@@ -789,541 +755,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         //I_Error ("Game mode indeterminate\n");
     }
 
-
-
-
-    /**
-     * D_DoomMain
-     *
-     * Completes the job started by Init, which only created the
-     * instances of the various stuff and registered the "status aware" 
-     * stuff. Here everything priority-critical is 
-     * called and created in more detail.
-     *
-     *
-     */
-
-	public void Start() throws IOException
-    {
-        int             p;
-        StringBuffer file=new StringBuffer();
-
-        // TODO: This may modify the command line by appending more stuff
-        // from an external file. Since it can affect other stuff too,
-        // maybe it should be outside of Start() and into i.Main ?
-        CM.FindResponseFile ();
-
-        String iwadfilename=IdentifyVersion ();
-        
-        // Sets unbuffered output in C. Not needed here. setbuf (stdout, NULL);
-        modifiedgame = false;
-
-        nomonsters = eval(CM.CheckParm ("-nomonsters"));
-        respawnparm = eval(CM.CheckParm ("-respawn"));
-        fastparm = eval(CM.CheckParm ("-fast"));
-        devparm = eval(CM.CheckParm ("-devparm"));
-        if (eval(CM.CheckParm ("-altdeath")))
-            //deathmatch = 2;
-            altdeath=true;
-        else if (eval(CM.CheckParm ("-deathmatch")))
-            deathmatch = true;
-
-        // MAES: Check for Ultimate Doom in "doom.wad" filename.
-        WadLoader tmpwad=new WadLoader();
-        try {
-			tmpwad.InitFile(iwadfilename);
-		} catch (Exception e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-		// Check using a reloadable hack.
-        CheckForUltimateDoom(tmpwad);    
-       
-        // MAES: better extract a method for this.
-        GenerateTitle();
-
-        // Print ticker info. It has already been set at Init() though.
-        if (eval(CM.CheckParm("-millis"))){
-            System.out.println("ITicker: Using millisecond accuracy timer.");
-        } else if (eval(CM.CheckParm("-fasttic"))){
-                System.out.println("ITicker: Using fastest possible timer.");
-            }
-        else {
-            System.out.println("ITicker: Using nanosecond accuracy timer.");
-        }
-
-        System.out.println(title.toString());
-
-        if (devparm)
-            System.out.println(D_DEVSTR);
-
-        // Running from CDROM?
-        if (eval(CM.CheckParm("-cdrom")))
-        {
-            System.out.println(D_CDROM);
-            //System.get("c:\\doomdata",0);
-            System.out.println (Settings.basedefault+"c:/doomdata/default.cfg");
-        }	
-
-        // turbo option
-        if ( eval(p=CM.CheckParm ("-turbo")) )
-        {
-            int     scale = 200;
-            //int forwardmove[2];
-            // int sidemove[2];
-
-            if (p<CM.getArgc()-1)
-                scale = Integer.parseInt(CM.getArgv(p+1));
-            if (scale < 10)
-                scale = 10;
-            if (scale > 400)
-                scale = 400;
-            System.out.println("turbo scale: "+scale);
-            forwardmove[0] = forwardmove[0]*scale/100;
-            forwardmove[1] = forwardmove[1]*scale/100;
-            sidemove[0] = sidemove[0]*scale/100;
-            sidemove[1] = sidemove[1]*scale/100;
-        }
-
-        // add any files specified on the command line with -file wadfile
-        // to the wad list
-        //
-        // convenience hack to allow -wart e m to add a wad file
-        // prepend a tilde to the filename so wadfile will be reloadable
-        p = CM.CheckParm ("-wart");
-        if (eval(p))
-        {
-            char[] tmp=CM.getArgv(p).toCharArray();
-            tmp[4]= 'p';// big hack, change to -warp
-            CM.setArgv(p,new String(tmp));    
-            GameMode_t gamemode=getGameMode();
-            // Map name handling.
-            switch (gamemode )
-            {
-            case shareware:
-            case retail:
-            case registered:
-                file.append("~");
-                file.append(DEVMAPS);
-                file.append(String.format("E%cM%c.wad", CM.getArgv(p+1), CM.getArgv(p+2)));
-                file.append(String.format("Warping to Episode %s, Map %s.\n",
-                    CM.getArgv(p+1),CM.getArgv(p+2)));
-                break;
-
-            case commercial:
-            default:
-                p = Integer.parseInt(CM.getArgv(p+1));
-                if (p<10){
-                    file.append("~");
-                    file.append(DEVMAPS);
-                    file.append(String.format("cdata/map0%d.wad", p));
-                }
-                else
-                {
-                    file.append("~");
-                    file.append(DEVMAPS);
-                    file.append(String.format("cdata/map%d.wad", p));
-                }
-                break;
-            }
-            AddFile (file.toString());
-        }
-
-        p = CM.CheckParm ("-file");
-        if (eval(p))
-        {
-            // the parms after p are wadfile/lump names,
-            // until end of parms or another - preceded parm
-            modifiedgame = true;            // homebrew levels
-            // MAES 1/6/2011: Avoid + to avoid clashing with +map
-            while (++p != CM.getArgc() && CM.getArgv(p).charAt(0) != '-' && CM.getArgv(p).charAt(0) != '+')
-                AddFile (C2JUtils.unquoteIfQuoted(CM.getArgv(p),'"'));
-        }
-        
-        p = CM.CheckParm ("-playdemo");
-                
-        if (eval(p)) normaldemo=true;
-        else {
-            p=CM.CheckParm ("-fastdemo");        
-            if (eval(p)){
-            System.out.println("Fastdemo mode. Boundless clock!");
-            fastdemo=true;
-            this.TICK=new FastTicker();            
-            }
-            else        
-                if (!eval(p)) {
-                    p = CM.CheckParm ("-timedemo");
-                    if (eval(p)) singletics=true;
-                }
-        }
-
-        // If any of the previous succeeded, try grabbing the filename.
-        if ((normaldemo||fastdemo||singletics) && p < CM.getArgc()-1)
-        {   
-            loaddemo=CM.getArgv(p+1);
-            AddFile (loaddemo+".lmp");
-            System.out.printf("Playing demo %s.lmp.\n",loaddemo);
-            autostart=true;
-        }
-        
-        // Subsequent uses of loaddemo use only the lump name.
-        loaddemo=C2JUtils.extractFileBase(loaddemo,0,true);
-
-        // get skill / episode / map from parms
-        // FIXME: should get them FROM THE DEMO itself.
-        startskill = skill_t.sk_medium;
-        startepisode = 1;
-        startmap = 1;
-        //autostart = false;
-
-
-        p = CM.CheckParm ("-novert");
-        if (eval(p) && p < CM.getArgc()-1)
-        {
-            novert=!(CM.getArgv(p+1).toLowerCase().compareTo("disable")==0);
-            if (!novert) System.out.println("-novert ENABLED (default)");
-            else System.out.println("-novert DISABLED. Hope you know what you're doing...");
-        }
-
-        p = CM.CheckParm ("-skill");
-        if (eval(p) && p < CM.getArgc()-1)
-        {
-            startskill = skill_t.values()[CM.getArgv(p+1).charAt(0)-'1'];
-            autostart = true;
-        }
-
-        p = CM.CheckParm ("-episode");
-        if (eval(p) && p < CM.getArgc()-1)
-        {
-            startepisode = CM.getArgv(p+1).charAt(0)-'0';
-            startmap = 1;
-            autostart = true;
-        }
-
-        p = CM.CheckParm ("-timer");
-        if (eval(p) && p < CM.getArgc()-1 && deathmatch)
-        {
-            int     time;
-            time = Integer.parseInt(CM.getArgv(p+1));
-            System.out.print("Levels will end after "+time+" minute");
-            if (time>1)
-                System.out.print("s");
-            System.out.print(".\n");
-        }
-
-        // OK, and exactly how is this enforced?
-        p = CM.CheckParm ("-avg");
-        if (eval(p) && p < CM.getArgc()-1 && deathmatch)
-            System.out.print("Austin Virtual Gaming: Levels will end after 20 minutes\n");
-
-        // MAES 31/5/2011: added support for +map variation.
-        p = CM.CheckParm ("-warp");
-        if (eval(p) && p < CM.getArgc()-1)
-        {
-            if (isCommercial())
-                startmap = Integer.parseInt(CM.getArgv(p+1));
-            else
-            {
-                int eval=11;
-                try {
-                    eval=Integer.parseInt(CM.getArgv(p+1));
-                } catch (Exception e){
-                    // swallow exception. No warp.
-                }
-
-                if (eval>99) eval%=100;
-
-                if (eval<10) {
-                    startepisode = 1;
-                    startmap = 1;
-                }
-                else {
-                    startepisode = eval/10;
-                    startmap = eval%10;
-                }
-            }
-            autostart = true;
-        }
-
-        // Maes: 1/6/2011 Added +map support
-        p = CM.CheckParm ("+map");
-        if (eval(p)) 
-        {
-            if (isCommercial()) {
-                startmap = parseAsMapXX(CM.getArgv(p+1));
-                if (startmap!=-1){
-                	autostart = true;
-            	}
-            }
-            else
-            {
-                int eval=parseAsExMx(CM.getArgv(p+1));
-                if (eval!=-1){
-
-                    startepisode = Math.max(1,eval/10);
-                    startmap = Math.max(1,eval%10);
-                    autostart = true;
-                }
-            }
-            
-        }
-        
-        // init subsystems
-        System.out.print ("V_Init: allocate screens.\n");
-        V.Init ();
-        
-
-        System.out.print ("Z_Init: Init zone memory allocation daemon. \n");
-        // DUMMY: Z_Init ();
-
-        System.out.print ("W_Init: Init WADfiles.\n");
-        try {
-            W.InitMultipleFiles (wadfiles);
-        } catch (Exception e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
-
-        //
-        System.out.print ("VI_Init: set colormaps.\n");
-        
-        // MAES: FIX for incomplete palette lumps such as those in EGADOOM.
-        // Generate the palette programmatically _anyway_
-        byte[] pal=PaletteGenerator.generatePalette(PaletteGenerator.playpal,
-        		256, ColorTint.tints);
-        // Copy over the one you read from disk...
-        int pallump=W.GetNumForName("PLAYPAL");
-        byte[] tmppal=W.CacheLumpNumAsRawBytes(pallump, PU_STATIC);
-        if (tmppal!=null)
-        System.arraycopy(tmppal, 0, pal, 0, pal.length);
-        
-        V.createPalettes(pal, GammaTables.gammatables, 14, 256, 3, 5);
-        
-        W.InjectLumpNum(pallump,new DoomBuffer(ByteBuffer.wrap(pal)));
-        // set it, create it, but don't make it visible yet.
-        
-        VI=selectVideoInterface();
-
-        VI.InitGraphics();
-
-        // MAES: Before we begin calling the various Init() stuff,
-        // we need to make sure that objects that support the IVideoScaleAware
-        // interface get set and initialized.
-
-        initializeVideoScaleStuff();
-
-        // MAES: The status bar needs this update because it can "force"
-        // the video renderer to assign it a scratchpad screen (Screen 4).
-        // Since we're at it, let's update everything, it's easy!
-        
-        this.updateStatusHolders(this);
-        
-        // Update variables and stuff NOW.
-        this.update();
-
-        // Check for -file in shareware
-        CheckForPWADSInShareware();
-        
-
-        // Iff additonal PWAD files are used, print modified banner
-        
-        if (modifiedgame)
-        // Generate WAD loading alert. Abort upon denial.
-        if (!I.GenerateAlert(Strings.MODIFIED_GAME_TITLE,Strings.MODIFIED_GAME_DIALOG)) {
-        	  W.CloseAllHandles();
-        	  System.exit(-2);
-          }
-        
-        // Check and print which version is executed.
-        switch ( getGameMode() )
-        {
-        case shareware:
-        case indetermined:
-            System.out.print ("===========================================================================\n");
-            System.out.print ("                                Shareware!\n");
-            System.out.print ("===========================================================================\n");
-            break;
-        case registered:
-        case retail:
-        case commercial:
-        case pack_tnt:
-        case pack_plut:
-        case pack_xbla:
-            System.out.print ("===========================================================================\n");
-            System.out.print ("                 Commercial product - do not distribute!\n");
-            System.out.print ("         Please report software piracy to the SPA: 1-800-388-PIR8\n");
-            System.out.print ("===========================================================================\n");
-            break;
-
-        default:
-            // Ouch.
-            break;
-        }
-
-        System.out.print ("Tables.InitTables: Init trigonometric LUTs.\n");
-        Tables.InitTables();
-
-        System.out.print ("M_Init: Init miscellaneous info.\n");
-        M.Init ();
-
-        System.out.print ("R_Init: Init DOOM refresh daemon - ");
-        R.Init ();
-        
-        System.out.print ("AM_Init: Init Automap colors - ");
-        AM.Init (); // Called here to set up configurable colors.
-
-        System.out.print ("\nP_Init: Init Playloop state.\n");
-        P.Init ();
-
-        System.out.print ("I_Init: Setting up machine state.\n");
-        I.Init ();
-
-        System.out.print ("D_CheckNetGame: Checking network game status.\n");
-        CheckNetGame ();
-
-        System.out.print ("S_Init: Setting up sound.\n");
-        
-      // Sound "drivers" before the game sound controller.
-        
-        if (CM.CheckParmBool("-nomusic") || CM.CheckParmBool("-nosound"))
-            this.IMUS=new DummyMusic();
-        else
-            this.IMUS=new DavidMusicModule();
-        
-        if (CM.CheckParmBool("-nosfx") ||  CM.CheckParmBool("-nosound"))
-            this.ISND=new DummySFX();
-        else {
-            // Switch between possible sound drivers.
-            // Crudish.
-            if (CM.CheckParmBool("-audiolines"))
-                this.ISND=	new DavidSFXModule(this,numChannels);
-            else // PC Speaker emulation 
-            if (CM.CheckParmBool("-speakersound"))
-                this.ISND=  new SpeakerDoomSoundDriver(this,numChannels);
-            else
-            if (CM.CheckParmBool("-clipsound"))
-                this.ISND=  new ClipSFXModule(this,numChannels);
-            else  // This is the default
-            if (CM.CheckParmBool("-classicsound"))
-                this.ISND=  new ClassicDoomSoundDriver(this,numChannels);
-            else  // This is the default
-                this.ISND=  new SuperDoomSoundDriver(this,numChannels);
-
-            }
-        
-        // Check for sound init failure and revert to dummy
-        if (!ISND.InitSound()){
-        	 System.err.println ("S_InitSound: failed. Reverting to dummy...\n");
-        	this.ISND=new DummySFX();
-        }
-        
-        if (!(CM.CheckParmBool("-nosound") || (ISND instanceof DummySFX)))// Obviously, nomusic && nosfx = nosound.
-        	this.S=new AbstractDoomAudio(this,numChannels);
-        else
-        	// Saves a lot of distance calculations, 
-        	// if we're not to output any sound at all.
-            // TODO: create a Dummy that can handle music alone.
-        	this.S=new DummySoundDriver();
-        
-        IMUS.InitMusic();
-        S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
-
-        // Hook audio to users.
-        this.updateStatusHolders(this);
-        
-        System.out.print ("HU_Init: Setting up heads up display.\n");
-        HU.Init();
-
-        System.out.print ("ST_Init: Init status bar.\n");
-        ST.Init ();
-
-        // check for a driver that wants intermission stats
-        p = CM.CheckParm ("-statcopy");
-        if (eval(p) && p<CM.getArgc()-1)
-        {
-            // TODO: this should be chained to a logger
-            //statcopy = CM.getArgv(p+1);
-            System.out.print ("External statistics registered.\n");
-        }
-
-        // start the apropriate game based on parms
-        p = CM.CheckParm ("-record");
-
-        if (eval(p) && p < CM.getArgc()-1)
-        {
-            RecordDemo (CM.getArgv(p+1));
-            autostart = true;
-        }
-        
-        // NOW it's safe to init the disk reader.
-        DD.Init();
-
-        // MAES: at this point everything should be set and initialized, so it's
-        // time to make the players aware of the general status of Doom.
-        //_D_ gonna try to initialize here, because it is needed to play a demo
-        for (int i=0;i<MAXPLAYERS;i++){
-            players[i].updateStatus(this);
-        }
-
-        //p = CM.CheckParm ("-timedemo");
-        if (singletics)
-        {
-            TimeDemo (loaddemo);
-            autostart = true;
-            DoomLoop ();  // never returns
-        }
-
-        p = CM.CheckParm ("-loadgame");
-        if (eval(p) && p < CM.getArgc()-1)
-        {
-            file.delete(0, file.length());
-            if (eval(CM.CheckParm("-cdrom"))){
-                file.append("c:\\doomdata\\");
-                file.append(SAVEGAMENAME);
-                file.append("%c.dsg");
-                file.append(CM.getArgv(p+1).charAt(0));
-            }
-            else
-            {
-                file.append(String.format("%s%c.dsg",SAVEGAMENAME,
-                    CM.getArgv(p+1).charAt(0)));
-
-            }
-            LoadGame(file.toString());
-        }
-
-
-
-        if ( gameaction != gameaction_t.ga_loadgame )
-        {
-            if (autostart || netgame)
-                InitNew (startskill, startepisode, startmap);
-            else
-                StartTitle ();                // start up intro loop
-
-        }
-
-
-        if (fastdemo||normaldemo)
-        {
-            singledemo = true;              // quit after one demo
-            if (fastdemo) timingdemo=true;
-            InitNew (startskill, startepisode, startmap);
-            gamestate=gamestate_t.GS_DEMOSCREEN;
-            DeferedPlayDemo (loaddemo);
-            DoomLoop ();  // never returns
-        }
-
-        
-        
-        DoomLoop ();  // never returns
-    }
-
-
-	protected abstract DoomVideoInterface<V> selectVideoInterface();
-
-
-    protected int parseAsMapXX(String argv) {
+    private int parseAsMapXX(String argv) {
     	
     	if (argv.length()!=5) return -1; // Nah.
     	if (argv.toLowerCase().lastIndexOf("map")!=0) return -1; // Meh.
@@ -1337,64 +769,32 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 		return map;
 	}
 
-    protected int parseAsExMx(String argv) {
-    	
-    	if (argv.length()!=4) return -1; // Nah.
-    	if (argv.toLowerCase().lastIndexOf("e")!=0) return -1; // Meh.
-    	if (argv.toLowerCase().lastIndexOf("m")!=2) return -1; // Meh.
-    	int episode,mission;
-    	try {
-    		episode=Integer.parseInt(argv.substring(1,2));
-    		mission=Integer.parseInt(argv.substring(3,4));
-    	} catch (NumberFormatException e){
-    		return -1; // eww
-    	}
-    	
-		return episode*10+mission;
-	}
-    
-	List<IVideoScaleAware> videoScaleChildren;
+    private int parseAsExMx(String argv) {
 
-    public  void initializeVideoScaleStuff() {
-
-        videoScaleChildren=new ArrayList<IVideoScaleAware>();
-
-        // The automap...
-        videoScaleChildren.add(this.AM);
-        // The finale...
-        videoScaleChildren.add(this.F);
-        // The wiper...
-        videoScaleChildren.add(this.WIPE);
-        // The heads up...
-        videoScaleChildren.add(this.HU);
-        // The menu...
-        videoScaleChildren.add(this.M);
-        // The renderer (also has dependent children!)
-        videoScaleChildren.add(this.R);
-        // The Status Bar
-        videoScaleChildren.add(this.ST);
-        // Even the video renderer needs some initialization?
-        videoScaleChildren.add(this.V);
-        // wiper
-        videoScaleChildren.add(this.WI);
-        // disk drawer
-        videoScaleChildren.add(this.DD);
-        
-        for(IVideoScaleAware i:videoScaleChildren){
-            if (i!=null){
-                i.setVideoScale(this.vs);
-                i.initScaling();
-            }
+        if (argv.length() != 4) {
+            return -1; // Nah.
+        }
+        if (argv.toLowerCase().lastIndexOf('e') != 0) {
+            return -1; // Meh.
+        }
+        if (argv.toLowerCase().lastIndexOf('m') != 2) {
+            return -1; // Meh.
+        }
+        int episode, mission;
+        try {
+            episode = Integer.parseInt(argv.substring(1, 2));
+            mission = Integer.parseInt(argv.substring(3, 4));
+        } catch (NumberFormatException e) {
+            return -1; // eww
         }
 
-
+        return episode * 10 + mission;
     }
-
-
+    
     /**
      * 
      */
-    protected void CheckForPWADSInShareware() {
+    protected final void CheckForPWADSInShareware() {
         if (modifiedgame)
         {
             // These are the lumps that will be checked in IWAD,
@@ -1415,8 +815,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             // but w/o all the lumps of the registered version. 
             if (isRegistered())
                 for (i = 0;i < 23; i++)
-                    if (W.CheckNumForName(name[i].toUpperCase())<0)
-                        I.Error("\nThis is not the registered version: "+name[i]);
+                    if (wadLoader.CheckNumForName(name[i].toUpperCase())<0)
+                        doomSystem.Error("\nThis is not the registered version: "+name[i]);
         }
     }
 
@@ -1425,7 +825,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      *  e4m1 - e4m9.
      * 
      */
-    protected void CheckForUltimateDoom(WadLoader W) {
+    protected final void CheckForUltimateDoom(WadLoader W) {
         if (isRegistered())
         {
             // These are the lumps that will be checked in IWAD,
@@ -1451,11 +851,12 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      * @return
      */
     protected boolean CheckForLumps(String[] name, WadLoader W) {
-        for (int i = 0;i < name.length; i++)
-            if (W.CheckNumForName(name[i].toUpperCase())<0) {
+        for (String name1 : name) {
+            if (W.CheckNumForName(name1.toUpperCase()) < 0) {
                 // Even one is missing? Not OK.
                 return false; 
             }
+        }
         return true;
     }
 
@@ -1463,7 +864,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     /**
      * 
      */
-    protected void GenerateTitle() {
+    protected final void GenerateTitle() {
         switch ( getGameMode() )
         {
         case retail:
@@ -1523,7 +924,22 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             title.append(VERSION%100);
             title.append("                           ");
             break;
-
+        case freedoom1:
+            title.append("                            ");
+            title.append("FreeDoom: Phase 1          v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
+        case freedoom2:
+            title.append("                            ");
+            title.append("FreeDoom: Phase 2          v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
         default:
             title.append("                            ");
             title.append("Public DOOM - v");
@@ -1673,7 +1089,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     	}
     	
         // buttons
-        cmd.chatchar = HU.dequeueChatChar(); 
+        cmd.chatchar = handsUp.dequeueChatChar(); 
 
         if (gamekeydown[key_fire] || mousebuttons(mousebfire) 
                 || joybuttons(joybfire)) 
@@ -1810,7 +1226,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         //  a flat. The data is in the WAD only because
         //  we look for an actual index, instead of simply
         //  setting one.
-        TM.setSkyFlatNum(TM.FlatNumForName ( SKYFLATNAME ));
+        textureManager.setSkyFlatNum(textureManager.FlatNumForName ( SKYFLATNAME ));
 
         // DOOM determines the sky texture to be used
         // depending on the current episode, and the game version.
@@ -1818,12 +1234,12 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 || ( gamemission == GameMission_t.pack_tnt )
                 || ( gamemission == GameMission_t.pack_plut ) )
         {
-            TM.setSkyTexture(TM.TextureNumForName ("SKY3"));
+            textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY3"));
             if (gamemap < 12)
-                TM.setSkyTexture(TM.TextureNumForName ("SKY1"));
+                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY1"));
             else
                 if (gamemap < 21)
-                    TM.setSkyTexture(TM.TextureNumForName ("SKY2"));
+                    textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY2"));
         }
 
         levelstarttic = gametic;        // for time calculation
@@ -1843,11 +1259,11 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         } 
 
         try {
-        LL.SetupLevel (gameepisode, gamemap, 0, gameskill);
-        } catch (Exception e){
-        	e.printStackTrace();
-        	// Failure loading level.
-        	return false;
+            levelLoader.SetupLevel(gameepisode, gamemap, 0, gameskill);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Failure loading level.
+            return false;
         }
         
         displayplayer = consoleplayer;      // view the guy you are playing    
@@ -1860,13 +1276,13 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         joyxmove = joyymove = 0; 
         mousex = mousey = 0; 
         sendpause = sendsave = paused = false; 
-        Arrays.fill (mousearray, false);
+        Arrays.fill(mousearray, false);
         Arrays.fill(joyarray, false); 
         
         
         // killough 5/13/98: in case netdemo has consoleplayer other than green
-        ST.Start();
-        HU.Start();
+        statusBar.Start();
+        handsUp.Start();
         
         // killough: make -timedemo work on multilevel demos
         // Move to end of function to minimize noise -- killough 2/22/98:
@@ -1881,7 +1297,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
           }
         
         // Try reclaiming some memory from limit-expanded buffers.
-        R.resetLimits();
+        sceneRenderer.resetLimits();
         return true;
     } 
     
@@ -1922,7 +1338,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                     (ev.type == evtype_t.ev_mouse && ev.data1!=0) || 
                     (ev.type == evtype_t.ev_joystick && ev.data1!=0) ) 
             { 
-                M.StartControlPanel (); 
+                menu.StartControlPanel (); 
                 return true; 
             } 
             return false; 
@@ -1939,18 +1355,18 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
             //automapactive=true;
 
-            if (HU.Responder (ev)) 
+            if (handsUp.Responder (ev)) 
                 return true;    // chat ate the event 
-            if (ST.Responder (ev)) 
+            if (statusBar.Responder (ev)) 
                 return true;    // status window ate it
-            if (AM.Responder (ev)) 
+            if (autoMap.Responder (ev)) 
                 return true;    // automap ate it 
 
         } 
 
         if (gamestate == gamestate_t.GS_FINALE) 
         { 
-            if (F.Responder (ev)) 
+            if (finale.Responder (ev)) 
                 return true;    // finale ate the event 
         } 
 
@@ -2073,7 +1489,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 DoCompleted (); 
                 break; 
             case ga_victory: 
-                F.StartFinale (); 
+                finale.StartFinale (); 
                 break; 
             case ga_worlddone: 
                 DoWorldDone (); 
@@ -2124,44 +1540,42 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                     if (gametic > BACKUPTICS 
                             && consistancy[i][buf] != cmd.consistancy) 
                     { 
-                        I.Error ("consistency failure (%d should be %d)",
+                        doomSystem.Error ("consistency failure (%d should be %d)",
                             cmd.consistancy, consistancy[i][buf]); 
                     } 
                     if (players[i].mo!=null) 
                         consistancy[i][buf] = (short) players[i].mo.x; 
                     else 
-                        consistancy[i][buf] = (short) RND.getIndex(); 
+                        consistancy[i][buf] = (short) random.getIndex(); 
                 } 
             }
         }
 
         // check for special buttons
-        for (i=0 ; i<MAXPLAYERS ; i++)
-        {
-            if (playeringame[i]) 
-            { 
-                if ((players[i].cmd.buttons & BT_SPECIAL)!=0) 
-                { 
-                    switch (players[i].cmd.buttons & BT_SPECIALMASK) 
-                    { 
-                    case BTS_PAUSE:
-                        // MAES: fixed stupid ^pause bug.
-                        paused = !paused; 
-                        if (paused)
-                            S.PauseSound ();
-                        else
-                            S.ResumeSound (); 
-                        break; 
+        for (i = 0; i < MAXPLAYERS; i++) {
+            if (playeringame[i]) {
+                if ((players[i].cmd.buttons & BT_SPECIAL) != 0) {
+                    switch (players[i].cmd.buttons & BT_SPECIALMASK) {
+                        case BTS_PAUSE:
+                            // MAES: fixed stupid ^pause bug.
+                            paused = !paused;
+                            if (paused) {
+                                doomSound.PauseSound();
+                            } else {
+                                doomSound.ResumeSound();
+                            }
+                            break;
 
-                    case BTS_SAVEGAME: 
-                        if (savedescription==null) 
-                            savedescription=new String( "NET GAME"); 
-                        savegameslot =  
-                            (players[i].cmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT; 
-        gameaction = gameaction_t.ga_savegame; 
-        break; 
-                    } 
-                } 
+                        case BTS_SAVEGAME:
+                            if (savedescription == null) {
+                                savedescription = "NET GAME";
+                            }
+                            savegameslot
+                                    = (players[i].cmd.buttons & BTS_SAVEMASK) >> BTS_SAVESHIFT;
+                            gameaction = gameaction_t.ga_savegame;
+                            break;
+                    }
+                }
             }
         }
 
@@ -2169,18 +1583,18 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         switch (gamestate) 
         { 
         case GS_LEVEL: 
-            P.Ticker (); 
-            ST.Ticker (); 
-            AM.Ticker (); 
-            HU.Ticker ();            
+            actions.Ticker (); 
+            statusBar.Ticker (); 
+            autoMap.Ticker (); 
+            handsUp.Ticker ();            
             break; 
 
         case GS_INTERMISSION: 
-            WI.Ticker (); 
+            endLevel.Ticker (); 
             break; 
 
         case GS_FINALE: 
-            F.Ticker (); 
+            finale.Ticker (); 
             break; 
 
         case GS_DEMOSCREEN: 
@@ -2204,18 +1618,17 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      *
      */
 
-    protected void InitPlayer (int player) 
-    { 
-        player_t   p; 
+    protected void InitPlayer(int player) {
+        player_t p;
 
         // set up the saved info         
-        p = players[player]; 
+        p = players[player];
 
         // clear everything else to defaults 
-        p.PlayerReborn (); 
+        p.PlayerReborn();
 
-    } 
-    
+    }
+
     //
     // G_CheckSpot  
     // Returns false if the player cannot be respawned
@@ -2223,54 +1636,51 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     // because something is occupying it 
     //
     //void P_SpawnPlayer (mapthing_t* mthing); 
+    private boolean CheckSpot(int playernum, mapthing_t mthing) {
+        int x, y; // fixed_t 
+        subsector_t ss;
+        int an; // angle 
+        mobj_t mo;
 
-    private boolean
-    CheckSpot
-    ( int       playernum,
-            mapthing_t   mthing ) 
-    { 
-        int     x,y; // fixed_t 
-        subsector_t    ss; 
-        int        an; // angle 
-        mobj_t     mo; 
-
-
-        if (players[playernum].mo==null)
-        {
+        if (players[playernum].mo == null) {
             // first spawn of level, before corpses
-            for (int i=0 ; i<playernum ; i++)
+            for (int i = 0; i < playernum; i++) {
                 if (players[i].mo.x == mthing.x << FRACBITS
-                        && players[i].mo.y == mthing.y << FRACBITS)
-                    return false;   
+                        && players[i].mo.y == mthing.y << FRACBITS) {
+                    return false;
+                }
+            }
             return true;
         }
 
-        x = mthing.x << FRACBITS; 
-        y = mthing.y << FRACBITS; 
+        x = mthing.x << FRACBITS;
+        y = mthing.y << FRACBITS;
 
-        if (!P.CheckPosition (players[playernum].mo, x, y) )
+        if (!actions.CheckPosition(players[playernum].mo, x, y)) {
             return false;
+        }
 
         // flush an old corpse if needed 
-        if (bodyqueslot >= BODYQUESIZE) 
-            P.RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
-        bodyque[bodyqueslot%BODYQUESIZE] = players[playernum].mo; 
-        bodyqueslot++; 
+        if (bodyqueslot >= BODYQUESIZE) {
+            actions.RemoveMobj(bodyque[bodyqueslot % BODYQUESIZE]);
+        }
+        bodyque[bodyqueslot % BODYQUESIZE] = players[playernum].mo;
+        bodyqueslot++;
 
         // spawn a teleport fog 
-        ss = LL.PointInSubsector (x,y); 
+        ss = levelLoader.PointInSubsector(x, y);
         // Angles stored in things are supposed to be "sanitized" against rollovers.
-        an = (int) (( ANG45 * (mthing.angle/45) ) >>> ANGLETOFINESHIFT); 
+        an = (int) ((ANG45 * (mthing.angle / 45)) >>> ANGLETOFINESHIFT);
 
-        mo = P.SpawnMobj (x+20*finecosine[an], y+20*finesine[an] 
-                                                             , ss.sector.floorheight 
-                                                             , mobjtype_t.MT_TFOG); 
+        mo = actions.SpawnMobj(x + 20 * finecosine[an], y + 20 * finesine[an],
+                ss.sector.floorheight,
+                mobjtype_t.MT_TFOG);
 
-        if (players[consoleplayer].viewz != 1) ; 
-        S.StartSound (mo, sfxenum_t.sfx_telept);  // don't start sound on first frame 
+        if (players[consoleplayer].viewz != 1) // FIXME: maybe false fix
+            doomSound.StartSound(mo, sfxenum_t.sfx_telept);  // don't start sound on first frame 
 
-        return true; 
-    } 
+        return true;
+    }
 
 
     //
@@ -2286,22 +1696,22 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
         selections = deathmatch_p; 
         if (selections < 4) 
-            I.Error ("Only %d deathmatch spots, 4 required", selections); 
+            doomSystem.Error ("Only %d deathmatch spots, 4 required", selections); 
 
         for (j=0 ; j<20 ; j++) 
         { 
-            i = RND.P_Random() % selections; 
+            i = random.P_Random() % selections; 
             if (CheckSpot (playernum, deathmatchstarts[i]) ) 
             { 
                 deathmatchstarts[i].type = (short) (playernum+1); 
-                P.SpawnPlayer (deathmatchstarts[i]); 
+                actions.SpawnPlayer (deathmatchstarts[i]); 
                 return; 
             } 
         } 
 
         // no good spot, so the player will probably get stuck
         // MAES: seriously, fuck him.
-        P.SpawnPlayer (playerstarts[playernum]); 
+        actions.SpawnPlayer (playerstarts[playernum]); 
     } 
 
     //
@@ -2333,7 +1743,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
             if (CheckSpot (playernum, playerstarts[playernum]) ) 
             { 
-                P.SpawnPlayer (playerstarts[playernum]); 
+                actions.SpawnPlayer (playerstarts[playernum]); 
                 return; 
             }
 
@@ -2343,14 +1753,14 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 if (CheckSpot (playernum, playerstarts[i]) ) 
                 { 
                     playerstarts[i].type = (short) (playernum+1); // fake as other player 
-                    P.SpawnPlayer (playerstarts[i]); 
+                    actions.SpawnPlayer (playerstarts[i]); 
                     playerstarts[i].type = (short) (i+1);     // restore 
                     return; 
                 }       
                 // he's going to be inside something.  Too bad.
                 // MAES: Yeah, they're like, fuck him.
             }
-            P.SpawnPlayer (playerstarts[playernum]); 
+            actions.SpawnPlayer (playerstarts[playernum]); 
         } 
     } 
 
@@ -2385,16 +1795,11 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     } 
 
     // Here's for the german edition.
-    public void SecretExitLevel () 
-    { 
+    public void SecretExitLevel() {
         // IF NO WOLF3D LEVELS, NO SECRET EXIT!
-        if ( isCommercial()
-                && (W.CheckNumForName("MAP31")<0))
-            secretexit = false;
-        else
-            secretexit = true; 
-        gameaction =  gameaction_t.ga_completed; 
-    } 
+        secretexit = !(isCommercial() && (wadLoader.CheckNumForName("MAP31") < 0));
+        gameaction = gameaction_t.ga_completed;
+    }
 
     protected void DoCompleted () 
     { 
@@ -2407,7 +1812,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 players[i].PlayerFinishLevel ();        // take away cards and stuff 
 
         if (automapactive) 
-            AM.Stop (); 
+            autoMap.Stop (); 
 
         if ( !isCommercial())
             switch(gamemap)
@@ -2517,10 +1922,11 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         viewactive = false; 
         automapactive = false; 
 
-        if (statcopy!=null)
-            C2JUtils.memcpy (statcopy, wminfo,1);
+        if (statcopy != null) {
+            C2JUtils.memcpy(statcopy, wminfo, 1);
+        }
 
-        WI.Start (wminfo); 
+        endLevel.Start (wminfo); 
     } 
 
 
@@ -2547,7 +1953,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             case 11:
             case 20:
             case 30:
-                F.StartFinale ();
+                finale.StartFinale ();
                 break;
             }
         }
@@ -2562,78 +1968,71 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         viewactive = true; 
     } 
 
-
-
     //
     // G_InitFromSavegame
     // Can be called by the startup code or the menu task. 
     //
     //extern boolean setsizeneeded;
     //void R_ExecuteSetViewSize (void);
+    String savename;
 
-    String    savename;
+    public void LoadGame(String name) {
+        savename = name;
+        gameaction = gameaction_t.ga_loadgame;
+    }
 
-    public void LoadGame (String name) 
-    { 
-        savename=new String(name); 
-        gameaction = gameaction_t.ga_loadgame; 
-    } 
-
-
-
-    /** This is fugly. Making a "savegame object" will make at least certain comparisons
-     *  easier, and avoid writing code twice.
+    /** 
+     * This is fugly. Making a "savegame object" will make at least certain comparisons easier, and avoid writing code
+     * twice.
      */
+    protected void DoLoadGame() {
+        try {
+            int i;
+            StringBuffer vcheck = new StringBuffer();
+            VanillaDSGHeader header = new VanillaDSGHeader();
+            IDoomSaveGame dsg = new VanillaDSG(this);
 
-    protected void DoLoadGame () 
-    { 
-        try{ 
-            int     i;  
-            StringBuffer vcheck=new StringBuffer();
-            VanillaDSGHeader header=new VanillaDSGHeader();
-            IDoomSaveGame dsg=new VanillaDSG();
-            dsg.updateStatus(this.DM);
-            
-            gameaction = gameaction_t.ga_nothing; 
+            gameaction = gameaction_t.ga_nothing;
 
-            DataInputStream f=new DataInputStream(new BufferedInputStream(new FileInputStream(savename))); 
+            DataInputStream f = new DataInputStream(new BufferedInputStream(new FileInputStream(savename)));
 
             header.read(f);
             f.close();
-    
+
             // skip the description field 
             vcheck.append("version ");
             vcheck.append(VERSION);
 
-            if (vcheck.toString().compareTo(header.getVersion())!=0) {
-            	f.close();
-            	return; // bad version
+            if (vcheck.toString().compareTo(header.getVersion()) != 0) {
+                f.close();
+                return; // bad version
             }
 
             // Ok so far, reopen stream.
-            f=new DataInputStream(new BufferedInputStream(new FileInputStream(savename)));        
-            gameskill = header.getGameskill(); 
-            gameepisode = header.getGameepisode(); 
-            gamemap = header.getGamemap(); 
-            for (i=0 ; i<MAXPLAYERS ; i++) 
-                playeringame[i] = header.getPlayeringame()[i]; 
+            f = new DataInputStream(new BufferedInputStream(new FileInputStream(savename)));
+            gameskill = header.getGameskill();
+            gameepisode = header.getGameepisode();
+            gamemap = header.getGamemap();
+            for (i = 0; i < MAXPLAYERS; i++) {
+                playeringame[i] = header.getPlayeringame()[i];
+            }
 
             // load a base level 
-            InitNew (gameskill, gameepisode, gamemap); 
-            
+            InitNew(gameskill, gameepisode, gamemap);
+
             if (gameaction == gameaction_t.ga_failure) {
-            	// failure to load. Abort.
-            	f.close();
-            	return;
+                // failure to load. Abort.
+                f.close();
+                return;
             }
 
             gameaction = gameaction_t.ga_nothing;
-            
+
             // get the times 
-            leveltime = header.getLeveltime(); 
+            leveltime = header.getLeveltime();
 
             // dearchive all the modifications
-            boolean ok=dsg.doLoad(f);
+            boolean ok = dsg.doLoad(f);
             f.close();
 
             // MAES: this will cause a forced exit.
@@ -2642,21 +2041,22 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             // If you want it bullet-proof, you could implement
             // a "tentative loading" subsystem, which will only alter the game
             // if everything works out without errors. But who cares :-p
-            if (!ok) 
-                I.Error("Bad savegame");
+            if (!ok) {
+                doomSystem.Error("Bad savegame");
+            }
 
             // done 
             //Z_Free (savebuffer); 
-
-            if (R.getSetSizeNeeded())
-                R.ExecuteSetViewSize ();
+            if (sceneRenderer.getSetSizeNeeded()) {
+                sceneRenderer.ExecuteSetViewSize();
+            }
 
             // draw the pattern into the back screen
-            R.FillBackScreen ();   
-        } catch (Exception e){
+            sceneRenderer.FillBackScreen();
+        } catch (IOException e) {
             e.printStackTrace();
         }
-    } 
+    }
 
 
     //
@@ -2664,69 +2064,58 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     // Called by the menu task.
     // Description is a 24 byte text string 
     //
-    public void
-    SaveGame
-    ( int   slot,
-            String description ) 
-    { 
-        savegameslot = slot; 
-        savedescription=new String(description); 
-        sendsave = true; 
-    } 
+    public void SaveGame(int slot, String description) {
+        savegameslot = slot;
+        savedescription = description;
+        sendsave = true;
+    }
 
-    protected void DoSaveGame () 
-    { 
-     
-        try{
-     String    name; 
-     //char[]    name2=new char[VERSIONSIZE]; 
-     String   description;
-     StringBuffer build=new StringBuffer();
-     IDoomSaveGameHeader header=new VanillaDSGHeader();
-     IDoomSaveGame dsg=new VanillaDSG();
-     dsg.updateStatus(this.DM);
-     
-     if (eval(CM.CheckParm("-cdrom"))) {
-         build.append("c:\\doomdata\\");
-         build.append(SAVEGAMENAME);
-         build.append("%d.dsg");
-     } else {         
-      build.append(SAVEGAMENAME);
-      build.append("%d.dsg"); 
-     }
-     
-     name=String.format(build.toString(), savegameslot);
-     
-     description = savedescription; 
+    protected void DoSaveGame() {
 
-     header.setName(description);
-     header.setVersion(String.format("version %d",VERSION));
-     header.setGameskill(gameskill);
-     header.setGameepisode(gameepisode);
-     header.setGamemap(gamemap);
-     header.setPlayeringame(playeringame);
-     header.setLeveltime(leveltime);
-     dsg.setHeader(header);
-     
-     // Try opening a save file. No intermediate buffer (performance?)
-     DataOutputStream f=new DataOutputStream(new FileOutputStream(name));
-     boolean ok=dsg.doSave(f);
-     f.close();
-        } catch (Exception e){
+        try {
+            String name;
+            //char[]    name2=new char[VERSIONSIZE]; 
+            String description;
+            StringBuffer build = new StringBuffer();
+            IDoomSaveGameHeader header = new VanillaDSGHeader();
+            IDoomSaveGame dsg = new VanillaDSG(this);
+
+            if (cVarManager.bool(CommandVariable.CDROM)) {
+                build.append("c:\\doomdata\\");
+            }
+            
+            build.append(String.format("%s%d.dsg", SAVEGAMENAME, savegameslot));
+            name = build.toString();
+
+            description = savedescription;
+
+            header.setName(description);
+            header.setVersion(String.format("version %d", VERSION));
+            header.setGameskill(gameskill);
+            header.setGameepisode(gameepisode);
+            header.setGamemap(gamemap);
+            header.setPlayeringame(playeringame);
+            header.setLeveltime(leveltime);
+            dsg.setHeader(header);
+
+            // Try opening a save file. No intermediate buffer (performance?)
+            try (DataOutputStream f = new DataOutputStream(new FileOutputStream(name))) {
+                boolean ok = dsg.doSave(f);
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
-     // Saving is not as destructive as loading.
-     
-     gameaction = gameaction_t.ga_nothing; 
-        savedescription = "";      
+        // Saving is not as destructive as loading.
 
-        players[consoleplayer].message = GGSAVED; 
+        gameaction = gameaction_t.ga_nothing;
+        savedescription = "";
+
+        players[consoleplayer].message = GGSAVED;
 
         // draw the pattern into the back screen
-        R.FillBackScreen ();
-     
+        sceneRenderer.FillBackScreen();
 
-    } 
+    }
 
 
 
@@ -2768,18 +2157,14 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      * Can be called by the startup code or the menu task,
      * consoleplayer, displayplayer, playeringame[] should be set. 
      */
-
-    public void InitNew
-    ( skill_t   skill,
-            int       episode,
-            int       map ) 
-    { 
-        int             i; 
+    public void InitNew(skill_t skill, int episode, int map) { InitNew(skill, episode, map, false); }
+    private void InitNew(skill_t skill, int episode, int map, boolean noSwitchRandom) {
+        int i; 
 
         if (paused) 
         { 
             paused = false; 
-            S.ResumeSound (); 
+            doomSound.ResumeSound (); 
         } 
 
 
@@ -2818,12 +2203,15 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 && ( !isCommercial()))
             map = 9; 
 
-        RND.ClearRandom (); 
+        if (!noSwitchRandom) {
+            if (cVarManager.bool(CommandVariable.JAVARANDOM))
+                random.requireRandom(VERSION|JAVARANDOM_MASK);
+            else
+                random.requireRandom(VERSION);
+        }
+        random.ClearRandom (); 
 
-        if (skill == skill_t.sk_nightmare || respawnparm )
-            respawnmonsters = true;
-        else
-            respawnmonsters = false;
+        respawnmonsters = skill == skill_t.sk_nightmare || respawnparm;
 
         // If on nightmare/fast monsters make everything MOAR pimp.
 
@@ -2863,27 +2251,27 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // set the sky map for the episode
         if ( isCommercial())
         {
-            TM.setSkyTexture(TM.TextureNumForName ("SKY3"));
+            textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY3"));
             if (gamemap < 12)
-                TM.setSkyTexture(TM.TextureNumForName ("SKY1"));
+                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY1"));
             else
                 if (gamemap < 21)
-                    TM.setSkyTexture(TM.TextureNumForName ("SKY2"));
+                    textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY2"));
         }
         else
             switch (episode) 
             { 
             case 1: 
-                TM.setSkyTexture(TM.TextureNumForName ("SKY1")); 
+                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY1")); 
                 break; 
             case 2: 
-                TM.setSkyTexture(TM.TextureNumForName ("SKY2"));
+                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY2"));
                 break; 
             case 3: 
-                TM.setSkyTexture(TM.TextureNumForName ("SKY3")); 
+                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY3")); 
                 break; 
             case 4:   // Special Edition sky
-                TM.setSkyTexture(TM.TextureNumForName ("SKY4"));
+                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY4"));
                 break;
             } 
 
@@ -2891,16 +2279,16 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     } 
 
     protected void levelLoadFailure(){
-    	boolean endgame=I.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE);
+    	boolean endgame=doomSystem.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE);
     	
     	if (endgame){         	// Initiate endgame
     	gameaction=gameaction_t.ga_failure;
     	gamestate = gamestate_t.GS_DEMOSCREEN; 
-    	M.ClearMenus();
+    	menu.ClearMenus();
     	StartTitle();
     	} else {
     	// Shutdown immediately.
-    	I.Quit();	
+    	doomSystem.Quit();	
     	}
     }
 
@@ -2971,8 +2359,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
 
     public void BeginRecording () 
-    {         
-        demobuffer.setVersion(VERSION);
+    {   
+        demobuffer.setVersion(cVarManager.bool(CommandVariable.JAVARANDOM) ? VERSION|JAVARANDOM_MASK : VERSION);
         demobuffer.setSkill(gameskill); 
         demobuffer.setEpisode(gameepisode);
         demobuffer.setMap(gamemap);
@@ -2996,34 +2384,36 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         gameaction = gameaction_t.ga_playdemo; 
     } 
 
-    public void DoPlayDemo () 
-    { 
+    @SuppressWarnings("UnusedAssignment")
+    public void DoPlayDemo() {
 
         skill_t skill;
-        boolean fail=false;
-        int             i, episode, map; 
+        boolean fail;
+        int i, episode, map;
 
         gameaction = gameaction_t.ga_nothing;
         // MAES: Yeah, it's OO all the way now, baby ;-)
         try {
-        demobuffer = (IDoomDemo) W.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC,VanillaDoomDemo.class);
-        } catch (Exception e){
-            fail=true;
+            demobuffer = wadLoader.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC, VanillaDoomDemo.class);
+        } catch (Exception e) {
+            fail = true;
         }
-        
-        fail=(demobuffer.getSkill()==null);
 
-        if (fail || demobuffer.getVersion()!= VERSION)
-        {
+        fail = (demobuffer.getSkill() == null);
+
+        final int version;
+        if (fail || ((version = demobuffer.getVersion() & 0xFF) & ~JAVARANDOM_MASK) != VERSION) {
             System.err.println("Demo is from a different game version!\n");
-            System.err.println("Version code read: "+demobuffer.getVersion());
+            System.err.println("Version code read: " + demobuffer.getVersion());
             gameaction = gameaction_t.ga_nothing;
             return;
         }
+        
+        random.requireRandom(version);
 
-        skill = demobuffer.getSkill(); 
-        episode = demobuffer.getEpisode(); 
-        map = demobuffer.getMap(); 
+        skill = demobuffer.getSkill();
+        episode = demobuffer.getEpisode();
+        map = demobuffer.getMap();
         deathmatch = demobuffer.isDeathmatch();
         respawnparm = demobuffer.isRespawnparm();
         fastparm = demobuffer.isFastparm();
@@ -3031,23 +2421,23 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         consoleplayer = demobuffer.getConsoleplayer();
         // Do this, otherwise previously loaded demos will be stuck at their end.
         demobuffer.resetDemo();
-        
-        boolean[] pigs=demobuffer.getPlayeringame();
-        for (i=0 ; i<MAXPLAYERS ; i++) 
-            playeringame[i] = pigs[i]; 
-        if (playeringame[1]) 
-        {
-            netgame = true; 
-            netdemo = true; 
+
+        boolean[] pigs = demobuffer.getPlayeringame();
+        for (i = 0; i < MAXPLAYERS; i++) {
+            playeringame[i] = pigs[i];
+        }
+        if (playeringame[1]) {
+            netgame = true;
+            netdemo = true;
         }
 
         // don't spend a lot of time in loadlevel 
         precache = false;
-        InitNew (skill, episode, map); 
+        InitNew(skill, episode, map, true);
         precache = true;
 
-        usergame = false; 
-        demoplayback = true; 
+        usergame = false;
+        demoplayback = true;
 
     }
 
@@ -3056,8 +2446,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     //
     public void TimeDemo (String name) 
     {    
-        nodrawers = CM.CheckParm ("-nodraw")!=0; 
-        noblit = CM.CheckParm ("-noblit")!=0; 
+        nodrawers = cVarManager.bool(CommandVariable.NODRAW);
+        noblit = cVarManager.bool(CommandVariable.NOBLIT);
         timingdemo = true; 
         singletics = true;
         defdemoname = name;
@@ -3083,15 +2473,15 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             long realtics=endtime-starttime;    
             
             this.commit();
-            VM.SaveDefaults(VM.getDefaultFile());
-            I.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
+            CM.SaveDefaults();
+            doomSystem.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
                 , realtics, gametic*(double)(TICRATE)/realtics); 
         }
 
         if (demoplayback) 
         {
             if (singledemo) 
-                I.Quit ();
+                doomSystem.Quit ();
 
             // Z_ChangeTag (demobuffer, PU_CACHE); 
             demoplayback = false; 
@@ -3114,7 +2504,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             MenuMisc.WriteFile(demoname, demobuffer); 
             //Z_Free (demobuffer); 
             demorecording = false; 
-            I.Error ("Demo %s recorded",demoname); 
+            doomSystem.Error ("Demo %s recorded",demoname); 
         } 
 
         return false; 
@@ -3123,37 +2513,526 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     /** This should always be available for real timing */
     protected ITicker RealTime;
     
-    public DoomMain(){
+    // Bookkeeping on players - state.
+    public player_t[] players;
+    
+    public DelegateRandom random;
+    public final CVarManager cVarManager;
+    public final IWadLoader wadLoader;
+    public final IDoomSound doomSound;
+    public final ISoundDriver soundDriver;
+    public final IMusic music;
+    public final DoomVideoInterface<V> videoInterface;
+    public final AbstractStatusBar statusBar;
+    public final DoomGraphicSystem<T, V> graphicSystem;
+    public final DoomSystemNetworking systemNetworking;
+    public final IDoomGameNetworking gameNetworking;
+    public final AbstractLevelLoader levelLoader;
+    public final IDoomMenu menu;
+    public final Actions actions;
+    public final SceneRenderer<T, V> sceneRenderer;
+    public final HU handsUp;
+    public final IAutoMap<T, V> autoMap;
+    public final Finale<T> finale;
+    public final EndLevel<T, V> endLevel;
+    public final Wiper wiper;
+    public final TextureManager<T> textureManager;
+    public final ISpriteManager spriteManager;
+    public final ITicker ticker; 
+    public final IDiskDrawer diskDrawer;
+    public final IDoomSystem doomSystem;
+    public final BppMode bppMode;
+
+    /**
+     * Since this is a fully OO implementation, we need a way to create
+     * the instances of the Refresh daemon, the Playloop, the Wadloader 
+     * etc. which however are now completely independent of each other
+     * (well, ALMOST), and are typically only passed context when 
+     * instantiated.
+     * 
+     *  If you instantiate one too early, it will have null context.
+     *  
+     *  The trick is to construct objects in the correct order. Some of
+     *  them have Init() methods which are NOT yet safe to call.
+     * 
+     */
+    @SuppressWarnings("LeakingThisInConstructor")
+    public DoomMain() throws IOException {
         // Init game status...
         super();
-        C2JUtils.initArrayOfObjects(events,event_t.class);
-        this.I=new DoomSystem();
-        gamestate=gamestate_t.GS_DEMOSCREEN;        
+
+        // Init players
+    	players = new player_t[MAXPLAYERS];
+        Arrays.setAll(players, i -> new player_t(this));
+
+        // Init objects
+        this.cVarManager = Game.getCVM();
+
+        // Prepare events array with event instances
+        Arrays.setAll(events, i -> new event_t());
+
+        // Create DoomSystem
+        this.doomSystem = new DoomSystem(this);
         
-        this.RealTime=new MilliTicker();
+        // Choose bppMode depending on CVar's
+        // TODO: add config options
+        this.bppMode = BppMode.chooseBppMode(cVarManager);
+        
+        // Create real time ticker
+        this.RealTime = new MilliTicker();
+
+        // Doommain is both "main" and handles most of the game status.
+        this.gameNetworking = this; // DoomMain also handles its own Game Networking.
+        
+        // Set ticker. It is a shared status object, but not a holder itself.
+        this.ticker = ITicker.createTicker(cVarManager);
+        
+        // Network "driver"
+        this.systemNetworking = new DummyNetworkDriver(this);
+        
+        // Random number generator, but we can have others too.
+        this.random = new DelegateRandom();
+        System.out.print(String.format("M_Random: Using %s.\n", random.getClass().getSimpleName()));
+        
+        // Sound can be left until later, in Start
+        this.wadLoader = new WadLoader(this.doomSystem); // The wadloader is a "weak" status holder.
+        
+        // TODO: find out if we have requests for a specific resolution,
+        // and try honouring them as closely as possible.       
+
+        // 23/5/2011: Experimental dynamic resolution subsystem
+        this.vs = VisualSettings.parse(cVarManager);
+        this.spriteManager = new SpriteManager<>(this);
+        
+        // Heads-up, Menu, Level Loader
+        this.handsUp = new HU(this);
+        this.menu = new Menu<>(this);
+        this.levelLoader = new BoomLevelLoader(this);
+        
+        // Renderer, Actions, StatusBar, AutoMap
+        this.sceneRenderer = selectRenderer();
+        this.actions = new Actions(this);
+        this.statusBar = new StatusBar(this);
+
+        // Let the renderer pick its own. It makes linking easier.
+        this.textureManager = sceneRenderer.getTextureManager();
+        // Instantiating EndLevel, Finale
+        this.endLevel = new EndLevel<>(this);
+        this.finale = selectFinale();
+        
+        readCVars();
+        System.out.print("W_Init: Init WADfiles.\n");
+        try {
+            wadLoader.InitMultipleFiles(wadfiles);
+        } catch (Exception e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        final byte[] pal = wadLoader.LoadPlaypal();
+        System.out.print("VI_Init: set palettes.\n");
+        final byte[][] colormap = wadLoader.LoadColormap();
+        System.out.print("VI_Init: set colormaps.\n");
+        
+        // Video Renderer
+        this.graphicSystem = RendererFactory.<T, V> newBuilder()
+            .setVideoScale(vs).setBppMode(bppMode).setPlaypal(pal).setColormap(colormap)
+            .build();
+        
+        System.out.print("V_Init: allocate screens.\n");
+        
+        // Disk access visualizer
+        this.diskDrawer = new DiskDrawer(this, DiskDrawer.STDISK);
+        
+        // init subsystems
+        System.out.print("AM_Init: Init Automap colors - \n");
+        this.autoMap = new automap.Map<>(this);
+
+        videoInterface = DoomVideoInterface.createAWTInterface(this);
+
+        this.wiper = graphicSystem.createWiper(random);
+        
+        // Update variables and stuff NOW.
+        this.update();
+
+        // Check for -file in shareware
+        CheckForPWADSInShareware();
+
+        printGameInfo();
+
+        System.out.print("Tables.InitTables: Init trigonometric LUTs.\n");
+        Tables.InitTables();
+
+        System.out.print("M_Init: Init miscellaneous info.\n");
+        menu.Init();
+
+        System.out.print("R_Init: Init DOOM refresh daemon - ");
+        sceneRenderer.Init();
+
+        System.out.print("\nP_Init: Init Playloop state.\n");
+        actions.Init();
+
+        System.out.print("I_Init: Setting up machine state.\n");
+        doomSystem.Init();
+
+        System.out.print("D_CheckNetGame: Checking network game status.\n");
+        CheckNetGame();
+
+        System.out.print("S_Init: Setting up sound.\n");
+
+        // Sound "drivers" before the game sound controller.
+        this.music = IMusic.chooseModule(cVarManager);
+        this.soundDriver = ISoundDriver.chooseModule(this, cVarManager);
+        this.doomSound = IDoomSound.chooseSoundIsPresent(this, cVarManager, soundDriver);
+
+        music.InitMusic();
+        doomSound.Init(snd_SfxVolume * 8, snd_MusicVolume * 8);
+
+        System.out.print("HU_Init: Setting up heads up display.\n");
+        handsUp.Init();
+
+        System.out.print("ST_Init: Init status bar.\n");
+        statusBar.Init();
+
+        if (statcopy != null) {
+            System.out.print("External statistics registered.\n");
+        }
+
+        // NOW it's safe to init the disk reader.
+        diskDrawer.Init();
+        setupLoop();
     }
 
-   
-    
-    protected void updateStatusHolders(DoomStatus<T,V> DS){
-        for (DoomStatusAware dsa : status_holders){
-            dsa.updateStatus(DS);
+    @Override
+    public final void update() {
+        super.update();
+        // Video...so you should wait until video renderer is active.           
+        this.graphicSystem.setUsegamma(CM.getValue(Settings.usegamma, Integer.class));
+
+        // These should really be handled by the menu.
+        this.menu.setShowMessages(CM.equals(Settings.show_messages, Boolean.TRUE));
+        this.menu.setScreenBlocks(CM.getValue(Settings.screenblocks, Integer.class));
+
+        // These should be handled by the HU
+        for (int i = 0; i <= 9; i++) {
+
+            String chatmacro = String.format("chatmacro%d", i);
+            this.handsUp.setChatMacro(i, CM.getValue(Settings.valueOf(chatmacro), String.class));
         }
     }
 
-    /** A list with objects that do hold status and need to be aware of 
-     *  it.
+    @Override
+    public final void commit() {
+        super.commit();
+        // Video...         
+        CM.update(Settings.usegamma, graphicSystem.getUsegamma());
+
+        // These should really be handled by the menu.
+        CM.update(Settings.show_messages, this.menu.getShowMessages());
+        CM.update(Settings.screenblocks, this.menu.getScreenBlocks());
+
+        // These should be handled by the HU
+        for (int i = 0; i <= 9; i++) {
+            CM.update(Settings.valueOf(String.format("chatmacro%d", i)), this.handsUp.chat_macros[i]);
+        }
+    }
+    
+    private void setupLoop() throws IOException {
+        //p = CM.CheckParm ("-timedemo");
+        if (singletics) {
+            TimeDemo(loaddemo);
+            autostart = true;
+            DoomLoop();  // never returns
+        }
+
+        if (gameaction != gameaction_t.ga_loadgame) {
+            if (autostart || netgame) {
+                InitNew(startskill, startepisode, startmap);
+            } else {
+                StartTitle();                // start up intro loop
+            }
+        }
+
+        if (fastdemo || normaldemo) {
+            singledemo = true;              // quit after one demo
+            if (fastdemo) {
+                timingdemo = true;
+            }
+            InitNew(startskill, startepisode, startmap);
+            gamestate = gamestate_t.GS_DEMOSCREEN;
+            DeferedPlayDemo(loaddemo);
+            DoomLoop();  // never returns
+        }
+
+        DoomLoop();  // never returns
+    }
+
+    private void printGameInfo() {
+        // Iff additonal PWAD files are used, print modified banner
+        if (modifiedgame) // Generate WAD loading alert. Abort upon denial.
+        {
+            if (!doomSystem.GenerateAlert(Strings.MODIFIED_GAME_TITLE, Strings.MODIFIED_GAME_DIALOG)) {
+                wadLoader.CloseAllHandles();
+                System.exit(-2);
+            }
+        }
+        
+        // Check and print which version is executed.
+        switch (getGameMode()) {
+            case shareware:
+            case indetermined:
+                System.out.print("===========================================================================\n");
+                System.out.print("                                Shareware!\n");
+                System.out.print("===========================================================================\n");
+                break;
+            case registered:
+            case retail:
+            case commercial:
+            case pack_tnt:
+            case pack_plut:
+            case pack_xbla:
+                System.out.print("===========================================================================\n");
+                System.out.print("                 Commercial product - do not distribute!\n");
+                System.out.print("         Please report software piracy to the SPA: 1-800-388-PIR8\n");
+                System.out.print("===========================================================================\n");
+                break;
+            case freedoom1:
+            case freedoom2:
+                System.out.print("===========================================================================\n");
+                System.out.print("       Copyright © 2001-2017 Contributors to the Freedoom project.\n");
+                System.out.print("                            All rights reserved.\n");
+                System.out.print("     See: https://github.com/freedoom/freedoom/blob/master/COPYING.adoc\n");
+                System.out.print("===========================================================================\n");
+                break;
+            default:
+                // Ouch.
+                break;
+        }
+    }
+
+    private void readCVars() {
+        /**
+         * D_DoomMain
+         *
+         * Completes the job started by Init. Here everything priority-critical is called and created in more detail.
+         */
+        
+        final StringBuffer file = new StringBuffer();
+        final String iwadfilename = IdentifyVersion();
+        nomonsters = cVarManager.bool(CommandVariable.NOMONSTERS);
+        respawnparm = cVarManager.bool(CommandVariable.RESPAWN);
+        fastparm = cVarManager.bool(CommandVariable.FAST);
+        devparm = cVarManager.bool(CommandVariable.DEVPARM);
+        
+        if (!(altdeath = cVarManager.bool(CommandVariable.ALTDEATH))) {
+            deathmatch = cVarManager.bool(CommandVariable.DEATHMATCH);
+        }
+
+        // MAES: Check for Ultimate Doom in "doom.wad" filename.
+        final WadLoader tmpwad = new WadLoader();
+        try {
+            tmpwad.InitFile(iwadfilename);
+        } catch (Exception e2) {
+            // TODO Auto-generated catch block
+            e2.printStackTrace();
+        }
+        // Check using a reloadable hack.
+        CheckForUltimateDoom(tmpwad);
+        // MAES: better extract a method for this.
+        GenerateTitle();
+        // Print ticker info. It has already been set at Init() though.
+        if (cVarManager.bool(CommandVariable.MILLIS)) {
+            System.out.println("ITicker: Using millisecond accuracy timer.");
+        } else if (cVarManager.bool(CommandVariable.FASTTIC)) {
+            System.out.println("ITicker: Using fastest possible timer.");
+        } else {
+            System.out.println("ITicker: Using nanosecond accuracy timer.");
+        }
+        System.out.println(title.toString());
+        if (devparm) {
+            System.out.println(D_DEVSTR);
+        }
+        // Running from CDROM?
+        if (cVarManager.bool(CommandVariable.CDROM)) {
+            System.out.println(D_CDROM);
+            //System.get("c:\\doomdata",0);
+            //System.out.println (Settings.basedefault+"c:/doomdata/default.cfg");
+        }
+        // turbo option
+        if (cVarManager.specified(CommandVariable.TURBO)) {
+            int scale = 200;
+            if (cVarManager.present(CommandVariable.TURBO)) {
+                scale = cVarManager.get(CommandVariable.TURBO, Integer.class, 0).get();
+            }
+            if (scale < 10) {
+                scale = 10;
+            }
+            if (scale > 400) {
+                scale = 400;
+            }
+            System.out.println("turbo scale: " + scale);
+            forwardmove[0] = forwardmove[0] * scale / 100;
+            forwardmove[1] = forwardmove[1] * scale / 100;
+            sidemove[0] = sidemove[0] * scale / 100;
+            sidemove[1] = sidemove[1] * scale / 100;
+        }
+        // add any files specified on the command line with -file wadfile
+        // to the wad list
+        //
+        // convenience hack to allow -wart e m to add a wad file
+        // prepend a tilde to the filename so wadfile will be reloadable
+        if (cVarManager.present(CommandVariable.WART)) {
+            final int ep = cVarManager.get(CommandVariable.WART, Integer.class, 0).get();
+            final int map = cVarManager.get(CommandVariable.WART, Integer.class, 1).get();
+            cVarManager.override(CommandVariable.WARP, new CommandVariable.WarpFormat(ep * 10 + map), 0);
+            GameMode_t gamemode = getGameMode();
+            // Map name handling.
+            switch (gamemode) {
+                case shareware:
+                case retail:
+                case registered:
+                case freedoom1:
+                    file.append("~");
+                    file.append(DEVMAPS);
+                    file.append(String.format("E%dM%d.wad", ep, map));
+                    file.append(String.format("Warping to Episode %s, Map %s.\n", ep, map));
+                    break;
+                case commercial:
+                case freedoom2:
+                default:
+                    if (ep < 10) {
+                        file.append("~");
+                        file.append(DEVMAPS);
+                        file.append(String.format("cdata/map0%d.wad", ep));
+                    } else {
+                        file.append("~");
+                        file.append(DEVMAPS);
+                        file.append(String.format("cdata/map%d.wad", ep));
+                    }
+                    break;
+            }
+            AddFile(file.toString());
+        }
+        
+        if (cVarManager.present(CommandVariable.FILE)) {
+            // the parms after p are wadfile/lump names,
+            // until end of parms or another - preceded parm
+            modifiedgame = true; // homebrew levels
+            cVarManager.with(CommandVariable.FILE, 0, (String[] a) -> {
+                Arrays.stream(a)
+                    .map(s -> C2JUtils.unquoteIfQuoted(s, '"'))
+                    .forEach(this::AddFile);
+            });
+        }
+        
+        if (cVarManager.present(CommandVariable.PLAYDEMO)) {
+            normaldemo = true;
+            loaddemo = cVarManager.get(CommandVariable.PLAYDEMO, String.class, 0).get();
+        } else if (cVarManager.present(CommandVariable.FASTDEMO)) {
+            System.out.println("Fastdemo mode. Boundless clock!");
+            fastdemo = true;
+            loaddemo = cVarManager.get(CommandVariable.FASTDEMO, String.class, 0).get();
+        } else if (cVarManager.present(CommandVariable.TIMEDEMO)) {
+            singletics = true;
+            loaddemo = cVarManager.get(CommandVariable.TIMEDEMO, String.class, 0).get();
+        }
+        
+        // If any of the previous succeeded, try grabbing the filename.
+        if (loaddemo != null) {
+            loaddemo = C2JUtils.unquoteIfQuoted(loaddemo, '"');
+            AddFile(loaddemo + ".lmp");
+            System.out.printf("Playing demo %s.lmp.\n", loaddemo);
+            autostart = true;
+        }
+        
+        // Subsequent uses of loaddemo use only the lump name.
+        loaddemo = C2JUtils.extractFileBase(loaddemo, 0, true);
+        // get skill / episode / map from parms
+        // FIXME: should get them FROM THE DEMO itself.
+        startskill = skill_t.sk_medium;
+        startepisode = 1;
+        startmap = 1;
+        //autostart = false;
+
+        if (cVarManager.present(CommandVariable.NOVERT)) {
+            novert = cVarManager.get(CommandVariable.NOVERT, CommandVariable.ForbidFormat.class, 0)
+                .filter(CommandVariable.ForbidFormat.FORBID::equals)
+                .isPresent();
+            
+            if (!novert) {
+                System.out.println("-novert ENABLED (default)");
+            } else {
+                System.out.println("-novert DISABLED. Hope you know what you're doing...");
+            }
+        }
+
+        cVarManager.with(CommandVariable.SKILL, 0, (Integer s) -> {
+            startskill = skill_t.values()[s - 1];
+            autostart = true;
+        });
+
+        cVarManager.with(CommandVariable.EPISODE, 0, (Integer ep) -> {
+            startepisode = ep;
+            startmap = 1;
+            autostart = true;
+        });
+        
+        if (cVarManager.present(CommandVariable.TIMER) && deathmatch) {
+            // Good Sign (2017/03/31) How this should work?
+            final int time = cVarManager.get(CommandVariable.TIMER, Integer.class, 0).get();
+            System.out.print("Levels will end after " + time + " minute");
+            if (time > 1) {
+                System.out.print("s");
+            }
+            System.out.print(".\n");
+        }
+        // OK, and exactly how is this enforced?
+        if (cVarManager.bool(CommandVariable.AVG) && deathmatch) {
+            System.out.print("Austin Virtual Gaming: Levels will end after 20 minutes\n");
+        }
+        
+        // MAES 31/5/2011: added support for +map variation.
+        cVarManager.with(CommandVariable.WARP, 0, (CommandVariable.WarpFormat w) -> {
+            final CommandVariable.WarpMetric metric = w.getMetric(isCommercial());
+            startepisode = metric.getEpisode();
+            startmap = metric.getMap();
+            autostart = true;
+        });
+
+        // Maes: 1/6/2011 Added +map support
+        cVarManager.with(CommandVariable.MAP, 0, (CommandVariable.MapFormat m) -> {
+            final CommandVariable.WarpMetric metric = m.getMetric(isCommercial());
+            startepisode = metric.getEpisode();
+            startmap = metric.getMap();
+            autostart = true;
+        });
+
+        cVarManager.with(CommandVariable.LOADGAME, 0, (Character c) -> {
+            file.delete(0, file.length());
+            if (cVarManager.bool(CommandVariable.CDROM)) {
+                file.append("c:\\doomdata\\");
+            }
+            
+            file.append(String.format("%s%d.dsg", SAVEGAMENAME, c));
+            LoadGame(file.toString());
+        });
+        
+        // check for a driver that wants intermission stats
+        cVarManager.with(CommandVariable.STATCOPY, 0, (String s) -> {
+            // TODO: this should be chained to a logger
+            statcopy = s;
+            System.out.print("External statistics registered.\n");
+        });
+
+        // start the apropriate game based on parms
+        cVarManager.with(CommandVariable.RECORD, 0, (String s) -> {
+            RecordDemo(s);
+            autostart = true;
+        });
+    }
+
+    /**
+     * Since it's so intimately tied, it's less troublesome to merge the "main" and "network" code. 
      */
-    protected List<DoomStatusAware> status_holders;
-
- 
-
-
-    /* Since it's so intimately tied, it's less troublesome to merge the "main" and "network"
-     *  code. 
-     * 
-     */
-
 
     /** To be initialized by the DoomNetworkingInterface via a setter */
     //private  doomcom_t   doomcom;   
@@ -3174,37 +3053,29 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     //ticcmd_t[]  localcmds= new ticcmd_t[BACKUPTICS];
 
     //ticcmd_t [][]       netcmds=new ticcmd_t [MAXPLAYERS][BACKUPTICS];
-    int[]           nettics=new int[MAXNETNODES];
-    boolean[]       nodeingame=new boolean[MAXNETNODES];        // set false as nodes leave game
-    boolean[]       remoteresend=new boolean[MAXNETNODES];      // set when local needs tics
-    int[]       resendto=new int[MAXNETNODES];          // set when remote needs tics
-    int[]       resendcount=new int[MAXNETNODES];
+    int[] nettics = new int[MAXNETNODES];
+    boolean[] nodeingame = new boolean[MAXNETNODES];        // set false as nodes leave game
+    boolean[] remoteresend = new boolean[MAXNETNODES];      // set when local needs tics
+    int[] resendto = new int[MAXNETNODES];          // set when remote needs tics
+    int[] resendcount = new int[MAXNETNODES];
 
-    int[]       nodeforplayer=new int[MAXPLAYERS];
+    int[] nodeforplayer = new int[MAXPLAYERS];
 
-    int             maketic;
-    int     lastnettic;
-    int     skiptics;
-    protected int     ticdup;
-
+    int maketic;
+    int lastnettic;
+    int skiptics;
+    protected int ticdup;
 
     public int getTicdup() {
         return ticdup;
     }
 
-
     public void setTicdup(int ticdup) {
         this.ticdup = ticdup;
     }
 
-
-
-
-
-
-    int     maxsend; // BACKUPTICS/(2*ticdup)-1;
-
-
+    int maxsend; // BACKUPTICS/(2*ticdup)-1;
+    
     //void D_ProcessEvents (void); 
     //void G_BuildTiccmd (ticcmd_t *cmd); 
     //void D_DoAdvanceDemo (void);
@@ -3214,32 +3085,27 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     doomdata_t  reboundstore = new doomdata_t();
 
 
-    // 
-    //
-    //123
 
-    /** MAES: interesting. After testing it was found to return the following size:
+    /** 
+     * MAES: interesting. After testing it was found to return the following size:
      *  (8*(netbuffer.numtics+1));
      */
 
-    int NetbufferSize ()
-    {
+    int NetbufferSize() {
         //    return (int)(((doomdata_t)0).cmds[netbuffer.numtics]);
-        return (8*(netbuffer.numtics+1));
+        return (8 * (netbuffer.numtics + 1));
     }
 
-
-    protected long NetbufferChecksum ()
-    {
-        long        c;
-        int     i,l;
+    protected long NetbufferChecksum() {
+        long c;
+        int i, l;
 
         c = 0x1234567L;
 
         // FIXME -endianess?
-        if (NORMALUNIX)
+        if (NORMALUNIX) {
             return 0;           // byte order problems
-
+        }
 
         /* Here it was trying to get the length of a doomdata_t struct up to retransmit from.
          * l = (NetbufferSize () - (int)&(((doomdata_t *)0)->retransmitfrom))/4;
@@ -3247,95 +3113,89 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
          * Therefore, l= (netbuffersize - 4)/4
          * 
          */
-        l = (NetbufferSize () - 4)/4;
-        for (i=0 ; i<l ; i++)
-            // TODO: checksum would be better computer in the netbuffer itself.
-            // The C code actually takes all fields into account.
+        l = (NetbufferSize() - 4) / 4;
+        for (i = 0; i < l; i++) // TODO: checksum would be better computer in the netbuffer itself.
+        // The C code actually takes all fields into account.
+        {
             c += 0;// TODO: (netbuffer->retransmitfrom)[i] * (i+1);
-
+        }
         return c & NCMD_CHECKSUM;
     }
-    //
-    //
-    //
-    protected int ExpandTics (int low)
-    {
+    
+    protected int ExpandTics(int low) {
         int delta;
 
-        delta = low - (maketic&0xff);
+        delta = low - (maketic & 0xff);
 
-        if (delta >= -64 && delta <= 64)
-            return (maketic&~0xff) + low;
-        if (delta > 64)
-            return (maketic&~0xff) - 256 + low;
-        if (delta < -64)
-            return (maketic&~0xff) + 256 + low;
+        if (delta >= -64 && delta <= 64) {
+            return (maketic & ~0xff) + low;
+        }
+        if (delta > 64) {
+            return (maketic & ~0xff) - 256 + low;
+        }
+        if (delta < -64) {
+            return (maketic & ~0xff) + 256 + low;
+        }
 
-        I.Error ("ExpandTics: strange value %d at maketic %d",low,maketic);
+        doomSystem.Error("ExpandTics: strange value %d at maketic %d", low, maketic);
         return 0;
     }
-
-
 
     /**
      * HSendPacket
      *
-     * Will send out a packet to all involved parties. A special
-     * case is the rebound storage, which acts as a local "echo"
-     * which is then picked up by the host itself. This is
-     * necessary to simulate a 1-node network.
-     * @throws IOException 
+     * Will send out a packet to all involved parties. A special case is the rebound storage, which acts as a local
+     * "echo" which is then picked up by the host itself. This is necessary to simulate a 1-node network.
+     *
+     * @throws IOException
      *
      */
-    void
-    HSendPacket
-    (int   node,
-            int   flags )
-    {
-        netbuffer.checksum = (int) (NetbufferChecksum () | flags);
+    void HSendPacket(int node, int flags) {
+        netbuffer.checksum = (int) (NetbufferChecksum() | flags);
 
         // Local node's comms are sent to rebound packet, which is 
         // then picked up again. THIS IS VITAL FOR SINGLE-PLAYER
         // SPEED THROTTLING TOO, AS IT RELIES ON NETWORK ACKS/BUSY
         // WAITING.
-        if (node==0)
-        {
+        if (node == 0) {
             // _D_
             reboundstore.copyFrom(netbuffer);
             reboundpacket = true;
             return;
         }
 
-        if (DM.demoplayback)
+        if (demoplayback) {
             return;
+        }
 
-        if (!DM.netgame)
-            I.Error ("Tried to transmit to another node");
+        if (!netgame) {
+            doomSystem.Error("Tried to transmit to another node");
+        }
 
         doomcom.command = CMD_SEND;
         doomcom.remotenode = (short) node;
-        doomcom.datalength = (short) NetbufferSize ();
+        doomcom.datalength = (short) NetbufferSize();
 
-        if (DM.debugfile!=null)
-        {
-            int     i;
-            int     realretrans;
-            if (flags(netbuffer.checksum , NCMD_RETRANSMIT))
-                realretrans = ExpandTics (netbuffer.retransmitfrom);
-            else
+        if (debugfile != null) {
+            int i;
+            int realretrans;
+            if (flags(netbuffer.checksum, NCMD_RETRANSMIT)) {
+                realretrans = ExpandTics(netbuffer.retransmitfrom);
+            } else {
                 realretrans = -1;
+            }
 
-            logger(debugfile,"send ("+ExpandTics(netbuffer.starttic)+", "+netbuffer.numtics + ", R "+
-                realretrans+ "["+ doomcom.datalength+"]");
+            logger(debugfile, "send (" + ExpandTics(netbuffer.starttic) + ", " + netbuffer.numtics + ", R "
+                    + realretrans + "[" + doomcom.datalength + "]");
 
-            for (i=0 ; i<doomcom.datalength ; i++)
-
-                // TODO: get a serialized string representation.
-            	logger(debugfile,netbuffer.toString()+"\n");
+            for (i = 0; i < doomcom.datalength; i++) // TODO: get a serialized string representation.
+            {
+                logger(debugfile, netbuffer.toString() + "\n");
+            }
         }
 
         // This should execute a "send" command for the current stuff in doomcom.
-        DNI.NetCmd ();
+        systemNetworking.NetCmd();
     }
 
     //
@@ -3356,14 +3216,14 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         }
 
         // If not actually a netgame (e.g. single player, demo) return.
-        if (!DM.netgame)
+        if (!netgame)
             return false;
 
-        if (DM.demoplayback)
+        if (demoplayback)
             return false;
 
         doomcom.command = CMD_GET;
-        DNI.NetCmd ();
+        systemNetworking.NetCmd ();
 
         // Invalid node?
         if (doomcom.remotenode == -1)
@@ -3414,22 +3274,19 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 // Trick: force update of internal buffer.
                 netbuffer.pack();
 
-                /* TODO: Could it be actually writing stuff beyond the boundaries of a single doomdata object?
+                /**
+                 * TODO: Could it be actually writing stuff beyond the boundaries of a single doomdata object?
                  * A doomcom object has a lot of header info, and a single "raw" data placeholder, which by now
                  * should be inside netbuffer....right?
-                 * 
-                 * 
-                 */
+                 **/
 
                 try{
-                    for (i=0 ; i<doomcom.datalength ; i++) {
-                    	debugfile.write(Integer.toHexString(netbuffer.cached()[i]));
-                    	debugfile.write('\n');
+                    for (i = 0; i < doomcom.datalength; i++) {
+                        debugfile.write(Integer.toHexString(netbuffer.cached()[i]));
+                        debugfile.write('\n');
                     }
                 }
-                catch( IOException e){
-                    // "Drown" IOExceptions here.
-                }
+                catch( IOException e){} // "Drown" IOExceptions here.
             }
         }
         return true;    
@@ -3440,86 +3297,84 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
     StringBuilder exitmsg=new StringBuilder(80);
 
-    public void GetPackets () 
-    {
-        int     netconsole;
-        int     netnode;
-        ticcmd_t    src, dest;
-        int     realend;
-        int     realstart;
+    public void GetPackets() {
+        int netconsole;
+        int netnode;
+        ticcmd_t src, dest;
+        int realend;
+        int realstart;
 
-        while ( HGetPacket() )
-        {
-            if (flags(netbuffer.checksum , NCMD_SETUP))
+        while (HGetPacket()) {
+            if (flags(netbuffer.checksum, NCMD_SETUP)) {
                 continue;       // extra setup packet
-
+            }
             netconsole = netbuffer.player & ~PL_DRONE;
             netnode = doomcom.remotenode;
 
             // to save bytes, only the low byte of tic numbers are sent
             // Figure out what the rest of the bytes are
-            realstart = ExpandTics (netbuffer.starttic);        
-            realend = (realstart+netbuffer.numtics);
+            realstart = ExpandTics(netbuffer.starttic);
+            realend = (realstart + netbuffer.numtics);
 
             // check for exiting the game
-            if (flags(netbuffer.checksum , NCMD_EXIT))
-            {
-                if (!nodeingame[netnode])
+            if (flags(netbuffer.checksum, NCMD_EXIT)) {
+                if (!nodeingame[netnode]) {
                     continue;
+                }
                 nodeingame[netnode] = false;
                 playeringame[netconsole] = false;
                 exitmsg.insert(0, "Player 1 left the game");
-                exitmsg.setCharAt(7,(char) (exitmsg.charAt(7)+netconsole));
+                exitmsg.setCharAt(7, (char) (exitmsg.charAt(7) + netconsole));
                 players[consoleplayer].message = exitmsg.toString();
-                if (demorecording)
-                    DM.CheckDemoStatus ();
+                if (demorecording) {
+                    CheckDemoStatus();
+                }
                 continue;
             }
 
             // check for a remote game kill
-            if (flags(netbuffer.checksum , NCMD_KILL))
-                I.Error ("Killed by network driver");
+            if (flags(netbuffer.checksum, NCMD_KILL)) {
+                doomSystem.Error("Killed by network driver");
+            }
 
             nodeforplayer[netconsole] = netnode;
 
             // check for retransmit request
-            if ( resendcount[netnode] <= 0 
-                    && flags(netbuffer.checksum , NCMD_RETRANSMIT) )
-            {
+            if (resendcount[netnode] <= 0
+                    && flags(netbuffer.checksum, NCMD_RETRANSMIT)) {
                 resendto[netnode] = ExpandTics(netbuffer.retransmitfrom);
-                if (eval(debugfile)){
+                if (eval(debugfile)) {
                     sb.setLength(0);
                     sb.append("retransmit from ");
                     sb.append(resendto[netnode]);
                     sb.append('\n');
-                    logger(debugfile,sb.toString());
+                    logger(debugfile, sb.toString());
                     resendcount[netnode] = RESENDCOUNT;
                 }
-            }
-            else
+            } else {
                 resendcount[netnode]--;
+            }
 
             // check for out of order / duplicated packet       
-            if (realend == nettics[netnode])
+            if (realend == nettics[netnode]) {
                 continue;
+            }
 
-            if (realend < nettics[netnode])
-            {
-                if (eval(debugfile)){
+            if (realend < nettics[netnode]) {
+                if (eval(debugfile)) {
                     sb.setLength(0);
                     sb.append("out of order packet (");
                     sb.append(realstart);
                     sb.append(" + ");
                     sb.append(netbuffer.numtics);
                     sb.append(")\n");
-                    logger(debugfile,sb.toString());
+                    logger(debugfile, sb.toString());
                 }
                 continue;
             }
 
             // check for a missed packet
-            if (realstart > nettics[netnode])
-            {
+            if (realstart > nettics[netnode]) {
                 // stop processing until the other system resends the missed tics
                 if (eval(debugfile)) {
                     sb.setLength(0);
@@ -3530,7 +3385,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                     sb.append(" - ");
                     sb.append(nettics[netnode]);
                     sb.append(")\n");
-                    logger(debugfile,sb.toString());
+                    logger(debugfile, sb.toString());
                 }
                 remoteresend[netnode] = true;
                 continue;
@@ -3538,16 +3393,15 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
             // update command store from the packet
             {
-                int     start;
+                int start;
 
                 remoteresend[netnode] = false;
 
-                start = nettics[netnode] - realstart;       
+                start = nettics[netnode] - realstart;
                 src = netbuffer.cmds[start];
 
-                while (nettics[netnode] < realend)
-                {
-                    dest = netcmds[netconsole][nettics[netnode]%BACKUPTICS];
+                while (nettics[netnode] < realend) {
+                    dest = netcmds[netconsole][nettics[netnode] % BACKUPTICS];
                     nettics[netnode]++;
                     // MAES: this is a struct copy.
                     src.copyTo(dest);
@@ -3555,8 +3409,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                     start++;
 
                     //_D_: had to add this (see linuxdoom source). That fixed that damn consistency failure!!!
-                    if (start < netbuffer.cmds.length)
+                    if (start < netbuffer.cmds.length) {
                         src = netbuffer.cmds[start];
+                    }
 
                 }
             }
@@ -3564,46 +3419,38 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
     }
 
     protected void logger(OutputStreamWriter debugfile, String string) {
-    		try {
-				debugfile.write(string);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		
-	}
+        try {
+            debugfile.write(string);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-	int      gametime;
+    int gametime;
 
     @Override
-    public void NetUpdate ()
-    {
-        int             nowtime;
-        int             newtics;
-        int             i,j;
-        int             realstart;
-        int             gameticdiv;
+    public void NetUpdate() {
+        int nowtime;
+        int newtics;
+        int i, j;
+        int realstart;
+        int gameticdiv;
 
         // check time
-        nowtime = TICK.GetTime ()/ticdup;
+        nowtime = ticker.GetTime() / ticdup;
         newtics = nowtime - gametime;
         gametime = nowtime;
 
-        if (newtics <= 0)   // nothing new to update
-        {
+        if (newtics <= 0) { // nothing new to update
             // listen for other packets
-            GetPackets ();
-            return;
+            GetPackets();
         } else {
 
-
-            if (skiptics <= newtics)
-            {
+            if (skiptics <= newtics) {
                 newtics -= skiptics;
                 skiptics = 0;
-            }
-            else
-            {
+            } else {
                 skiptics -= newtics;
                 newtics = 0;
             }
@@ -3611,56 +3458,50 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             netbuffer.player = (byte) consoleplayer;
 
             // build new ticcmds for console player
-            gameticdiv = gametic/ticdup;
-            for (i=0 ; i<newtics ; i++)
-            {
-                VI.StartTic ();
-                ProcessEvents ();
-                if (maketic - gameticdiv >= BACKUPTICS/2-1)
+            gameticdiv = gametic / ticdup;
+            for (i = 0; i < newtics; i++) {
+                videoInterface.StartTic();
+                ProcessEvents();
+                if (maketic - gameticdiv >= BACKUPTICS / 2 - 1) {
                     break;          // can't hold any more
-
+                }
                 //System.out.printf ("mk:%d ",maketic);
-                BuildTiccmd (localcmds[maketic%BACKUPTICS]);
+                BuildTiccmd(localcmds[maketic % BACKUPTICS]);
                 maketic++;
             }
 
-
-            if (singletics)
+            if (singletics) {
                 return;         // singletic update is syncronous
-
+            }
             // send the packet to the other nodes
-            for (i=0 ; i<doomcom.numnodes ; i++)
-                if (nodeingame[i])
-                {
+            for (i = 0; i < doomcom.numnodes; i++) {
+                if (nodeingame[i]) {
                     netbuffer.starttic = (byte) (realstart = resendto[i]);
                     netbuffer.numtics = (byte) (maketic - realstart);
-                    if (netbuffer.numtics > BACKUPTICS)
-                        I.Error ("NetUpdate: netbuffer.numtics > BACKUPTICS");
+                    if (netbuffer.numtics > BACKUPTICS) {
+                        doomSystem.Error("NetUpdate: netbuffer.numtics > BACKUPTICS");
+                    }
 
                     resendto[i] = maketic - doomcom.extratics;
 
-                    for (j=0 ; j< netbuffer.numtics ; j++)
-                        localcmds[(realstart+j)%BACKUPTICS].copyTo(netbuffer.cmds[j]);
+                    for (j = 0; j < netbuffer.numtics; j++) {
+                        localcmds[(realstart + j) % BACKUPTICS].copyTo(netbuffer.cmds[j]);
+                    }
                     // MAES: one of _D_ fixes.
                     //netbuffer.cmds[j] = localcmds[(realstart+j)%BACKUPTICS];
 
-                    if (remoteresend[i])
-                    {
+                    if (remoteresend[i]) {
                         netbuffer.retransmitfrom = (byte) nettics[i];
-                        HSendPacket (i, NCMD_RETRANSMIT);
-                    }
-                    else
-                    {
+                        HSendPacket(i, NCMD_RETRANSMIT);
+                    } else {
                         netbuffer.retransmitfrom = 0;
-                        HSendPacket (i, 0);
+                        HSendPacket(i, 0);
                     }
                 }
+            }
             GetPackets();
         }
-
     }
-
-
 
     //
     // CheckAbort
@@ -3670,17 +3511,17 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         event_t ev;
         int     stoptic;
 
-        stoptic = TICK.GetTime () + 2; 
-        while (TICK.GetTime() < stoptic) 
-            VI.StartTic (); 
+        stoptic = ticker.GetTime () + 2; 
+        while (ticker.GetTime() < stoptic) 
+            videoInterface.StartTic (); 
 
-        VI.StartTic ();
+        videoInterface.StartTic ();
         for ( ; eventtail != eventhead 
         ; eventtail = (++eventtail)&(MAXEVENTS-1) ) 
         { 
             ev = events[eventtail]; 
             if (ev.type == evtype_t.ev_keydown && ev.data1 == KEY_ESCAPE)
-                I.Error ("Network game synchronization aborted.");
+                doomSystem.Error ("Network game synchronization aborted.");
         } 
     }
 
@@ -3698,7 +3539,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         autostart = true;
 
         // Clear it up...
-        Arrays.fill(gotinfo,false);
+        Arrays.fill(gotinfo, false);
 
         if (doomcom.consoleplayer!=0)
         {
@@ -3712,7 +3553,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 if (flags(netbuffer.checksum , NCMD_SETUP))
                 {
                     if (netbuffer.player != VERSION)
-                        I.Error ("Different DOOM versions cannot play a net game!");
+                        doomSystem.Error ("Different DOOM versions cannot play a net game!");
                     startskill = skill_t.values()[netbuffer.retransmitfrom & 15];
 
                     // Deathmatch
@@ -3776,17 +3617,14 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         }
     }
 
-    //
-    // D_CheckNetGame
-    // Works out player numbers among the net participants
-    //
+    /**
+     * D_CheckNetGame
+     * Works out player numbers among the net participants
+     **/
+    private void CheckNetGame() throws IOException {
+        int i;
 
-    private void CheckNetGame () throws IOException
-    {
-        int             i;
-
-        for (i=0 ; i<MAXNETNODES ; i++)
-        {
+        for (i = 0; i < MAXNETNODES; i++) {
             nodeingame[i] = false;
             nettics[i] = 0;
             remoteresend[i] = false;    // set when local needs tics
@@ -3794,132 +3632,132 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         }
 
         // I_InitNetwork sets doomcom and netgame
-        DNI.InitNetwork ();
-        if (doomcom.id != DOOMCOM_ID)
-            I.Error ("Doomcom buffer invalid!");
+        systemNetworking.InitNetwork();
+        if (doomcom.id != DOOMCOM_ID) {
+            doomSystem.Error("Doomcom buffer invalid!");
+        }
 
         // Maes: This is the only place where netbuffer is definitively set to something
         netbuffer = doomcom.data;
         consoleplayer = displayplayer = doomcom.consoleplayer;
-        if (netgame)
-            ArbitrateNetStart ();
+        if (netgame) {
+            ArbitrateNetStart();
+        }
 
-        System.out.printf ("startskill %s  deathmatch: %s  startmap: %d  startepisode: %d\n",
-            startskill.toString(), Boolean.toString(deathmatch), startmap, startepisode);
+        System.out.printf("startskill %s  deathmatch: %s  startmap: %d  startepisode: %d\n",
+                startskill.toString(), Boolean.toString(deathmatch), startmap, startepisode);
 
         // read values out of doomcom
         ticdup = doomcom.ticdup;
         // MAES: ticdup must not be zero at this point. Obvious, no?
-        maxsend = BACKUPTICS/(2*ticdup)-1;
-        if (maxsend<1)
+        maxsend = BACKUPTICS / (2 * ticdup) - 1;
+        if (maxsend < 1) {
             maxsend = 1;
+        }
 
-        for (i=0 ; i<doomcom.numplayers ; i++)
+        for (i = 0; i < doomcom.numplayers; i++) {
             playeringame[i] = true;
-        for (i=0 ; i<doomcom.numnodes ; i++)
+        }
+        for (i = 0; i < doomcom.numnodes; i++) {
             nodeingame[i] = true;
+        }
 
-        System.out.printf ("player %d of %d (%d nodes)\n",(consoleplayer+1), doomcom.numplayers, doomcom.numnodes);
-
+        System.out.printf("player %d of %d (%d nodes)\n", (consoleplayer + 1), doomcom.numplayers, doomcom.numnodes);
     }
 
-
-    //
-    // D_QuitNetGame
-    // Called before quitting to leave a net game
-    // without hanging the other players
-    //
+    /**
+     * D_QuitNetGame
+     * Called before quitting to leave a net game
+     * without hanging the other players
+     **/
     @Override
-    public void QuitNetGame () throws IOException
-    {
-        int             i, j;
+    public void QuitNetGame() throws IOException {
+        int i, j;
 
-        if (eval(debugfile))
+        if (eval(debugfile)) {
             try {
                 debugfile.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
 
-            if (!netgame || !usergame || consoleplayer == -1 || demoplayback)
-                return;
+        if (!netgame || !usergame || consoleplayer == -1 || demoplayback) {
+            return;
+        }
 
-            // send a bunch of packets for security
-            netbuffer.player = (byte) consoleplayer;
-            netbuffer.numtics = 0;
-            for (i=0 ; i<4 ; i++)
-            {
-                for (j=1 ; j<doomcom.numnodes ; j++)
-                    if (nodeingame[j])
-                        HSendPacket (j, NCMD_EXIT);
-                I.WaitVBL (1);
+        // send a bunch of packets for security
+        netbuffer.player = (byte) consoleplayer;
+        netbuffer.numtics = 0;
+        for (i = 0; i < 4; i++) {
+            for (j = 1; j < doomcom.numnodes; j++) {
+                if (nodeingame[j]) {
+                    HSendPacket(j, NCMD_EXIT);
+                }
             }
+            doomSystem.WaitVBL(1);
+        }
     }
 
-
-
-    //
-    // TryRunTics
-    //
-    int[] frametics=new int[4];
+    /**
+     * TryRunTics
+     **/
+    int[] frametics = new int[4];
     int frameon;
-    boolean[] frameskip=new boolean[4];
+    boolean[] frameskip = new boolean[4];
     int oldnettics;
-    int  oldentertics;
-
+    int oldentertics;
 
     @Override
-    public void TryRunTics () throws IOException
-    {
-        int     i;
-        int     lowtic;
-        int     entertic;
+    public void TryRunTics() throws IOException {
+        int i;
+        int lowtic;
+        int entertic;
 
-        int     realtics;
-        int     availabletics;
-        int     counts;
-        int     numplaying;
-
+        int realtics;
+        int availabletics;
+        int counts;
+        int numplaying;
 
         // get real tics        
-        entertic = TICK.GetTime ()/ticdup;
+        entertic = ticker.GetTime() / ticdup;
         realtics = entertic - oldentertics;
         oldentertics = entertic;
 
         //System.out.printf("Entertic %d, realtics %d, oldentertics %d\n",entertic,realtics,oldentertics);
-
         // get available tics
-        NetUpdate ();
+        NetUpdate();
 
         lowtic = MAXINT;
         numplaying = 0;
-        for (i=0 ; i<doomcom.numnodes ; i++)
-        {
-            if (nodeingame[i])
-            {
+        for (i = 0; i < doomcom.numnodes; i++) {
+            if (nodeingame[i]) {
                 numplaying++;
-                if (nettics[i] < lowtic)
+                if (nettics[i] < lowtic) {
                     lowtic = nettics[i];
+                }
             }
         }
-        availabletics = lowtic - gametic/ticdup;
+        availabletics = lowtic - gametic / ticdup;
 
         // decide how many tics to run
-        if (realtics < availabletics-1)
-            counts = realtics+1;
-        else if (realtics < availabletics)
+        if (realtics < availabletics - 1) {
+            counts = realtics + 1;
+        } else if (realtics < availabletics) {
             counts = realtics;
-        else
+        } else {
             counts = availabletics;
+        }
 
-        if (counts < 1)
+        if (counts < 1) {
             counts = 1;
+        }
 
         frameon++;
 
-        if (eval(debugfile)){
+        if (eval(debugfile)) {
             sb.setLength(0);
-            sb.append( "=======real: ");
+            sb.append("=======real: ");
             sb.append(realtics);
             sb.append("  avail: ");
             sb.append(availabletics);
@@ -3929,28 +3767,24 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             debugfile.write(sb.toString());
         }
 
-        if (!demoplayback)
-        {   
+        if (!demoplayback) {
             // ideally nettics[0] should be 1 - 3 tics above lowtic
             // if we are consistantly slower, speed up time
-            for (i=0 ; i<MAXPLAYERS ; i++)
-                if (playeringame[i])
+            for (i = 0; i < MAXPLAYERS; i++) {
+                if (playeringame[i]) {
                     break;
-            if (consoleplayer == i)
-            {
-                // the key player does not adapt
+                }
             }
-            else
-            {
-                if (nettics[0] <= nettics[nodeforplayer[i]])
-                {
+            if (consoleplayer == i) {
+                // the key player does not adapt
+            } else {
+                if (nettics[0] <= nettics[nodeforplayer[i]]) {
                     gametime--;
                     System.out.print("-");
                 }
-                frameskip[frameon&3] = oldnettics > nettics[nodeforplayer[i]];
+                frameskip[frameon & 3] = oldnettics > nettics[nodeforplayer[i]];
                 oldnettics = nettics[0];
-                if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3])
-                {
+                if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3]) {
                     skiptics = 1;
                     System.out.print("+");
                 }
@@ -3958,113 +3792,83 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         }// demoplayback
 
         // wait for new tics if needed
-        while (lowtic < gametic/ticdup + counts)    
-        {
-            NetUpdate ();   
+        while (lowtic < gametic / ticdup + counts) {
+            NetUpdate();
             lowtic = MAXINT;
 
             // Finds the node with the lowest number of tics.
-            for (i=0 ; i<doomcom.numnodes ; i++)
-                if (nodeingame[i] && nettics[i] < lowtic)
+            for (i = 0; i < doomcom.numnodes; i++) {
+                if (nodeingame[i] && nettics[i] < lowtic) {
                     lowtic = nettics[i];
+                }
+            }
 
-            if (lowtic < gametic/ticdup)
-                I.Error ("TryRunTics: lowtic < gametic");
+            if (lowtic < gametic / ticdup) {
+                doomSystem.Error("TryRunTics: lowtic < gametic");
+            }
 
             // don't stay in here forever -- give the menu a chance to work
-            int time=TICK.GetTime();
-            if (time/ticdup - entertic >= 20)
-            {
-                M.Ticker ();
+            int time = ticker.GetTime();
+            if (time / ticdup - entertic >= 20) {
+                menu.Ticker();
                 return;
             }
         }
 
         // run the count * ticdup dics
-        while (counts-->0)
-        {
-            for (i=0 ; i<ticdup ; i++)
-            {
-                if (gametic/ticdup > lowtic)
-                    I.Error ("gametic>lowtic");
-                if (advancedemo)
-                    DM.DoAdvanceDemo ();
-                M.Ticker ();
-                Ticker ();
+        while (counts-- > 0) {
+            for (i = 0; i < ticdup; i++) {
+                if (gametic / ticdup > lowtic) {
+                    doomSystem.Error("gametic>lowtic");
+                }
+                if (advancedemo) {
+                    DoAdvanceDemo();
+                }
+                menu.Ticker();
+                Ticker();
                 gametic++;
 
                 // modify command for duplicated tics
-                if (i != ticdup-1)
-                {
-                    ticcmd_t    cmd;
-                    int         buf;
-                    int         j;
+                if (i != ticdup - 1) {
+                    ticcmd_t cmd;
+                    int buf;
+                    int j;
 
-                    buf = (gametic/ticdup)%BACKUPTICS; 
-                    for (j=0 ; j<MAXPLAYERS ; j++)
-                    {
+                    buf = (gametic / ticdup) % BACKUPTICS;
+                    for (j = 0; j < MAXPLAYERS; j++) {
                         cmd = netcmds[j][buf];
                         cmd.chatchar = 0;
-                        if (flags(cmd.buttons , BT_SPECIAL))
+                        if (flags(cmd.buttons, BT_SPECIAL)) {
                             cmd.buttons = 0;
+                        }
                     }
                 }
             }
-            NetUpdate ();   // check for new console commands
+            NetUpdate();   // check for new console commands
         }
     }
-
 
     @Override
     public doomcom_t getDoomCom() {
         return this.doomcom;
     }
 
-
     @Override
     public void setDoomCom(doomcom_t doomcom) {
         this.doomcom=doomcom;
     }
-
 
     @Override
     public void setGameAction(gameaction_t action) {
         this.gameaction=action;
     }
 
-
     @Override
     public gameaction_t getGameAction() {       
         return this.gameaction;
     }
 
-    ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
-
-    protected int SCREENWIDTH;
-    protected int SCREENHEIGHT;
-    protected int SAFE_SCALE;
-    protected IVideoScale vs;
-
-
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        this.vs=vs;
-    }
-
-    @Override
-    public void initScaling() {
-        this.SCREENHEIGHT=vs.getScreenHeight();
-        this.SCREENWIDTH=vs.getScreenWidth();
-        this.SAFE_SCALE=vs.getSafeScaling();
-    }
-
-
-    public void setCommandLineArgs(ICommandLineManager cM) {
-        this.CM=cM;
-
-    }
-
+    public final VideoScale vs;
 
     public boolean shouldPollLockingKeys() {
         if (keysCleared) {
@@ -4074,482 +3878,140 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         return false;
     }
     
+    private String findFileNameToSave() {
+        String format = "DOOM%d%d%d%d.png";
+        String lbmname = null;
+        // find a file name to save it to
+        int[] digit = new int[4];
+        int i;
+        for (i = 0; i <= 9999; i++) {
+            digit[0] = ((i / 1000) % 10);
+            digit[1] = ((i / 100) % 10);
+            digit[2] = ((i / 10) % 10);
+            digit[3] = (i % 10);
+            lbmname = String.format(format, digit[0], digit[1], digit[2], digit[3]);
+            if (!C2JUtils.testReadAccess(lbmname)) {
+                break;  // file doesn't exist
+            }
+        }
+        if (i == 10000) {
+            doomSystem.Error("M_ScreenShot: Couldn't create a PNG");
+        }
+        return lbmname;
+    }
+
+    protected final Finale<T> selectFinale() {
+        return new Finale<>(this);
+    }
+
+    protected final SceneRenderer<T, V> selectRenderer() {
+        // Serial or parallel renderer (serial is default, but can be forced)
+        if (cVarManager.bool(CommandVariable.SERIALRENDERER)) {
+            return selectSerialRenderer();
+        } else { // Parallel. Either with default values (2,1) or user-specified.
+            SceneRenderer<T, V> parallel = selectOneParallelRenderer(CommandVariable.PARALLELRENDERER);
+
+            if (parallel == null) {
+                parallel = selectOneParallelRenderer(CommandVariable.PARALLELRENDERER2);
+            }
+            
+            if (parallel != null) {
+                return parallel;
+            }
+        }
+
+        // Force serial
+        return selectSerialRenderer();
+    }
+    
+    private SceneRenderer<T, V> selectOneParallelRenderer(CommandVariable CVarSwitch) {
+        if (cVarManager.present(CVarSwitch)) {
+            // Next THREE args must be numbers.
+            // Try parsing walls, or default to 1
+            final int walls = cVarManager.get(CVarSwitch, Integer.class, 0).orElse(1);
+            // Try parsing floors. If wall succeeded, but floors not, it will default to 1.
+            final int floors = cVarManager.get(CVarSwitch, Integer.class, 0).orElse(1);
+            // In the worst case, we will use the defaults.
+            final int masked = cVarManager.get(CVarSwitch, Integer.class, 0).orElse(2);
+            // TODO: re-enable parallelrenderer2
+            if (CVarSwitch == CommandVariable.PARALLELRENDERER) {
+                return selectParallelRenderer(walls, floors, masked);
+            } else if (CVarSwitch == CommandVariable.PARALLELRENDERER2) {
+                return selectParallelRenderer2(walls, floors, masked);
+            }
+        }
+        
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private SceneRenderer<T, V> selectSerialRenderer() {
+        switch (this.bppMode) {
+            case HiColor:
+                return (SceneRenderer<T, V>) new UnifiedRenderer
+                    .HiColor((DoomMain<byte[], short[]>) this);
+            case TrueColor:
+                return (SceneRenderer<T, V>) new UnifiedRenderer
+                    .TrueColor((DoomMain<byte[], int[]>) this);
+            case Indexed:
+            default:
+                return (SceneRenderer<T, V>) new UnifiedRenderer
+                    .Indexed((DoomMain<byte[], byte[]>) this);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private SceneRenderer<T, V> selectParallelRenderer(int walls, int floors, int masked) {
+        switch (this.bppMode) {
+            case HiColor:
+                return (SceneRenderer<T, V>) new ParallelRenderer
+                    .HiColor((DoomMain<byte[], short[]>) this, walls, floors, masked);
+            case TrueColor:
+                return (SceneRenderer<T, V>) new ParallelRenderer
+                    .TrueColor((DoomMain<byte[], int[]>) this, walls, floors, masked);
+            case Indexed:
+            default:
+                return (SceneRenderer<T, V>) new ParallelRenderer
+                    .Indexed((DoomMain<byte[], byte[]>) this, walls, floors, masked);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private SceneRenderer<T, V> selectParallelRenderer2(int walls, int floors, int masked) {
+        switch (this.bppMode) {
+            case HiColor:
+                return (SceneRenderer<T, V>) new ParallelRenderer2
+                    .HiColor((DoomMain<byte[], short[]>) this, walls, floors, masked);
+            case TrueColor:
+                return (SceneRenderer<T, V>) new ParallelRenderer2
+                    .TrueColor((DoomMain<byte[], int[]>) this, walls, floors, masked);
+            case Indexed:
+            default:
+                return (SceneRenderer<T, V>) new ParallelRenderer2
+                    .Indexed((DoomMain<byte[], byte[]>) this, walls, floors, masked);
+        }
+    }
+
     /**
-     * Since this is a fully OO implementation, we need a way to create
-     * the instances of the Refresh daemon, the Playloop, the Wadloader 
-     * etc. which however are now completely independent of each other
-     * (well, ALMOST), and are typically only passed context when 
-     * instantiated.
-     * 
-     *  If you instantiate one too early, it will have null context.
-     *  
-     *  The trick is to construct objects in the correct order. Some of
-     *  them have Init() methods which are NOT yet safe to call.
-     * 
-     */
+    *  M_Screenshot
+    *  
+    *  Currently saves PCX screenshots, and only in devparm.
+    *  Very oldschool ;-)
+    *  
+    *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+    *  messages, option to save as either PCX or PNG. Also, request
+    *  current palette from VI (otherwise gamma settings and palette effects
+    *  don't show up).
+    *  
+    */
+    public void ScreenShot() {
+        // find a file name to save it to
+        final String lbmname = findFileNameToSave(); // file doesn't exist
 
-    public void Init(){
-       
-        // The various objects that need to "sense" the global status
-        // end up here. This allows one-call updates.
-        status_holders=new ArrayList<DoomStatusAware>();
-        
-        // Doommain is both "main" and handles most of the game status.
-        this.DM=this;
-        this.DG = this;
-        this.DGN=this; // DoomMain also handles its own Game Networking.
-             
-        // Set ticker. It is a shared status object, but not a holder itself.
-        if (eval(CM.CheckParm("-millis"))){
-
-            TICK=new MilliTicker();
+        if (graphicSystem.writeScreenShot(lbmname, WS)) {
+            players[consoleplayer].message = "screen shot";
         }
-        else if (eval(CM.CheckParm("-fasttic"))){
-            TICK=new FastTicker();
-        } else {
-            TICK=new NanoTicker();
-        }
-        
-        // Network "driver"
-        status_holders.add((DoomStatusAware) (this.DNI=new DummyNetworkDriver(this)));
-        
-        // Random number generator, but we can have others too.
-        this.RND=new DoomRandom();
-        
-        // Sound can be left until later, in Start
-
-        this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
-        status_holders.add(this.WIPE=selectWiper());   
-
-        // Then the menu...
-        status_holders.add(this.HU=new HU(this));
-        status_holders.add(this.M=new Menu(this));
-        status_holders.add(this.LL=new BoomLevelLoader(this));
-        
-        // This will set R.
-        this.R= selectRenderer();
-        status_holders.add(this.R);
-        status_holders.add((this.P=new Actions(this)));
-        status_holders.add(this.ST=new StatusBar(this));
-        status_holders.add(this.AM=selectAutoMap()); // Call Init later.
-        // Let the renderer pick its own. It makes linking easier.
-        this.TM=R.getTextureManager();
-        this.SM=R.getSpriteManager();        
-
-        //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
-        // it seems to fit perfectly here
-        status_holders.add(this.WI = new EndLevel(this));    
-        status_holders.add(this.F = selectFinale());
-        
-        // TODO: find out if we have requests for a specific resolution,
-        // and try honouring them as closely as possible.       
-
-        // 23/5/2011: Experimental dynamic resolution subsystem
-        vs=VisualSettings.parse(CM);
-        
-        // Initializing actually sets drawing positions, constants,
-        // etc. for main. Children will be set later in Start().
-        this.initScaling();
-        
-        this.V=selectVideoRenderer();
-
-        status_holders.add((DoomStatusAware) this.I);
-        status_holders.add((DoomStatusAware) this.V);
-        
-        // Disk access visualizer
-        
-        status_holders.add((DoomStatusAware) (this.DD=new DiskDrawer(this,DiskDrawer.STDISK)));
-        
-        updateStatusHolders(this);
-
-
     }
-    
-
-
-    public static final class HiColor extends DoomMain<byte[], short[]>{
-    
-        public HiColor(){
-            super();
-        }
-        
-        protected IAutoMap<byte[], short[]> selectAutoMap() {
-            return new Map.HiColor(this);
-        }
-        
-        protected final Finale<byte[]> selectFinale(){
-            return new Finale<byte[]>(this);
-        }
-        
-        protected final DoomVideoRenderer<byte[],short[]> selectVideoRenderer(){
-            return new BufferedRenderer16(SCREENWIDTH,SCREENHEIGHT);
-        }
-        
-        protected final DoomVideoInterface<short[]> selectVideoInterface(){
-            return new AWTDoom.HiColor(this,V);
-        }
-        
-        protected final Wiper<byte[],short[]> selectWiper(){
-            return new Wiper.HiColor(this);
-        }
-        
-        protected final Renderer<byte[],short[]> selectRenderer() {
-            // Serial or parallel renderer (serial is default, but can be forced)
-            if (eval(CM.CheckParm("-serialrenderer"))){
-                return new UnifiedRenderer.HiColor(this);    
-            } else 
-                // Parallel. Either with default values (2,1) or user-specified.
-                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
-                    int p = CM.CheckParm ("-parallelrenderer");
-                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
-                    
-                    if (p < CM.getArgc()-1)
-                    {
-                        // Next THREE args must be numbers.
-                        int walls=1, floors=1,masked=2;
-                        startmap = Integer.parseInt(CM.getArgv(p+1));
-                        // Try parsing walls.
-                        try {
-                            walls=Integer.parseInt(CM.getArgv(p+1));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-
-                        // Try parsing floors. If wall succeeded, but floors
-                        // not, it will default to 1.
-                        try {
-                            floors=Integer.parseInt(CM.getArgv(p+2));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-                        
-                        try {
-                            masked=Integer.parseInt(CM.getArgv(p+3));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-
-                        // In the worst case, we will use the defaults.
-                        if  (CM.CheckParmBool("-parallelrenderer"))
-                            // TODO: temporarily disabled
-                        	return new ParallelRenderer.HiColor(this,walls,floors,masked);  
-                       //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
-                       // else
-                       //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
-                    }
-                } else {
-                    // Force serial
-                    return new UnifiedRenderer.HiColor(this);   
-                }
-            
-            return null;
-        }
-
-        /**
-        *  M_Screenshot
-        *  
-        *  Currently saves PCX screenshots, and only in devparm.
-        *  Very oldschool ;-)
-        *  
-        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
-        *  messages, option to save as either PCX or PNG. Also, request
-        *  current palette from VI (otherwise gamma settings and palette effects
-        *  don't show up).
-        *  
-        */
-
-       public void ScreenShot ()
-       {
-           int     i;
-           short[]  linear;
-           String format=new String("DOOM%d%d%d%d.png");
-           String lbmname = null;
-           
-           // munge planar buffer to linear
-           linear = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
-           VI.ReadScreen (linear);
-
-           // find a file name to save it to
-           
-           int[] digit=new int[4];
-           
-           for (i=0 ; i<=9999 ; i++)
-           {
-           digit[0] = ((i/1000 )%10);
-           digit[1] =  ((i/100)%10);
-           digit[2] =  ((i/10)%10);
-           digit[3] =  (i%10);
-           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
-           if (!C2JUtils.testReadAccess(lbmname))
-               break;  // file doesn't exist
-           }
-           if (i==10000)
-           I.Error ("M_ScreenShot: Couldn't create a PNG");
-
-           // save the pcx file
-           MenuMisc.WritePNGfile (lbmname, linear,
-                 SCREENWIDTH, SCREENHEIGHT);
-
-           players[consoleplayer].message = "screen shot";
-       }
-
-    }
-    
-    public static final class Indexed extends DoomMain<byte[], byte[]>{
-        
-        public Indexed(){
-            super();
-        }
-        
-        protected IAutoMap<byte[], byte[]> selectAutoMap() {
-            return new Map.Indexed(this);
-        }
-        
-        protected final Finale<byte[]> selectFinale(){
-            return new Finale<byte[]>(this);
-        }
-        
-        protected final DoomVideoRenderer<byte[],byte[]> selectVideoRenderer(){
-            return new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
-        }
-        
-        protected final DoomVideoInterface<byte[]> selectVideoInterface(){
-            return new AWTDoom.Indexed(this,V);
-        }
-        
-        protected final Wiper<byte[],byte[]> selectWiper(){
-            return new Wiper.Indexed(this);
-        }        
-        protected final Renderer<byte[],byte[]> selectRenderer() {
-            // Serial or parallel renderer (serial is default, but can be forced)
-            if (eval(CM.CheckParm("-serialrenderer"))){
-                return new UnifiedRenderer.Indexed(this);    
-            } else 
-                // Parallel. Either with default values (2,1) or user-specified.
-                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
-                    int p = CM.CheckParm ("-parallelrenderer");
-                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
-                    
-                    if (p < CM.getArgc()-1)
-                    {
-                        // Next THREE args must be numbers.
-                        int walls=1, floors=1,masked=2;
-                        startmap = Integer.parseInt(CM.getArgv(p+1));
-                        // Try parsing walls.
-                        try {
-                            walls=Integer.parseInt(CM.getArgv(p+1));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-
-                        // Try parsing floors. If wall succeeded, but floors
-                        // not, it will default to 1.
-                        try {
-                            floors=Integer.parseInt(CM.getArgv(p+2));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-                        
-                        try {
-                            masked=Integer.parseInt(CM.getArgv(p+3));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-
-                        // In the worst case, we will use the defaults.
-                        if  (CM.CheckParmBool("-parallelrenderer"))                            
-                            // TODO: temporarily disabled
-                            //return new UnifiedRenderer.Indexed(this);   
-                            return new ParallelRenderer.Indexed(this,walls,floors,masked);
-                        //else
-                          //  return new ParallelRenderer2(this,walls,floors,masked);
-                    }
-                } else {
-                    // Force serial
-                    return new UnifiedRenderer.Indexed(this);   
-                }
-            
-            return null;
-        }
-
-        /**
-        *  M_Screenshot
-        *  
-        *  Currently saves PCX screenshots, and only in devparm.
-        *  Very oldschool ;-)
-        *  
-        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
-        *  messages, option to save as either PCX or PNG. Also, request
-        *  current palette from VI (otherwise gamma settings and palette effects
-        *  don't show up).
-        *  
-        */
-
-       public void ScreenShot ()
-       {
-           int     i;
-           byte[]  linear;
-           String format=new String("DOOM%d%d%d%d.png");
-           String lbmname = null;
-           
-           // munge planar buffer to linear
-           linear = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
-           VI.ReadScreen (linear);
-
-           // find a file name to save it to
-           
-           int[] digit=new int[4];
-           
-           for (i=0 ; i<=9999 ; i++)
-           {
-           digit[0] = ((i/1000 )%10);
-           digit[1] =  ((i/100)%10);
-           digit[2] =  ((i/10)%10);
-           digit[3] =  (i%10);
-           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
-           if (!C2JUtils.testReadAccess(lbmname))
-               break;  // file doesn't exist
-           }
-           if (i==10000)
-           I.Error ("M_ScreenShot: Couldn't create a PNG");
-
-           // save the pcx file
-           MenuMisc.WritePNGfile(lbmname, linear,
-                 SCREENWIDTH, SCREENHEIGHT,V.getPalette());
-
-           players[consoleplayer].message = "screen shot";
-       }
-        
-    }
- 
-    public static final class TrueColor extends DoomMain<byte[], int[]>{
-        
-        public TrueColor(){
-            super();
-        }
-        
-        protected IAutoMap<byte[], int[]> selectAutoMap() {
-            return new Map.TrueColor(this);
-        }
-        
-        protected final Finale<byte[]> selectFinale(){
-            return new Finale<byte[]>(this);
-        }
-        
-        protected final DoomVideoRenderer<byte[],int[]> selectVideoRenderer(){
-            return new BufferedRenderer32(SCREENWIDTH,SCREENHEIGHT);
-        }
-        
-        protected final DoomVideoInterface<int[]> selectVideoInterface(){
-            return new AWTDoom.TrueColor(this,V);
-        }
-        
-        protected final Wiper<byte[],int[]> selectWiper(){
-            return new Wiper.TrueColor(this);
-        }
-        
-        protected final Renderer<byte[],int[]> selectRenderer() {
-            // Serial or parallel renderer (serial is default, but can be forced)
-            if (eval(CM.CheckParm("-serialrenderer"))){
-                return new UnifiedRenderer.TrueColor(this);    
-            } else 
-                // Parallel. Either with default values (2,1) or user-specified.
-                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
-                    int p = CM.CheckParm ("-parallelrenderer");
-                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
-                    
-                    if (p < CM.getArgc()-1)
-                    {
-                        // Next THREE args must be numbers.
-                        int walls=1, floors=1,masked=2;
-                        startmap = Integer.parseInt(CM.getArgv(p+1));
-                        // Try parsing walls.
-                        try {
-                            walls=Integer.parseInt(CM.getArgv(p+1));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-
-                        // Try parsing floors. If wall succeeded, but floors
-                        // not, it will default to 1.
-                        try {
-                            floors=Integer.parseInt(CM.getArgv(p+2));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-                        
-                        try {
-                            masked=Integer.parseInt(CM.getArgv(p+3));
-                        } catch (Exception e){
-                            // OK, move on anyway.
-                        }
-
-                        // In the worst case, we will use the defaults.
-                        if  (CM.CheckParmBool("-parallelrenderer"))
-                            // TODO: temporarily disabled
-                        	return new ParallelRenderer.TrueColor(this,walls,floors,masked);   
-                       //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
-                       // else
-                       //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
-                    }
-                } else {
-                    // Force serial
-                    return new UnifiedRenderer.TrueColor(this);   
-                }
-            
-            return null;
-        }
-
-        /**
-        *  M_Screenshot
-        *  
-        *  Currently saves PCX screenshots, and only in devparm.
-        *  Very oldschool ;-)
-        *  
-        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
-        *  messages, option to save as either PCX or PNG. Also, request
-        *  current palette from VI (otherwise gamma settings and palette effects
-        *  don't show up).
-        *  
-        */
-
-       public void ScreenShot ()
-       {
-           int     i;
-           int[]  linear;
-           String format=new String("DOOM%d%d%d%d.png");
-           String lbmname = null;
-           
-           // munge planar buffer to linear
-           linear = (int[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
-           VI.ReadScreen (linear);
-
-           // find a file name to save it to
-           
-           int[] digit=new int[4];
-           
-           for (i=0 ; i<=9999 ; i++)
-           {
-           digit[0] = ((i/1000 )%10);
-           digit[1] =  ((i/100)%10);
-           digit[2] =  ((i/10)%10);
-           digit[3] =  (i%10);
-           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
-           if (!C2JUtils.testReadAccess(lbmname))
-               break;  // file doesn't exist
-           }
-           if (i==10000)
-           I.Error ("M_ScreenShot: Couldn't create a PNG");
-
-           // save the pcx file
-           MenuMisc.WritePNGfile (lbmname, linear,
-                 SCREENWIDTH, SCREENHEIGHT);
-
-           players[consoleplayer].message = "screen shot";
-       }
-
-    }
-    
 }
 
 //$Log: DoomMain.java,v $

@@ -1,57 +1,37 @@
 package i;
 
-import doom.DoomStatus;
+import doom.DoomMain;
 import rr.patch_t;
-import v.DoomVideoRenderer;
-import v.IVideoScale;
-import w.IWadLoader;
+import static v.renderers.DoomScreen.FG;
 
-public class DiskDrawer implements IDiskDrawer,DoomStatusAware {
+public class DiskDrawer implements IDiskDrawer {
 
+    private DoomMain<?,?> DOOM;
 	private patch_t disk;
-	private IWadLoader W;
-	private DoomVideoRenderer<?,?> V;
-	private IVideoScale VS;
 	private int timer=0;
 	private String diskname;
 	
 	public static final String STDISK="STDISK";
 	public static final String STCDROM="STCDROM";
 	
-	public DiskDrawer(DoomStatus<?,?> DM,String icon){		
-		this.updateStatus(DM);
+	public DiskDrawer(DoomMain<?,?> DOOM, String icon){		
+		this.DOOM = DOOM;
 		this.diskname=icon;
 	}
 
 	@Override
 	public void Init(){
-		this.disk=W.CachePatchName(diskname);
+		this.disk=DOOM.wadLoader.CachePatchName(diskname);
 	}
 	
 	@Override
 	public void Drawer() {
 		if (timer>0){
 			if (timer%2==0)
-		V.DrawScaledPatch(304,184,DoomVideoRenderer.SCREEN_FG,VS, disk);
+                DOOM.graphicSystem.DrawPatchScaled(FG, disk, DOOM.vs, 304, 184);
 		}
 		if (timer>=0)
 			timer--;
-	}
-
-	@Override
-	public void updateStatus(DoomStatus<?,?> DC) {
-		this.W=DC.W;
-		this.V=DC.V;		
-	    }
-
-	@Override
-	public void setVideoScale(IVideoScale vs) {
-		this.VS = vs;
-	}
-
-	@Override
-	public void initScaling() {
-
 	}
 
 	@Override
