@@ -175,7 +175,7 @@ public abstract class RendererState<T, V>
         // With 32 colormaps, a bump of 1 or 2 is normal.
         // With more than 32, it should be obviously higher.
 
-        int bumplight = colormaps.lightBits();
+        int bumplight = Math.max(colormaps.lightBits() - 5, 0);
         // Be a bit more generous, otherwise the effect is not
         // as evident with truecolor maps.
         bumplight += (bumplight > 0) ? 1 : 0;
