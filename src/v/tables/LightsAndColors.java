@@ -17,7 +17,7 @@ import v.renderers.BppMode;
 
 public class LightsAndColors<V> {
     
-    private static volatile LCData LC_DATA = null;
+    private final LCData LC_DATA;
     
     /** For HiColor, these are, effectively, a bunch of 555 RGB palettes,
      *  for TrueColor they are a bunch of 32-bit ARGB palettes etc.
@@ -50,61 +50,47 @@ public class LightsAndColors<V> {
 
     public LightsAndColors(final DoomMain<?, V> DM) {
         this.DM = DM;
+        this.LC_DATA = new LCData(DM.bppMode);
     }
 
     public int lightBits() {
-        return getLCData().LBITS;
+        return LC_DATA.LBITS;
     }
 
     public int lightBright() {
-        return getLCData().LIGHTBRIGHT;
+        return LC_DATA.LIGHTBRIGHT;
     }
 
     public int lightLevels() {
-        return getLCData().LIGHTLEVELS;
+        return LC_DATA.LIGHTLEVELS;
     }
 
     public int lightScaleShift() {
-        return getLCData().LIGHTSCALESHIFT;
+        return LC_DATA.LIGHTSCALESHIFT;
     }
 
     public int lightSegShift() {
-        return getLCData().LIGHTSEGSHIFT;
+        return LC_DATA.LIGHTSEGSHIFT;
     }
 
     public int lightZShift() {
-        return getLCData().LIGHTZSHIFT;
+        return LC_DATA.LIGHTZSHIFT;
     }
 
     public int maxLightScale() {
-        return getLCData().MAXLIGHTSCALE;
+        return LC_DATA.MAXLIGHTSCALE;
     }
 
     public int maxLightZ() {
-        return getLCData().MAXLIGHTZ;
+        return LC_DATA.MAXLIGHTZ;
     }
 
     public int numColorMaps() {
-        return getLCData().NUMCOLORMAPS;
+        return LC_DATA.NUMCOLORMAPS;
     }
 
     public final byte[] getTranslationTable(long mobjflags) {
         return translationtables[(int) ((mobjflags & MF_TRANSLATION) >> MF_TRANSSHIFT)];
-    }
-    
-    private LCData getLCData() {
-        if (LC_DATA == null || LC_DATA.bpp != DM.bppMode) {
-            final LCData localLCData;
-            // Double Checked Locking
-            synchronized (LCData.class) {
-                localLCData = LC_DATA;
-                if (localLCData == null || localLCData.bpp != DM.bppMode) {
-                    LC_DATA = new LCData(DM.bppMode);
-                }
-            }
-        }
-        
-        return LC_DATA;
     }
 
     private static class LCData {
