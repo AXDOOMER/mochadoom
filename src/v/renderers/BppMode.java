@@ -19,7 +19,9 @@ package v.renderers;
 import doom.CVarManager;
 import doom.CommandVariable;
 import doom.DoomMain;
+import i.Game;
 import java.util.function.Function;
+import m.Settings;
 import rr.SceneRenderer;
 
 /**
@@ -47,12 +49,14 @@ public enum BppMode {
     }
 
     public static BppMode chooseBppMode(CVarManager CVM) {
-        if (CVM.bool(CommandVariable.HICOLOR)) {
-            return HiColor;
-        } else if (CVM.bool(CommandVariable.TRUECOLOR)) {
+        if (CVM.bool(CommandVariable.TRUECOLOR)) {
             return TrueColor;
-        } else {
+        } else if (CVM.bool(CommandVariable.HICOLOR)) {
+            return HiColor;
+        } else if (CVM.bool(CommandVariable.INDEXED)) {
             return Indexed;
+        } else {
+            return Game.getConfig().getValue(Settings.color_depth, BppMode.class);
         }
     }
     

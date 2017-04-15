@@ -68,6 +68,7 @@ public enum CommandVariable {
     SPEAKERSOUND,
     CLIPSOUND,
     CLASSICSOUND,
+    INDEXED,
     HICOLOR,
     TRUECOLOR,
     ALPHATRUECOLOR,
