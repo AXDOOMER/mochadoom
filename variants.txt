@@ -1,4 +1,0 @@
-ReMochaDoom
-Effective Mocha (after Effective Java by Joshua Bloch)
-Mochato Doom
-BicerinDoom
