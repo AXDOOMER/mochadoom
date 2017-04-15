@@ -54,7 +54,7 @@ public class LightsAndColors<V> {
     }
 
     public int lightBits() {
-        return LC_DATA.LBITS;
+        return LC_DATA.bpp.lightBits;
     }
 
     public int lightBright() {
@@ -95,9 +95,6 @@ public class LightsAndColors<V> {
 
     private static class LCData {
         final BppMode bpp;
-        
-        /** Bits representing color levels. 5 for 32. */
-        final int LBITS;
         
         /**
          * These two are tied by an inverse relationship. E.g. 256 levels, 0 shift
@@ -154,15 +151,14 @@ public class LightsAndColors<V> {
 
         LCData(final BppMode bpp) {
             this.bpp = bpp;
-            LBITS = bpp == BppMode.TrueColor ? 8 : 5;
-            LIGHTLEVELS = 1 << LBITS;
+            LIGHTLEVELS = 1 << bpp.lightBits;
             MAXLIGHTZ = LIGHTLEVELS * 4;
             LIGHTBRIGHT = 2;
-            LIGHTSEGSHIFT = 8 - LBITS;
+            LIGHTSEGSHIFT = 8 - bpp.lightBits;
             NUMCOLORMAPS = LIGHTLEVELS;
             MAXLIGHTSCALE = 3 * LIGHTLEVELS / 2;
-            LIGHTSCALESHIFT = 17 - LBITS;
-            LIGHTZSHIFT = 25 - LBITS;
+            LIGHTSCALESHIFT = 17 - bpp.lightBits;
+            LIGHTZSHIFT = 25 - bpp.lightBits;
         }
     }
 }
