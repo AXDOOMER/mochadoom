@@ -38,12 +38,21 @@ import utils.ResourceIO;
  * @author Good Sign
  */
 public class ConfigManager {
-    private static final Pattern splitter = Pattern.compile("[ \t\n\r\f]+");
+    private static final Pattern SPLITTER = Pattern.compile("[ \t\n\r\f]+");
     
     private boolean changed = false;
     private String configBase = null;
     private String configName = null;
     private final EnumMap<Settings, Object> configMap = new EnumMap<>(Settings.class);
+    
+    public enum UpdateStatus {
+        UNCHANGED, UPDATED, INVALID;
+    }
+    
+    private UpdateStatus hasChange(boolean b) {
+        changed = changed || b;
+        return b ? UpdateStatus.UPDATED : UpdateStatus.UNCHANGED;
+    }
 
     public ConfigManager() {
         if (OSValidator.isMac() || OSValidator.isUnix()) {
@@ -61,9 +70,9 @@ public class ConfigManager {
         LoadDefaults();
     }
     
-    public boolean update(final Settings setting, final String value) {
+    public UpdateStatus update(final Settings setting, final String value) {
         if (setting.valueType == String.class) {
-            return changed = !Objects.equals(configMap.put(setting, value), value) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value), value));
         } else if (setting.valueType == Character.class
             || setting.valueType == Long.class
             || setting.valueType == Integer.class
@@ -71,7 +80,7 @@ public class ConfigManager {
         {
             final Object parse = ParseString.parseString(value);
             if (setting.valueType.isInstance(parse)) {
-                return changed = !Objects.equals(configMap.put(setting, parse), parse) || changed;
+                return hasChange(!Objects.equals(configMap.put(setting, parse), parse));
             }
         } else if (setting.valueType.getSuperclass() == Enum.class) {
             try {
@@ -79,7 +88,7 @@ public class ConfigManager {
                     .getDeclaredMethod("valueOf", String.class) // Enum search by name
                     .invoke(null, value); // null as 'this' object pointer, this is static method
                 
-                return changed = !Objects.equals(configMap.put(setting, enumerated), enumerated) || changed;
+                return hasChange(!Objects.equals(configMap.put(setting, enumerated), enumerated));
             } catch (NoSuchMethodException
                 | SecurityException
                 | IllegalAccessException
@@ -88,75 +97,75 @@ public class ConfigManager {
             {}
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
     
-    public boolean update(final Settings setting, final Object value) {
+    public UpdateStatus update(final Settings setting, final Object value) {
         if (setting.valueType == String.class) {
-            return changed = !Objects.equals(configMap.put(setting, value.toString()), value.toString()) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value.toString()), value.toString()));
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
     
-    public boolean update(final Settings setting, final int value) {
+    public UpdateStatus update(final Settings setting, final int value) {
         if (setting.valueType == Integer.class) {
-            return changed = !Objects.equals(configMap.put(setting, value), value) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value), value));
         } else if (setting.valueType == String.class) {
             final String valStr = Integer.toString(value);
-            return changed = !Objects.equals(configMap.put(setting, valStr), valStr) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, valStr), valStr));
         } else if (setting.valueType.getSuperclass() == Enum.class) {
             final Object[] enumValues = setting.valueType.getEnumConstants();
             if (value >= 0 && value < enumValues.length) {
-                return changed = !Objects.equals(configMap.put(setting, enumValues[value]), enumValues[value]) || changed;
+                return hasChange(!Objects.equals(configMap.put(setting, enumValues[value]), enumValues[value]));
             }
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
         
-    public boolean update(final Settings setting, final long value) {
+    public UpdateStatus update(final Settings setting, final long value) {
         if (setting.valueType == Long.class) {
-            return changed = !Objects.equals(configMap.put(setting, value), value) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value), value));
         } else if (setting.valueType == String.class) {
             final String valStr = Long.toString(value);
-            return changed = !Objects.equals(configMap.put(setting, valStr), valStr) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, valStr), valStr));
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
         
-    public boolean update(final Settings setting, final double value) {
+    public UpdateStatus update(final Settings setting, final double value) {
         if (setting.valueType == Double.class) {
-            return changed = !Objects.equals(configMap.put(setting, value), value) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value), value));
         } else if (setting.valueType == String.class) {
             final String valStr = Double.toString(value);
-            return changed = !Objects.equals(configMap.put(setting, valStr), valStr) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, valStr), valStr));
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
         
-    public boolean update(final Settings setting, final char value) {
+    public UpdateStatus update(final Settings setting, final char value) {
         if (setting.valueType == Character.class) {
-            return changed = !Objects.equals(configMap.put(setting, value), value) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value), value));
         } else if (setting.valueType == String.class) {
             final String valStr = Character.toString(value);
-            return changed = !Objects.equals(configMap.put(setting, valStr), valStr) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, valStr), valStr));
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
 
-    public boolean update(final Settings setting, final boolean value) {
+    public UpdateStatus update(final Settings setting, final boolean value) {
         if (setting.valueType == Boolean.class) {
-            return changed = !Objects.equals(configMap.put(setting, value), value) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, value), value));
         } else if (setting.valueType == String.class) {
             final String valStr = Boolean.toString(value);
-            return changed = !Objects.equals(configMap.put(setting, valStr), valStr) || changed;
+            return hasChange(!Objects.equals(configMap.put(setting, valStr), valStr));
         }
         
-        return false;
+        return UpdateStatus.INVALID;
     }
 
     private String export(final Settings setting) {
@@ -271,7 +280,7 @@ public class ConfigManager {
         final String file = getConfig();
         final ResourceIO rio = new ResourceIO(file);
         if (rio.readLines(line -> {
-            final String[] split = splitter.split(line, 2);
+            final String[] split = SPLITTER.split(line, 2);
             if (split.length < 2) {
                 return;
             }
@@ -284,7 +293,7 @@ public class ConfigManager {
                     .map(qt -> qt.unQuote(split[1]))
                     .orElse(split[1]);
 
-                if (!update(setting, value)) {
+                if (update(setting, value) == UpdateStatus.INVALID) {
                     System.err.printf("WARNING: invalid config value for: %s\n", name);
                 }
             } catch (IllegalArgumentException ex) {}
