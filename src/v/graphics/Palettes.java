@@ -25,7 +25,7 @@ package v.graphics;
 import java.awt.Color;
 import java.awt.image.IndexColorModel;
 import v.tables.ColorTint;
-import static v.tables.GammaTables.LUT_GAMMA;
+import static v.tables.GammaTables.LUT;
 
 /**
  * Palettes & colormaps library
@@ -542,9 +542,9 @@ public interface Palettes {
         // Initial palette can be neutral or based upon "gamma 0",
         // which is actually a bit biased and distorted
         for (int x = 0, xXstride = 0; x < PAL_NUM_COLORS; ++x, xXstride += PAL_NUM_STRIDES) {
-            int r = /*LUT_GAMMA[0][*/pal[xXstride]/*]*/ & 0xFF; // R
-            int g = /*LUT_GAMMA[0][*/pal[1 + xXstride]/*]*/ & 0xFF; // G
-            int b = /*LUT_GAMMA[0][*/pal[2 + xXstride]/*]*/ & 0xFF; // B
+            int r = /*gammatable[0][*/pal[xXstride]/*]*/ & 0xFF; // R
+            int g = /*gammatable[0][*/pal[1 + xXstride]/*]*/ & 0xFF; // G
+            int b = /*gammatable[0][*/pal[2 + xXstride]/*]*/ & 0xFF; // B
             int color = 0xFF000000 | r << 16 | g << 8 | b;
             cmaps[x] = color;
         }
@@ -564,9 +564,9 @@ public interface Palettes {
         // Initial palette can be neutral or based upon "gamma 0",
         // which is actually a bit biased and distorted
         for (int x = 0, xXstride = 0; x < PAL_NUM_COLORS; ++x, xXstride += PAL_NUM_STRIDES) {
-            int r = (/*LUT_GAMMA[0][*/pal[xXstride]/*]*/ & 0xFF) >> 3; // R
-            int g = (/*LUT_GAMMA[0][*/pal[1 + xXstride]/*]*/ & 0xFF) >> 3; // G
-            int b = (/*LUT_GAMMA[0][*/pal[2 + xXstride]/*]*/ & 0xFF) >> 3; // B
+            int r = (/*gammatable[0][*/pal[xXstride]/*]*/ & 0xFF) >> 3; // R
+            int g = (/*gammatable[0][*/pal[1 + xXstride]/*]*/ & 0xFF) >> 3; // G
+            int b = (/*gammatable[0][*/pal[2 + xXstride]/*]*/ & 0xFF) >> 3; // B
             int color = r << 10 | g << 5 | b;
             cmap[x] = (short) color;
         }
@@ -594,14 +594,14 @@ public interface Palettes {
         final byte[] tmpcmap = new byte[colorsXstride];
 
         // For each gamma value...
-        for (int j = 1; j < LUT_GAMMA.length; j++) {
+        for (int j = 1; j < LUT.length; j++) {
             // For each palette
             for (int i = 0; i < NUM_PALETTES; i++) {
                 for (int k = 0; k < PAL_NUM_COLORS; ++k) {
                     final int iXcolorsXstride_plus_StrideXk = i * colorsXstride + PAL_NUM_STRIDES * k;
-                    tmpcmap[3 * k/**/] = (byte) LUT_GAMMA[j][0xFF & pal[/**/iXcolorsXstride_plus_StrideXk]]; // R
-                    tmpcmap[3 * k + 1] = (byte) LUT_GAMMA[j][0xFF & pal[1 + iXcolorsXstride_plus_StrideXk]]; // G
-                    tmpcmap[3 * k + 2] = (byte) LUT_GAMMA[j][0xFF & pal[2 + iXcolorsXstride_plus_StrideXk]]; // B
+                    tmpcmap[3 * k/**/] = (byte) LUT[j][0xFF & pal[/**/iXcolorsXstride_plus_StrideXk]]; // R
+                    tmpcmap[3 * k + 1] = (byte) LUT[j][0xFF & pal[1 + iXcolorsXstride_plus_StrideXk]]; // G
+                    tmpcmap[3 * k + 2] = (byte) LUT[j][0xFF & pal[2 + iXcolorsXstride_plus_StrideXk]]; // B
                 }
 
                 //new IndexColorModel(8, PAL_NUM_COLORS, tmpcmap, 0, false);

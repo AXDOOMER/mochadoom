@@ -1,3 +1,20 @@
+/**
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package v.tables;
 
 import java.util.Arrays;
@@ -77,15 +94,15 @@ public class ColorTint {
         this.b = b;
         this.b5 = b5;
         this.purepart = purepart;
-        for (int j = 0; j < GammaTables.LUT_GAMMA.length; ++j) {
+        for (int j = 0; j < GammaTables.LUT.length; ++j) {
             for (int i = 0; i <= 0xFF; ++i) {
-                LUT_r8[j][i] = (byte) GammaTables.LUT_GAMMA[j][tintRed8(i)];
-                LUT_g8[j][i] = (byte) GammaTables.LUT_GAMMA[j][tintGreen8(i)];
-                LUT_b8[j][i] = (byte) GammaTables.LUT_GAMMA[j][tintBlue8(i)];
+                LUT_r8[j][i] = (byte) GammaTables.LUT[j][tintRed8(i)];
+                LUT_g8[j][i] = (byte) GammaTables.LUT[j][tintGreen8(i)];
+                LUT_b8[j][i] = (byte) GammaTables.LUT[j][tintBlue8(i)];
                 if (i <= 0x1F) {
-                    LUT_r5[j][i] = (byte) (GammaTables.LUT_GAMMA[j][tintRed5(i) << 3] >> 3);
-                    LUT_g5[j][i] = (byte) (GammaTables.LUT_GAMMA[j][tintGreen5(i) << 3] >> 3);
-                    LUT_b5[j][i] = (byte) (GammaTables.LUT_GAMMA[j][tintBlue5(i) << 3] >> 3);
+                    LUT_r5[j][i] = (byte) (GammaTables.LUT[j][tintRed5(i) << 3] >> 3);
+                    LUT_g5[j][i] = (byte) (GammaTables.LUT[j][tintGreen5(i) << 3] >> 3);
+                    LUT_b5[j][i] = (byte) (GammaTables.LUT[j][tintBlue5(i) << 3] >> 3);
                 }
             }
         }

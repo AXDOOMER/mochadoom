@@ -1,39 +1,33 @@
-package v.tables;
+//
+// Copyright (C) 1993-1996 Id Software, Inc.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//	Gamma correction LUT stuff.
+//	Functions to draw patches (by post) directly to screen.
+//	Functions to blit a block to the screen.
+//
+// from v_video.c
+//
 
-// Emacs style mode select   -*- C++ -*- 
+package v.tables;
 
 import i.Game;
 import m.Settings;
 
-//-----------------------------------------------------------------------------
-//
-//$Id: GammaTables.java,v 1.1 2011/10/11 13:20:56 velktron Exp $
-//
-//Copyright (C) 1993-1996 by id Software, Inc.
-//
-//This source is available for distribution and/or modification
-//only under the terms of the DOOM Source Code License as
-//published by id Software. All rights reserved.
-//
-//The source is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-//for more details.
-//
-//
-//DESCRIPTION:
-//	Gamma correction LUT stuff.
-//
-
 public class GammaTables {
-	 // Now where did these came from? /*[5][256]*/
-    public static final short[][] LUT_GAMMA =
+    // Now where did these came from?
+    public final static int[][] LUT =
     {
-        /**
-         * The gamma[0] has an error - the pure 0 do not appear in it; 128 is present twice instead
-         * Mocha Doom now addresses the issue (optionally, by default)
-         *  - Good Sign 2017/04/11
-         */
         {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
          17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,
          33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,
@@ -118,7 +112,9 @@ public class GammaTables {
     
     static {
         if (Game.getConfig().equals(Settings.fix_gamma_ramp, Boolean.TRUE)) {
-            for (int i = 0; i < 128; --LUT_GAMMA[0][i++]) {}
+            for (int i = 0; i < 128; --LUT[0][i++]) {}
         }
     }
+    
+    private GammaTables() {}
 }

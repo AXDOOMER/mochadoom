@@ -1,3 +1,20 @@
+/**
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package v.renderers;
 
 import java.awt.image.IndexColorModel;
@@ -7,12 +24,16 @@ import v.scale.VideoScale;
 import v.tables.BlurryTable;
 import v.tables.GammaTables;
 
+/**
+ * @author Good Sign
+ * @author velktron
+ */
 abstract class SoftwareIndexedVideoRenderer extends SoftwareGraphicsSystem<byte[], byte[]> {
 
     /**
      * Indexed renderers keep separate color models for each colormap (intended as gamma levels) and palette levels
      */
-    protected final IndexColorModel[][] cmaps = new IndexColorModel[GammaTables.LUT_GAMMA.length][Palettes.NUM_PALETTES];
+    protected final IndexColorModel[][] cmaps = new IndexColorModel[GammaTables.LUT.length][Palettes.NUM_PALETTES];
     protected final BlurryTable blurryTable;
 
     SoftwareIndexedVideoRenderer(VideoScale vs, byte[] playpal, byte[][] colormap) {

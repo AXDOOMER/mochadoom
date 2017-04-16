@@ -200,7 +200,7 @@ abstract class SoftwareGraphicsSystem<T, V>
     
     @Override
     public void setUsegamma(int gamma) {
-        this.usegamma = gamma % GammaTables.LUT_GAMMA.length;
+        this.usegamma = gamma % GammaTables.LUT.length;
         
         /**
          * Because of switching gamma stops powerup palette except for invlunerablity
