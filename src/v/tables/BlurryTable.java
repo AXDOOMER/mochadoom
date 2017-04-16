@@ -19,7 +19,7 @@ package v.tables;
 import i.Game;
 import java.util.TreeMap;
 import m.Settings;
-import v.graphics.Palettes;
+import v.graphics.Colors;
 import static v.graphics.Palettes.*;
 
 /**
@@ -35,7 +35,7 @@ import static v.graphics.Palettes.*;
  * 
  * @author Good Sign
  */
-public class BlurryTable implements FuzzMix {
+public class BlurryTable implements FuzzMix, Colors {
     /**
      * Indexed LUT, e.g. classic "BLURRYMAP" (unaffected)
      */
@@ -85,19 +85,19 @@ public class BlurryTable implements FuzzMix {
         /**
          * Prepare to sort colors - we will be using the ratio that is next close to apply for current color
          */
-        final TreeMap<Short, Float> sortedRatios = new TreeMap<>(Palettes::CompareColors555);
+        final TreeMap<Short, Float> sortedRatios = new TreeMap<>(this::CompareColors555);
         
         for (int i = 0; i < PAL_NUM_COLORS; ++i) {
             // first get "BLURRYMAP" color components
-            final int[] blurryColor = Palettes.getRGB555(liteColorMaps[COLORMAP_BLURRY][i], new int[3]);
+            final int[] blurryColor = getRGB555(liteColorMaps[COLORMAP_BLURRY][i], new int[3]);
             // then gen color components from unmodified (fixed) palette
-            final int[] fixedColor = Palettes.getRGB555(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
+            final int[] fixedColor = getRGB555(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
             // make grayscale avegrage (or what you set in cfg) colors out of these components
             final short avgColor = GreyscaleFilter.rgb555(blurryColor[0], blurryColor[1], blurryColor[2]);
             final short avgOrig = GreyscaleFilter.rgb555(fixedColor[0], fixedColor[1], fixedColor[2]);
             // get grayscale color components
-            final int[] blurryAvg = Palettes.getRGB555(avgColor, new int[3]);
-            final int[] fixedAvg = Palettes.getRGB555(avgOrig, new int[3]);
+            final int[] blurryAvg = getRGB555(avgColor, new int[3]);
+            final int[] fixedAvg = getRGB555(avgOrig, new int[3]);
             
             // now, calculate the ratios
             final float ratioR = fixedAvg[0] > 0 ? blurryAvg[0] / (float) fixedAvg[0] : 0.0f,
@@ -113,7 +113,7 @@ public class BlurryTable implements FuzzMix {
         
         // now we have built our sorted maps, time to calculate color component mappings
         for (int i = 0; i <= 0x1F; ++i) {
-            final short rgb555 = Palettes.toRGB555(i, i, i);
+            final short rgb555 = toRGB555(i, i, i);
             // now the best part - approximation. we just pick the closest grayscale color ratio
             final float ratio = sortedRatios.floorEntry(rgb555).getValue();
             LUT_r5[i] = LUT_g5[i] = LUT_b5[i] = (byte) ((int)(i * ratio) & 0x1F);
@@ -138,19 +138,19 @@ public class BlurryTable implements FuzzMix {
         /**
          * Prepare to sort colors - we will be using the ratio that is next close to apply for current color
          */
-        final TreeMap<Integer, Float> sortedRatios = new TreeMap<>(Palettes::CompareColors);
+        final TreeMap<Integer, Float> sortedRatios = new TreeMap<>(this::CompareColors888);
         
         for (int i = 0; i < PAL_NUM_COLORS; ++i) {
             // first get "BLURRYMAP" color components. 24 bit lighting is richer (256 vs 32) so we need to multiply
-            final int[] blurryColor = Palettes.getRGB888(liteColorMaps[COLORMAP_BLURRY << 3][i], new int[3]);
+            final int[] blurryColor = getRGB888(liteColorMaps[COLORMAP_BLURRY << 3][i], new int[3]);
             // then gen color components from unmodified (fixed) palette
-            final int[] fixedColor = Palettes.getRGB888(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
+            final int[] fixedColor = getRGB888(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
             // make grayscale avegrage (or what you set in cfg) colors out of these components
             final int avgColor = GreyscaleFilter.rgb888(blurryColor[0], blurryColor[1], blurryColor[2]);
             final int avgOrig = GreyscaleFilter.rgb888(fixedColor[0], fixedColor[1], fixedColor[2]);
             // get grayscale color components
-            final int[] blurryAvg = Palettes.getRGB888(avgColor, new int[3]);
-            final int[] fixedAvg = Palettes.getRGB888(avgOrig, new int[3]);
+            final int[] blurryAvg = getRGB888(avgColor, new int[3]);
+            final int[] fixedAvg = getRGB888(avgOrig, new int[3]);
             
             // now, calculate the ratios
             final float ratioR = fixedAvg[0] > 0 ? blurryAvg[0] / (float) fixedAvg[0] : 0.0f,
@@ -166,7 +166,7 @@ public class BlurryTable implements FuzzMix {
         
         // now we have built our sorted maps, time to calculate color component mappings
         for (int i = 0; i <= 0xFF; ++i) {
-            final int rgb = Palettes.toRGB888(i, i, i);
+            final int rgb = toRGB888(i, i, i);
             // now the best part - approximation. we just pick the closest grayscale color ratio
             final float ratio = sortedRatios.floorEntry(rgb).getValue();
             LUT_r8[i] = LUT_g8[i] = LUT_b8[i] = (byte) ((int)(i * ratio) & 0xFF);
@@ -190,8 +190,8 @@ public class BlurryTable implements FuzzMix {
         if (fuzzMix) { // if blurry feature enabled, everything else does not apply
             return fuzzMixHi(pixel);
         }
-        final int rgb[] = Palettes.getRGB555(pixel, new int[4]);
-        return Palettes.toRGB555(LUT_r5[rgb[0]], LUT_g5[rgb[1]], LUT_b5[rgb[2]]);
+        final int rgb[] = getRGB555(pixel, new int[4]);
+        return toRGB555(LUT_r5[rgb[0]], LUT_g5[rgb[1]], LUT_b5[rgb[2]]);
     }
     
     /**
@@ -205,10 +205,10 @@ public class BlurryTable implements FuzzMix {
         if (!semiTranslucent) {
             return computePixelFast(pixel);
         }
-        final int argb[] = Palettes.getARGB8888(pixel, new int[4]);
+        final int argb[] = getARGB8888(pixel, new int[4]);
         // the alpha from previous frame would stay until the pixel will not belong to FUZZ holder
         argb[0] = Math.min(argb[0], GreyscaleFilter.component(argb[1], argb[2], argb[3]));
-        return Palettes.toARGB8888(LUT_a8[argb[0]], LUT_r8[argb[1]], LUT_g8[argb[2]], LUT_b8[argb[3]]);
+        return toARGB8888(LUT_a8[argb[0]], LUT_r8[argb[1]], LUT_g8[argb[2]], LUT_b8[argb[3]]);
     }
     
     /**
@@ -219,7 +219,7 @@ public class BlurryTable implements FuzzMix {
             return fuzzMixTrueLow(pixel);
         }
             
-        final int rgb[] = Palettes.getRGB888(pixel, new int[3]);
-        return 0xFF000000 + (Palettes.toRGB888(LUT_r8[rgb[0]], LUT_g8[rgb[1]], LUT_b8[rgb[2]]) & 0xFFFFFF);
+        final int rgb[] = getRGB888(pixel, new int[3]);
+        return 0xFF000000 + (toRGB888(LUT_r8[rgb[0]], LUT_g8[rgb[1]], LUT_b8[rgb[2]]) & 0xFFFFFF);
     }
 }

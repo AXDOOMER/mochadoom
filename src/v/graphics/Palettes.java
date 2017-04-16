@@ -24,7 +24,6 @@ package v.graphics;
 
 import java.awt.Color;
 import java.awt.image.IndexColorModel;
-import v.tables.ColorTint;
 import static v.tables.GammaTables.LUT;
 
 /**
@@ -32,7 +31,7 @@ import static v.tables.GammaTables.LUT;
  * 
  * @author Good Sign
  */
-public interface Palettes {
+public interface Palettes extends Colors {
 
     /**
      * Maximum number of colors in palette
@@ -132,128 +131,6 @@ public interface Palettes {
     default int getBaseColor(int color) { return getBaseColor((byte) color); }
     
     /**
-     * Get alpha from packed argb long word.
-     *
-     * @param argb8888
-     * @return
-     */
-    static int getAlpha(int argb8888) {
-        return (argb8888 >>> 24) & 0xFF;
-    }
-    
-    /**
-     * Get red from packed argb long word.
-     *
-     * @param rgb888
-     * @return
-     */
-    static int getRed(int rgb888) {
-        return (0xFF0000 & rgb888) >> 16;
-    }
-
-    /**
-     * Get red from packed rgb555
-     *
-     * @param rgb555
-     * @return
-     */
-    static int getRed5(int rgb555) {
-        return (rgb555 >> 10) & 0x1F;
-    }
-
-    /**
-     * Get green from packed argb long word.
-     *
-     * @param rgb888
-     * @return
-     */
-    static int getGreen(int rgb888) {
-        return (0xFF00 & rgb888) >> 8;
-    }
-
-    /**
-     * Get green from packed rgb555
-     *
-     * @param rgb555
-     * @return
-     */
-    static int getGreen5(int rgb555) {
-        return (rgb555 >> 5) & 0x1F;
-    }
-
-    /**
-     * Get blue from packed argb long word.
-     *
-     * @param rgb888
-     * @return
-     */
-    static int getBlue(int rgb888) {
-        return 0xFF & rgb888;
-    }
-    
-    /**
-     * Get blue from packed rgb555
-     *
-     * @param rgb555
-     * @return
-     */
-    static int getBlue5(int rgb555) {
-        return rgb555 & 0x1F;
-    }
-
-    /**
-     * Get all four color channels into an array
-     */
-    static int[] getARGB8888(int argb8888, int[] container) {
-        container[0] = getAlpha(argb8888);
-        container[1] = getRed(argb8888);
-        container[2] = getGreen(argb8888);
-        container[3] = getBlue(argb8888);
-        return container;
-    }
-    
-    /**
-     * Get all four color channels into an array
-     */
-    static int[] getRGB888(int rgb888, int[] container) {
-        container[0] = getRed(rgb888);
-        container[1] = getGreen(rgb888);
-        container[2] = getBlue(rgb888);
-        return container;
-    }
-    
-    /**
-     * Get all three colors into an array
-     */
-    static int[] getRGB555(int rgb555, int[] container) {
-        container[0] = getRed5(rgb555);
-        container[1] = getGreen5(rgb555);
-        container[2] = getBlue5(rgb555);
-        return container;
-    }
-    
-    /**
-     * Compose rgb888 color (opaque)
-     */
-    static int toRGB888(int r, int g, int b) {
-        return 0xFF000000 + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
-    }
-    
-    /**
-     * Compose argb8888 color
-     */
-    static int toARGB8888(int a, int r, int g, int b) {
-        return ((a & 0xFF) << 24) + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
-    }
-    
-    /**
-     * Compose rgb888 color
-     */
-    static short toRGB555(int r, int g, int b) {
-        return (short) (((r & 0x1F) << 10) + ((g & 0x1F) << 5) + (b & 0x1F));
-    }
-
-    /**
      * Extracts RGB888 color from an index in the palette
      * @param byte[] pal proper playpal
      * @param int index and index of the color in the palette
@@ -291,7 +168,7 @@ public interface Palettes {
      * Finds a color in the palette's range from rangel to rangeh closest to specified r, g, b
      * by distortion, the lesst distorted color is the result. Used for rgb555 invulnerability colormap
      */
-    static int BestColor(int r, int g, int b, int[] palette, int rangel, int rangeh) {
+    default int BestColor(int r, int g, int b, int[] palette, int rangel, int rangeh) {
         /**
          * let any color go to 0 as a last resort
          */
@@ -313,123 +190,6 @@ public interface Palettes {
         return bestcolor;
     }
     
-    static int CompareColors555(short rgb1, short rgb2) {
-        return ColorDistance555(rgb1, rgb2) > 0 ? 1 : 0;
-    }
-    
-    static long ColorDistance555(short rgb1, short rgb2) {
-        final int r1 = getRed5(rgb1),
-                g1 = getGreen5(rgb1),
-                b1 = getBlue5(rgb1),
-                r2 = getRed5(rgb2),
-                g2 = getGreen5(rgb2),
-                b2 = getBlue5(rgb2);
-        
-        final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-        return dr * dr + dg * dg + db * db;
-    }
-
-    static int CompareColors(int rgb1, int rgb2) {
-        return ColorDistance(rgb1, rgb2) > 0 ? 1 : 0;
-    }
-    
-    static long ColorDistance(int rgb1, int rgb2) {
-        final int r1 = getRed(rgb1),
-                g1 = getGreen(rgb1),
-                b1 = getBlue(rgb1),
-                r2 = getRed(rgb2),
-                g2 = getGreen(rgb2),
-                b2 = getBlue(rgb2);
-        
-        final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-        return dr * dr + dg * dg + db * db;
-    }
-
-    static int CompareColorsHSV(int rgb1, int rgb2) {
-        return ColorDistance(rgb1, rgb2) > 0 ? 1 : 0;
-    }
-    
-    static long ColorDistanceHSV(int rgb1, int rgb2) {
-        final int r1 = (int) (0.21 * getRed(rgb1)),
-                g1 = (int) (0.72 * getGreen(rgb1)),
-                b1 = (int) (0.07 * getBlue(rgb1)),
-                r2 = (int) (0.21 * getRed(rgb2)),
-                g2 = (int) (0.72 * getGreen(rgb2)),
-                b2 = (int) (0.07 * getBlue(rgb2));
-        
-        final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-        return dr * dr + dg * dg + db * db;
-    }
-
-    static short rgb4444to555(short rgb) {
-        // .... .... .... ....
-        // 1111
-        int ri = (0xF000 & rgb) >> 11;
-        int gi = (0xF00 & rgb) >> 7;
-        int bi = (0xF0 & rgb) >> 3;
-        int bits = (ri & 16) >> 4;
-        ri += bits;
-        bits = (gi & 16) >> 4;
-        gi += bits;
-        bits = (bi & 16) >> 4;
-        bi += bits;
-        // RGBA 555 packed for NeXT
-        return toRGB555(ri, gi, bi);
-    }
-
-    /**
-     * Get ARGB_8888 from RGB_555, with proper higher-bit
-     * replication.
-     *
-     * @param rgb
-     * @return
-     */
-    static int rgb555to888(short rgb) {
-        // .... .... .... ....
-        // 111 11 = 7C00
-        // 11 111 = 03E0
-        // 1F= 1 1111
-        int ri = (0x7C00 & rgb) >> 7;
-        int gi = (0x3E0 & rgb) >> 2;
-        int bi = (0x1F & rgb) << 3;
-        // replicate 3 higher bits
-        int bits = (ri & 224) >> 5;
-        ri += bits;
-        bits = (gi & 224) >> 5;
-        gi += bits;
-        bits = (bi & 224) >> 5;
-        bi += bits;
-        // ARGB 8888 packed
-        return toRGB888(ri, gi, bi);
-    }
-
-    /**
-     * Get RGB_555 from packed ARGB_8888.
-     *
-     * @param argb
-     * @return
-     */
-    static short rgb888to555(int rgb) {
-        int ri = (0xFF010000 & rgb) >> 19;
-        int gi = (0xFF00 & rgb) >> 11;
-        int bi = (0xFF & rgb) >> 3;
-        return toRGB555(ri, gi, bi);
-    }
-
-    /**
-     * Get packed RGB_555 word from individual 8-bit RGB components.
-     *
-     *  WARNING: there's no sanity/overflow check for performance reasons.
-     *
-     * @param r
-     * @param g
-     * @param b
-     * @return
-     */
-    static short rgb888to555(int r, int g, int b) {
-        return toRGB555(r >> 3, g >> 3, b >> 3);
-    }
-
     default short getRGB555_Lights(int red, int green, int blue) {
         int ri = (((red + 4) > 255 ? 255 : red + 4)) >> 3;
         ri = ri > 31 ? 31 : ri;
@@ -443,18 +203,6 @@ public interface Palettes {
 
     default short getRGB555_Lights(int rgb) {
         return getRGB555_Lights(getRed(rgb), getGreen(rgb), getBlue(rgb));
-    }
-
-    default void tintRGB(final ColorTint tint, final int[] rgb, int[] rgb2) {
-        rgb2[0] = tint.tintRed8(rgb[0]);
-        rgb2[1] = tint.tintGreen8(rgb[1]);
-        rgb2[2] = tint.tintBlue8(rgb[2]);
-    }
-
-    default void tintRGB555(final ColorTint tint, final int[] rgb, int[] rgb2) {
-        rgb2[0] = tint.tintRed5(rgb[0]);
-        rgb2[1] = tint.tintGreen5(rgb[1]);
-        rgb2[2] = tint.tintBlue5(rgb[2]);
     }
 
     /**
