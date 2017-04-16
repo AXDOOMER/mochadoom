@@ -26,6 +26,7 @@ import m.Settings;
 public enum GreyscaleFilter {
     Lightness,
     Average,
+    Luminance, // this one is the default for invulnerability map
     Luminosity;
     
     private static GreyscaleFilter FILTER;
@@ -76,45 +77,49 @@ public enum GreyscaleFilter {
         FILTER = Game.getConfig().getValue(Settings.greyscale_filter, GreyscaleFilter.class);
     }
         
-    int getComponent(int r, int g, int b) {
+    public int getComponent(int r, int g, int b) {
         switch(this) {
             case Lightness:
                 return (Math.max(Math.max(r, g), b) + Math.min(Math.min(r, g), b)) / 2;
             case Average:
                 return (r + g + b) / 3;
+            case Luminance:
+                return (int) (0.299f * r + 0.587f * g + 0.114f * b);
             case Luminosity:
-                return (int)(0.21f * r + 0.72f * g + 0.07 * b);
+                return (int) (0.2126f * r + 0.7152f * g + 0.0722f * b);
         }
         
         // should not happen
         return 0;
     }
     
-    float getComponent(float r, float g, float b) {
+    public float getComponent(float r, float g, float b) {
         switch(this) {
             case Lightness:
                 return (Math.max(Math.max(r, g), b) + Math.min(Math.min(r, g), b)) / 2;
             case Average:
                 return (r + g + b) / 3;
+            case Luminance:
+                return 0.299f * r + 0.587f * g + 0.114f * b;
             case Luminosity:
-                return (float)(0.21f * r + 0.72f * g + 0.07 * b);
+                return 0.2126f * r + 0.7152f * g + 0.0722f * b;
         }
         
         // should not happen
         return 0.0f;
     }
     
-    int getRGB888(int r8, int g8, int b8) {
+    public int getRGB888(int r8, int g8, int b8) {
         final int component = getComponent(r8, g8, b8) & 0xFF;
         return 0xFF000000 + (component << 16) + (component << 8) + component;
     }
     
-    short getRGB555(int r5, int g5, int b5){
+    public short getRGB555(int r5, int g5, int b5){
         final int component = getComponent(r5, g5, b5) & 0x1F;
         return (short) ((component << 10) + (component << 5) + component);
     }
     
-    int getRGB888(int rgb888) {
+    public int getRGB888(int rgb888) {
         return getRGB888((rgb888 >> 16) & 0xFF, (rgb888 >> 8) & 0xFF, rgb888 & 0xFF);
     }
     

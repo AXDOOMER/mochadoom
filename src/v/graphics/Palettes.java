@@ -22,9 +22,9 @@
  */
 package v.graphics;
 
-import java.awt.Color;
 import java.awt.image.IndexColorModel;
 import static v.tables.GammaTables.LUT;
+import v.tables.GreyscaleFilter;
 
 /**
  * Palettes & colormaps library
@@ -190,21 +190,6 @@ public interface Palettes extends Colors {
         return bestcolor;
     }
     
-    default short getRGB555_Lights(int red, int green, int blue) {
-        int ri = (((red + 4) > 255 ? 255 : red + 4)) >> 3;
-        ri = ri > 31 ? 31 : ri;
-        int gi = (((green + 4) > 255 ? 255 : green + 4)) >> 3;
-        gi = gi > 31 ? 31 : gi;
-        int bi = (((blue + 4) > 255 ? 255 : blue + 4)) >> 3;
-        bi = bi > 31 ? 31 : bi;
-        // RGB555 for HiColor
-        return (short) ((ri << 10) + (gi << 5) + bi);
-    }
-
-    default short getRGB555_Lights(int rgb) {
-        return getRGB555_Lights(getRed(rgb), getGreen(rgb), getBlue(rgb));
-    }
-
     /**
      * ColorShiftPalette - lifted from dcolors.c Operates on RGB888 palettes in
      * separate bytes. at shift = 0, the colors are normal at shift = steps, the
@@ -243,7 +228,7 @@ public interface Palettes extends Colors {
                 green = (green * (PAL_LIGHTS_24 - l) + PAL_LIGHTS_24 / 2) / PAL_LIGHTS_24;
                 blue = (blue * (PAL_LIGHTS_24 - l) + PAL_LIGHTS_24 / 2) / PAL_LIGHTS_24;
                 // Full-quality truecolor.
-                stuff[l][c] = new Color(red, green, blue).getRGB();
+                stuff[l][c] = toRGB888(red, green, blue);
             }
         }
         BuildSpecials24(stuff[PAL_LIGHTS_24], palette);
@@ -261,9 +246,9 @@ public interface Palettes extends Colors {
             final int red = getRed(palette[c]);
             final int green = getGreen(palette[c]);
             final int blue = getBlue(palette[c]);
-            final int gray = (int) (255 * (1.0 - (red * 0.299 / PAL_NUM_COLORS + green * 0.587 / PAL_NUM_COLORS + blue * 0.114 / PAL_NUM_COLORS)));
+            final int gray = (int) (255 * (1.0 - GreyscaleFilter.component(red, green, (float) blue) / PAL_NUM_COLORS));
             // We are not done. Because of the grayscaling, the all-white cmap
-            stuff[c] = new Color(gray, gray, gray).getRGB();
+            stuff[c] = toRGB888(gray, gray, gray);
         }
         // will lack tinting.
     }
@@ -291,7 +276,7 @@ public interface Palettes extends Colors {
                 green = (green * (PAL_LIGHTS_15 - l) + PAL_LIGHTS_15 / 2) / PAL_LIGHTS_15;
                 blue = (blue * (PAL_LIGHTS_15 - l) + PAL_LIGHTS_15 / 2) / PAL_LIGHTS_15;
                 // RGB555 for HiColor
-                stuff[l][c] = getRGB555_Lights(red, green, blue);
+                stuff[l][c] = toRGB555(red >> 3, green >> 3, blue >> 3);
             }
         }
         
@@ -311,9 +296,9 @@ public interface Palettes extends Colors {
             final int red = getRed(palette[c]);
             final int green = getGreen(palette[c]);
             final int blue = getBlue(palette[c]);
-            final int gray = (int) (255 * (1.0 - (red * 0.299 / PAL_NUM_COLORS + green * 0.587 / PAL_NUM_COLORS + blue * 0.114 / PAL_NUM_COLORS)));
+            final int gray = (int) (255 * (1.0 - GreyscaleFilter.component(red, green, (float) blue) / PAL_NUM_COLORS));
             // We are not done. Because of the grayscaling, the all-white cmap
-            stuff[c] = getRGB555_Lights(palette[BestColor(gray, gray, gray, palette, 0, 255)]);
+            stuff[c] = toRGB555(gray >> 3, gray >> 3, gray >> 3);
         }
         // will lack tinting.
     }

@@ -101,7 +101,7 @@ public enum Settings {
     
     parallelism_realcolor_tint(Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(3), // When drawing screen graphics patches, this speeds up column drawing
-    greyscale_filter(GreyscaleFilter.Average), // Used for FUZZ effect or with -greypal comand line argument (for test)
+    greyscale_filter(GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)
     scene_renderer_mode(SceneRendererMode.Serial); // In vanilla, scene renderer is serial. Parallel can be faster
     
     public final static Comparator<Settings> NAME_COMPARATOR = Comparator.comparing(Enum::name, String::compareTo);
