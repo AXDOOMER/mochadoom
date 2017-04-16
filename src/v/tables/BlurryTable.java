@@ -33,7 +33,7 @@ import static v.graphics.Palettes.*;
  * 
  * @author Good Sign
  */
-public class BlurryTable {
+public class BlurryTable implements FuzzMix {
     /**
      * Indexed LUT, e.g. classic "BLURRYMAP" (unaffected)
      */
@@ -49,6 +49,7 @@ public class BlurryTable {
     private final byte[] LUT_b5;
     
     private final boolean semiTranslucent = Game.getConfig().equals(Settings.semi_translucent_fuzz, Boolean.TRUE);
+    private final boolean fuzzMix = Game.getConfig().equals(Settings.fuzz_mix, Boolean.TRUE);
     
     /**
      * Only support indexed "BLURRYMAP" with indexed colorMap
@@ -179,11 +180,14 @@ public class BlurryTable {
     public byte computePixel(byte pixel) {
         return LUT_idx[pixel & 0xFF];
     }
-    
+
     /**
      * For HiColor pixels
      */
     public short computePixel(short pixel) {
+        if (fuzzMix) { // if blurry feature enabled, everything else does not apply
+            return fuzzMixHi(pixel);
+        }
         final int rgb[] = Palettes.getRGB555(pixel, new int[4]);
         return Palettes.toRGB555(LUT_r5[rgb[0]], LUT_g5[rgb[1]], LUT_b5[rgb[2]]);
     }
@@ -192,6 +196,10 @@ public class BlurryTable {
      * In high detail mode in AlphaTrueColor color mode will compute special greyscale-to-ratio translucency
      */
     public int computePixel(int pixel) {
+        if (fuzzMix) { // if blurry feature enabled, everything else does not apply
+            return fuzzMixTrue(pixel);
+        }
+            
         if (!semiTranslucent) {
             return computePixelFast(pixel);
         }
@@ -205,6 +213,10 @@ public class BlurryTable {
      * For low detail mode, do not compute translucency
      */
     public int computePixelFast(int pixel) {
+        if (fuzzMix) { // if blurry feature enabled, everything else does not apply
+            return fuzzMixTrueLow(pixel);
+        }
+            
         final int rgb[] = Palettes.getRGB888(pixel, new int[3]);
         return 0xFF000000 + (Palettes.toRGB888(LUT_r8[rgb[0]], LUT_g8[rgb[1]], LUT_b8[rgb[2]]) & 0xFFFFFF);
     }

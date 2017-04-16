@@ -1,3 +1,21 @@
+/*-----------------------------------------------------------------------------
+//
+// Copyright (C) 1993-1996 Id Software, Inc.
+// Copyright (C) 2017 Good Sign
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// From m_misc.c
+//-----------------------------------------------------------------------------*/
+
 package m;
 
 import static doom.englsh.*;
@@ -78,7 +96,8 @@ public enum Settings {
     vestrobe(false), // Strobe effect on automap cut off from vanilla
     scale_screen_tiles(true), // If you scale screen tiles, it looks like vanilla
     scale_melt(true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
-    semi_translucent_fuzz(false), // only works in AlphaTrueColor mode
+    semi_translucent_fuzz(false), // only works in AlphaTrueColor mode. Also ignored with fuzz_mix = true
+    fuzz_mix(false), // Maes unique features on Fuzz effect. Vanilla dont have that, so they are switched off by default
     
     parallelism_realcolor_tint(Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(3), // When drawing screen graphics patches, this speeds up column drawing

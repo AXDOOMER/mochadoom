@@ -1,15 +1,32 @@
+/*-----------------------------------------------------------------------------
+//
+// Copyright (C) 1993-1996 Id Software, Inc.
+// Copyright (C) 2017 Good Sign
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// From r_draw.c
+//-----------------------------------------------------------------------------*/
 package rr.drawfuns;
 
 import i.IDoomSystem;
 import v.tables.BlurryTable;
 
 /**
- * No more ugly fuzzMix. Only true blurryTable!
- *  - Good Sign 2017/04/15
+ * fuzzMix was preserved, but moved to its own interface.
+ * Implemented by BlurryTable if cfg option fuzz_mix is set
+ *  - Good Sign 2017/04/16
  * 
  * Low detail version. Jesus.
  */
-
 public abstract class R_DrawFuzzColumnLow<T, V> extends DoomColumnFunction<T, V> {
 
 	public R_DrawFuzzColumnLow(
