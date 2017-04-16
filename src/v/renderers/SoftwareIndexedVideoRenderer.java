@@ -20,7 +20,6 @@ package v.renderers;
 import java.awt.image.IndexColorModel;
 import m.MenuMisc;
 import v.graphics.Palettes;
-import v.scale.VideoScale;
 import v.tables.BlurryTable;
 import v.tables.GammaTables;
 
@@ -36,15 +35,15 @@ abstract class SoftwareIndexedVideoRenderer extends SoftwareGraphicsSystem<byte[
     protected final IndexColorModel[][] cmaps = new IndexColorModel[GammaTables.LUT.length][Palettes.NUM_PALETTES];
     protected final BlurryTable blurryTable;
 
-    SoftwareIndexedVideoRenderer(VideoScale vs, byte[] playpal, byte[][] colormap) {
-        super(vs, byte[].class, playpal, colormap);
+    SoftwareIndexedVideoRenderer(RendererFactory.WithColormap rf) {
+        super(rf, byte[].class);
         /**
          * create gamma levels
          * Now we can reuse existing array of cmaps, not allocating more memory
          * each time we change gamma or pick item
          */
-        cmapIndexed(cmaps, playpal);
-        blurryTable = new BlurryTable(colormap);
+        cmapIndexed(cmaps, rf.getPlaypal());
+        blurryTable = new BlurryTable(rf.getColormap());
     }
 
     @Override public int getBaseColor(byte color) { return color; }

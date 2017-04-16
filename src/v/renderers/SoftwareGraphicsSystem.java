@@ -89,40 +89,32 @@ abstract class SoftwareGraphicsSystem<T, V>
      * @param vs video scale info
      * @param playpal palette
      */
-    @SuppressWarnings("unchecked")
-    SoftwareGraphicsSystem(final VideoScale vs, final Class<V> bufferType, byte[] playpal) {
-        if (bufferType != short[].class && bufferType != int[].class) {
-            throw new IllegalArgumentException("This constructor is only for real color renderers");
-        }
-        
+    SoftwareGraphicsSystem(RendererFactory.WithColormap rf, final Class<V> bufferType) {
         // Defaults
-        this.vs = vs;
+        this.vs = rf.getVideoScale();
         this.width = vs.getScreenWidth();
         this.height = vs.getScreenHeight();
         this.bufferType = bufferType;
         this.bufferLength = width * height;
         this.screens = mapScreensToBuffers(bufferType, bufferLength);
-        /**
-         * Generate HiColor or TrueColor colormaps with lights
-         */
-        liteColorMaps = bufferType == short[].class
-            ? (V[]) BuildLights15(paletteTrueColor(playpal))
-            : (V[]) BuildLights24(paletteTrueColor(playpal));
-        
+        liteColorMaps = colormap(rf);
     }
-    /**
-     * @param vs video scale info
-     * @param playpal palette
-     */
-    SoftwareGraphicsSystem(final VideoScale vs, final Class<V> bufferType, byte[] playpal, V[] colormap) {
-        // Defaults
-        this.vs = vs;
-        this.width = vs.getScreenWidth();
-        this.height = vs.getScreenHeight();
-        this.bufferType = bufferType;
-        this.bufferLength = width * height;
-        this.screens = mapScreensToBuffers(bufferType, bufferLength);
-        this.liteColorMaps = colormap;
+    
+    @SuppressWarnings("unchecked")
+    private V[] colormap(RendererFactory.WithColormap rf) {
+        return
+            /**
+             * In Indexed mode, read COLORMAP lump can be used directly
+             */
+            bufferType == byte[].class
+            ? (V[]) rf.getColormap()
+
+            /**
+             * In HiColor or TrueColor generate colormaps with lights
+             */
+            : bufferType == short[].class
+                ? (V[]) BuildLights15(paletteTrueColor(rf.getPlaypal()))
+                : (V[]) BuildLights24(paletteTrueColor(rf.getPlaypal()));
     }
 
     /**

@@ -29,7 +29,6 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static v.renderers.SoftwareParallelVideoRenderer.PARALLELISM;
-import v.scale.VideoScale;
 import v.tables.BlurryTable;
 import v.tables.ColorTint;
 import static v.tables.ColorTint.GREY_TINTS;
@@ -52,6 +51,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
     
     // indicated whether machine display in the same mode as this renderer
     protected final boolean compatible = checkConfigurationTruecolor();
+    protected final int transparency;
     protected final BlurryTable blurryTable;
     
     /**
@@ -60,15 +60,16 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
      * NOTE: this relies on the ability to "tap" into a BufferedImage's backing array, in order to have fast writes
      * without setPixel/getPixel. If that is not possible, then we'll need to use a special renderer.
      */
-    BufferedRenderer32(VideoScale vs, byte[] playpal, int transparency) {
-        super(vs, int[].class, playpal);
-
+    BufferedRenderer32(RendererFactory.WithColormap rf) {
+        super(rf, int[].class);
+        
         /**
          * Try to create as accelerated Images as possible - these would not lose
          * more performance from attempt (in contrast to 16-bit ones)
          */
         screen = GRAPHICS_CONF.createCompatibleVolatileImage(width, height);
-        
+        transparency = rf.getBppMode().transparency;
+
         /**
          * It is very probably that you have 32-bit display mode, so high chance of success,
          * and if you have, for example, 24-bit mode, the TYPE_INT_RGB BufferedImage will

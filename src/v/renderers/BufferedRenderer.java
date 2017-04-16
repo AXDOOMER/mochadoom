@@ -22,7 +22,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
-import v.scale.VideoScale;
 
 class BufferedRenderer extends SoftwareIndexedVideoRenderer {
     private final WritableRaster[] rasters = new WritableRaster[SCREENS_COUNT];
@@ -31,8 +30,8 @@ class BufferedRenderer extends SoftwareIndexedVideoRenderer {
      * This actually creates a raster with a fixed underlying array, but NOT the images themselves. So it's possible to
      * have "imageless" rasters (unless you specifically request to make them visible, of course).
      */
-    BufferedRenderer(VideoScale vs, byte[] pal, byte[][] colormap) {
-        super(vs, pal, colormap);
+    BufferedRenderer(RendererFactory.WithColormap rf) {
+        super(rf);
         for (DoomScreen s: DoomScreen.values()) {
             final int index = s.ordinal();
             // Only create non-visible data, pegged to the raster. Create visible images only on-demand.

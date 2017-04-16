@@ -29,7 +29,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import m.MenuMisc;
 import m.Settings;
-import v.scale.VideoScale;
 
 /**
  * Base for HiColor and TrueColor parallel renderers
@@ -80,8 +79,8 @@ abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSyste
     protected final Executor executor = Executors.newFixedThreadPool(PARALLELISM);
     protected final CyclicBarrier updateBarrier = new CyclicBarrier(PARALLELISM + 1);
 
-    SoftwareParallelVideoRenderer(VideoScale vs, Class<V> bufferType, byte[] pal) {
-        super(vs, bufferType, pal);
+    SoftwareParallelVideoRenderer(RendererFactory.WithColormap rf, Class<V> bufferType) {
+        super(rf, bufferType);
     }
 
     abstract void doWriteScreen();

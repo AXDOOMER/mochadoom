@@ -30,19 +30,21 @@ import rr.SceneRenderer;
  * selected in config or through use of command line arguments
  */
 public enum BppMode {
-    Indexed(5, BppMode::RGBuffered_8, BppMode::SceneGen_8),
-    HiColor(5, BppMode::RGBuffered_16, BppMode::SceneGen_16),
-    TrueColor(8, BppMode::RGBuffered_24, BppMode::SceneGen_32),
-    AlphaTrueColor(8, BppMode::RGBuffered_32, BppMode::SceneGen_32);
+    Indexed(5, BufferedRenderer::new, BppMode::SceneGen_8, Transparency.OPAQUE),
+    HiColor(5, BufferedRenderer16::new, BppMode::SceneGen_16, Transparency.OPAQUE),
+    TrueColor(8, BufferedRenderer32::new, BppMode::SceneGen_32, Transparency.OPAQUE),
+    AlphaTrueColor(8, BufferedRenderer32::new, BppMode::SceneGen_32, Transparency.TRANSLUCENT);
     
+    public final int transparency;
     public final int lightBits;
     final RenderGen renderGen;
     final ScenerGen scenerGen;
 
-    private BppMode(int lightBits, RenderGen renderGen, ScenerGen scenerGen) {
+    private BppMode(int lightBits, RenderGen renderGen, ScenerGen scenerGen, int transparency) {
         this.lightBits = lightBits;
         this.renderGen = renderGen;
         this.scenerGen = scenerGen;
+        this.transparency = transparency;
     }
     
     @SuppressWarnings("unchecked")
@@ -77,22 +79,5 @@ public enum BppMode {
     }
     
     interface ScenerGen extends Function<DoomMain, SceneRenderer> {}
-
-    private static SoftwareGraphicsSystem RGBuffered_8(RendererFactory.WithColormap rf) {
-        return new BufferedRenderer(rf.getVideoScale(), rf.getPlaypal(), rf.getColormap());
-    }
-    
-    private static SoftwareGraphicsSystem RGBuffered_16(RendererFactory.WithColormap rf) {
-        return new BufferedRenderer16(rf.getVideoScale(), rf.getPlaypal());
-    }
-    
-    private static SoftwareGraphicsSystem RGBuffered_24(RendererFactory.WithColormap rf) {
-        return new BufferedRenderer32(rf.getVideoScale(), rf.getPlaypal(), Transparency.OPAQUE);
-    }
-    
-    private static SoftwareGraphicsSystem RGBuffered_32(RendererFactory.WithColormap rf) {
-        return new BufferedRenderer32(rf.getVideoScale(), rf.getPlaypal(), Transparency.TRANSLUCENT);
-    }
-    
     interface RenderGen extends Function<RendererFactory.WithColormap, SoftwareGraphicsSystem> {}
 }

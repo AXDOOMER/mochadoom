@@ -26,7 +26,6 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static v.renderers.SoftwareParallelVideoRenderer.PARALLELISM;
-import v.scale.VideoScale;
 import v.tables.BlurryTable;
 import v.tables.ColorTint;
 import static v.tables.ColorTint.GREY_TINTS;
@@ -58,8 +57,8 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
      * NOTE: this relies on the ability to "tap" into a BufferedImage's backing array, in order to have fast writes
      * without setpixel/getpixel. If that is not possible, then we'll need to use a special renderer.
      */
-    BufferedRenderer16(VideoScale vs, byte[] playpal) {
-        super(vs, short[].class, playpal);
+    BufferedRenderer16(RendererFactory.WithColormap rf) {
+        super(rf, short[].class);
         /**
          * There is only sense to create and use VolatileImage if it can use native acceleration
          * which is impossible if we rendering into alien color space or bit depth
