@@ -31,6 +31,8 @@ import static v.graphics.Palettes.*;
  * I think I've succeeded in replicating it for real color modes
  *  - Good Sign 2017/04/15
  * 
+ * Now should be 100%, I've accounted for shift of number of generated lights for 24 bit color
+ * 
  * @author Good Sign
  */
 public class BlurryTable implements FuzzMix {
@@ -103,7 +105,7 @@ public class BlurryTable implements FuzzMix {
                         ratioB = fixedAvg[2] > 0 ? blurryAvg[2] / (float) fixedAvg[2] : 0.0f;
             
             // best ratio is weighted towards red and blue, but should not be multiplied or it will be too dark
-            final float bestRatio = (ratioR + ratioR + ratioG + ratioB + ratioB) / 5.0f;
+            final float bestRatio = GreyscaleFilter.component(ratioR, ratioG, ratioB);//ratioR * ratioR * ratioG * ratioB * ratioB;
             
             // associate normal color from colormaps avegrage with this ratio
             sortedRatios.put(avgOrig, bestRatio);
@@ -139,8 +141,8 @@ public class BlurryTable implements FuzzMix {
         final TreeMap<Integer, Float> sortedRatios = new TreeMap<>(Palettes::CompareColors);
         
         for (int i = 0; i < PAL_NUM_COLORS; ++i) {
-            // first get "BLURRYMAP" color components
-            final int[] blurryColor = Palettes.getRGB888(liteColorMaps[COLORMAP_BLURRY][i], new int[3]);
+            // first get "BLURRYMAP" color components. 24 bit lighting is richer (256 vs 32) so we need to multiply
+            final int[] blurryColor = Palettes.getRGB888(liteColorMaps[COLORMAP_BLURRY << 3][i], new int[3]);
             // then gen color components from unmodified (fixed) palette
             final int[] fixedColor = Palettes.getRGB888(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
             // make grayscale avegrage (or what you set in cfg) colors out of these components
@@ -156,7 +158,7 @@ public class BlurryTable implements FuzzMix {
                         ratioB = fixedAvg[2] > 0 ? blurryAvg[2] / (float) fixedAvg[2] : 0.0f;
             
             // weight ratio towards red and blue and multiply to make darker
-            final float bestRatio = ratioR * ratioR * ratioG * ratioB * ratioB;
+            final float bestRatio = GreyscaleFilter.component(ratioR, ratioG, ratioB);//ratioR * ratioR * ratioG * ratioB * ratioB;
             
             // associate normal color from colormaps avegrage with this ratio
             sortedRatios.put(avgOrig, bestRatio);
