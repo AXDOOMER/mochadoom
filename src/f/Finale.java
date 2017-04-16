@@ -30,9 +30,9 @@ import rr.spriteframe_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.*;
 import static v.DoomGraphicSystem.*;
+import v.graphics.Blocks;
 import v.renderers.DoomScreen;
 import static v.renderers.DoomScreen.*;
-import v.graphics.Blocks;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -94,6 +94,7 @@ public class Finale<T> {
 		case commercial:
 		case pack_xbla:
         case freedoom2:
+        case freedm:
 			texts = doom2_text;
 			break;
 		case pack_tnt:
@@ -147,6 +148,7 @@ public class Finale<T> {
 		}
 
 			// DOOM II and missions packs with E1, M34
+        case freedm:
         case freedoom2:
 		case commercial:
 		case pack_xbla:

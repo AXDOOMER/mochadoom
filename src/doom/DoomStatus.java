@@ -79,7 +79,8 @@ public abstract class DoomStatus<T,V> {
     			gamemode== GameMode_t.pack_plut ||
     			gamemode== GameMode_t.pack_tnt ||
     			gamemode== GameMode_t.pack_xbla ||
-                gamemode== GameMode_t.freedoom2);
+                gamemode== GameMode_t.freedoom2 ||
+                gamemode== GameMode_t.freedm);
     }
     
     /** Retail means Ultimate.

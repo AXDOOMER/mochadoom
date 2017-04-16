@@ -599,8 +599,8 @@ public class WadLoader implements IWadLoader {
 		if (i == -1) {
 			Exception e = new Exception();
 			e.printStackTrace();
-			System.err.println("Error:" + name + "not found");
-			System.err.println("Hash:"
+			System.err.println("Error: " + name + " not found");
+			System.err.println("Hash: "
 					+ Long.toHexString(name8.getLongHash(name)));
 			I.Error("W_GetNumForName: %s not found!", name);
 		}

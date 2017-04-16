@@ -16,6 +16,7 @@ public class DoomVersions {
 		VersionChecker.put("plutonia.wad",GameMode_t.pack_plut);
 		VersionChecker.put("doom1.wad",GameMode_t.shareware);
 		VersionChecker.put("xbla.wad",GameMode_t.pack_xbla);
+        VersionChecker.put("freedm.wad", GameMode_t.freedm); 
         VersionChecker.put("freedoom1.wad", GameMode_t.freedoom1); 
         VersionChecker.put("freedoom2.wad", GameMode_t.freedoom2); 
 

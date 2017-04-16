@@ -472,6 +472,7 @@ public class HU implements IHeadsUp{
 
             case commercial:
             case freedoom2:
+            case freedm:
             default:
                 s = HU_TITLE2;
                 break;

@@ -648,6 +648,17 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             return (dstrings.DEVDATA + "freedoom1.wad");
         }
 
+        if (cVarManager.bool(CommandVariable.FRDMDEV)) {
+            setGameMode(GameMode_t.freedm);
+            devparm = true;
+            AddFile(dstrings.DEVDATA + "freedm.wad");
+            AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
+            AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
+            CM.setCofigBase(dstrings.DEVDATA);
+            return (dstrings.DEVDATA + "freedm.wad");
+        }
+
         if (cVarManager.bool(CommandVariable.FR2DEV)) {
             setGameMode(GameMode_t.freedoom2);
             devparm = true;
@@ -916,6 +927,14 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         case pack_xbla:
             title.append("                            ");
             title.append("DOOM 2: No Rest for the Living v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
+        case freedm:
+            title.append("                            ");
+            title.append("FreeDM                     v");
             title.append(VERSION/100);
             title.append(".");
             title.append(VERSION%100);
@@ -2794,6 +2813,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
                 break;
             case freedoom1:
             case freedoom2:
+            case freedm:
                 System.out.print("===========================================================================\n");
                 System.out.print("       Copyright © 2001-2017 Contributors to the Freedoom project.\n");
                 System.out.print("                            All rights reserved.\n");
@@ -2895,6 +2915,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
                     break;
                 case commercial:
                 case freedoom2:
+                case freedm:
                 default:
                     if (ep < 10) {
                         file.append("~");
@@ -3918,7 +3939,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         final String lbmname = findFileNameToSave(); // file doesn't exist
 
         if (graphicSystem.writeScreenShot(lbmname, WS)) {
-            players[consoleplayer].message = "screen shot";
+            players[consoleplayer].message = SCREENSHOT;
         }
     }
 }

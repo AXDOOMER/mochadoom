@@ -1411,6 +1411,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
         // like HELP1/2, and four episodes.
 
         switch (DOOM.getGameMode()) {
+        case freedm:
         case freedoom2:
         case commercial:
         case pack_plut:
@@ -1572,6 +1573,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
 
             switch (DOOM.getGameMode()) {
                 case commercial:
+                case freedm:
                 case freedoom2:
                 case pack_plut:
                 case pack_tnt:

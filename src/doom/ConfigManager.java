@@ -38,7 +38,7 @@ import utils.ResourceIO;
  * @author Good Sign
  */
 public class ConfigManager {
-    private static Pattern splitter = Pattern.compile("[ \t\n\r\f]+");
+    private static final Pattern splitter = Pattern.compile("[ \t\n\r\f]+");
     
     private boolean changed = false;
     private String configBase = null;

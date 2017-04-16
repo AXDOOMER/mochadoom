@@ -44,6 +44,7 @@ public enum CommandVariable {
     DEBUGFILE,
     SHDEV,
     REGDEV,
+    FRDMDEV,
     FR1DEV,
     FR2DEV,
     COMDEV,
