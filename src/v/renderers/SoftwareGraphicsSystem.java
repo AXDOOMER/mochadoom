@@ -106,8 +106,8 @@ abstract class SoftwareGraphicsSystem<T, V>
          * Generate HiColor or TrueColor colormaps with lights
          */
         liteColorMaps = bufferType == short[].class
-            ? (V[]) BuildLights15(cmapTrueColor(playpal))
-            : (V[]) BuildLights24(cmapTrueColor(playpal));
+            ? (V[]) BuildLights15(paletteTrueColor(playpal))
+            : (V[]) BuildLights24(paletteTrueColor(playpal));
         
     }
     /**

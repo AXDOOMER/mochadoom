@@ -34,13 +34,17 @@ import static v.tables.GammaTables.LUT;
  */
 public interface Palettes {
 
-    final int PAL_NUM_STRIDES = 3;
-
     /**
      * Maximum number of colors in palette
      */
     static int PAL_NUM_COLORS = 256;
     
+    /**
+     * There is 256 colors in standard PALYPAL lump, 3 bytes for each color (RGB value)
+     * totaling 256 * 3 = 768 bytes
+     */
+    final int PAL_NUM_STRIDES = 3;
+
     /**
      * Maximum number of palettes
      * PLAYPAL length / (PAL_NUM_COLORS * PAL_NUM_STRIDES)
@@ -248,6 +252,41 @@ public interface Palettes {
     static short toRGB555(int r, int g, int b) {
         return (short) (((r & 0x1F) << 10) + ((g & 0x1F) << 5) + (b & 0x1F));
     }
+
+    /**
+     * Extracts RGB888 color from an index in the palette
+     * @param byte[] pal proper playpal
+     * @param int index and index of the color in the palette
+     * @return int packed opaque rgb888 pixel
+     */
+    default int paletteToRGB888(byte[] pal, int index) {
+        return toRGB888(pal[index], pal[index + 1], pal[index + 2]);
+    }
+    
+    /**
+     * Extracts RGB555 color from an index in the palette
+     * @param byte[] pal proper playpal
+     * @param int index and index of the color in the palette
+     * @return int packed rgb555 pixel
+     */
+    default short paletteToRGB555(byte[] pal, int index) {
+        return rgb888to555(pal[index], pal[index + 1], pal[index + 2]);
+    }
+    
+    /**
+     * Extracts RGB888 color components from an index in the palette to the container
+     * @param byte[] pal proper playpal
+     * @param byte index and index of the color in the palette
+     * @param int[] container to hold individual RGB color components
+     * @return int[] the populated container
+     */
+    default int[] getPaletteRGB888(byte[] pal, int index, int[] container) {
+        container[0] = pal[index];
+        container[1] = pal[index + 1];
+        container[2] = pal[index + 2];
+        return container;
+    }
+    
     /**
      * Finds a color in the palette's range from rangel to rangeh closest to specified r, g, b
      * by distortion, the lesst distorted color is the result. Used for rgb555 invulnerability colormap
@@ -536,20 +575,16 @@ public interface Palettes {
      * @param byte[] pal proper palette
      * @return int[] 32 bit Truecolor ARGB colormap
      */
-    default int[] cmapTrueColor(byte[] pal) {
-        final int cmaps[] = new int[PAL_NUM_COLORS];
+    default int[] paletteTrueColor(byte[] pal) {
+        final int pal888[] = new int[PAL_NUM_COLORS];
         
         // Initial palette can be neutral or based upon "gamma 0",
         // which is actually a bit biased and distorted
-        for (int x = 0, xXstride = 0; x < PAL_NUM_COLORS; ++x, xXstride += PAL_NUM_STRIDES) {
-            int r = /*gammatable[0][*/pal[xXstride]/*]*/ & 0xFF; // R
-            int g = /*gammatable[0][*/pal[1 + xXstride]/*]*/ & 0xFF; // G
-            int b = /*gammatable[0][*/pal[2 + xXstride]/*]*/ & 0xFF; // B
-            int color = 0xFF000000 | r << 16 | g << 8 | b;
-            cmaps[x] = color;
+        for (int x = 0; x < PAL_NUM_COLORS; ++x) {
+            pal888[x] = paletteToRGB888(pal, x * PAL_NUM_STRIDES);
         }
         
-        return cmaps;
+        return pal888;
     }
     
     /**
@@ -557,21 +592,17 @@ public interface Palettes {
      * @param byte[] pal proper palette
      * @return short[] 16 bit HiColor RGB colormap
      */
-    default short[] cmapHiColor(byte[] pal) {
-        final short[] cmap = new short[PAL_NUM_COLORS];
+    default short[] paletteHiColor(byte[] pal) {
+        final short[] pal555 = new short[PAL_NUM_COLORS];
 
         // Apply gammas a-posteriori, not a-priori.
         // Initial palette can be neutral or based upon "gamma 0",
         // which is actually a bit biased and distorted
-        for (int x = 0, xXstride = 0; x < PAL_NUM_COLORS; ++x, xXstride += PAL_NUM_STRIDES) {
-            int r = (/*gammatable[0][*/pal[xXstride]/*]*/ & 0xFF) >> 3; // R
-            int g = (/*gammatable[0][*/pal[1 + xXstride]/*]*/ & 0xFF) >> 3; // G
-            int b = (/*gammatable[0][*/pal[2 + xXstride]/*]*/ & 0xFF) >> 3; // B
-            int color = r << 10 | g << 5 | b;
-            cmap[x] = (short) color;
+        for (int x = 0; x < PAL_NUM_COLORS; ++x) {
+            pal555[x] = paletteToRGB555(pal, x * PAL_NUM_STRIDES);
         }
  
-        return cmap;
+        return pal555;
     }
 
     /**

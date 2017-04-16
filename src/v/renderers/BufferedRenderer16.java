@@ -44,7 +44,6 @@ import static v.tables.ColorTint.NORMAL_TINTS;
  */
 class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> {
     protected final short[] raster;
-    protected final short[] palette;
     
     // VolatileImage speeds up delivery to VRAM - it is 30-40 fps faster then directly rendering BufferedImage
     protected VolatileImage screen;
@@ -77,10 +76,6 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
         currentscreen.setAccelerationPriority(1.0f);
         raster = ((DataBufferUShort)((BufferedImage) currentscreen).getRaster().getDataBuffer()).getData();
         
-        /** 
-         * Generate HiColor palette;
-         */
-        palette = cmapHiColor(playpal);
         blurryTable = new BlurryTable(liteColorMaps);
 
         /**
@@ -135,7 +130,7 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
 
     @Override
     public int getBaseColor(byte color) {
-        return palette[color & 0xFF];
+        return liteColorMaps[COLORMAP_FIXED][color & 0xFF];
     }
 
     @Override
