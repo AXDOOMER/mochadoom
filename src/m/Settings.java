@@ -69,16 +69,16 @@ public enum Settings {
      */
     automap_plotter_style(Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
     color_depth(BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
-    fix_gamma_ramp(true), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
-    fix_gamma_palette(true), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
+    fix_gamma_ramp(false), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
+    fix_gamma_palette(false), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
     fix_sky_palette(false), // In vanilla, sky color does not change when under effect of Invulnerability powerup
-    fix_medi_need(true), // In vanilla, message "Picked up a medikit that you REALLY need!" never appears due to bug
-    fix_ouch_face(true), // In vanilla, ouch face displayed only when acuired 25+ health when damaged for 25+ health
+    fix_medi_need(false), // In vanilla, message "Picked up a medikit that you REALLY need!" never appears due to bug
+    fix_ouch_face(false), // In vanilla, ouch face displayed only when acuired 25+ health when damaged for 25+ health
     line_of_sight(LOS.Vanilla), // Deaf monsters when thing pos corellates somehow with map vertex, change desync demos
     vestrobe(false), // Strobe effect on automap cut off from vanilla
     scale_screen_tiles(true), // If you scale screen tiles, it looks like vanilla
     scale_melt(true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
-    semi_translucent_fuzz(true), // only works in AlphaTrueColor mode
+    semi_translucent_fuzz(false), // only works in AlphaTrueColor mode
     
     parallelism_realcolor_tint(Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(3), // When drawing screen graphics patches, this speeds up column drawing
