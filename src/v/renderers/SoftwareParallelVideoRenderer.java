@@ -85,9 +85,6 @@ abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSyste
 
     abstract void doWriteScreen();
 
-    /**
-     * FIXME: doesn't work
-     */
     @Override
     public boolean writeScreenShot(String name, DoomScreen screen) {
         // munge planar buffer to linear
@@ -96,7 +93,7 @@ abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSyste
         if (screenBuffer.getClass() == short[].class) {
             MenuMisc.WritePNGfile(name, (short[]) screenBuffer, width, height);
         } else {
-            MenuMisc.WritePNGfile(name, (int[]) screens.get(screen), width, height);
+            MenuMisc.WritePNGfile(name, (int[]) screenBuffer, width, height);
         }
         return true;
     }

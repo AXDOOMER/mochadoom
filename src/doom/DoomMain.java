@@ -3938,7 +3938,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         // find a file name to save it to
         final String lbmname = findFileNameToSave(); // file doesn't exist
 
-        if (graphicSystem.writeScreenShot(lbmname, WS)) {
+        if (graphicSystem.writeScreenShot(lbmname, FG)) {
             players[consoleplayer].message = SCREENSHOT;
         }
     }
