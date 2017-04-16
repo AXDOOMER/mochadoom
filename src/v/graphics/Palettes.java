@@ -281,9 +281,9 @@ public interface Palettes {
      * @return int[] the populated container
      */
     default int[] getPaletteRGB888(byte[] pal, int index, int[] container) {
-        container[0] = pal[index];
-        container[1] = pal[index + 1];
-        container[2] = pal[index + 2];
+        container[0] = pal[index] & 0xFF;
+        container[1] = pal[index + 1] & 0xFF;
+        container[2] = pal[index + 2] & 0xFF;
         return container;
     }
     
