@@ -45,32 +45,32 @@ public enum GreyscaleFilter {
         return FILTER.getComponent(r, g, b);
     }
     
-    public static int rgb888(int rgb888) {
+    public static int grey888(int rgb888) {
         if (FILTER == null) {
             readSetting();
         }
-        return FILTER.getRGB888(rgb888);
+        return FILTER.getGrey888(rgb888);
     }
 
-    public static int rgb888(int r8, int g8, int b8) {
+    public static int grey888(int r8, int g8, int b8) {
         if (FILTER == null) {
             readSetting();
         }
-        return FILTER.getRGB888(r8, g8, b8);
+        return FILTER.getGrey888(r8, g8, b8);
     }
 
-    public static short rgb555(int r5, int g5, int b5) {
+    public static short grey555(int r5, int g5, int b5) {
         if (FILTER == null) {
             readSetting();
         }
-        return FILTER.getRGB555(r5, g5, b5);
+        return FILTER.getGrey555(r5, g5, b5);
     }
 
-    public static short rgb555(short rgb555) {
+    public static short grey555(short rgb555) {
         if (FILTER == null) {
             readSetting();
         }
-        return FILTER.getRGB555(rgb555);
+        return FILTER.getGrey555(rgb555);
     }
 
     private static void readSetting() {
@@ -109,21 +109,21 @@ public enum GreyscaleFilter {
         return 0.0f;
     }
     
-    public int getRGB888(int r8, int g8, int b8) {
+    public int getGrey888(int r8, int g8, int b8) {
         final int component = getComponent(r8, g8, b8) & 0xFF;
         return 0xFF000000 + (component << 16) + (component << 8) + component;
     }
     
-    public short getRGB555(int r5, int g5, int b5){
+    public short getGrey555(int r5, int g5, int b5){
         final int component = getComponent(r5, g5, b5) & 0x1F;
         return (short) ((component << 10) + (component << 5) + component);
     }
     
-    public int getRGB888(int rgb888) {
-        return getRGB888((rgb888 >> 16) & 0xFF, (rgb888 >> 8) & 0xFF, rgb888 & 0xFF);
+    public int getGrey888(int rgb888) {
+        return getGrey888((rgb888 >> 16) & 0xFF, (rgb888 >> 8) & 0xFF, rgb888 & 0xFF);
     }
     
-    public short getRGB555(short rgb555) {
-        return getRGB555((rgb555 >> 10) & 0x1F, (rgb555 >> 5) & 0x1F, rgb555 & 0x1F);
+    public short getGrey555(short rgb555) {
+        return getGrey555((rgb555 >> 10) & 0x1F, (rgb555 >> 5) & 0x1F, rgb555 & 0x1F);
     }
 }

@@ -1,4 +1,6 @@
 /*
+ * Copyright (C) 2017 Good Sign
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -12,26 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
- * Refactored and included as the module of new software 2d graphics API
- * - Good Sign 2017/04/14
- *
- * Now extended to contain many extended color synthesizing tools, used
- * in super-indexed and truecolor software rendered displays.
- * 
- * @author Maes
  */
 package v.graphics;
 
 import java.awt.image.IndexColorModel;
 import static v.tables.GammaTables.LUT;
-import v.tables.GreyscaleFilter;
 
 /**
+ * Refactored and included as the module of new software 2d graphics API
+ * - Good Sign 2017/04/14
+ *
  * Palettes & colormaps library
  * 
  * @author Good Sign
+ * @author Maes
  */
-public interface Palettes extends Colors {
+public interface Palettes extends Lights {
 
     /**
      * Maximum number of colors in palette
@@ -211,99 +209,6 @@ public interface Palettes extends Colors {
     }
 
     /**
-     * Variation that produces true-color lightmaps
-     *
-     * @author John Carmack
-     * @param palette A packed ARGB 256-entry int palette, eventually tinted.
-     * @param NUMLIGHTS_32 Number of light levels to synth. Usually 32.
-     */
-    default int[][] BuildLights24(int[] palette) {
-        final int[][] stuff = new int[PAL_LIGHTS_24 + 1][PAL_NUM_COLORS];
-        for (int l = 0; l < PAL_LIGHTS_24; l++) {
-            for (int c = 0; c < PAL_NUM_COLORS; c++) {
-                int red = getRed(palette[c]);
-                int green = getGreen(palette[c]);
-                int blue = getBlue(palette[c]);
-                red = (red * (PAL_LIGHTS_24 - l) + PAL_LIGHTS_24 / 2) / PAL_LIGHTS_24;
-                green = (green * (PAL_LIGHTS_24 - l) + PAL_LIGHTS_24 / 2) / PAL_LIGHTS_24;
-                blue = (blue * (PAL_LIGHTS_24 - l) + PAL_LIGHTS_24 / 2) / PAL_LIGHTS_24;
-                // Full-quality truecolor.
-                stuff[l][c] = toRGB888(red, green, blue);
-            }
-        }
-        BuildSpecials24(stuff[PAL_LIGHTS_24], palette);
-        return stuff;
-    }
-
-    /**
-     * Truecolor invulnerability specials
-     * 
-     * @param stuff
-     * @param palette 
-     */
-    default void BuildSpecials24(int[] stuff, int[] palette) {
-        for (int c = 0; c < PAL_NUM_COLORS; c++) {
-            final int red = getRed(palette[c]);
-            final int green = getGreen(palette[c]);
-            final int blue = getBlue(palette[c]);
-            final int gray = (int) (255 * (1.0 - GreyscaleFilter.component(red, green, (float) blue) / PAL_NUM_COLORS));
-            // We are not done. Because of the grayscaling, the all-white cmap
-            stuff[c] = toRGB888(gray, gray, gray);
-        }
-        // will lack tinting.
-    }
-
-    /**
-     * RF_BuildLights lifted from dcolors.c
-     *
-     * Used to compute extended-color colormaps even in absence of the
-     * COLORS15 lump. Must be recomputed if gamma levels change, since
-     * they actually modify the RGB envelopes.
-     *
-     * @author John Carmack
-     * @author Velktron
-     * @param palette A packed ARGB 256-entry int palette, eventually tinted.
-     * @param NUMLIGHTS Number of light levels to synth. Usually 32.
-     */
-    default short[][] BuildLights15(int[] palette) {
-        final short[][] stuff = new short[PAL_LIGHTS_15 + 1][PAL_NUM_COLORS];
-        for (int l = 0; l < PAL_LIGHTS_15; l++) {
-            for (int c = 0; c < PAL_NUM_COLORS; c++) {
-                int red = getRed(palette[c]);
-                int green = getGreen(palette[c]);
-                int blue = getBlue(palette[c]);
-                red = (red * (PAL_LIGHTS_15 - l) + PAL_LIGHTS_15 / 2) / PAL_LIGHTS_15;
-                green = (green * (PAL_LIGHTS_15 - l) + PAL_LIGHTS_15 / 2) / PAL_LIGHTS_15;
-                blue = (blue * (PAL_LIGHTS_15 - l) + PAL_LIGHTS_15 / 2) / PAL_LIGHTS_15;
-                // RGB555 for HiColor
-                stuff[l][c] = toRGB555(red >> 3, green >> 3, blue >> 3);
-            }
-        }
-        
-        // Build special map for invulnerability
-        BuildSpecials15(stuff[PAL_LIGHTS_15], palette);
-        return stuff;
-    }
-
-    /**
-     * Invlulnerability map
-     * 
-     * @param stuff
-     * @param palette 
-     */
-    default void BuildSpecials15(short[] stuff, int[] palette) {
-        for (int c = 0; c < PAL_NUM_COLORS; c++) {
-            final int red = getRed(palette[c]);
-            final int green = getGreen(palette[c]);
-            final int blue = getBlue(palette[c]);
-            final int gray = (int) (255 * (1.0 - GreyscaleFilter.component(red, green, (float) blue) / PAL_NUM_COLORS));
-            // We are not done. Because of the grayscaling, the all-white cmap
-            stuff[c] = toRGB555(gray >> 3, gray >> 3, gray >> 3);
-        }
-        // will lack tinting.
-    }
-
-    /**
      * Given raw palette data, returns an array with proper TrueColor data
      * @param byte[] pal proper palette
      * @return int[] 32 bit Truecolor ARGB colormap
@@ -345,13 +250,13 @@ public interface Palettes extends Colors {
      * @param byte[] pal proper palette
      * @return the same araay as input, but all values set to new IndexColorModels
      */    
-    default IndexColorModel[][] cmapIndexed(IndexColorModel cmaps[][], byte[] pal) {
+    default IndexColorModel[][] cmapIndexed(IndexColorModel icms[][], byte[] pal) {
         final int colorsXstride = PAL_NUM_COLORS * PAL_NUM_STRIDES;
         
         // Now we have our palettes.
-        for (int i = 0; i < cmaps[0].length; ++i) {
+        for (int i = 0; i < icms[0].length; ++i) {
             //new IndexColorModel(8, PAL_NUM_COLORS, pal, i * colorsXstride, false);
-            cmaps[0][i] = createIndexColorModel(pal, i * colorsXstride);
+            icms[0][i] = createIndexColorModel(pal, i * colorsXstride);
         }
 
         // Wire the others according to the gamma table.
@@ -368,12 +273,11 @@ public interface Palettes extends Colors {
                     tmpcmap[3 * k + 2] = (byte) LUT[j][0xFF & pal[2 + iXcolorsXstride_plus_StrideXk]]; // B
                 }
 
-                //new IndexColorModel(8, PAL_NUM_COLORS, tmpcmap, 0, false);
-                cmaps[j][i] = createIndexColorModel(tmpcmap, 0);
+                icms[j][i] = createIndexColorModel(tmpcmap, 0);
             }
         }
 
-        return cmaps;
+        return icms;
     }
 
     /**

@@ -93,8 +93,8 @@ public class BlurryTable implements FuzzMix, Colors {
             // then gen color components from unmodified (fixed) palette
             final int[] fixedColor = getRGB555(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
             // make grayscale avegrage (or what you set in cfg) colors out of these components
-            final short avgColor = GreyscaleFilter.rgb555(blurryColor[0], blurryColor[1], blurryColor[2]);
-            final short avgOrig = GreyscaleFilter.rgb555(fixedColor[0], fixedColor[1], fixedColor[2]);
+            final short avgColor = GreyscaleFilter.grey555(blurryColor[0], blurryColor[1], blurryColor[2]);
+            final short avgOrig = GreyscaleFilter.grey555(fixedColor[0], fixedColor[1], fixedColor[2]);
             // get grayscale color components
             final int[] blurryAvg = getRGB555(avgColor, new int[3]);
             final int[] fixedAvg = getRGB555(avgOrig, new int[3]);
@@ -146,8 +146,8 @@ public class BlurryTable implements FuzzMix, Colors {
             // then gen color components from unmodified (fixed) palette
             final int[] fixedColor = getRGB888(liteColorMaps[COLORMAP_FIXED][i], new int[3]);
             // make grayscale avegrage (or what you set in cfg) colors out of these components
-            final int avgColor = GreyscaleFilter.rgb888(blurryColor[0], blurryColor[1], blurryColor[2]);
-            final int avgOrig = GreyscaleFilter.rgb888(fixedColor[0], fixedColor[1], fixedColor[2]);
+            final int avgColor = GreyscaleFilter.grey888(blurryColor[0], blurryColor[1], blurryColor[2]);
+            final int avgOrig = GreyscaleFilter.grey888(fixedColor[0], fixedColor[1], fixedColor[2]);
             // get grayscale color components
             final int[] blurryAvg = getRGB888(avgColor, new int[3]);
             final int[] fixedAvg = getRGB888(avgOrig, new int[3]);
