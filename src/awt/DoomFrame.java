@@ -3,6 +3,7 @@ package awt;
 import doom.CommandVariable;
 import doom.DoomMain;
 import i.Game;
+import i.Strings;
 import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -66,7 +67,7 @@ abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
     protected Point center;
     protected int X_OFF;
     protected int Y_OFF;
-
+    
     DoomFrame(DoomMain<?, V> DOOM) {
         /**
          * just get default screen device, be it 0 or 100500
@@ -135,6 +136,7 @@ abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         
         addListeners(this, drawhere, eventhandler);
         turnOnFrame(this, drawhere, eventhandler);
+        setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
         eventhandler.addEvent(MochaDoomInputEvent.GET_YOUR_ASS_OFF);
         return this;
     }
@@ -253,8 +255,8 @@ abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
                 ++frames;
                 final long now = System.currentTimeMillis();
                 final long lambda = now - lastTime;
-                if (lambda >= 1000L) {
-                    System.out.println(String.format("FPS: %.2f", frames * 1000.0/lambda));
+                if (lambda >= 100L) {
+                    setTitle(String.format("%s - %s FPS: %.2f", Strings.MOCHA_DOOM_TITLE, DOOM.bppMode, frames * 1000.0/lambda));
                     frames = 0;
                     lastTime = now;
                 }

@@ -5,7 +5,6 @@ import doom.DoomMain;
 import doom.event_t;
 import i.Game;
 import i.InputListener;
-import i.Strings;
 import java.awt.Canvas;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
@@ -65,7 +64,6 @@ public interface DoomVideoInterface<V> {
 
         frame.setVisible(true);
         frame.setResizable(false);
-        frame.setTitle(Strings.MOCHA_DOOM_TITLE);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
         /**
