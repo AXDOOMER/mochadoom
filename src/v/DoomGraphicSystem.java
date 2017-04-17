@@ -86,11 +86,12 @@ import v.tables.BlurryTable;
 
 public interface DoomGraphicSystem<T, V> {
     
-    //TODO: wipe out this heresy, use Enums if you want
-    //---
-    //flags hacked in scrn (not supported by all functions (see src))
-    // Added by _D_. Unsure if I should use VSI objects instead, as they
-    // already carry scaling information which doesn't need to be repacked...
+    /**
+     * Flags used by patch drawing functions
+     * Now working as separate and optional varargs argument
+     * Added by _D_. Unsure if I should use VSI objects instead, as they
+     * already carry scaling information which doesn't need to be repacked...
+     */
     final int V_NOSCALESTART =      0x00010000;   // dont scale x,y, start coords
     final int V_SCALESTART        = 0x00020000;   // scale x,y, start coords
     final int V_SCALEPATCH        = 0x00040000;   // scale patch
@@ -102,12 +103,6 @@ public interface DoomGraphicSystem<T, V> {
     final int V_SCALEOFFSET       = 0x01000000;   // Scale the patch offset
     final int V_NOSCALEOFFSET     = 0x02000000;   // dont's cale patch offset
     final int V_SAFESCALE         = 0x04000000;   // scale only by minimal scale of x/y instead of both
-    
-    final int SCREEN_FG = 0; // Foreground screen
-    final int SCREEN_BG = 1; // Used for endlevel/finale BG
-    final int SCREEN_WS = 2; // Wipe start screen, also used for screenshots
-    final int SCREEN_WE = 3; // Wipe end screen
-    final int SCREEN_SB = 4; // Used for status bar
     
     /**
      * Public API
