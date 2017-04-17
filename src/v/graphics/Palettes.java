@@ -51,12 +51,6 @@ public interface Palettes extends Lights {
     static int NUM_PALETTES = 14;
 
     /**
-     * Light levels. Binded to the colormap subsystem
-     */
-    final int PAL_LIGHTS_15 = 1 << 5;
-    final int PAL_LIGHTS_24 = 1 << 8;
-    
-    /**
      * Default index of inverse colormap. Note that it will be shifted to the actual position
      * in generated lights map by the difference in lights count between 5 and 8 bits lighting.
      * I have discovered, that player_t.fixedcolormap property is *stored* by game when writing files,

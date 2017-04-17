@@ -14,8 +14,8 @@
  */
 package v.graphics;
 
-import static v.graphics.Palettes.PAL_LIGHTS_15;
-import static v.graphics.Palettes.PAL_LIGHTS_24;
+import static v.graphics.Lights.PAL_LIGHTS_15;
+import static v.graphics.Lights.PAL_LIGHTS_24;
 import static v.graphics.Palettes.PAL_NUM_COLORS;
 import v.tables.GreyscaleFilter;
 
@@ -30,6 +30,12 @@ import v.tables.GreyscaleFilter;
  */
 public interface Lights extends Colors {
     /**
+     * Light levels. Binded to the colormap subsystem
+     */
+    final int PAL_LIGHTS_15 = 1 << 5;
+    final int PAL_LIGHTS_24 = 1 << 8;
+    
+    /**
      * Variation that produces true-color lightmaps
      *
      * @param palette A packed ARGB 256-entry int palette, eventually tinted.
@@ -37,7 +43,7 @@ public interface Lights extends Colors {
      */
     default int[][] BuildLights24(int[] palette) {
         final int[][] stuff = new int[PAL_LIGHTS_24 + 1][PAL_NUM_COLORS];
-        for (int l = 0; l < PAL_LIGHTS_24; l++) {
+        for (int l = 0; l < 1; l++) {
             for (int c = 0; c < PAL_NUM_COLORS; c++) {
                 int red = getRed(palette[c]);
                 int green = getGreen(palette[c]);
