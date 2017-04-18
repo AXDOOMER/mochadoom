@@ -128,9 +128,10 @@ public interface Lights extends Colors {
         
         // [1 .. 255]: all colormaps except 1 fixed, 1 inverse and 1 unused
         for (int i = 1; i < COLORMAP_LIGHTS_24; ++i) {
-            final double div = (double) i / 8;
             // [1 .. 31] the index of the colormap to be target for gradations: max 31 of ceiling of i / 8
-            final int target = Math.min((int) Math.ceil(div), COLORMAP_LIGHTS_15 - 1);
+            final int target = Math.min((int) Math.ceil((double) i / 8), COLORMAP_LIGHTS_15 - 1);
+            final int remainder = target < COLORMAP_LIGHTS_15 - 1 ? i % 8 : 0;
+            final float gradient = 1.0f - remainder * 0.125f;
             
             // calculate weight again for each colormap
             weight = 0.0f;
@@ -152,9 +153,9 @@ public interface Lights extends Colors {
                  * if we are going up in brightness, not down, it will be compensated by ratio
                  */
                 targetColormap[i][j] = toRGB888(
-                    (int) (Math.max(color2[0], color0[0]) * currentLightRatio + 0.5),
-                    (int) (Math.max(color2[1], color0[1]) * currentLightRatio + 0.5),
-                    (int) (Math.max(color2[2], color0[2]) * currentLightRatio + 0.5)
+                    sigmoidGradient(color1[0], (int) (Math.max(color2[0], color0[0]) * currentLightRatio + 0.5), gradient),
+                    sigmoidGradient(color1[1], (int) (Math.max(color2[1], color0[1]) * currentLightRatio + 0.5), gradient),
+                    sigmoidGradient(color1[2], (int) (Math.max(color2[2], color0[2]) * currentLightRatio + 0.5), gradient)
                 );
             }
             
