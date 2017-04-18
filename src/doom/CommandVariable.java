@@ -177,7 +177,7 @@ public enum CommandVariable {
                         : WarpFormat.this.warpInt;
                     
                     episode = evalInt / 10;
-                    map = episode % 10;
+                    map = evalInt % 10;
                 }
             }
 
@@ -193,10 +193,10 @@ public enum CommandVariable {
         }
     }
     
-    public class MapFormat {
+    public static class MapFormat {
         final String mapString;
         
-        public MapFormat (final String mapString) {
+        public MapFormat(final String mapString) {
             this.mapString = mapString.toLowerCase();
         }
         
@@ -234,11 +234,7 @@ public enum CommandVariable {
                 ? parseAsMapXX()
                 : parseAsExMx();
             
-            if (parse > -1) {
-                return new WarpFormat(parse).getMetric(commercial);
-            }
-            
-            return null;
+            return new WarpFormat(Math.max(parse, 0)).getMetric(commercial);
         }
     }
 }

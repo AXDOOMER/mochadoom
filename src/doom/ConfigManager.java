@@ -17,7 +17,6 @@
 package doom;
 
 import i.Game;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -83,18 +82,10 @@ public class ConfigManager {
                 return hasChange(!Objects.equals(configMap.put(setting, parse), parse));
             }
         } else if (setting.valueType.getSuperclass() == Enum.class) {
-            try {
-                final Object enumerated = setting.valueType
-                    .getDeclaredMethod("valueOf", String.class) // Enum search by name
-                    .invoke(null, value); // null as 'this' object pointer, this is static method
-                
-                return hasChange(!Objects.equals(configMap.put(setting, enumerated), enumerated));
-            } catch (NoSuchMethodException
-                | SecurityException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | InvocationTargetException ex)
-            {}
+            // Enum search by name
+            @SuppressWarnings("unchecked")
+            final Object enumerated = Enum.valueOf((Class<? extends Enum>) setting.valueType, value);
+            return hasChange(!Objects.equals(configMap.put(setting, enumerated), enumerated));
         }
         
         return UpdateStatus.INVALID;
