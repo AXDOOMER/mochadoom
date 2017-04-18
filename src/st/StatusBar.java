@@ -678,12 +678,13 @@ public class StatusBar extends AbstractStatusBar {
     public void refreshBackground() {
 
         if (st_statusbaron[0]) {
-            DOOM.graphicSystem.DrawPatchScaled(SB, sbar, DOOM.vs, ST_X, 0, V_SAFESCALE);
+            DOOM.graphicSystem.DrawPatchScaled(SB, sbar, DOOM.vs, ST_X, 0, V_SAFESCALE|V_NOSCALESTART);
             //V.DrawPatch(ST_X, 0, BG, sbar);
 
-            if (DOOM.netgame)
-                DOOM.graphicSystem.DrawPatchScaled(SB, faceback, DOOM.vs, ST_FX, 0, V_SAFESCALE);
+            if (DOOM.netgame) {
+                DOOM.graphicSystem.DrawPatchScaled(SB, faceback, DOOM.vs, ST_FX, ST_Y, V_SAFESCALE|V_NOSCALESTART);
                 //V.DrawPatch(ST_FX, 0, BG, faceback);
+            }
                 
             // Buffers the background.
             DOOM.graphicSystem.CopyRect(SB, ST_RECT, FG, DOOM.graphicSystem.point(ST_X, ST_Y));
@@ -1250,7 +1251,6 @@ public class StatusBar extends AbstractStatusBar {
             w_maxammo[i].update(refresh);
         }
 
-        w_health.update(refresh);
         w_armor.update(refresh);
 
         w_armsbg.update(refresh);
@@ -1265,6 +1265,7 @@ public class StatusBar extends AbstractStatusBar {
 
         w_frags.update(refresh);
 
+        w_health.update(refresh);
     }
 
     public void doRefresh() {
@@ -1818,8 +1819,8 @@ public class StatusBar extends AbstractStatusBar {
             int numdigits = this.width; // HELL NO. This only worked while the width happened
             							// to be 3.
 
-            int w = this.p[0].width*DOOM.vs.getScalingX();
-            int h = this.p[0].height*DOOM.vs.getScalingY();
+            int w = this.p[0].width * DOOM.vs.getScalingX();
+            int h = this.p[0].height * DOOM.vs.getScalingY();
             int x = this.x;
 
             boolean neg;
@@ -1833,8 +1834,8 @@ public class StatusBar extends AbstractStatusBar {
 
             // Restore BG from buffer
             //V.FillRect(x+(numdigits-3) * w, y, w*3 , h, FG);
-            Rectangle rect = new Rectangle(x+(numdigits-3)*w, y- ST_Y, w * 3, h);
-            DOOM.graphicSystem.CopyRect(SB, rect, FG, DOOM.graphicSystem.point(x+(numdigits-3)*w, y));
+            Rectangle rect = new Rectangle(x + (numdigits - 3) * w, y - ST_Y, w * 3, h);
+            DOOM.graphicSystem.CopyRect(SB, rect, FG, DOOM.graphicSystem.point(x + (numdigits - 3) * w, y));
             //V.CopyRect(x+(numdigits-3)*w, y- ST_Y, SCREEN_SB, w * 3, h, x+(numdigits-3)*w, y, SCREEN_FG);
 
             // if non-number, do not draw it
@@ -1907,7 +1908,7 @@ public class StatusBar extends AbstractStatusBar {
 
         @Override
         public void update(boolean refresh) {
-            if (refresh && this.n.on[0])
+            if (this.n.on[0])
                 DOOM.graphicSystem.DrawPatchScaled(FG, p, DOOM.vs, n.x, n.y, V_NOSCALESTART);
 
             n.update(refresh);
