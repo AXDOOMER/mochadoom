@@ -1634,7 +1634,7 @@ public class StatusBar extends AbstractStatusBar {
                     DOOM.graphicSystem.DrawPatchScaled(FG, bi.p, DOOM.vs, bi.x, bi.y, V_PREDIVIDE);
                 } else {
                     final Rectangle rect = new Rectangle(x, ST_Y, w*DOOM.vs.getScalingX(), h*DOOM.vs.getScalingY());
-                    DOOM.graphicSystem.CopyRect(BG, rect, FG, DOOM.graphicSystem.point(rect.x, rect.y));
+                    DOOM.graphicSystem.CopyRect(FG, rect, BG, DOOM.graphicSystem.point(rect.x, rect.y));
                 }
                 
                 bi.oldval = bi.val[valindex];
