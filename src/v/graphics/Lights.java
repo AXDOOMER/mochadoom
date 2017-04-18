@@ -129,8 +129,9 @@ public interface Lights extends Colors {
         // [1 .. 255]: all colormaps except 1 fixed, 1 inverse and 1 unused
         for (int i = 1; i < COLORMAP_LIGHTS_24; ++i) {
             // [1 .. 31] the index of the colormap to be target for gradations: max 31 of ceiling of i / 8
-            final int target = Math.min((int) Math.ceil((double) i / 8), COLORMAP_LIGHTS_15 - 1);
-            final int remainder = target < COLORMAP_LIGHTS_15 - 1 ? i % 8 : 0;
+            final int div = (int) Math.ceil((double) i / 8);
+            final int target = Math.min(div, COLORMAP_LIGHTS_15 - 1);
+            final int remainder = div < COLORMAP_LIGHTS_15 ? i % 8 : 0;
             final float gradient = 1.0f - remainder * 0.125f;
             
             // calculate weight again for each colormap
