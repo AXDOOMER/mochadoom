@@ -165,6 +165,14 @@ public interface Colors {
         rgbOutput[2] = tint.tintBlue5(rgbInput[2]);
         return rgbOutput;
     }
+    
+    default double sigmoid(double r) {
+        return (1 / (1 + Math.pow(Math.E, (-1 * r))));
+    }
+    
+    default int sigmoidGradient(int component1, int component2, float ratio) {
+        return (int) ((ratio * component1) + ((1 - ratio) * component2));
+    }
 
     /**
      * Tells which color is further by comparing distance between two packed rgb888 ints
@@ -203,11 +211,11 @@ public interface Colors {
      */
     default long ColorDistanceHSV888(int rgb888_1, int rgb888_2) {
         final int r1 = (int) (0.21 * getRed(rgb888_1)),
-                g1 = (int) (0.72 * getGreen(rgb888_1)),
-                b1 = (int) (0.07 * getBlue(rgb888_1)),
-                r2 = (int) (0.21 * getRed(rgb888_2)),
-                g2 = (int) (0.72 * getGreen(rgb888_2)),
-                b2 = (int) (0.07 * getBlue(rgb888_2));
+                  g1 = (int) (0.72 * getGreen(rgb888_1)),
+                  b1 = (int) (0.07 * getBlue(rgb888_1)),
+                  r2 = (int) (0.21 * getRed(rgb888_2)),
+                  g2 = (int) (0.72 * getGreen(rgb888_2)),
+                  b2 = (int) (0.07 * getBlue(rgb888_2));
         
         final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
         return dr * dr + dg * dg + db * db;
@@ -260,6 +268,13 @@ public interface Colors {
         return dr * dr + dg * dg + db * db;
     }
 
+    default float[] ColorRatio(int[] rgb1, int[] rgb2, float[] out) {
+        for (int i = 0; i < 3; ++i) {
+            out[i] = rgb2[i] > 0 ? rgb1[i] / (float) rgb2[i] : 1.0f;
+        }
+        return out;
+    }
+    
     /**
      * Get ARGB_8888 from RGB_555, with proper higher-bit
      * replication.

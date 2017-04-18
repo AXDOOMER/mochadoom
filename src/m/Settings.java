@@ -86,6 +86,7 @@ public enum Settings {
      * Mocha Doom
      */
     automap_plotter_style(Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
+    enable_colormap_lump(true), // Enables usage of COLORMAP lump read from wad during lights and specials generation
     color_depth(BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
     fix_gamma_ramp(false), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
     fix_gamma_palette(false), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint

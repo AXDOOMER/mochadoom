@@ -136,7 +136,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
      */
     @Override
     public int getBaseColor(byte color) {
-        return liteColorMaps[COLORMAP_FIXED][color & 0xFF];
+        return palette[color & 0xFF];
     }
 
     @Override

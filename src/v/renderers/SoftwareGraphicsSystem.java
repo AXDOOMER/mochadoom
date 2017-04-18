@@ -16,6 +16,7 @@
  */
 package v.renderers;
 
+import doom.CommandVariable;
 import f.Wiper;
 import i.Game;
 import java.awt.Image;
@@ -62,12 +63,15 @@ abstract class SoftwareGraphicsSystem<T, V>
     protected final Map<DoomScreen, V> screens;
     protected final VideoScale vs;
     protected final Class<V> bufferType;
+    private final boolean colormapEnabled = !Game.getCVM().bool(CommandVariable.NOCOLORMAP)
+        && Game.getConfig().equals(Settings.enable_colormap_lump, Boolean.TRUE);
 
     /**
      * They are used in HiColor and TrueColor modes and are separated from tinting and gammas
      * Colormaps are now part of the base software renderer. This allows some flexibility over manipulating them.
      */
     protected final V[] liteColorMaps;
+    protected final V palette;
 
     /**
      * Indexed renderer changes this property often when switching gammas and palettes
@@ -97,7 +101,24 @@ abstract class SoftwareGraphicsSystem<T, V>
         this.bufferType = bufferType;
         this.bufferLength = width * height;
         this.screens = mapScreensToBuffers(bufferType, bufferLength);
-        liteColorMaps = colormap(rf);
+        this.palette = palette(rf);
+        this.liteColorMaps = colormap(rf);
+    }
+    
+    @SuppressWarnings("unchecked")
+    private V palette(RendererFactory.WithColormap rf) {
+        /**
+         * In Indexed mode, read PLAYPAL lump can be used directly
+         */
+        return bufferType == byte[].class
+            ? (V) rf.getPlaypal()
+                
+            /**
+             * In HiColor or TrueColor translate PLAYPAL to real colors
+             */
+            : bufferType == short[].class
+                ? (V) paletteHiColor(rf.getPlaypal())
+                : (V) paletteTrueColor(rf.getPlaypal());
     }
     
     @SuppressWarnings("unchecked")
@@ -113,8 +134,12 @@ abstract class SoftwareGraphicsSystem<T, V>
              * In HiColor or TrueColor generate colormaps with lights
              */
             : bufferType == short[].class
-                ? (V[]) BuildLights15(paletteTrueColor(rf.getPlaypal()))
-                : (V[]) BuildLights24(paletteTrueColor(rf.getPlaypal()));
+                ? colormapEnabled // HiColor, check for cfg setting and command line argument -nocolormap
+                    ? (V[]) BuildLights15(paletteTrueColor(rf.getPlaypal()), rf.getColormap())
+                    : (V[]) BuildLights15(paletteTrueColor(rf.getPlaypal()))
+                : colormapEnabled // TrueColor, check for cfg setting and command line argument -nocolormap
+                    ? (V[]) BuildLights24((int[]) palette, rf.getColormap())
+                    : (V[]) BuildLights24((int[]) palette);
     }
 
     /**
