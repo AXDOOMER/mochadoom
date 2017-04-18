@@ -1814,33 +1814,15 @@ public class StatusBar extends AbstractStatusBar {
         //
         public void drawNum(boolean refresh) {
 
-            if (this.numindex==largeammo) return;
-            
             //st_number_t n = this;
             int numdigits = this.width; // HELL NO. This only worked while the width happened
             							// to be 3.
-            int num = ((int[]) this.numarray)[this.numindex];
 
             int w = this.p[0].width*DOOM.vs.getScalingX();
             int h = this.p[0].height*DOOM.vs.getScalingY();
             int x = this.x;
 
             boolean neg;
-
-            // In this way, num and oldnum are exactly the same. Maybe this
-            // should go in the end?
-            this.oldnum = num;
-
-            neg = num < 0;
-
-            if (neg) {
-                if (numdigits == 2 && num < -9)
-                    num = -9;
-                else if (numdigits == 3 && num < -99)
-                    num = -99;
-
-                num = -num;
-            }
 
             // clear the area
             x = this.x - numdigits * w;
@@ -1856,8 +1838,25 @@ public class StatusBar extends AbstractStatusBar {
             //V.CopyRect(x+(numdigits-3)*w, y- ST_Y, SCREEN_SB, w * 3, h, x+(numdigits-3)*w, y, SCREEN_FG);
 
             // if non-number, do not draw it
-            if (num == 1994)
+            if (numindex == largeammo)
                 return;
+
+            int num = this.numarray[this.numindex];
+
+            // In this way, num and oldnum are exactly the same. Maybe this
+            // should go in the end?
+            this.oldnum = num;
+
+            neg = num < 0;
+
+            if (neg) {
+                if (numdigits == 2 && num < -9)
+                    num = -9;
+                else if (numdigits == 3 && num < -99)
+                    num = -99;
+
+                num = -num;
+            }
 
             x = this.x;
 
