@@ -79,5 +79,5 @@ public enum BppMode {
     }
     
     interface ScenerGen extends Function<DoomMain, SceneRenderer> {}
-    interface RenderGen extends Function<RendererFactory.WithColormap, SoftwareGraphicsSystem> {}
+    interface RenderGen extends Function<RendererFactory.WithWadLoader, SoftwareGraphicsSystem> {}
 }

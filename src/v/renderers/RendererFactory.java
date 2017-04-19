@@ -18,8 +18,8 @@ package v.renderers;
 
 import java.util.Objects;
 import v.DoomGraphicSystem;
-import v.graphics.Palettes;
 import v.scale.VideoScale;
+import w.IWadLoader;
 
 /**
  * Renderer choice that depends on selected (or provided through command line) BppMode
@@ -36,12 +36,11 @@ public class RendererFactory {
     }
 
     private static class Builder<T, V>
-        implements Clear<T, V>, WithVideoScale<T, V>, WithBppMode<T, V>, WithPalette<T, V>, WithColormap<T, V>
+        implements Clear<T, V>, WithVideoScale<T, V>, WithBppMode<T, V>, WithWadLoader<T, V>
     {
+        private IWadLoader wadLoader;
         private VideoScale videoScale;
         private BppMode bppMode;
-        private byte[] playpal;
-        private byte[][] colormap;
         
         @Override
         public WithVideoScale<T, V> setVideoScale(VideoScale videoScale) {
@@ -56,19 +55,8 @@ public class RendererFactory {
         }
 
         @Override
-        public WithPalette<T, V> setPlaypal(byte[] playpal) {
-            this.playpal = Objects.requireNonNull(playpal);
-            final int minLength = Palettes.PAL_NUM_COLORS * Palettes.PAL_NUM_STRIDES;
-            if (playpal.length < minLength) {
-                throw new IllegalArgumentException("Invalid PLAYPAL: has " + playpal.length + " entries instead of " + minLength);
-            }
-            return this;
-        }
-
-        @Override
-        public WithColormap<T, V> setColormap(byte[][] colormap) {
-            this.colormap = colormap;
-            // TODO: sanity check
+        public WithWadLoader<T, V> setWadLoader(IWadLoader wadLoader) {
+            this.wadLoader = Objects.requireNonNull(wadLoader);
             return this;
         }
 
@@ -84,18 +72,13 @@ public class RendererFactory {
         }
 
         @Override
-        public byte[][] getColormap() {
-            return colormap;
-        }
-
-        @Override
-        public byte[] getPlaypal() {
-            return playpal;
-        }
-
-        @Override
         public VideoScale getVideoScale() {
             return videoScale;
+        }
+
+        @Override
+        public IWadLoader getWadLoader() {
+            return wadLoader;
         }
     }
     
@@ -109,23 +92,15 @@ public class RendererFactory {
     }
     
     public interface WithBppMode<T, V> {
-        WithPalette<T, V> setPlaypal(byte[] palette);
+        WithWadLoader<T, V> setWadLoader(IWadLoader wadLoader);
         VideoScale getVideoScale();
         BppMode getBppMode();
     }
     
-    public interface WithPalette<T, V> {
-        WithColormap<T, V> setColormap(byte[][] colormap);
-        VideoScale getVideoScale();
-        BppMode getBppMode();
-        byte[] getPlaypal();
-    }
-    
-    public interface WithColormap<T, V> {
+    public interface WithWadLoader<T, V> {
         DoomGraphicSystem<T, V> build();
         VideoScale getVideoScale();
         BppMode getBppMode();
-        byte[] getPlaypal();
-        byte[][] getColormap();
+        IWadLoader getWadLoader();
     }
 }

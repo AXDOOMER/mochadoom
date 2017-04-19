@@ -261,6 +261,41 @@ public interface Lights extends Colors {
 
         return targetColormap;
     }
+    
+    /**
+     * RF_BuildLights lifted from dcolors.c
+     *
+     * Used to compute extended-color colormaps even in absence of the
+     * COLORMAP lump. Must be recomputed if gamma levels change, since
+     * they actually modify the RGB envelopes.
+     *
+     * @param int[] palette A packed RGB888 256-entry int palette
+     * @return this concrete one builds Indexed colors. Maybe I would regret it
+     *  - Good Sign 2017/04/19
+     */
+    default byte[][] BuildLightsI(int[] palette) {
+        final byte[][] targetColormap = new byte[COLORMAP_STD_LENGTH_15][PAL_NUM_COLORS];
+        final int[] palColor = new int[3];
+        
+        // Don't repeat work more then necessary - loop first over colors, not lights
+        for (int c = 0; c < PAL_NUM_COLORS; ++c) {
+            getRGB888(palette[c], palColor);
+            for (int l = 0; l < COLORMAP_LIGHTS_15; ++l) {
+                // RGB555 for HiColor, eight times less smooth then TrueColor version
+                targetColormap[l][c] = (byte) BestColor(
+                    AddLightI(palColor[0], l), // R
+                    AddLightI(palColor[1], l), // G
+                    AddLightI(palColor[2], l), // B
+                    palette, 0, PAL_NUM_COLORS - 1
+                );
+            }
+
+            // Special map for invulnerability. Do not waste time, build it right now
+            BuildSpecialsI(targetColormap[COLORMAP_LIGHTS_15], palColor, palette, c);
+        }
+
+        return targetColormap;
+    }
 
     /**
      * @param c8 one rgb888 color component value
@@ -278,6 +313,15 @@ public interface Lights extends Colors {
      */
     default int AddLight5(int c8, int light) {
         return ((int) (c8 * (1 - (float) light / COLORMAP_LIGHTS_15) + 0.5)) >> 3;
+    }
+
+    /**
+     * @param c8 one rgb888 color component value (not a mistake - input is rgb888)
+     * @param light light level to add
+     * @return one rgb555 component value with added light level
+     */
+    default int AddLightI(int c8, int light) {
+        return (int) (c8 * (1 - (float) light / COLORMAP_LIGHTS_15) + 0.5);
     }
     
     /**
@@ -354,11 +398,11 @@ public interface Lights extends Colors {
     }
 
     /**
-     * TrueColor invulnerability specials
+     * HiColor invulnerability specials
      * The key is: get the color, compute its luminance (or other method of grey if set in cfg)
      * and substract it from white
      * 
-     * @param int[] stuff target array to set into
+     * @param short[] stuff target array to set into
      * @param int[] rgb unpacked color components
      * @param index an index of the color int 256-entry int palette
      */
@@ -366,5 +410,20 @@ public interface Lights extends Colors {
         final float luminance = GreyscaleFilter.component((float) rgb[0], rgb[1], rgb[2]);
         final int grey = (int) (255 * (1.0 - luminance / PAL_NUM_COLORS));
         targetColormap[index] = toRGB555(grey >> 3, grey >> 3, grey >> 3);
+    }
+
+    /**
+     * Indexed invulnerability specials
+     * The key is: get the color, compute its luminance (or other method of grey if set in cfg)
+     * and substract it from white
+     * 
+     * @param byte[] stuff target array to set into
+     * @param int[] rgb unpacked color components
+     * @param index an index of the color int 256-entry int palette
+     */
+    default void BuildSpecialsI(byte[] targetColormap, int[] rgb, int[] palette, int index) {
+        final float luminance = GreyscaleFilter.component((float) rgb[0], rgb[1], rgb[2]);
+        final int grey = (int) (255 * (1.0 - luminance / PAL_NUM_COLORS));
+        targetColormap[index] = (byte) BestColor(grey, grey, grey, palette, 0, PAL_NUM_COLORS - 1);
     }
 }

@@ -42,6 +42,7 @@ import v.graphics.Wipers;
 import static v.renderers.DoomScreen.*;
 import v.scale.VideoScale;
 import v.tables.GammaTables;
+import v.tables.Playpal;
 
 /**
  * A package-protected hub, concentrating together public graphics APIs
@@ -63,8 +64,6 @@ abstract class SoftwareGraphicsSystem<T, V>
     protected final Map<DoomScreen, V> screens;
     protected final VideoScale vs;
     protected final Class<V> bufferType;
-    private final boolean colormapEnabled = !Game.getCVM().bool(CommandVariable.NOCOLORMAP)
-        && Game.getConfig().equals(Settings.enable_colormap_lump, Boolean.TRUE);
 
     /**
      * They are used in HiColor and TrueColor modes and are separated from tinting and gammas
@@ -93,7 +92,7 @@ abstract class SoftwareGraphicsSystem<T, V>
      * @param vs video scale info
      * @param playpal palette
      */
-    SoftwareGraphicsSystem(RendererFactory.WithColormap rf, final Class<V> bufferType) {
+    SoftwareGraphicsSystem(RendererFactory.WithWadLoader rf, final Class<V> bufferType) {
         // Defaults
         this.vs = rf.getVideoScale();
         this.width = vs.getScreenWidth();
@@ -106,39 +105,53 @@ abstract class SoftwareGraphicsSystem<T, V>
     }
     
     @SuppressWarnings("unchecked")
-    private V palette(RendererFactory.WithColormap rf) {
+    private V palette(RendererFactory.WithWadLoader rf) {
+        /*final byte[] */playpal = 
+            Game.getCVM().bool(CommandVariable.GREYPAL)
+                ? Playpal.greypal()
+                : Game.getCVM().bool(CommandVariable.NOPLAYPAL)
+                    ? Playpal.properPlaypal(null)
+                    : rf.getWadLoader().LoadPlaypal();
+        
         /**
          * In Indexed mode, read PLAYPAL lump can be used directly
          */
         return bufferType == byte[].class
-            ? (V) rf.getPlaypal()
+            ? (V) playpal
                 
             /**
              * In HiColor or TrueColor translate PLAYPAL to real colors
              */
             : bufferType == short[].class
-                ? (V) paletteHiColor(rf.getPlaypal())
-                : (V) paletteTrueColor(rf.getPlaypal());
+                ? (V) paletteHiColor(playpal)
+                : (V) paletteTrueColor(playpal);
     }
     
+    private byte[] playpal;
+    
     @SuppressWarnings("unchecked")
-    private V[] colormap(RendererFactory.WithColormap rf) {
+    private V[] colormap(RendererFactory.WithWadLoader rf) {
+        final boolean colormapEnabled = !Game.getCVM().bool(CommandVariable.NOCOLORMAP)
+            && Game.getConfig().equals(Settings.enable_colormap_lump, Boolean.TRUE);
+        
         return
             /**
              * In Indexed mode, read COLORMAP lump can be used directly
              */
             bufferType == byte[].class
-            ? (V[]) rf.getColormap()
+            ? colormapEnabled
+                ? (V[]) rf.getWadLoader().LoadColormap()
+                : (V[]) BuildLightsI(paletteTrueColor(playpal))
 
             /**
              * In HiColor or TrueColor generate colormaps with lights
              */
             : bufferType == short[].class
                 ? colormapEnabled // HiColor, check for cfg setting and command line argument -nocolormap
-                    ? (V[]) BuildLights15(paletteTrueColor(rf.getPlaypal()), rf.getColormap())
-                    : (V[]) BuildLights15(paletteTrueColor(rf.getPlaypal()))
+                    ? (V[]) BuildLights15(paletteTrueColor(playpal), rf.getWadLoader().LoadColormap())
+                    : (V[]) BuildLights15(paletteTrueColor(playpal))
                 : colormapEnabled // TrueColor, check for cfg setting and command line argument -nocolormap
-                    ? (V[]) BuildLights24((int[]) palette, rf.getColormap())
+                    ? (V[]) BuildLights24((int[]) palette, rf.getWadLoader().LoadColormap())
                     : (V[]) BuildLights24((int[]) palette);
     }
 

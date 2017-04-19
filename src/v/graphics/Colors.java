@@ -330,4 +330,30 @@ public interface Colors {
     default short rgb888to555(int r, int g, int b) {
         return toRGB555(r >> 3, g >> 3, b >> 3);
     }
+    
+    /**
+     * Finds a color in the palette's range from rangel to rangeh closest to specified r, g, b
+     * by distortion, the lesst distorted color is the result. Used for rgb555 invulnerability colormap
+     */
+    default int BestColor(int r, int g, int b, int[] palette, int rangel, int rangeh) {
+        /**
+         * let any color go to 0 as a last resort
+         */
+        long bestdistortion = ((long) r * r + (long) g * g + (long) b * b) * 2;
+        int bestcolor = 0;
+        for (int i = rangel; i <= rangeh; i++) {
+            final long dr = r - getRed(palette[i]);
+            final long dg = g - getGreen(palette[i]);
+            final long db = b - getBlue(palette[i]);
+            final long distortion = dr * dr + dg * dg + db * db;
+            if (distortion < bestdistortion) {
+                if (distortion == 0) {
+                    return i; // perfect match
+                }
+                bestdistortion = distortion;
+                bestcolor = i;
+            }
+        }
+        return bestcolor;
+    }
 }

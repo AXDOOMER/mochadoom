@@ -2638,14 +2638,10 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
-        final byte[] pal = wadLoader.LoadPlaypal();
-        System.out.print("VI_Init: set palettes.\n");
-        final byte[][] colormap = wadLoader.LoadColormap();
-        System.out.print("VI_Init: set colormaps.\n");
         
         // Video Renderer
         this.graphicSystem = RendererFactory.<T, V> newBuilder()
-            .setVideoScale(vs).setBppMode(bppMode).setPlaypal(pal).setColormap(colormap)
+            .setVideoScale(vs).setBppMode(bppMode).setWadLoader(wadLoader)
             .build();
         
         System.out.print("V_Init: allocate screens.\n");

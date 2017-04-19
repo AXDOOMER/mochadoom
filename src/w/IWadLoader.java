@@ -1,11 +1,12 @@
 package w;
 
 import data.Defines;
-import doom.CommandVariable;
-import i.Game;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import rr.patch_t;
+import v.graphics.Lights;
+import static v.graphics.Palettes.PAL_NUM_COLORS;
+import static v.graphics.Palettes.PAL_NUM_STRIDES;
 import v.tables.Playpal;
 
 public interface IWadLoader {
@@ -278,37 +279,60 @@ public interface IWadLoader {
 
     void ReadLump(int lump, byte[] buf, int offset);
 	
+    /**
+     * Loads PLAYPAL from wad lump. Repairs if necessary.
+     * Also, performs sanity check on *repaired* PLAYPAL.
+     * 
+     * @return byte[] of presumably 256 colors, 3 bytes each
+     */
     default byte[] LoadPlaypal() {
-        boolean graypal = Game.getCVM().bool(CommandVariable.GREYPAL);
-
         // Copy over the one you read from disk...
         int pallump = GetNumForName("PLAYPAL");
-        byte[] tmppal = CacheLumpNumAsRawBytes(pallump, Defines.PU_STATIC);
+        byte[] playpal = Playpal.properPlaypal(CacheLumpNumAsRawBytes(pallump, Defines.PU_STATIC));
 
-        /**
-         * Why not restore support for grayscale palette?
-         *  - Good Sign 2017/04/12
-         */
-        byte[] pal = graypal ? Playpal.greypal() : Playpal.properPlaypal(tmppal);
-        InjectLumpNum(pallump, new DoomBuffer(ByteBuffer.wrap(pal)));
-        return pal;
+        final int minLength = PAL_NUM_COLORS * PAL_NUM_STRIDES;
+        if (playpal.length < minLength) {
+            throw new IllegalArgumentException(String.format(
+                "Invalid PLAYPAL: has %d entries instead of %d. Try -noplaypal mode",
+                playpal.length, minLength));
+        }
+        
+        System.out.print("VI_Init: set palettes.\n");
+        System.out.println("Palette: " + playpal.length / PAL_NUM_STRIDES + " colors");
+
+        InjectLumpNum(pallump, new DoomBuffer(ByteBuffer.wrap(playpal)));
+        return playpal;
     }
     
+    /**
+     * Loads COLORMAP from wad lump.
+     * Performs sanity check on it.
+     * 
+     * @return byte[][] of presumably 34 colormaps 256 entries each with an entry being index in PLAYPAL
+     */
     default byte[][] LoadColormap() {
         // Load in the light tables,
         // 256 byte align tables.
         final int lump = GetNumForName("COLORMAP");
-        final int length = LumpLength(lump) + 256;
-        final byte[][] colormap = new byte[(length / 256)][256];
+        final int length = LumpLength(lump) + PAL_NUM_COLORS;
+        final byte[][] colormap = new byte[(length / PAL_NUM_COLORS)][PAL_NUM_COLORS];
+        final int minLength = Lights.COLORMAP_STD_LENGTH_15;
+        if (colormap.length < minLength) {
+            throw new IllegalArgumentException(String.format(
+                "Invalid COLORMAP: has %d entries, minimum is %d. Try -nocolormap mode",
+                colormap.length, minLength));
+        }
+        
+        System.out.print("VI_Init: set colormaps.\n");
         System.out.println("Colormaps: " + colormap.length);
 
         final byte[] tmp = new byte[length];
         ReadLump(lump, tmp);
 
-        for (int i = 0; i < colormap.length; i++) {
-            System.arraycopy(tmp, i * 256, colormap[i], 0, 256);
+        for (int i = 0; i < colormap.length; ++i) {
+            System.arraycopy(tmp, i * PAL_NUM_COLORS, colormap[i], 0, PAL_NUM_COLORS);
         }
-        
+
         return colormap;
     }
 }

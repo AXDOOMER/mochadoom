@@ -60,6 +60,7 @@ public enum CommandVariable {
     AVG,
     NODRAW,
     NOBLIT,
+    NOPLAYPAL,
     NOCOLORMAP,
     SERIALRENDERER,
     EXTRATIC,

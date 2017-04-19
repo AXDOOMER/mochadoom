@@ -79,7 +79,7 @@ abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSyste
     protected final Executor executor = Executors.newFixedThreadPool(PARALLELISM);
     protected final CyclicBarrier updateBarrier = new CyclicBarrier(PARALLELISM + 1);
 
-    SoftwareParallelVideoRenderer(RendererFactory.WithColormap rf, Class<V> bufferType) {
+    SoftwareParallelVideoRenderer(RendererFactory.WithWadLoader rf, Class<V> bufferType) {
         super(rf, bufferType);
     }
 
