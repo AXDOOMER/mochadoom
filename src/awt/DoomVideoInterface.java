@@ -26,6 +26,7 @@ import javax.swing.JFrame;
  */
 
 public interface DoomVideoInterface<V> {
+    void dispose();
 	void StartTic();
 	void SetPalette(int palette);
 	void FinishUpdate();

@@ -155,6 +155,7 @@ public class DoomSystem implements IDoomSystem {
     //
     @Override
     public void Quit() {
+        DM.videoInterface.dispose();
 
         //DM.CheckDemoStatus();
         try {
