@@ -1,8 +1,10 @@
 package awt;
 
+import doom.DoomMain;
+import doom.event_t;
+import doom.evtype_t;
 import static g.Keys.*;
 import i.DoomEventInterface;
-
 import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -24,10 +26,6 @@ import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
-
-import doom.DoomMain;
-import doom.event_t;
-import doom.evtype_t;
 
 public class AWTEvents2 implements WindowListener,KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener,DoomEventInterface {
 
@@ -343,6 +341,16 @@ public class AWTEvents2 implements WindowListener,KeyEventDispatcher,KeyListener
             ev = (!eventQueue.isEmpty())?(DoomEvent)eventQueue.removeFirst():null;
         }
         return ev;
+    }
+
+    @Override
+    public boolean mouseMoving() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setMouseMoving(boolean mousMoving) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
     public static class DoomEvent {

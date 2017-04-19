@@ -35,7 +35,7 @@ public interface DoomVideoInterface<V> {
     VolatileImage obtainVolatileImage(int width, int height);
     
     static <V> DoomVideoInterface<V> createAWTInterface(final DoomMain<?, V> DOOM) {
-        return new AWTDoom<>(DOOM).InitGraphics();
+        return new DoomFrame<>(DOOM).InitGraphics();
     }
     
     /**

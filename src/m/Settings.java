@@ -23,7 +23,7 @@ import static doom.ConfigBase.FILE_MOCHADOOM;
 import doom.ConfigBase.Files;
 import doom.ConfigManager;
 import static doom.englsh.*;
-import static g.Keys.*;
+import static g.Keys.DosKeys.*;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -52,16 +52,16 @@ public enum Settings {
     sfx_volume(FILE_DOOM, 8),
     music_volume(FILE_DOOM, 8),
     show_messages(FILE_DOOM, 1),
-    key_right(FILE_DOOM, (int) KEY_RIGHTARROW),
-    key_left(FILE_DOOM, (int) KEY_LEFTARROW),
-    key_up(FILE_DOOM, (int) 'w'),
-    key_down(FILE_DOOM, (int) 's'),
-    key_strafeleft(FILE_DOOM, (int) 'a'),
-    key_straferight(FILE_DOOM, (int) 'd'),
-    key_fire(FILE_DOOM, (int) KEY_CTRL),
-    key_use(FILE_DOOM, (int) ' '),
-    key_strafe(FILE_DOOM, (int) KEY_ALT),
-    key_speed(FILE_DOOM, (int) KEY_SHIFT),
+    key_right(FILE_DOOM, SC_RIGHT.ordinal()),
+    key_left(FILE_DOOM, SC_LEFT.ordinal()),
+    key_up(FILE_DOOM, SC_W.ordinal()),
+    key_down(FILE_DOOM, SC_S.ordinal()),
+    key_strafeleft(FILE_DOOM, SC_A.ordinal()),
+    key_straferight(FILE_DOOM, SC_D.ordinal()),
+    key_fire(FILE_DOOM, SC_CONTROL.ordinal()),
+    key_use(FILE_DOOM, SC_SPACE.ordinal()),
+    key_strafe(FILE_DOOM, SC_ALT.ordinal()),
+    key_speed(FILE_DOOM, SC_RSHIFT.ordinal()),
     use_mouse(FILE_DOOM, 1),
     mouseb_fire(FILE_DOOM, 0),
     mouseb_strafe(FILE_DOOM, 1), // AX: Fixed
@@ -112,7 +112,7 @@ public enum Settings {
     scale_melt(FILE_MOCHADOOM, true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
     semi_translucent_fuzz(FILE_MOCHADOOM, false), // only works in AlphaTrueColor mode. Also ignored with fuzz_mix = true
     fuzz_mix(FILE_MOCHADOOM, false), // Maes unique features on Fuzz effect. Vanilla dont have that, so they are switched off by default
-    
+    parallelism_input(FILE_MOCHADOOM, 1), // Experimental keyboard/mouse events parallelism, by default DO parallel but only 1 thread
     parallelism_realcolor_tint(FILE_MOCHADOOM, Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(FILE_MOCHADOOM, 0), // When drawing screen graphics patches, this speeds up column drawing, <= 0 is serial
     greyscale_filter(FILE_MOCHADOOM, GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)

@@ -1,20 +1,19 @@
 package awt;
 
+import doom.DoomMain;
+import doom.event_t;
+import doom.evtype_t;
 import static g.Keys.*;
 import i.DoomEventInterface;
-
 import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.KeyEventDispatcher;
-import java.awt.KeyboardFocusManager;
-import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.Toolkit;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -23,12 +22,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.LinkedList;
-
-import doom.DoomMain;
-import doom.event_t;
-import doom.evtype_t;
 
 /** A very basic event handling class, directly based on linuxdoom's.
  *  Sadly, it doesn't work so well cross-platform. Use MochaEvents instead.
@@ -598,6 +592,16 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
     protected void AddPoint(Point A, Point B){
     	A.x+=B.x;
     	A.y+=B.y;
+    }
+
+    @Override
+    public boolean mouseMoving() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setMouseMoving(boolean mousMoving) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
 }

@@ -69,6 +69,7 @@ public class Keys {
     public static final char KEY_BRCLOSE     = (0x80+119);
     public static final char KEY_BSLASH      = (0x80+120);
     public static final char KEY_MULTPLY     = (0x80+121);
+    public static final char KEY_PRNTSCRN    = (0x80+122);
 
 	public static final char KEY_F1          = (0x80+0x3b);
 	public static final char KEY_F2          = (0x80+0x3c);
@@ -115,7 +116,7 @@ public class Keys {
      * The order of these is important! Do not move.
      *  - Good Sign 2017/04/19
      */
-    enum DosKeys implements KeyCode {
+    public enum DosKeys implements KeyCode {
         /*  0 */ NULL(KEY_NULL),
         /*  1 */ SC_ESCAPEE(KEY_ESCAPE),
         /*  2 */ SC_1(0x100 + VK_1),

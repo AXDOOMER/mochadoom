@@ -23,7 +23,7 @@ import m.Settings;
 /**
  * Common code for Doom's video frames
  */
-abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
+class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     protected static final boolean D = false;
     // This stuff should NOT get through in keyboard events.
@@ -59,6 +59,7 @@ abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * also because it works quite flakey on Linux.
      */
     protected final MochaEvents eventhandler;
+    protected final DoomEventPoster eventposter;
     protected DisplayMode oldDisplayMode;
     protected DisplayMode currentDisplayMode;
     protected GraphicsDevice device;
@@ -76,17 +77,26 @@ abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         
         this.DOOM = DOOM;
-        this.eventhandler = createEventHandler();
+        this.eventhandler = new MochaEvents();
+        this.drawhere = new Canvas();
 
         // Set those here. If fullscreen isn't used, then they won't change.
         // They are necessary for normal initialization, though.
         setDefaultDimension(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
+        this.eventposter = new DoomEventPoster(DOOM, drawhere, eventhandler);
     }
-    
-    abstract protected Canvas createCanvas();
-    
-    private MochaEvents createEventHandler() {
-        return new MochaEvents(DOOM, createCanvas());
+
+    @Override
+    public void SetGamma(int level) {
+        if (D) {
+            System.err.println("Setting gamma " + level);
+        }
+        DOOM.graphicSystem.setUsegamma(level);
+    }
+
+    @Override
+    public void FinishUpdate() {
+        this.update(null);
     }
     
     /**
@@ -201,19 +211,8 @@ abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         }
 
         //  System.out.println("Getting events...");
-        while (eventhandler.hasMoreEvents()) {
-            eventhandler.GetEvent();
-        }
-
+        eventposter.ProcessEvents();
         //eventhandler.grabMouse();
-    }
-
-    @Override
-    public void SetGamma(int level) {
-        if (D) {
-            System.err.println("Setting gamma " + level);
-        }
-        DOOM.graphicSystem.setUsegamma(level);
     }
     
     @Override

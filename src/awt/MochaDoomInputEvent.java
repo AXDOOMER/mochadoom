@@ -25,6 +25,7 @@ public class MochaDoomInputEvent {
     static final int WHEEL_MOVED = 9;
     static final int MOUSE_EXITED = 10;
     static final int MOUSE_ENTERED = 11;
+    static final int MOUSE_CLICKED = 17;
     static final int WINDOW_MOVING = 12;
     static final int FOCUS_GAINED = 13;
     static final int FOCUS_LOST = 14;

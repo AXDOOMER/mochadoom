@@ -15,5 +15,7 @@ public interface DoomEventInterface {
 	 */
 	public void GetEvent();
 
-
+    public boolean mouseMoving();
+    
+    public void setMouseMoving(boolean mousMoving);
 }
