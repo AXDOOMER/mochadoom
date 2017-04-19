@@ -551,13 +551,13 @@ public abstract class DoomStatus<T,V> {
         this.key_speed = CM.getValue(Settings.key_speed, Integer.class);
 
         // Mouse buttons
-        this.use_mouse = CM.equals(Settings.use_mouse, Boolean.TRUE);
+        this.use_mouse = CM.equals(Settings.use_mouse, 1);
         this.mousebfire = CM.getValue(Settings.mouseb_fire, Integer.class);
         this.mousebstrafe = CM.getValue(Settings.mouseb_strafe, Integer.class);
         this.mousebforward = CM.getValue(Settings.mouseb_forward, Integer.class);
 
         // Joystick
-        this.use_joystick = CM.getValue(Settings.use_joystick, Boolean.class);
+        this.use_joystick = CM.equals(Settings.use_joystick, 1);
         this.joybfire = CM.getValue(Settings.joyb_fire, Integer.class);
         this.joybstrafe = CM.getValue(Settings.joyb_strafe, Integer.class);
         this.joybuse = CM.getValue(Settings.joyb_use, Integer.class);
@@ -588,13 +588,13 @@ public abstract class DoomStatus<T,V> {
         CM.update(Settings.key_speed, this.key_speed);
 
         // Mouse buttons
-        CM.update(Settings.use_mouse, this.use_mouse);
+        CM.update(Settings.use_mouse, this.use_mouse ? 1 : 0);
         CM.update(Settings.mouseb_fire, this.mousebfire);
         CM.update(Settings.mouseb_strafe, this.mousebstrafe);
         CM.update(Settings.mouseb_forward, this.mousebforward);
 
         // Joystick
-        CM.update(Settings.use_joystick, this.use_joystick);
+        CM.update(Settings.use_joystick, this.use_joystick ? 1 : 0);
         CM.update(Settings.joyb_fire, this.joybfire);
         CM.update(Settings.joyb_strafe, this.joybstrafe);
         CM.update(Settings.joyb_use, this.joybuse);

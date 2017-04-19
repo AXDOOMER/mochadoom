@@ -18,9 +18,16 @@
 
 package m;
 
+import static doom.ConfigBase.FILE_DOOM;
+import static doom.ConfigBase.FILE_MOCHADOOM;
+import doom.ConfigBase.Files;
+import doom.ConfigManager;
 import static doom.englsh.*;
 import static g.Keys.*;
-import java.util.Comparator;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import utils.QuoteType;
 import v.graphics.Plotter;
@@ -39,111 +46,137 @@ import v.tables.GreyscaleFilter;
  */
 public enum Settings {
     /**
-     * Defaults
+     * Defaults (default.cfg) defined in vanilla format, ordered in vanilla order
      */
-    alwaysrun(false), // Always run is OFF
-    chatmacro0(HUSTR_CHATMACRO0),
-    chatmacro1(HUSTR_CHATMACRO1),
-    chatmacro2(HUSTR_CHATMACRO2),
-    chatmacro3(HUSTR_CHATMACRO3),
-    chatmacro4(HUSTR_CHATMACRO4),
-    chatmacro5(HUSTR_CHATMACRO5),
-    chatmacro6(HUSTR_CHATMACRO6),
-    chatmacro7(HUSTR_CHATMACRO7),
-    chatmacro8(HUSTR_CHATMACRO8),
-    chatmacro9(HUSTR_CHATMACRO9),
-    detaillevel(0),
-    fullscreen(false),
-    joyb_fire(0),
-    joyb_strafe(1),
-    joyb_use(3),
-    joyb_speed(2),
-    key_down((int) 's'),
-    key_fire((int) KEY_CTRL),
-    key_left((int) KEY_LEFTARROW),
-    key_right((int) KEY_RIGHTARROW),
-    key_speed((int) KEY_SHIFT),
-    key_strafe((int) KEY_ALT),
-    key_strafeleft((int) 'a'),
-    key_straferight((int) 'd'),
-    key_up((int) 'w'),
-    key_use((int) ' '),
-    mb_used(2),
-    mouse_sensitivity(5),
-    mouseb_fire(0),
-    mouseb_forward(1), // AX: Value inverted with the one above
-    mouseb_strafe(2), // AX: Fixed
-    music_volume(8),
-    screenblocks(10),
-    sfx_volume(8),
-    show_messages(true),
-    snd_channels(32),
-    use_joystick(false),
-    use_mouse(true),
-    usegamma(0),
+    mouse_sensitivity(FILE_DOOM, 5),
+    sfx_volume(FILE_DOOM, 8),
+    music_volume(FILE_DOOM, 8),
+    show_messages(FILE_DOOM, 1),
+    key_right(FILE_DOOM, (int) KEY_RIGHTARROW),
+    key_left(FILE_DOOM, (int) KEY_LEFTARROW),
+    key_up(FILE_DOOM, (int) 'w'),
+    key_down(FILE_DOOM, (int) 's'),
+    key_strafeleft(FILE_DOOM, (int) 'a'),
+    key_straferight(FILE_DOOM, (int) 'd'),
+    key_fire(FILE_DOOM, (int) KEY_CTRL),
+    key_use(FILE_DOOM, (int) ' '),
+    key_strafe(FILE_DOOM, (int) KEY_ALT),
+    key_speed(FILE_DOOM, (int) KEY_SHIFT),
+    use_mouse(FILE_DOOM, 1),
+    mouseb_fire(FILE_DOOM, 0),
+    mouseb_forward(FILE_DOOM, 1), // AX: Value inverted with the one above
+    mouseb_strafe(FILE_DOOM, 2), // AX: Fixed
+    use_joystick(FILE_DOOM, 0),
+    joyb_fire(FILE_DOOM, 0),
+    joyb_strafe(FILE_DOOM, 1),
+    joyb_use(FILE_DOOM, 3),
+    joyb_speed(FILE_DOOM, 2),
+    screenblocks(FILE_DOOM, 9),
+    detaillevel(FILE_DOOM, 0),
+    snd_channels(FILE_DOOM, 32),
+    usegamma(FILE_DOOM, 0),
+    chatmacro0(FILE_DOOM, HUSTR_CHATMACRO0),
+    chatmacro1(FILE_DOOM, HUSTR_CHATMACRO1),
+    chatmacro2(FILE_DOOM, HUSTR_CHATMACRO2),
+    chatmacro3(FILE_DOOM, HUSTR_CHATMACRO3),
+    chatmacro4(FILE_DOOM, HUSTR_CHATMACRO4),
+    chatmacro5(FILE_DOOM, HUSTR_CHATMACRO5),
+    chatmacro6(FILE_DOOM, HUSTR_CHATMACRO6),
+    chatmacro7(FILE_DOOM, HUSTR_CHATMACRO7),
+    chatmacro8(FILE_DOOM, HUSTR_CHATMACRO8),
+    chatmacro9(FILE_DOOM, HUSTR_CHATMACRO9),
 
     /**
-     * Mocha Doom
+     * Mocha Doom (mochadoom.cfg), these can be defined to anything and will be sorded by name
      */
-    automap_plotter_style(Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
-    enable_colormap_lump(true), // Enables usage of COLORMAP lump read from wad during lights and specials generation
-    color_depth(BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
-    fix_gamma_ramp(false), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
-    fix_gamma_palette(false), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
-    fix_sky_palette(false), // In vanilla, sky color does not change when under effect of Invulnerability powerup
-    fix_medi_need(false), // In vanilla, message "Picked up a medikit that you REALLY need!" never appears due to bug
-    fix_ouch_face(false), // In vanilla, ouch face displayed only when acuired 25+ health when damaged for 25+ health
-    line_of_sight(LOS.Vanilla), // Deaf monsters when thing pos corellates somehow with map vertex, change desync demos
-    vestrobe(false), // Strobe effect on automap cut off from vanilla
-    scale_screen_tiles(true), // If you scale screen tiles, it looks like vanilla
-    scale_melt(true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
-    semi_translucent_fuzz(false), // only works in AlphaTrueColor mode. Also ignored with fuzz_mix = true
-    fuzz_mix(false), // Maes unique features on Fuzz effect. Vanilla dont have that, so they are switched off by default
+    mb_used(FILE_MOCHADOOM, 2),
+    fullscreen(FILE_MOCHADOOM, false),
+    alwaysrun(FILE_MOCHADOOM, false), // Always run is OFF
+    automap_plotter_style(FILE_MOCHADOOM, Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
+    enable_colormap_lump(FILE_MOCHADOOM, true), // Enables usage of COLORMAP lump read from wad during lights and specials generation
+    color_depth(FILE_MOCHADOOM, BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
+    fix_gamma_ramp(FILE_MOCHADOOM, false), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
+    fix_gamma_palette(FILE_MOCHADOOM, false), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
+    fix_sky_palette(FILE_MOCHADOOM, false), // In vanilla, sky color does not change when under effect of Invulnerability powerup
+    fix_medi_need(FILE_MOCHADOOM, false), // In vanilla, message "Picked up a medikit that you REALLY need!" never appears due to bug
+    fix_ouch_face(FILE_MOCHADOOM, false), // In vanilla, ouch face displayed only when acuired 25+ health when damaged for 25+ health
+    line_of_sight(FILE_MOCHADOOM, LOS.Vanilla), // Deaf monsters when thing pos corellates somehow with map vertex, change desync demos
+    vestrobe(FILE_MOCHADOOM, false), // Strobe effect on automap cut off from vanilla
+    scale_screen_tiles(FILE_MOCHADOOM, true), // If you scale screen tiles, it looks like vanilla
+    scale_melt(FILE_MOCHADOOM, true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
+    semi_translucent_fuzz(FILE_MOCHADOOM, false), // only works in AlphaTrueColor mode. Also ignored with fuzz_mix = true
+    fuzz_mix(FILE_MOCHADOOM, false), // Maes unique features on Fuzz effect. Vanilla dont have that, so they are switched off by default
     
-    parallelism_realcolor_tint(Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
-    parallelism_patch_columns(3), // When drawing screen graphics patches, this speeds up column drawing
-    greyscale_filter(GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)
-    scene_renderer_mode(SceneRendererMode.Serial); // In vanilla, scene renderer is serial. Parallel can be faster
+    parallelism_realcolor_tint(FILE_MOCHADOOM, Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
+    parallelism_patch_columns(FILE_MOCHADOOM, 0), // When drawing screen graphics patches, this speeds up column drawing, <= 0 is serial
+    greyscale_filter(FILE_MOCHADOOM, GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)
+    scene_renderer_mode(FILE_MOCHADOOM, SceneRendererMode.Serial); // In vanilla, scene renderer is serial. Parallel can be faster
     
-    public final static Comparator<Settings> NAME_COMPARATOR = Comparator.comparing(Enum::name, String::compareTo);
+    public final static Map<Files, EnumSet<Settings>> SETTINGS_MAP = new HashMap<>();
+    
+    static {
+        Arrays.stream(values()).forEach(Settings::updateConfig);
+    }
 
-    <T extends Enum<T>> Settings(final T defaultValue) {
+    <T extends Enum<T>> Settings(Files config, final T defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = defaultValue.getClass();
+        this.configBase = config;
     }
     
-    Settings(final String defaultValue) {
+    Settings(Files config, final String defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = String.class;
+        this.configBase = config;
     }
 
-    Settings(final char defaultValue) {
+    Settings(Files config, final char defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = Character.class;
+        this.configBase = config;
     }
 
-    Settings(final int defaultValue) {
+    Settings(Files config, final int defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = Integer.class;
+        this.configBase = config;
     }
 
-    Settings(final long defaultValue) {
+    Settings(Files config, final long defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = Long.class;
+        this.configBase = config;
     }
 
-    Settings(final double defaultValue) {
+    Settings(Files config, final double defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = Double.class;
+        this.configBase = config;
     }
 
-    Settings(final boolean defaultValue) {
+    Settings(Files config, final boolean defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = Boolean.class;
+        this.configBase = config;
     }
 
     public final Class<?> valueType;
     public final Object defaultValue;
+    private Files configBase;
+    
+    public ConfigManager.UpdateStatus hasChange(boolean b) {
+        configBase.changed = configBase.changed || b;
+        return b ? ConfigManager.UpdateStatus.UPDATED : ConfigManager.UpdateStatus.UNCHANGED;
+    }
+
+    public void rebase(Files newConfig) {
+        if (configBase == newConfig) {
+            return;
+        }
+        SETTINGS_MAP.get(configBase).remove(this);
+        configBase = newConfig;
+        updateConfig();
+    }
         
     public Optional<QuoteType> quoteType() {
         if (valueType == String.class)
@@ -155,4 +188,16 @@ public enum Settings {
     }
     
     public enum LOS {Vanilla, Boom}
+
+    private void updateConfig() {
+        SETTINGS_MAP.compute(configBase, (c, list) -> {
+            if (list == null) {
+                list = EnumSet.of(this);
+            } else {
+                list.add(this);
+            }
+            
+            return list;
+        });
+    }
 }

@@ -22,7 +22,7 @@ package doom;
  * @author Good Sign
  */
 public enum CommandVariable {
-    DISP(String.class), GEOM(String[].class), CONFIG(String.class), TRANMAP(String.class),
+    DISP(String.class), GEOM(String[].class), CONFIG(String[].class), TRANMAP(String.class),
     PLAYDEMO(String.class), FASTDEMO(String.class), TIMEDEMO(String.class), RECORD(String.class), STATCOPY(String.class),
     TURBO(Integer.class), SKILL(Integer.class), EPISODE(Integer.class), TIMER(Integer.class), PORT(Integer.class),
     MULTIPLY(Integer.class), WIDTH(Integer.class), HEIGHT(Integer.class),

@@ -622,7 +622,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             AddFile(dstrings.DEVDATA + "doom1.wad");
             AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
-            CM.setCofigBase(dstrings.DEVDATA);
             return (dstrings.DEVDATA + "doom1.wad");
         }
 
@@ -633,7 +632,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
-            CM.setCofigBase(dstrings.DEVDATA);
             return (dstrings.DEVDATA + "doom.wad");
         }
 
@@ -644,7 +642,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
-            CM.setCofigBase(dstrings.DEVDATA);
             return (dstrings.DEVDATA + "freedoom1.wad");
         }
 
@@ -655,7 +652,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
-            CM.setCofigBase(dstrings.DEVDATA);
             return (dstrings.DEVDATA + "freedm.wad");
         }
 
@@ -666,7 +662,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             AddFile(dstrings.DEVMAPS + "data_se/texture1.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/texture2.lmp");
             AddFile(dstrings.DEVMAPS + "data_se/pnames.lmp");
-            CM.setCofigBase(dstrings.DEVDATA);
             return (dstrings.DEVDATA + "freedoom2.wad");
         }
 
@@ -684,7 +679,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             AddFile(dstrings.DEVDATA + "doom2.wad");
             AddFile(dstrings.DEVMAPS + "cdata/texture1.lmp");
             AddFile(dstrings.DEVMAPS + "cdata/pnames.lmp");
-            CM.setCofigBase(dstrings.DEVDATA);
             return (dstrings.DEVDATA + "doom2.wad");
         }
 
@@ -2725,7 +2719,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         this.graphicSystem.setUsegamma(CM.getValue(Settings.usegamma, Integer.class));
 
         // These should really be handled by the menu.
-        this.menu.setShowMessages(CM.equals(Settings.show_messages, Boolean.TRUE));
+        this.menu.setShowMessages(CM.equals(Settings.show_messages, 1));
         this.menu.setScreenBlocks(CM.getValue(Settings.screenblocks, Integer.class));
 
         // These should be handled by the HU

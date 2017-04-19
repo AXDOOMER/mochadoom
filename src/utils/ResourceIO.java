@@ -30,13 +30,14 @@ import java.util.function.Supplier;
 
 /**
  * Resource IO to automate read/write on configuration/resources
- * 
+ *
  * @author Good Sign
  */
 public class ResourceIO {
+
     private final Path file;
     private final Charset charset = Charset.forName("US-ASCII");
-    
+
     public ResourceIO(final File file) {
         this.file = file.toPath();
     }
@@ -48,7 +49,11 @@ public class ResourceIO {
     public ResourceIO(final String path) {
         this.file = FileSystems.getDefault().getPath(path);
     }
-    
+
+    public boolean exists() {
+        return Files.exists(file);
+    }
+
     public boolean readLines(final Consumer<String> lineConsumer) {
         if (Files.exists(file)) {
             try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
@@ -56,27 +61,33 @@ public class ResourceIO {
                 while ((line = reader.readLine()) != null) {
                     lineConsumer.accept(line);
                 }
+                
                 return true;
             } catch (IOException x) {
                 System.err.format("IOException: %s%n", x);
+                return false;
             }
         }
-        
+
         return false;
     }
-    
+
     public boolean writeLines(final Supplier<String> lineSupplier, final OpenOption... options) {
         try (BufferedWriter writer = Files.newBufferedWriter(file, charset, options)) {
             String line;
-            while((line = lineSupplier.get()) != null) {
+            while ((line = lineSupplier.get()) != null) {
                 writer.write(line, 0, line.length());
                 writer.newLine();
             }
+            
             return true;
         } catch (IOException x) {
             System.err.format("IOException: %s%n", x);
+            return false;
         }
-        
-        return false;
+    }
+    
+    public String getFileame() {
+        return file.toString();
     }
 }

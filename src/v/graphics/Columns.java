@@ -19,6 +19,7 @@ package v.graphics;
 import i.Game;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.IntConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -75,21 +76,33 @@ public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
      */
     default void DrawPatchColumns(V screen, patch_t patch, int x, int y, int dupx, int dupy, boolean flip) {
         final int scrWidth = getScreenWidth();
-        try {
-            U.pool.submit(() -> IntStream.range(0, patch.width).parallel().forEach(i -> {
-                final int startPoint = point(x + i * dupx, y, scrWidth);
-                final column_t column = flip ? patch.columns[patch.width - 1 - i] : patch.columns[i];
-                DrawColumn(screen, column, new Horizontal(startPoint, dupx),
-                    convertPalettedBlock(column.data), scrWidth, dupy);
-            })).get();
+        final IntConsumer task = i -> {
+            final int startPoint = point(x + i * dupx, y, scrWidth);
+            final column_t column = flip ? patch.columns[patch.width - 1 - i] : patch.columns[i];
+            DrawColumn(screen, column, new Horizontal(startPoint, dupx),
+                convertPalettedBlock(column.data), scrWidth, dupy);
+        };
+        
+        /**
+         * As vanilla DOOM does not parallel column computation, we should have the option to turn off
+         * the parallelism. Just set it to 0 in cfg:parallelism_patch_columns, and it will process columns in serial.
+         * 
+         * It will also prevent a crash on a dumb negative value set to this option. However, a value of 1000 is even
+         * more dumb, but will probably not crash - just take hellion of megabytes memory and waste all the CPU time on
+         * computing "what to process" instead of "what will be the result"
+         */
+        if (U.COLUMN_THREADS > 0) try {
+            U.pool.submit(() -> IntStream.range(0, patch.width).parallel().forEach(task)).get();
         } catch (InterruptedException | ExecutionException ex) {
             Logger.getLogger(Columns.class.getName()).log(Level.SEVERE, null, ex);
+        } else for (int i = 0; i < patch.width; ++i) {
+            task.accept(i);
         }
     }
     
     class U {
         static final int COLUMN_THREADS = Game.getConfig().getValue(Settings.parallelism_patch_columns, Integer.class);
-        private static final ForkJoinPool pool = new ForkJoinPool(COLUMN_THREADS);
+        private static final ForkJoinPool pool = COLUMN_THREADS > 0 ? new ForkJoinPool(COLUMN_THREADS) : null;
         private U() {}
     }
 }
