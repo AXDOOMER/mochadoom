@@ -6,6 +6,7 @@ import data.mapthing_t;
 import defines.*;
 import demo.IDoomDemo;
 import f.Finale;
+import g.Keys;
 import static g.Keys.*;
 import i.Game;
 import java.io.OutputStreamWriter;
@@ -539,16 +540,16 @@ public abstract class DoomStatus<T,V> {
         this.alwaysrun = CM.equals(Settings.alwaysrun, Boolean.TRUE);
 
         // Keys...
-        this.key_right = CM.getValue(Settings.key_right, Integer.class);
-        this.key_left = CM.getValue(Settings.key_left, Integer.class);
-        this.key_up = CM.getValue(Settings.key_up, Integer.class);
-        this.key_down = CM.getValue(Settings.key_down, Integer.class);
-        this.key_strafeleft = CM.getValue(Settings.key_strafeleft, Integer.class);
-        this.key_straferight = CM.getValue(Settings.key_straferight, Integer.class);
-        this.key_fire = CM.getValue(Settings.key_fire, Integer.class);
-        this.key_use = CM.getValue(Settings.key_use, Integer.class);
-        this.key_strafe = CM.getValue(Settings.key_strafe, Integer.class);
-        this.key_speed = CM.getValue(Settings.key_speed, Integer.class);
+        this.key_right = Keys.getFromDosKey(CM.getValue(Settings.key_right, Integer.class));
+        this.key_left = Keys.getFromDosKey(CM.getValue(Settings.key_left, Integer.class));
+        this.key_up = Keys.getFromDosKey(CM.getValue(Settings.key_up, Integer.class));
+        this.key_down = Keys.getFromDosKey(CM.getValue(Settings.key_down, Integer.class));
+        this.key_strafeleft = Keys.getFromDosKey(CM.getValue(Settings.key_strafeleft, Integer.class));
+        this.key_straferight = Keys.getFromDosKey(CM.getValue(Settings.key_straferight, Integer.class));
+        this.key_fire = Keys.getFromDosKey(CM.getValue(Settings.key_fire, Integer.class));
+        this.key_use = Keys.getFromDosKey(CM.getValue(Settings.key_use, Integer.class));
+        this.key_strafe = Keys.getFromDosKey(CM.getValue(Settings.key_strafe, Integer.class));
+        this.key_speed = Keys.getFromDosKey(CM.getValue(Settings.key_speed, Integer.class));
 
         // Mouse buttons
         this.use_mouse = CM.equals(Settings.use_mouse, 1);
@@ -576,16 +577,16 @@ public abstract class DoomStatus<T,V> {
         CM.update(Settings.alwaysrun, this.alwaysrun);
 
         // Keys...
-        CM.update(Settings.key_right, this.key_right);
-        CM.update(Settings.key_left, this.key_left);
-        CM.update(Settings.key_up, this.key_up);
-        CM.update(Settings.key_down, this.key_down);
-        CM.update(Settings.key_strafeleft, this.key_strafeleft);
-        CM.update(Settings.key_straferight, this.key_straferight);
-        CM.update(Settings.key_fire, this.key_fire);
-        CM.update(Settings.key_use, this.key_use);
-        CM.update(Settings.key_strafe, this.key_strafe);
-        CM.update(Settings.key_speed, this.key_speed);
+        CM.update(Settings.key_right, Keys.toDosKey(this.key_right));
+        CM.update(Settings.key_left, Keys.toDosKey(this.key_left));
+        CM.update(Settings.key_up, Keys.toDosKey(this.key_up));
+        CM.update(Settings.key_down, Keys.toDosKey(this.key_down));
+        CM.update(Settings.key_strafeleft, Keys.toDosKey(this.key_strafeleft));
+        CM.update(Settings.key_straferight, Keys.toDosKey(this.key_straferight));
+        CM.update(Settings.key_fire, Keys.toDosKey(this.key_fire));
+        CM.update(Settings.key_use, Keys.toDosKey(this.key_use));
+        CM.update(Settings.key_strafe, Keys.toDosKey(this.key_strafe));
+        CM.update(Settings.key_speed, Keys.toDosKey(this.key_speed));
 
         // Mouse buttons
         CM.update(Settings.use_mouse, this.use_mouse ? 1 : 0);

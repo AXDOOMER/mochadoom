@@ -100,7 +100,7 @@ public class MochaEvents implements WindowListener, ComponentListener, KeyEventD
     public MochaDoomInputEvent nextEvent() {
     	MochaDoomInputEvent ev;
         synchronized (eventQueue) {
-            ev = (!eventQueue.isEmpty())?(MochaDoomInputEvent)eventQueue.removeFirst():null;
+            ev = (!eventQueue.isEmpty()) ? (MochaDoomInputEvent) eventQueue.removeFirst() : null;
         }
         return ev;
     }
@@ -496,6 +496,14 @@ public class MochaEvents implements WindowListener, ComponentListener, KeyEventD
         //Event.XKeycodeToKeysym(X_display, X_event.xkey.keycode, 0))
 
         {
+        case KeyEvent.VK_COMMA:   rc = KEY_COMMA; break;
+        case KeyEvent.VK_PERIOD:   rc = KEY_PERIOD; break;
+        case KeyEvent.VK_QUOTE:   rc = KEY_QUOTE; break;
+        case KeyEvent.VK_SEMICOLON:   rc = KEY_SEMICOLON; break;
+        case KeyEvent.VK_OPEN_BRACKET:   rc = KEY_BROPEN; break;
+        case KeyEvent.VK_CLOSE_BRACKET:   rc = KEY_BRCLOSE; break;
+        case KeyEvent.VK_BACK_SLASH:   rc = KEY_BSLASH; break;
+        case KeyEvent.VK_MULTIPLY:   rc = KEY_MULTPLY; break;
         case KeyEvent.VK_LEFT:    rc = KEY_LEFTARROW; break;
         case KeyEvent.VK_RIGHT:   rc = KEY_RIGHTARROW;    break;
         case KeyEvent.VK_DOWN:    rc = KEY_DOWNARROW; break;

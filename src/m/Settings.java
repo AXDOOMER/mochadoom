@@ -64,8 +64,8 @@ public enum Settings {
     key_speed(FILE_DOOM, (int) KEY_SHIFT),
     use_mouse(FILE_DOOM, 1),
     mouseb_fire(FILE_DOOM, 0),
-    mouseb_forward(FILE_DOOM, 1), // AX: Value inverted with the one above
-    mouseb_strafe(FILE_DOOM, 2), // AX: Fixed
+    mouseb_strafe(FILE_DOOM, 1), // AX: Fixed
+    mouseb_forward(FILE_DOOM, 2), // AX: Value inverted with the one above
     use_joystick(FILE_DOOM, 0),
     joyb_fire(FILE_DOOM, 0),
     joyb_strafe(FILE_DOOM, 1),
@@ -73,7 +73,13 @@ public enum Settings {
     joyb_speed(FILE_DOOM, 2),
     screenblocks(FILE_DOOM, 9),
     detaillevel(FILE_DOOM, 0),
-    snd_channels(FILE_DOOM, 32),
+    snd_channels(FILE_DOOM, 8),
+    snd_musicdevice(FILE_DOOM, 3), // unused, here for compatibility
+    snd_sfxdevice(FILE_DOOM, 3), // unused, here for compatibility
+    snd_sbport(FILE_DOOM, 0), // unused, here for compatibility
+    snd_sbirq(FILE_DOOM, 0), // unused, here for compatibility
+    snd_sbdma(FILE_DOOM, 0), // unused, here for compatibility
+    snd_mport(FILE_DOOM, 0), // unused, here for compatibility
     usegamma(FILE_DOOM, 0),
     chatmacro0(FILE_DOOM, HUSTR_CHATMACRO0),
     chatmacro1(FILE_DOOM, HUSTR_CHATMACRO1),
