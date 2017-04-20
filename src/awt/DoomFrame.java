@@ -4,14 +4,13 @@ import doom.CommandVariable;
 import doom.DoomMain;
 import i.Game;
 import i.Strings;
-import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.DisplayMode;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Robot;
@@ -58,32 +57,48 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * However I won't make it fully "eternity like" yet
      * also because it works quite flakey on Linux.
      */
-    protected final MochaEvents eventhandler;
     protected final DoomEventPoster eventposter;
     protected DisplayMode oldDisplayMode;
     protected DisplayMode currentDisplayMode;
     protected GraphicsDevice device;
     protected Robot robby;
-    protected Canvas drawhere;
+    protected Component content;
     protected Point center;
     protected int X_OFF;
     protected int Y_OFF;
     
-    DoomFrame(DoomMain<?, V> DOOM) {
-        /**
-         * just get default screen device, be it 0 or 100500
-         *  - Good Sign 2017/04/09
-         */
-        device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        
+    /**
+     * Very generic JFrame. Along that it only initializes various properties of Doom Frame.
+     * @param DOOM
+     * @param content - a pane or canvas
+     * @param device - graphics device
+     */
+    protected DoomFrame(DoomMain<?, V> DOOM, Component content, GraphicsDevice device, DoomListener eventhandler) {
+        if (!handleGeom()) {
+            DOOM.doomSystem.Error("bad -geom parameter");
+        }
+
+        this.device = device;
         this.DOOM = DOOM;
-        this.eventhandler = new MochaEvents();
-        this.drawhere = new Canvas();
+        this.content = content;
 
         // Set those here. If fullscreen isn't used, then they won't change.
         // They are necessary for normal initialization, though.
         setDefaultDimension(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
-        this.eventposter = new DoomEventPoster(DOOM, drawhere, eventhandler);
+        this.eventposter = new DoomEventPoster(DOOM, content, eventhandler);
+
+        /**
+         * AWT: create the canvas.
+         * MAES: this method works even on "stubborn" Linux distros that fuck up the window size.
+         */
+        try {
+            setCanvasSize(size);
+            if (DOOM.CM.equals(Settings.fullscreen, Boolean.TRUE)) {
+                switchToFullScreen(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
+            }
+        } catch (Exception e) {
+            DOOM.doomSystem.Error("Error creating DOOM AWT frame. Exiting. Reason: %s", e.getMessage());
+        }
     }
 
     @Override
@@ -122,39 +137,10 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         DOOM.graphicSystem.setPalette(palette);
     }
 
-    /**
-     * Call this before attempting to draw anything. This will create the window, the canvas and everything. Unlike a
-     * simple JFrame, this is not automatic because of the order Doom does things.
-     */
-    DoomFrame<V> InitGraphics() {
-        if (!handleGeom()) {
-            DOOM.doomSystem.Error("bad -geom parameter");
-        }
-
-        /**
-         * AWT: create the canvas.
-         * MAES: this method works even on "stubborn" Linux distros that fuck up the window size.
-         */
-        try {
-            setCanvasSize(size);
-            if (DOOM.CM.equals(Settings.fullscreen, Boolean.TRUE)) {
-                switchToFullScreen(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
-            }
-        } catch (Exception e) {
-            DOOM.doomSystem.Error("Error creating AWTDoom frame. Exiting. Reason: %s", e.getMessage());
-        }
-        
-        addListeners(this, drawhere, eventhandler);
-        turnOnFrame(this, drawhere, eventhandler);
-        setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
-        eventhandler.addEvent(MochaDoomInputEvent.GET_YOUR_ASS_OFF);
-        return this;
-    }
-
     private void setCanvasSize(Dimension size) {
-        drawhere.setPreferredSize(size);
-        drawhere.setBounds(0, 0, drawhere.getWidth() - 1, drawhere.getHeight() - 1);
-        drawhere.setBackground(Color.black);
+        content.setPreferredSize(size);
+        content.setBounds(0, 0, content.getWidth() - 1, content.getHeight() - 1);
+        content.setBackground(Color.black);
     }
 
     /**
@@ -163,7 +149,6 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * possible to switch to arbitrary resolutions.
      *
      * Therefore, a "best fit" strategy with centering is used.
-     *
      */
     private void switchToFullScreen(final int width, final int height) {
         boolean isFullScreen = device.isFullScreenSupported();
@@ -236,7 +221,7 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
          * compared to actually DRAWING the stuff.
          */
         if (g2d == null) {
-            g2d = (Graphics2D) drawhere.getGraphics();
+            g2d = (Graphics2D) content.getGraphics();
         }
         
         /**

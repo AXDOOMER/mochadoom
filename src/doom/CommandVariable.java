@@ -41,6 +41,7 @@ public enum CommandVariable {
     NOVERT(ForbidFormat.class),
     NOVOLATILEIMAGE(ForbidFormat.class),
 
+    AWTFRAME,
     DEBUGFILE,
     SHDEV,
     REGDEV,

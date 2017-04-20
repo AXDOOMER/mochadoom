@@ -2653,7 +2653,8 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         System.out.print("AM_Init: Init Automap colors - \n");
         this.autoMap = new automap.Map<>(this);
 
-        videoInterface = DoomVideoInterface.createAWTInterface(this);
+        videoInterface = cVarManager.bool(CommandVariable.AWTFRAME)
+            ? DoomVideoInterface.createAWTInterface(this) : DoomVideoInterface.createSwingInterface(this);
 
         this.wiper = graphicSystem.createWiper(random);
         

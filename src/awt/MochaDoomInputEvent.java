@@ -33,6 +33,15 @@ public class MochaDoomInputEvent {
     static final int LOCK_OFF = 16;
     static final int KEY_MASK = 0X100; // Extract info from lower bits for this
 
+    final static MochaDoomInputEvent EV_CONFIGURE_NOTIFY = new MochaDoomInputEvent(CONFIGURE_NOTIFY, null);
+    final static MochaDoomInputEvent EV_CREATE_NOTIFY = new MochaDoomInputEvent(CREATE_NOTIFY, null);
+    final static MochaDoomInputEvent EV_MOUSE_CLICKED = new MochaDoomInputEvent(MOUSE_CLICKED, null);
+    final static MochaDoomInputEvent EV_MOUSE_ENTERED = new MochaDoomInputEvent(MOUSE_ENTERED, null);
+    final static MochaDoomInputEvent EV_MOUSE_EXITED = new MochaDoomInputEvent(MOUSE_EXITED, null);
+    final static MochaDoomInputEvent EV_WINDOW_MOVING = new MochaDoomInputEvent(WINDOW_MOVING, null);
+    final static MochaDoomInputEvent EV_FOCUS_GAINED = new MochaDoomInputEvent(FOCUS_GAINED, null);
+    final static MochaDoomInputEvent EV_FOCUS_LOST = new MochaDoomInputEvent(FOCUS_LOST, null);
+
     final int type;
     final AWTEvent ev;
 
@@ -40,9 +49,4 @@ public class MochaDoomInputEvent {
         this.type = type;
         this.ev = ev;
     }
-
-    /**
-     * Just a friendly way to remind the child component to position and initialize itself correctly for the first use.
-     */
-    static MochaDoomInputEvent GET_YOUR_ASS_OFF = new MochaDoomInputEvent(CONFIGURE_NOTIFY, null);
 }

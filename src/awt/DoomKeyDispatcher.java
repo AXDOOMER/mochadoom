@@ -1,15 +1,16 @@
 package awt;
 
+import awt.DoomVideoInterface.DoomListener;
 import java.awt.Component;
 import java.awt.KeyEventDispatcher;
 import java.awt.event.KeyEvent;
 
 class DoomKeyDispatcher implements KeyEventDispatcher {
     
-    private final MochaEvents eventHandler;
+    private final DoomListener eventHandler;
     private final Component doomComponent;
 
-    DoomKeyDispatcher(MochaEvents eventHandler, Component doomComponent) {
+    DoomKeyDispatcher(DoomListener eventHandler, Component doomComponent) {
         this.eventHandler = eventHandler;
         this.doomComponent = doomComponent;
     }

@@ -5,13 +5,27 @@ import doom.DoomMain;
 import doom.event_t;
 import i.Game;
 import i.InputListener;
+import i.Strings;
 import java.awt.Canvas;
+import java.awt.Component;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
+import java.awt.event.ComponentListener;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.WindowFocusListener;
+import java.awt.event.WindowListener;
 import java.awt.im.InputContext;
 import java.awt.image.VolatileImage;
+import java.util.Spliterator;
 import java.util.StringTokenizer;
+import java.util.function.Consumer;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 /** 
  *  Methods specific to Doom-System video interfacing. 
@@ -34,36 +48,83 @@ public interface DoomVideoInterface<V> {
     InputContext getInputContext();
     VolatileImage obtainVolatileImage(int width, int height);
     
-    static <V> DoomVideoInterface<V> createAWTInterface(final DoomMain<?, V> DOOM) {
-        return new DoomFrame<>(DOOM).InitGraphics();
+    interface DoomListener extends WindowListener, ComponentListener, KeyEventDispatcher,
+            KeyListener, MouseListener, MouseMotionListener, WindowFocusListener, Spliterator<MochaDoomInputEvent>
+    {
+        void processAllPending(Consumer<? super MochaDoomInputEvent> action);
+        void setMouseIsMoving(boolean set);
+        boolean getMouseWasMoving();
     }
     
     /**
-     * Add eventHandler listeners to JFrame and its Canvas elememt
+     * Get an instance of JFrame to draw anything. This will try to create compatible Canvas and
+     * will bing all AWT listeners
      */
-    default void addListeners(final JFrame frame, final Canvas canvas, final MochaEvents eventhandler) {
-        canvas.addKeyListener(eventhandler);
-        canvas.addMouseListener(eventhandler);
-        canvas.addMouseMotionListener(eventhandler);
-        frame.addComponentListener(eventhandler);
-        frame.addWindowFocusListener(eventhandler);
-        frame.addWindowListener(eventhandler);
-    }
-    
-    default void turnOnFrame(final JFrame frame, final Canvas drawhere, final MochaEvents eventhandler) {
+    static <V> DoomVideoInterface<V> createAWTInterface(final DoomMain<?, V> DOOM) {
+        final GraphicsDevice device = getDevice();
+        final Component content = new Canvas(device.getDefaultConfiguration());
+        final DoomListener listener = new MochaEvents();
+        final DoomFrame<V> frame = new DoomFrame<>(DOOM, content, device, listener);
+        
+        /**
+         * Add eventHandler listeners to JFrame and its Canvas elememt
+         */
+        content.addKeyListener(listener);
+        content.addMouseListener(listener);
+        content.addMouseMotionListener(listener);
+        frame.addComponentListener(listener);
+        frame.addWindowFocusListener(listener);
+        frame.addWindowListener(listener);
+        
         /**
          * AWT: tab is a special case :-/
          * We need to "peg" it to the JFrame, rather than the canvas,
          * and the handler itself cannot auto-assign it.
          */
-        final KeyEventDispatcher dispatcher = new DoomKeyDispatcher(eventhandler, drawhere);
+        final KeyEventDispatcher dispatcher = new DoomKeyDispatcher(listener, content);
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(dispatcher);
 
-        frame.add(drawhere);
-        // this.add(gelatine);
-        frame.getContentPane().setPreferredSize(drawhere.getPreferredSize());
+        frame.turnOnFrame(frame, frame.content);
+        frame.setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
+        return frame;
+    }
+    
+    /**
+     * Get an instance of JFrame to draw anything. This will try to create compatible Canvas and
+     * will bing all AWT listeners
+     */
+    static <V> DoomVideoInterface<V> createSwingInterface(final DoomMain<?, V> DOOM) {
+        final GraphicsDevice device = getDevice();
+        final JComponent content = new JPanel(true);
+        final DoomListener listener = new MochaEvents();
+        final DoomFrame<V> frame = new DoomFrame<>(DOOM, content, device, listener);
+        
+        content.addKeyListener(listener);
+        //Keys.attachToComponent(content, listener);
+        content.addMouseListener(listener);
+        content.addMouseMotionListener(listener);
+        frame.addComponentListener(listener);
+        frame.addWindowFocusListener(listener);
+        frame.addWindowListener(listener);
 
-        frame.setVisible(true);
+        frame.turnOnFrame(frame, frame.content);
+        frame.setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
+        return frame;
+    }
+    
+    /**
+     * just get default screen device, be it 0 or 100500
+     *  - Good Sign 2017/04/09
+     */
+    static GraphicsDevice getDevice() {
+        return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+    }
+    
+    default void turnOnFrame(final JFrame frame, final Component content) {
+        frame.add(content);
+        // this.add(gelatine);
+        frame.getContentPane().setPreferredSize(content.getPreferredSize());
+
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
@@ -75,6 +136,7 @@ public interface DoomVideoInterface<V> {
          */
         frame.pack();
         
+        frame.setVisible(true);
         // Gently tell the eventhandler to wake up and set itself.	  
         frame.requestFocus();
         SetGamma(0);

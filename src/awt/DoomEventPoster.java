@@ -14,8 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package awt;
 
+import awt.DoomVideoInterface.DoomListener;
 import static awt.MochaDoomInputEvent.*;
 import doom.DoomMain;
 import doom.event_t;
@@ -60,8 +62,7 @@ import static g.Keys.KEY_SEMICOLON;
 import static g.Keys.KEY_SHIFT;
 import static g.Keys.KEY_TAB;
 import static g.Keys.KEY_UPARROW;
-import i.Game;
-import java.awt.Canvas;
+import java.awt.AWTException;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -71,9 +72,8 @@ import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.concurrent.ForkJoinPool;
-import java.util.stream.StreamSupport;
-import m.Settings;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ///////////////////// QUEUE HANDLING ///////////////////////
@@ -82,62 +82,69 @@ import m.Settings;
 public class DoomEventPoster {
     protected static final int POINTER_WARP_COUNTDOWN = 1;
     private static final boolean D = false;
-    private static final int INPUT_THREADS = Game.getConfig().getValue(Settings.parallelism_input, Integer.class);
-    private static final ForkJoinPool pool = INPUT_THREADS > 0 ? new ForkJoinPool(INPUT_THREADS) : null;
-
+    /**
+     * This event here is used as a static scratch copy. When sending out
+     * messages, its contents are to be actually copied (struct-like).
+     * This avoids the continuous object creation/destruction overhead,
+     * And it also allows creating "sticky" status.
+     * 
+     * As we have now parallel processing of events, one event would eventually
+     * overwrite another. So we have to keep thread-local copies of them.
+     */
+    private final ThreadLocal<event_t> event = new ThreadLocal<event_t>() {
+        @Override
+        protected event_t initialValue() {
+            return new event_t();
+        }
+    };
+    
     private final DoomMain DM;
-    private final Component canvas;
-    private final MochaEvents me;
+    private final Component content;
+    private final DoomListener eventQueue;
+    private final Point offset = new Point();
+    private final Cursor hidden;
+    private final Cursor normal;
+    private final Robot robby;
 
-    //////// CURRENT MOVEMENT AND INPUT STATUS //////////////
-    protected int lastmousex;
-    protected int lastmousey;
-    protected Point lastmouse;
-    protected int mousedx;
-    protected int mousedy;
-    protected boolean mousemoved;
-    protected boolean grabMouse = true;
-    protected int doPointerWarp = POINTER_WARP_COUNTDOWN;
 
-    // This event here is used as a static scratch copy. When sending out
-    // messages, its contents are to be actually copied (struct-like).
-    // This avoids the continuous object creation/destruction overhead,
-    // And it also allows creating "sticky" status.
-    private final event_t event = new event_t();
     // Special FORCED and PAINFUL key and mouse cancel event.
     private final event_t cancelkey = new event_t(evtype_t.ev_clear, 0xFF, 0, 0);
     private final event_t cancelmouse = new event_t(evtype_t.ev_mouse, 0, 0, 0);
 
-    private int prevmousebuttons;
+    //////// CURRENT MOVEMENT AND INPUT STATUS //////////////
+    private volatile int mousedx;
+    private volatile int mousedy;
+    private volatile int prevmousebuttons;
+    private volatile int win_w2, win_h2;
 
     // Nasty hack for CAPS LOCK. Apparently, there's no RELIABLE way
     // to get the caps lock state programmatically, so we have to make 
     // do with simply toggling
-    private boolean capstoggle = false;
+    private volatile boolean capstoggle = false;
+    private volatile boolean ignorebutton = false;
 
-    private int win_w2, win_h2;
-    private int move = 0;
-    Robot robby;
-    Cursor hidden;
-    Cursor normal;
-    Point offset = new Point();
-
-    public DoomEventPoster(DoomMain DM, Canvas canvas, MochaEvents me) {
+    public DoomEventPoster(DoomMain DM, Component content, DoomListener me) {
         this.DM = DM;
-        this.canvas = canvas;
+        this.content = content;
 
         // AWT: create cursors.
-        this.normal = canvas.getCursor();
-        this.hidden = this.createInvisibleCursor();
+        this.normal = content.getCursor();
+        this.hidden = createInvisibleCursor();
 
         // Create AWT Robot for forcing mouse
-        try {
-            robby=new Robot();
-        } catch (Exception e){
-           System.err.println("AWT Robot could not be created, mouse input focus will be loose!");
+        {
+            Robot robot;
+            try {
+                robot = new Robot();
+            } catch (AWTException e) {
+                Logger.getLogger(DoomEventPoster.class.getName()).log(Level.SEVERE, e.getMessage(), e);
+                System.err.println("AWT Robot could not be created, mouse input focus will be loose!");
+                robot = null;
+            }
+            this.robby = robot;
         }
 
-        this.me = me;
+        this.eventQueue = me;
     }
 
     /**
@@ -147,7 +154,7 @@ public class DoomEventPoster {
      * ...return the invisible cursor
      */
 
-    protected Cursor createInvisibleCursor() {
+    private Cursor createInvisibleCursor() {
         Dimension bestCursorDim = Toolkit.getDefaultToolkit().getBestCursorSize(2, 2);
         BufferedImage transparentImage = new BufferedImage(bestCursorDim.width, bestCursorDim.height, BufferedImage.TYPE_INT_ARGB);
         Cursor hiddenCursor = Toolkit.getDefaultToolkit().createCustomCursor(transparentImage, new Point(1, 1), "HiddenCursor");
@@ -158,35 +165,32 @@ public class DoomEventPoster {
      * Update relative position offset, and force mouse there.
 	 */
     void reposition() {
-        offset.x = (int) (canvas.getLocationOnScreen().x);
-        offset.y = (int) (canvas.getLocationOnScreen().y);
+        offset.x = content.getLocationOnScreen().x;
+        offset.y = content.getLocationOnScreen().y;
         // Shamelessly ripped from Jake 2. Maybe it works better?
-        Component c = this.canvas;
+        Component c = this.content;
         //offset.x = 0;
         //offset.y = 0;
         win_w2 = c.getWidth() / 2;
         win_h2 = c.getHeight() / 2;
 
-        robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
+        if (robby != null) {
+            robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
+        }
 
-        canvas.getInputContext().selectInputMethod(java.util.Locale.US);
-        canvas.setCursor(hidden);
+        content.getInputContext().selectInputMethod(java.util.Locale.US);
+        content.setCursor(hidden);
         if (D) {
             System.err.printf("Jake 2 method: offset MOVED to %d %d\n", offset.x, offset.y);
         }
     }
     
     public void ProcessEvents() {
-        if (INPUT_THREADS > 0) {
-            pool.submit(() -> StreamSupport.stream(me, true).forEach(this::GetEvent));
-        } else {
-            StreamSupport.stream(me, false).forEach(this::GetEvent);
-        }
+        eventQueue.processAllPending(this::GetEvent);
     }
 
     public void GetEvent(MochaDoomInputEvent X_event) {
-        MouseEvent MEV;
-        Point tmp;
+        event_t localEvent = event.get();
         // Unlike most keys, caps lock etc. can be polled, so no need to worry
         // about them getting stuck.  So they are re-polled after all other
         // key states have beeen cleared.
@@ -201,84 +205,82 @@ public class DoomEventPoster {
 
         // Keyboard events get priority vs mouse events.
         // In the case of combined input, however, we need
-        if (!me.ignorebutton) {
+        if (!ignorebutton) {
             switch (X_event.type) {
                 case KEY_PRESS: {
-                    event.type = evtype_t.ev_keydown;
-                    event.data1 = xlatekey((KeyEvent) X_event.ev, -1);
+                    localEvent.type = evtype_t.ev_keydown;
+                    localEvent.data1 = xlatekey((KeyEvent) X_event.ev, -1);
 
                     // Toggle, but don't it go through.
-                    if (event.data1 == KEY_CAPSLOCK) {
+                    if (localEvent.data1 == KEY_CAPSLOCK) {
                         capstoggle = true;
                     }
 
-                    if (event.data1 != KEY_CAPSLOCK) {
-                        DM.PostEvent(event);
+                    if (localEvent.data1 != KEY_CAPSLOCK) {
+                        DM.PostEvent(localEvent);
                     }
 
                     if (prevmousebuttons != 0) {
-
                         // Allow combined mouse/keyboard events.
-                        event.data1 = prevmousebuttons;
-                        event.type = evtype_t.ev_mouse;
-                        DM.PostEvent(event);
+                        localEvent.data1 = prevmousebuttons;
+                        localEvent.type = evtype_t.ev_mouse;
+                        DM.PostEvent(localEvent);
                     }
                     //System.err.println("k");
                     break;
                 }
 
                 case KEY_RELEASE:
-                    event.type = evtype_t.ev_keyup;
-                    event.data1 = xlatekey((KeyEvent) X_event.ev, -1);
+                    localEvent.type = evtype_t.ev_keyup;
+                    localEvent.data1 = xlatekey((KeyEvent) X_event.ev, -1);
 
-                    if ((event.data1 != KEY_CAPSLOCK)
-                            || ((event.data1 == KEY_CAPSLOCK) && capstoggle)) {
-                        DM.PostEvent(event);
+                    if ((localEvent.data1 != KEY_CAPSLOCK) || ((localEvent.data1 == KEY_CAPSLOCK) && capstoggle)) {
+                        DM.PostEvent(localEvent);
                     }
 
                     capstoggle = false;
 
                     if (prevmousebuttons != 0) {
-
                         // Allow combined mouse/keyboard events.
-                        event.data1 = prevmousebuttons;
-                        event.type = evtype_t.ev_mouse;
-                        DM.PostEvent(event);
+                        localEvent.data1 = prevmousebuttons;
+                        localEvent.type = evtype_t.ev_mouse;
+                        DM.PostEvent(localEvent);
                     }
                     //System.err.println( "ku");
                     break;
 
                 case KEY_TYPE:
-                    event.type = evtype_t.ev_keyup;
-                    event.data1 = xlatekey((KeyEvent) X_event.ev, -1);
-                    DM.PostEvent(event);
+                    localEvent.type = evtype_t.ev_keyup;
+                    localEvent.data1 = xlatekey((KeyEvent) X_event.ev, -1);
+                    DM.PostEvent(localEvent);
 
                     if (prevmousebuttons != 0) {
-
                         // Allow combined mouse/keyboard events.
-                        event.data1 = prevmousebuttons;
-                        event.type = evtype_t.ev_mouse;
-                        DM.PostEvent(event);
+                        localEvent.data1 = prevmousebuttons;
+                        localEvent.type = evtype_t.ev_mouse;
+                        DM.PostEvent(localEvent);
                     }
                     //System.err.println( "ku");
                     break;
             }
         }
 
+        final MouseEvent MEV;
+        final Point tmp;
         // Ignore ALL mouse events if we are moving the window.
         // Mouse events are also handled, but with secondary priority.
         switch (X_event.type) {
             // ButtonPress
             case BUTTON_PRESS:
                 MEV = (MouseEvent) X_event.ev;
-                event.type = evtype_t.ev_mouse;
-                event.data1 = prevmousebuttons
+                localEvent.type = evtype_t.ev_mouse;
+                localEvent.data1 = prevmousebuttons
                         = (MEV.getButton() == MouseEvent.BUTTON1 ? 1 : 0)
                         | (MEV.getButton() == MouseEvent.BUTTON2 ? 2 : 0)
                         | (MEV.getButton() == MouseEvent.BUTTON3 ? 4 : 0);
-                event.data2 = event.data3 = 0;
+                localEvent.data2 = localEvent.data3 = 0;
 
-                DM.PostEvent(event);
+                DM.PostEvent(localEvent);
                 //System.err.println( "b");
                 break;
 
@@ -286,38 +288,34 @@ public class DoomEventPoster {
             // This must send out an amended event.
             case BUTTON_RELEASE:
                 MEV = (MouseEvent) X_event.ev;
-                event.type = evtype_t.ev_mouse;
-                event.data1 = prevmousebuttons
+                localEvent.type = evtype_t.ev_mouse;
+                localEvent.data1 = prevmousebuttons
                         ^= (MEV.getButton() == MouseEvent.BUTTON1 ? 1 : 0)
                         | (MEV.getButton() == MouseEvent.BUTTON2 ? 2 : 0)
                         | (MEV.getButton() == MouseEvent.BUTTON3 ? 4 : 0);
                 // A PURE mouse up event has no movement.
-                event.data2 = event.data3 = 0;
-                DM.PostEvent(event);
+                localEvent.data2 = localEvent.data3 = 0;
+                DM.PostEvent(localEvent);
                 //System.err.println("bu");
                 break;
             case MOTION_NOTIFY:
                 MEV = (MouseEvent) X_event.ev;
                 tmp = MEV.getPoint();
                 //this.AddPoint(tmp,center);
-                event.type = evtype_t.ev_mouse;
+                localEvent.type = evtype_t.ev_mouse;
                 this.mousedx = (tmp.x - win_w2);
                 this.mousedy = (win_h2 - tmp.y);
 
                 // A pure move has no buttons.
-                event.data1 = prevmousebuttons = 0;
-                event.data2 = (mousedx) << 2;
-                event.data3 = (mousedy) << 2;
+                localEvent.data1 = prevmousebuttons = 0;
+                localEvent.data2 = (mousedx) << 2;
+                localEvent.data3 = (mousedy) << 2;
 
                 // System.out.printf("Mouse MOVED to %d %d\n", lastmousex, lastmousey);
                 //System.out.println("Mouse moved without buttons: "+event.data1);
-                if ((event.data2 | event.data3) != 0) {
-
-                    DM.PostEvent(event);
+                if ((localEvent.data2 | localEvent.data3) != 0) {
+                    DM.PostEvent(localEvent);
                     //System.err.println( "m");
-                    mousemoved = true;
-                } else {
-                    mousemoved = false;
                 }
                 break;
 
@@ -326,19 +324,16 @@ public class DoomEventPoster {
                 tmp = MEV.getPoint();
                 this.mousedx = (tmp.x - win_w2);
                 this.mousedy = (win_h2 - tmp.y);
-                event.type = evtype_t.ev_mouse;
+                localEvent.type = evtype_t.ev_mouse;
 
                 // A drag means no change in button state.
-                event.data1 = prevmousebuttons;
-                event.data2 = (mousedx) << 2;
-                event.data3 = (mousedy) << 2;
+                localEvent.data1 = prevmousebuttons;
+                localEvent.data2 = (mousedx) << 2;
+                localEvent.data3 = (mousedy) << 2;
 
-                if ((event.data2 | event.data3) != 0) {
-                    DM.PostEvent(event);
+                if ((localEvent.data2 | localEvent.data3) != 0) {
+                    DM.PostEvent(localEvent);
                     //System.err.println( "m");
-                    mousemoved = true;
-                } else {
-                    mousemoved = false;
                 }
                 break;
         }
@@ -352,10 +347,10 @@ public class DoomEventPoster {
             case MOUSE_CLICKED:
                 // Marks the end of a move. A press + release during a move will
                 // trigger a "click" event, which is handled specially.
-                if (me.we_are_moving) {
-                    me.we_are_moving = false;
+                if (eventQueue.getMouseWasMoving()) {
+                    eventQueue.setMouseIsMoving(false);
                     reposition();
-                    me.ignorebutton = false;
+                    ignorebutton = false;
                 }
                 break;
             case FOCUS_LOST:
@@ -363,23 +358,22 @@ public class DoomEventPoster {
                 // Forcibly clear events                 
                 DM.PostEvent(cancelmouse);
                 DM.PostEvent(cancelkey);
-                canvas.setCursor(normal);
-                me.ignorebutton = true;
+                content.setCursor(normal);
+                ignorebutton = true;
                 break;
 
             case WINDOW_MOVING:
                 // Don't try to reposition immediately during a move
                 // event, wait for a mouse click.
-                me.we_are_moving = true;
-                me.ignorebutton = true;
+                eventQueue.setMouseIsMoving(true);
+                ignorebutton = true;
                 // Forcibly clear events                 
                 DM.PostEvent(cancelmouse);
                 DM.PostEvent(cancelkey);
-                move++;
                 break;
             case MOUSE_ENTERED:
             case FOCUS_GAINED:
-                me.we_are_moving = false;
+                eventQueue.setMouseIsMoving(false);
                 //reposition();
             case CONFIGURE_NOTIFY:
             case CREATE_NOTIFY:
@@ -388,9 +382,9 @@ public class DoomEventPoster {
                 // in focus being lost and position being changed, so we
                 // need to take charge.
                 DM.justfocused = true;
-                canvas.requestFocus();
+                content.requestFocus();
                 reposition();
-                me.ignorebutton = false;
+                ignorebutton = false;
                 break;
             default:
                 // NOT NEEDED in AWT if (doShm && X_event.type == X_shmeventtype) shmFinished = true;
@@ -400,9 +394,11 @@ public class DoomEventPoster {
         
         // If the mouse moved, don't wait until it managed to get out of the 
         // window to bring it back.
-        if (!me.we_are_moving && (mousedx != 0 || mousedy != 0)) {
+        if (!eventQueue.getMouseWasMoving() && (mousedx != 0 || mousedy != 0)) {
             // move the mouse to the window center again
-            robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
+            if (robby != null) {
+                robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
+            }
         }
 
         mousedx = mousedy = 0; // don't spaz.
