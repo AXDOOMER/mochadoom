@@ -28,6 +28,14 @@ public class MochaEvents extends Spliterators.AbstractSpliterator<MochaDoomInput
 {
     // modifications of eventQueue must be thread safe!
     private final LinkedList<MochaDoomInputEvent> eventQueue = new LinkedList<>();
+    private final static MochaDoomInputEvent EV_CONFIGURE_NOTIFY = new MochaDoomInputEvent(CONFIGURE_NOTIFY, null);
+    private final static MochaDoomInputEvent EV_CREATE_NOTIFY = new MochaDoomInputEvent(CREATE_NOTIFY, null);
+    private final static MochaDoomInputEvent EV_MOUSE_CLICKED = new MochaDoomInputEvent(MOUSE_CLICKED, null);
+    private final static MochaDoomInputEvent EV_MOUSE_ENTERED = new MochaDoomInputEvent(MOUSE_ENTERED, null);
+    private final static MochaDoomInputEvent EV_MOUSE_EXITED = new MochaDoomInputEvent(MOUSE_EXITED, null);
+    private final static MochaDoomInputEvent EV_WINDOW_MOVING = new MochaDoomInputEvent(WINDOW_MOVING, null);
+    private final static MochaDoomInputEvent EV_FOCUS_GAINED = new MochaDoomInputEvent(FOCUS_GAINED, null);
+    private final static MochaDoomInputEvent EV_FOCUS_LOST = new MochaDoomInputEvent(FOCUS_LOST, null);
     private static final boolean D = false;
     volatile boolean we_are_moving = false;
     volatile boolean ignorebutton;
@@ -42,7 +50,7 @@ public class MochaEvents extends Spliterators.AbstractSpliterator<MochaDoomInput
         if (D) {
             System.err.println("Window activated");
         }
-        eventQueue.add(new MochaDoomInputEvent(CONFIGURE_NOTIFY, null));
+        eventQueue.add(EV_CONFIGURE_NOTIFY);
     }
 
     @Override public void windowClosed(WindowEvent windowevent) {}
@@ -56,7 +64,7 @@ public class MochaEvents extends Spliterators.AbstractSpliterator<MochaDoomInput
 
     @Override
     public void windowDeiconified(WindowEvent windowevent) {
-        eventQueue.add(new MochaDoomInputEvent(CONFIGURE_NOTIFY, null));
+        eventQueue.add(EV_CONFIGURE_NOTIFY);
     }
 
     @Override
@@ -66,7 +74,7 @@ public class MochaEvents extends Spliterators.AbstractSpliterator<MochaDoomInput
 
     @Override
     public void windowOpened(WindowEvent windowevent) {
-        eventQueue.add(new MochaDoomInputEvent(CREATE_NOTIFY, null));
+        eventQueue.add(EV_CREATE_NOTIFY);
     }
 
     public synchronized void addEvent(MochaDoomInputEvent ev) {
@@ -148,33 +156,31 @@ public class MochaEvents extends Spliterators.AbstractSpliterator<MochaDoomInput
     @Override
     public void mouseClicked(MouseEvent mouseevent) {
         //System.out.println("Mouse clicked");
-        addEvent(new MochaDoomInputEvent(MOUSE_CLICKED, null));
+        addEvent(EV_MOUSE_CLICKED);
     }
 
     @Override
     public void mouseEntered(MouseEvent mouseevent) {
         //System.out.println("Mouse entered");
-        addEvent(new MochaDoomInputEvent(MOUSE_ENTERED, null));
+        addEvent(EV_MOUSE_ENTERED);
     }
 
     @Override
     public void mouseExited(MouseEvent mouseevent) {
         //System.out.println("Mouse exited");
-        addEvent(new MochaDoomInputEvent(MOUSE_EXITED, null));
+        addEvent(EV_MOUSE_EXITED);
     }
 
     @Override
     public void mousePressed(MouseEvent mouseevent) {
-        if (!we_are_moving) // Don't let presses go through when moving.
-        {
+        if (!we_are_moving) {// Don't let presses go through when moving.
             addEvent(new MochaDoomInputEvent(BUTTON_PRESS, mouseevent));
         }
     }
 
     @Override
     public void mouseReleased(MouseEvent mouseevent) {
-        if (!we_are_moving) // Don't let presses go through when moving.
-        {
+        if (!we_are_moving) { // Don't let presses go through when moving.
             addEvent(new MochaDoomInputEvent(BUTTON_RELEASE, mouseevent));
         }
     }
@@ -196,27 +202,27 @@ public class MochaEvents extends Spliterators.AbstractSpliterator<MochaDoomInput
 
     @Override
     public void componentMoved(ComponentEvent e) {
-        eventQueue.add(new MochaDoomInputEvent(WINDOW_MOVING, null));
+        eventQueue.add(EV_WINDOW_MOVING);
     }
 
     @Override
     public void componentResized(ComponentEvent e) {
-        eventQueue.add(new MochaDoomInputEvent(CONFIGURE_NOTIFY, null));
+        eventQueue.add(EV_CONFIGURE_NOTIFY);
     }
 
     @Override
     public void componentShown(ComponentEvent e) {
-        eventQueue.add(new MochaDoomInputEvent(CREATE_NOTIFY, null));
+        eventQueue.add(EV_CREATE_NOTIFY);
     }
 
     @Override
     public void windowGainedFocus(WindowEvent arg0) {
-        eventQueue.add(new MochaDoomInputEvent(FOCUS_GAINED, null));
+        eventQueue.add(EV_FOCUS_GAINED);
     }
 
     @Override
     public void windowLostFocus(WindowEvent arg0) {
-        eventQueue.add(new MochaDoomInputEvent(FOCUS_LOST, null));
+        eventQueue.add(EV_FOCUS_LOST);
     }
 
     @Override
