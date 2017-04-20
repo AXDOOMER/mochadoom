@@ -29,6 +29,10 @@ public interface IDoomStatusBar {
     //
     // STATUS BAR
     //
+    
+    public void NotifyAMEnter();
+
+    public void NotifyAMExit();
 
     /** Called by main loop. */
     public boolean Responder (event_t ev);

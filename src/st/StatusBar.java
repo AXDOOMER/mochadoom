@@ -24,7 +24,6 @@ package st;
 //
 // -----------------------------------------------------------------------------
 
-import static automap.IAutoMap.*;
 import static data.Defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Tables.*;
@@ -725,30 +724,26 @@ public class StatusBar extends AbstractStatusBar {
         loadGraphics();
     }
 
+    // Filter automap on/off.
+    
+    @Override
+    public void NotifyAMEnter() {
+            st_gamestate = st_stateenum_t.AutomapState;
+            st_firsttime = true;
+    }
+
+    @Override
+    public void NotifyAMExit() {
+        // fprintf(stderr, "AM exited\n");
+        st_gamestate = st_stateenum_t.FirstPersonState;
+    }
+
     // Respond to keyboard input events,
     // intercept cheats.
 
     public boolean Responder(event_t ev) {
         int i;
-
-        // Filter automap on/off.
-        if (ev.type == evtype_t.ev_keyup
-                && ((ev.data1 & 0xffff0000) == AM_MSGHEADER)) {
-            switch (ev.data1) {
-            case AM_MSGENTERED:
-                st_gamestate = st_stateenum_t.AutomapState;
-                st_firsttime = true;
-                break;
-
-            case AM_MSGEXITED:
-                // fprintf(stderr, "AM exited\n");
-                st_gamestate = st_stateenum_t.FirstPersonState;
-                break;
-            }
-        }
-
-        // if a user keypress...
-        else if (ev.type == evtype_t.ev_keydown) {
+        if (ev.type == evtype_t.ev_keydown) {
             if (!DOOM.netgame) {
                 // b. - enabled for more debug fun.
                 // if (gameskill != sk_nightmare) {

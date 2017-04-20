@@ -191,8 +191,8 @@ import static rr.line_t.*;
 import rr.patch_t;
 import static utils.GenericCopy.*;
 import static v.DoomGraphicSystem.*;
-import static v.renderers.DoomScreen.*;
 import v.graphics.Plotter;
+import static v.renderers.DoomScreen.*;
 
 public class Map<T, V> implements IAutoMap<T, V> {
 
@@ -770,7 +770,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
         old_m_h = m_h;
 
         // inform the status bar of the change
-        DOOM.statusBar.Responder(st_notify);
+        DOOM.statusBar.NotifyAMEnter();
     }
 
     //
@@ -831,24 +831,13 @@ public class Map<T, V> implements IAutoMap<T, V> {
         );
     }
 
-    //
-    //
-    //
-
-    protected final event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED);
-
-    // MAES: Was a "method static variable"...but what's the point? It's never
-    // modified.
-    protected final event_t st_notify_ex = new event_t(evtype_t.ev_keyup,
-            AM_MSGEXITED);
-
     @Override
     public final void Stop() {
         this.unloadPics();
         DOOM.automapactive = false;
         // This is the only way to notify the status bar responder that we're
         // exiting the automap.
-        DOOM.statusBar.Responder(st_notify_ex);
+        DOOM.statusBar.NotifyAMExit();
         stopped = true;
     }
 
