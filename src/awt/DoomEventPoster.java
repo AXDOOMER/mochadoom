@@ -142,11 +142,8 @@ public class DoomEventPoster {
         offset.x = content.getLocationOnScreen().x;
         offset.y = content.getLocationOnScreen().y;
         // Shamelessly ripped from Jake 2. Maybe it works better?
-        Component c = this.content;
-        //offset.x = 0;
-        //offset.y = 0;
-        win_w2 = c.getWidth() / 2;
-        win_h2 = c.getHeight() / 2;
+        win_w2 = content.getWidth() / 2;
+        win_h2 = content.getHeight() / 2;
 
         if (robby != null) {
             robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
@@ -154,9 +151,6 @@ public class DoomEventPoster {
 
         content.getInputContext().selectInputMethod(java.util.Locale.US);
         content.setCursor(hidden);
-        if (D) {
-            System.err.printf("Jake 2 method: offset MOVED to %d %d\n", offset.x, offset.y);
-        }
     }
     
     public void sendEvent(Signals.ScanCode sc, int eventType) {

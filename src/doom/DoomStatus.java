@@ -57,18 +57,18 @@ public abstract class DoomStatus<T,V> {
      *  etc. can be handled more cleanly.
      * */
 
-    private GameMode_t gamemode;
+    private GameMode gamemode;
     
-    public void setGameMode(GameMode_t mode){
+    public void setGameMode(GameMode mode){
     	this.gamemode=mode;
     }
     
-    public GameMode_t getGameMode(){
+    public GameMode getGameMode(){
     	return gamemode;
     }
     
     public boolean isShareware(){
-    	return (gamemode== GameMode_t.shareware);
+    	return (gamemode== GameMode.shareware);
     }    
     
     /** Commercial means Doom 2, Plutonia, TNT, and possibly others like XBLA.
@@ -76,12 +76,12 @@ public abstract class DoomStatus<T,V> {
      * @return
      */
     public boolean isCommercial(){
-    	return (gamemode== GameMode_t.commercial ||
-    			gamemode== GameMode_t.pack_plut ||
-    			gamemode== GameMode_t.pack_tnt ||
-    			gamemode== GameMode_t.pack_xbla ||
-                gamemode== GameMode_t.freedoom2 ||
-                gamemode== GameMode_t.freedm);
+    	return (gamemode== GameMode.commercial ||
+    			gamemode== GameMode.pack_plut ||
+    			gamemode== GameMode.pack_tnt ||
+    			gamemode== GameMode.pack_xbla ||
+                gamemode== GameMode.freedoom2 ||
+                gamemode== GameMode.freedm);
     }
     
     /** Retail means Ultimate.
@@ -89,7 +89,7 @@ public abstract class DoomStatus<T,V> {
      * @return
      */
     public boolean isRetail(){
-        return (gamemode== GameMode_t.retail || gamemode == GameMode_t.freedoom1 );
+        return (gamemode== GameMode.retail || gamemode == GameMode.freedoom1 );
     }
     
     /** Registered is a subset of Ultimate 
@@ -98,7 +98,7 @@ public abstract class DoomStatus<T,V> {
      */
 
     public boolean isRegistered(){
-    	return (gamemode== GameMode_t.registered || gamemode== GameMode_t.retail || gamemode == GameMode_t.freedoom1 );
+    	return (gamemode== GameMode.registered || gamemode== GameMode.retail || gamemode == GameMode.freedoom1 );
     }
     
     public GameMission_t gamemission;

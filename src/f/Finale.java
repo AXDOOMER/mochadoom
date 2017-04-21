@@ -21,13 +21,11 @@ import doom.gameaction_t;
 import i.Game;
 import java.awt.Rectangle;
 import java.io.IOException;
-import java.util.ArrayList;
 import m.Settings;
 import rr.flat_t;
 import rr.patch_t;
 import rr.spritedef_t;
 import rr.spriteframe_t;
-import utils.C2JUtils;
 import static utils.C2JUtils.*;
 import static v.DoomGraphicSystem.*;
 import v.graphics.Blocks;
@@ -58,24 +56,17 @@ import static v.renderers.DoomScreen.*;
 
 public class Finale<T> {
 
-	public static final String rcsid = "$Id: Finale.java,v 1.28 2012/09/24 17:16:23 velktron Exp $";
-
 	final DoomMain<T, ?> DOOM;
-
 	int finalestage;
-
 	int finalecount;
 
-	private static int TEXTSPEED = 3;
-	private static int TEXTWAIT = 250;
+	private static final int TEXTSPEED = 3;
+	private static final int TEXTWAIT = 250;
 
-	String[] doom_text = { E1TEXT, E2TEXT, E3TEXT, E4TEXT };
-
-	String[] doom2_text = { C1TEXT, C2TEXT, C3TEXT, C4TEXT, C5TEXT, C6TEXT };
-
-	String[] plut_text = { P1TEXT, P2TEXT, P3TEXT, P4TEXT, P5TEXT, P6TEXT };
-	String[] tnt_text = { T1TEXT, T2TEXT, T3TEXT, T4TEXT, T5TEXT, T6TEXT };
-
+	final static String[] doom_text = { E1TEXT, E2TEXT, E3TEXT, E4TEXT };
+	final static String[] doom2_text = { C1TEXT, C2TEXT, C3TEXT, C4TEXT, C5TEXT, C6TEXT };
+	final static String[] plut_text = { P1TEXT, P2TEXT, P3TEXT, P4TEXT, P5TEXT, P6TEXT };
+	final static String[] tnt_text = { T1TEXT, T2TEXT, T3TEXT, T4TEXT, T5TEXT, T6TEXT };
 	String finaletext;
 	String finaleflat;
 
@@ -213,20 +204,23 @@ public class Finale<T> {
 	 */
 
 	public void Ticker() {
-		int i;
 
 		// check for skipping
 		if ((DOOM.isCommercial()) && (finalecount > 50)) {
+    		int i;
 			// go on to the next level
-			for (i = 0; i < MAXPLAYERS; i++)
-				if (DOOM.players[i].cmd.buttons != 0)
+			for (i = 0; i < MAXPLAYERS; i++) {
+				if (DOOM.players[i].cmd.buttons != 0) {
 					break;
+                }
+            }
 
 			if (i < MAXPLAYERS) {
-				if (DOOM.gamemap == 30)
+				if (DOOM.gamemap == 30) {
 					StartCast();
-				else
+                } else {
 					DOOM.setGameAction(gameaction_t.ga_worlddone);
+                }
 			}
 		}
 
@@ -238,17 +232,19 @@ public class Finale<T> {
 			return;
 		}
 
-		if (DOOM.isCommercial())
+		if (DOOM.isCommercial()) {
 			return;
+        }
+        
 		// MAES: this is when we can transition to bunny.
-		if ((finalestage == 0)
-				&& finalecount > finaletext.length() * TEXTSPEED + TEXTWAIT) {
+		if ((finalestage == 0) && finalecount > finaletext.length() * TEXTSPEED + TEXTWAIT) {
 			finalecount = 0;
 			finalestage = 1;
 			DOOM.wipegamestate = gamestate_t.GS_MINUS_ONE; // force a wipe
-			if (DOOM.gameepisode == 3)
-
+            
+			if (DOOM.gameepisode == 3) {
 				DOOM.doomSound.StartMusic(musicenum_t.mus_bunny);
+            }
 		}
 	}
 
@@ -261,39 +257,38 @@ public class Finale<T> {
 
 	@SuppressWarnings("unchecked")
     public void TextWrite() {
-		//V dest;
-		int w;
-		int count;
-		char[] ch;
-		int c;
-		int cx;
-		int cy;
-
 		// erase the entire screen to a tiled background
 		byte[] src = DOOM.wadLoader.CacheLumpName(finaleflat, PU_CACHE, flat_t.class).data;
         if (Game.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
             final Object scaled = ((Blocks<Object, DoomScreen>) DOOM.graphicSystem)
-                .ScaleBlock(DOOM.graphicSystem.convertPalettedBlock(src), 64, 64, DOOM.graphicSystem.getScalingX(), DOOM.graphicSystem.getScalingY());
+                .ScaleBlock(DOOM.graphicSystem.convertPalettedBlock(src), 64, 64,
+                    DOOM.graphicSystem.getScalingX(), DOOM.graphicSystem.getScalingY()
+                );
             
-            ((Blocks<Object, DoomScreen>) DOOM.graphicSystem).TileScreen(FG, scaled, new Rectangle(0, 0, 64 * DOOM.graphicSystem.getScalingX(), 64 * DOOM.graphicSystem.getScalingY()));
-        } else
-            ((Blocks<Object, DoomScreen>) DOOM.graphicSystem).TileScreen(FG, DOOM.graphicSystem.convertPalettedBlock(src), new Rectangle(0, 0, 64, 64));
+            ((Blocks<Object, DoomScreen>) DOOM.graphicSystem)
+                .TileScreen(FG, scaled, new Rectangle(0, 0,
+                    64 * DOOM.graphicSystem.getScalingX(), 64 * DOOM.graphicSystem.getScalingY())
+                );
+        } else {
+            ((Blocks<Object, DoomScreen>) DOOM.graphicSystem)
+                .TileScreen(FG, DOOM.graphicSystem.convertPalettedBlock(src),
+                    new Rectangle(0, 0, 64, 64)
+                );
+        }
 
 		// draw some of the text onto the screen
-		cx = 10;
-		cy = 10;
-		ch = finaletext.toCharArray();
+		int cx = 10, cy = 10;
+		final char[] ch = finaletext.toCharArray();
 
-		count = (finalecount - 10) / TEXTSPEED;
-		if (count < 0)
+		int count = (finalecount - 10) / TEXTSPEED;
+		if (count < 0) {
 			count = 0;
+        }
 
 		// _D_: added min between count and ch.length, so that the text is not
 		// written all at once
-		for (int i = 0; i < Math.min(ch.length, count); i++)
-
-		{
-			c = ch[i];
+		for (int i = 0; i < Math.min(ch.length, count); i++) {
+			int c = ch[i];
 			if (c == 0)
 				break;
 			if (c == '\n') {
@@ -308,11 +303,11 @@ public class Finale<T> {
 				continue;
 			}
 
-			w = hu_font[c].width;
-			if (cx + w > DOOM.vs.getScreenWidth())
+			if (cx + hu_font[c].width > DOOM.vs.getScreenWidth()) {
 				break;
+            }
 			DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, cx, cy);
-			cx += w;
+			cx += hu_font[c].width;
 		}
 
 	}
@@ -335,9 +330,8 @@ public class Finale<T> {
 	public void StartCast() {
 		DOOM.wipegamestate = gamestate_t.GS_MINUS_ONE; // force a screen wipe
 		castnum = 0;
-		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate
-				.ordinal()];
-		casttics = (int) caststate.tics;
+		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()];
+		casttics = caststate.tics;
 		castdeath = false;
 		finalestage = 2;
 		castframes = 0;
@@ -350,27 +344,26 @@ public class Finale<T> {
 	// F_CastTicker
 	//
 	public void CastTicker() {
-		statenum_t st;
-		sfxenum_t sfx;
-
 		if (--casttics > 0)
 			return; // not time to change state yet
 
-		if (caststate.tics == -1 || caststate.nextstate == statenum_t.S_NULL
-				|| caststate.nextstate == null) {
+		if (caststate.tics == -1 || caststate.nextstate == statenum_t.S_NULL || caststate.nextstate == null) {
 			// switch from deathstate to next monster
 			castnum++;
 			castdeath = false;
-			if (castorder[castnum].name == null)
+			if (castorder[castnum].name == null) {
 				castnum = 0;
-			if (mobjinfo[castorder[castnum].type.ordinal()].seesound.ordinal() != 0)
-				;
-			DOOM.doomSound.StartSound(null,
-					mobjinfo[castorder[castnum].type.ordinal()].seesound);
-			caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate
-					.ordinal()];
+            }
+            
+			if (mobjinfo[castorder[castnum].type.ordinal()].seesound.ordinal() != 0) {
+    			DOOM.doomSound.StartSound(null, mobjinfo[castorder[castnum].type.ordinal()].seesound);
+            }
+            
+			caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()];
 			castframes = 0;
 		} else {
+    		final sfxenum_t sfx;
+
 			// just advance to next state in animation
 			if (caststate == states[statenum_t.S_PLAY_ATK1.ordinal()]) {
 				stopattack(); // Oh, gross hack!
@@ -378,7 +371,7 @@ public class Finale<T> {
 				return; // bye ...
 			}
 
-			st = caststate.nextstate;
+			final statenum_t st = caststate.nextstate;
 			caststate = states[st.ordinal()];
 			castframes++;
 
@@ -449,36 +442,33 @@ public class Finale<T> {
 				break;
 			}
 
-			if (sfx != null) // Fixed mute thanks to _D_ 8/6/2011
+			if (sfx != null) {// Fixed mute thanks to _D_ 8/6/2011
 				DOOM.doomSound.StartSound(null, sfx);
+            }
 		}
 
 		if (castframes == 12) {
 			// go into attack frame
 			castattacking = true;
-			if (castonmelee != 0)
-				caststate = states[mobjinfo[castorder[castnum].type.ordinal()].meleestate
-						.ordinal()];
-			else
-				caststate = states[mobjinfo[castorder[castnum].type.ordinal()].missilestate
-						.ordinal()];
+			if (castonmelee != 0) {
+				caststate = states[mobjinfo[castorder[castnum].type.ordinal()].meleestate.ordinal()];
+            } else {
+				caststate = states[mobjinfo[castorder[castnum].type.ordinal()].missilestate.ordinal()];
+            }
 			castonmelee ^= 1;
 			if (caststate == states[statenum_t.S_NULL.ordinal()]) {
-				if (castonmelee != 0)
-					caststate = states[mobjinfo[castorder[castnum].type
-							.ordinal()].meleestate.ordinal()];
-				else
-					caststate = states[mobjinfo[castorder[castnum].type
-							.ordinal()].missilestate.ordinal()];
+				if (castonmelee != 0) {
+					caststate = states[mobjinfo[castorder[castnum].type.ordinal()].meleestate.ordinal()];
+                } else {
+					caststate = states[mobjinfo[castorder[castnum].type .ordinal()].missilestate.ordinal()];
+                }
 			}
 		}
 
 		if (castattacking) {
-			if (castframes == 24
-					|| caststate == states[mobjinfo[castorder[castnum].type
-							.ordinal()].seestate.ordinal()])
-
+			if (castframes == 24 || caststate == states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()]) {
 				stopattack();
+            }
 		}
 
 		afterstopattack();
@@ -487,14 +477,15 @@ public class Finale<T> {
 	protected void stopattack() {
 		castattacking = false;
 		castframes = 0;
-		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate
-				.ordinal()];
+		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()];
 	}
 
 	protected void afterstopattack() {
-		casttics = (int) caststate.tics;
-		if (casttics == -1)
+		casttics = caststate.tics;
+        
+		if (casttics == -1) {
 			casttics = 15;
+        }
 	}
 
 	/**
@@ -502,36 +493,33 @@ public class Finale<T> {
 	 */
 
 	public boolean CastResponder(event_t ev) {
-		if (ev.isType(evtype_t.ev_keydown))
+		if (!ev.isType(evtype_t.ev_keydown)) {
 			return false;
+        }
 
-		if (castdeath)
+		if (castdeath) {
 			return true; // already in dying frames
+        }
 
 		// go into death frame
 		castdeath = true;
-		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].deathstate
-				.ordinal()];
-		casttics = (int) caststate.tics;
+		caststate = states[mobjinfo[castorder[castnum].type.ordinal()].deathstate.ordinal()];
+		casttics = caststate.tics;
 		castframes = 0;
 		castattacking = false;
-		if (mobjinfo[castorder[castnum].type.ordinal()].deathsound != null)
-			DOOM.doomSound.StartSound(null,
-					mobjinfo[castorder[castnum].type.ordinal()].deathsound);
+        
+		if (mobjinfo[castorder[castnum].type.ordinal()].deathsound != null) {
+			DOOM.doomSound.StartSound(null, mobjinfo[castorder[castnum].type.ordinal()].deathsound);
+        }
 
 		return true;
 	}
 
 	public void CastPrint(String text) {
-		char[] ch;
-		int c;
-		int cx;
-		int w;
-		int width;
+		int c, width = 0;
 
 		// find width
-		ch = text.toCharArray();
-		width = 0;
+		final char[] ch = text.toCharArray();
 
 		for (int i = 0; i < ch.length; i++) {
 			c = ch[i];
@@ -543,12 +531,11 @@ public class Finale<T> {
 				continue;
 			}
 
-			w = hu_font[c].width;
-			width += w;
+			width += hu_font[c].width;
 		}
 
 		// draw it
-		cx = 160 - width / 2;
+		int cx = 160 - width / 2;
 		// ch = text;
 		for (int i = 0; i < ch.length; i++) {
 			c = ch[i];
@@ -560,11 +547,9 @@ public class Finale<T> {
 				continue;
 			}
 
-			w = hu_font[c].width;
 			DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, cx, 180);
-			cx += w;
+			cx += hu_font[c].width;
 		}
-
 	}
 
 	/**
@@ -576,31 +561,25 @@ public class Finale<T> {
 	// public void V_DrawPatchFlipped (int x, int y, int scrn, patch_t patch);
 
 	public void CastDrawer() {
-		spritedef_t sprdef;
-		spriteframe_t sprframe;
-		int lump;
-		boolean flip;
-		patch_t patch = null;
-
 		// erase the entire screen to a background
 		DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("BOSSBACK", PU_CACHE), DOOM.vs, 0, 0);
-
 		this.CastPrint(castorder[castnum].name);
 
 		// draw the current frame in the middle of the screen
-		sprdef = DOOM.spriteManager.getSprite(caststate.sprite.ordinal());
-		sprframe = sprdef.spriteframes[caststate.frame & FF_FRAMEMASK];
-		lump = sprframe.lump[0];
-		flip = eval(sprframe.flip[0]);
+		final spritedef_t sprdef = DOOM.spriteManager.getSprite(caststate.sprite.ordinal());
+		final spriteframe_t sprframe = sprdef.spriteframes[caststate.frame & FF_FRAMEMASK];
+		final int lump = sprframe.lump[0];
+		final boolean flip = eval(sprframe.flip[0]);
 		// flip=false;
 		// lump=0;
 
-		patch = DOOM.wadLoader.CachePatchNum(lump + DOOM.spriteManager.getFirstSpriteLump());
+		final patch_t patch = DOOM.wadLoader.CachePatchNum(lump + DOOM.spriteManager.getFirstSpriteLump());
 
-		if (flip)
+		if (flip) {
 			DOOM.graphicSystem.DrawPatchScaled(FG, patch, DOOM.vs, 160, 170, V_FLIPPEDPATCH);
-		else
+        } else {
 			DOOM.graphicSystem.DrawPatchScaled(FG, patch, DOOM.vs, 160, 170);
+        }
 	}
 
 	protected int laststage;
@@ -609,25 +588,22 @@ public class Finale<T> {
 	 * F_BunnyScroll
 	 */
 	public void BunnyScroll() {
-		int scrolled;
-		int x;
-		patch_t p1;
-		patch_t p2;
-		String name;
-		int stage;
-
-		p1 = DOOM.wadLoader.CachePatchName("PFUB2", PU_LEVEL);
-		p2 = DOOM.wadLoader.CachePatchName("PFUB1", PU_LEVEL);
+		final patch_t p1 = DOOM.wadLoader.CachePatchName("PFUB2", PU_LEVEL);
+		final patch_t p2 = DOOM.wadLoader.CachePatchName("PFUB1", PU_LEVEL);
 
 		//V.MarkRect(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight());
 
-		scrolled = 320 - (finalecount - 230) / 2;
-		if (scrolled > 320)
+		int scrolled = 320 - (finalecount - 230) / 2;
+        
+		if (scrolled > 320) {
 			scrolled = 320;
-		if (scrolled < 0)
+        }
+		
+        if (scrolled < 0) {
 			scrolled = 0;
+        }
 
-		for (x = 0; x < 320; x++) {
+		for (int x = 0; x < 320; x++) {
 			if (x + scrolled < 320) {
                 DOOM.graphicSystem.DrawPatchColScaled(FG, p1, DOOM.vs, x, x + scrolled);
             } else {
@@ -643,15 +619,18 @@ public class Finale<T> {
 			return;
 		}
 
-		stage = (finalecount - 1180) / 5;
-		if (stage > 6)
+		int stage = (finalecount - 1180) / 5;
+        
+		if (stage > 6) {
 			stage = 6;
+        }
+        
 		if (stage > laststage) {
 			DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pistol);
 			laststage = stage;
 		}
 
-		name = ("END" + stage);
+		final String name = ("END" + stage);
 		DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(name, PU_CACHE), DOOM.vs, (320 - 13 * 8) / 2, ((200 - 8 * 8) / 2));
 	}
 
@@ -689,37 +668,31 @@ public class Finale<T> {
 
 	}
 
-	@SuppressWarnings("unchecked")
-	public Finale(DoomMain DOOM) {
+	public Finale(DoomMain<T, ?> DOOM) {
 		this.DOOM = DOOM;
 		hu_font = DOOM.handsUp.getHUFonts();
 
-		castinfo_t shit = new castinfo_t(CC_ZOMBIE, mobjtype_t.MT_POSSESSED);
-
-		ArrayList<castinfo_t> crap = new ArrayList<castinfo_t>();
-		crap.add(new castinfo_t(CC_ZOMBIE, mobjtype_t.MT_POSSESSED));
-		crap.add(new castinfo_t(CC_SHOTGUN, mobjtype_t.MT_SHOTGUY));
-		crap.add(new castinfo_t(CC_HEAVY, mobjtype_t.MT_CHAINGUY));
-		crap.add(new castinfo_t(CC_IMP, mobjtype_t.MT_TROOP));
-		crap.add(new castinfo_t(CC_DEMON, mobjtype_t.MT_SERGEANT));
-		crap.add(new castinfo_t(CC_LOST, mobjtype_t.MT_SKULL));
-		crap.add(new castinfo_t(CC_CACO, mobjtype_t.MT_HEAD));
-		crap.add(new castinfo_t(CC_HELL, mobjtype_t.MT_KNIGHT));
-		crap.add(new castinfo_t(CC_BARON, mobjtype_t.MT_BRUISER));
-		crap.add(new castinfo_t(CC_ARACH, mobjtype_t.MT_BABY));
-		crap.add(new castinfo_t(CC_PAIN, mobjtype_t.MT_PAIN));
-		crap.add(new castinfo_t(CC_REVEN, mobjtype_t.MT_UNDEAD));
-		crap.add(new castinfo_t(CC_MANCU, mobjtype_t.MT_FATSO));
-		crap.add(new castinfo_t(CC_ARCH, mobjtype_t.MT_VILE));
-		crap.add(new castinfo_t(CC_SPIDER, mobjtype_t.MT_SPIDER));
-		crap.add(new castinfo_t(CC_CYBER, mobjtype_t.MT_CYBORG));
-		crap.add(new castinfo_t(CC_HERO, mobjtype_t.MT_PLAYER));
-		crap.add(new castinfo_t(null, null));
-
-		castorder = C2JUtils
-				.createArrayOfObjects(castinfo_t.class, crap.size());
-		crap.toArray(castorder);
-
+		//castinfo_t shit = new castinfo_t(CC_ZOMBIE, mobjtype_t.MT_POSSESSED);
+		castorder = new castinfo_t[]{
+            new castinfo_t(CC_ZOMBIE, mobjtype_t.MT_POSSESSED),
+            new castinfo_t(CC_SHOTGUN, mobjtype_t.MT_SHOTGUY),
+            new castinfo_t(CC_HEAVY, mobjtype_t.MT_CHAINGUY),
+            new castinfo_t(CC_IMP, mobjtype_t.MT_TROOP),
+            new castinfo_t(CC_DEMON, mobjtype_t.MT_SERGEANT),
+            new castinfo_t(CC_LOST, mobjtype_t.MT_SKULL),
+            new castinfo_t(CC_CACO, mobjtype_t.MT_HEAD),
+            new castinfo_t(CC_HELL, mobjtype_t.MT_KNIGHT),
+            new castinfo_t(CC_BARON, mobjtype_t.MT_BRUISER),
+            new castinfo_t(CC_ARACH, mobjtype_t.MT_BABY),
+            new castinfo_t(CC_PAIN, mobjtype_t.MT_PAIN),
+            new castinfo_t(CC_REVEN, mobjtype_t.MT_UNDEAD),
+            new castinfo_t(CC_MANCU, mobjtype_t.MT_FATSO),
+            new castinfo_t(CC_ARCH, mobjtype_t.MT_VILE),
+            new castinfo_t(CC_SPIDER, mobjtype_t.MT_SPIDER),
+            new castinfo_t(CC_CYBER, mobjtype_t.MT_CYBORG),
+            new castinfo_t(CC_HERO, mobjtype_t.MT_PLAYER),
+            new castinfo_t(null, null)
+        };
 	}
 }
 

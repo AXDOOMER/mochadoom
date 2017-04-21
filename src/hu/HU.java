@@ -425,7 +425,7 @@ public class HU implements IHeadsUp{
         // (typically once per level). They need to be aware of game progress,
         // and episode numbers <1 will cause it to bomb.
         // MAES: hack to handle Betray in XBLA 31/5/2011
-        if ((DOOM.gamemap>32) && (DOOM.getGameMode()==GameMode_t.pack_xbla)){
+        if ((DOOM.gamemap>32) && (DOOM.getGameMode()==GameMode.pack_xbla)){
         this.HU_TITLE = mapnames[(DOOM.gameepisode - 1) * 9 + DOOM.gamemap - 2];
 
 

@@ -921,7 +921,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
                     DOOM.videoInterface.switchFullscreen();
                     switchfullscreen_enter = switchfullscreen_alt = false;
                 });
-        }
+        } else switchfullscreen_enter = switchfullscreen_alt = false;
         
         if (ev.isType(evtype_t.ev_joystick) && joywait < DOOM.ticker.GetTime()) {
             // Joystick input

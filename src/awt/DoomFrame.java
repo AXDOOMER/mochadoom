@@ -13,8 +13,6 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.Image;
 import java.awt.Point;
-import java.awt.Robot;
-import java.awt.event.InputEvent;
 import javax.swing.JFrame;
 import m.Settings;
 
@@ -22,28 +20,10 @@ import m.Settings;
  * Common code for Doom's video frames
  */
 public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
-
-    protected static final boolean D = false;
-    // This stuff should NOT get through in keyboard events.
-    protected static final int UNACCEPTABLE_MODIFIERS =
-        (int) (
-              InputEvent.ALT_GRAPH_DOWN_MASK
-            + InputEvent.META_DOWN_MASK
-            + InputEvent.META_MASK
-            + InputEvent.WINDOW_EVENT_MASK
-            + InputEvent.WINDOW_FOCUS_EVENT_MASK
-        );
-    
     private static final long serialVersionUID = -4130528877723831825L;
 
     // Must be aware of "Doom" so we can pass it event messages inside a crude queue.
     public final DoomMain<?, V> DOOM;
-    
-    /**
-     * Dimensions of the screen buffers. The display however, might differ due to e.g. letterboxing
-     */
-    protected int multiply = 1;
-
     protected volatile Graphics2D g2d;
 
     /**
@@ -51,16 +31,17 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * This might differ from the raster's width & height attribute for number of reasons
      */
     protected Dimension size;
+    
     /**
      * Separate event handler a la _D_.
      * However I won't make it fully "eternity like" yet
      * also because it works quite flakey on Linux.
      */
     protected final ConcurrentEvents events;
+    protected final DisplayModePicker dmp;
+    protected final GraphicsDevice device;
     protected DisplayMode oldDisplayMode;
-    protected DisplayMode currentDisplayMode;
-    protected GraphicsDevice device;
-    protected Robot robby;
+    protected DisplayMode displayMode;
     protected Component content;
     protected Point center;
     protected int X_OFF;
@@ -81,6 +62,7 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         this.DOOM = DOOM;
         this.content = content;
         this.events = events;
+        this.dmp = new DisplayModePicker(device);
 
         // Set those here. If fullscreen isn't used, then they won't change.
         // They are necessary for normal initialization, though.
@@ -102,9 +84,6 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     @Override
     public void SetGamma(int level) {
-        if (D) {
-            System.err.println("Setting gamma " + level);
-        }
         DOOM.graphicSystem.setUsegamma(level);
     }
 
@@ -119,7 +98,7 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * (typically, larger).
      */
     private void setDefaultDimension(int width, int height) {
-        this.size = new Dimension(width * multiply, height * multiply);
+        this.size = new Dimension(width, height);
         this.center = new Point(X_OFF + size.width / 2, Y_OFF + size.height / 2);
     }
 
@@ -144,10 +123,14 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     @Override
     public void switchFullscreen() {
+        // remove the frame from view
+        g2d.dispose();
         dispose();
+        // uninitialize graphics, so it can be reset on the next repaint
         g2d = null;
+        // change all the properties
         switchToFullScreen(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
-        //turnOnFrame(this, content);
+        // now show back the frame
         showFrame(this);
     }
 
@@ -159,34 +142,31 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * Therefore, a "best fit" strategy with centering is used.
      */
     private void switchToFullScreen(final int width, final int height) {
+        // In case we need to revert.
+        oldDisplayMode = device.getDisplayMode();
+        
+
+        // TODO: what if bit depths are too small?
+        displayMode = dmp.pickClosest(width, height);
+        setModeOffset(dmp, width, height);
+        switchToMode();
+    }
+
+    private void switchToMode() {
         boolean isFullScreen = device.isFullScreenSupported();
         setUndecorated(isFullScreen);
         setResizable(!isFullScreen);
 
-        // In case we need to revert.
-        oldDisplayMode = device.getDisplayMode();
-
-        DisplayModePicker dmp = new DisplayModePicker(device);
-
-        // TODO: what if bit depths are too small?
-        DisplayMode dm = dmp.pickClosest(width, height);
-
-        int[] xy = dmp.getCentering(width, height, dm);
-        this.X_OFF = xy[0];
-        this.Y_OFF = xy[1];
-
         device.getDisplayModes();
-
         if (isFullScreen) {
             // Full-screen mode
             device.setFullScreenWindow(this);
             if (device.isDisplayChangeSupported()) {
-                device.setDisplayMode(dm);
+                device.setDisplayMode(displayMode);
             }
             validate();
-
-            Dimension newsize = new Dimension(dm.getWidth(), dm.getHeight());
-            this.setDefaultDimension(dm.getWidth(), dm.getHeight());
+            final Dimension newsize = new Dimension(displayMode.getWidth(), displayMode.getHeight());
+            this.setDefaultDimension(displayMode.getWidth(), displayMode.getHeight());
             setCanvasSize(newsize);
 
         } else {
@@ -194,7 +174,12 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
             pack();
             setVisible(true);
         }
+    }
 
+    private void setModeOffset(DisplayModePicker dmp, final int width, final int height) {
+        int[] xy = dmp.getCentering(width, height, displayMode);
+        this.X_OFF = xy[0];
+        this.Y_OFF = xy[1];
     }
 
     @Override
