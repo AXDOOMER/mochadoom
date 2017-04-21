@@ -2,27 +2,13 @@ package awt;
 
 import doom.CommandVariable;
 import doom.DoomMain;
-import doom.event_t;
 import i.Game;
-import i.InputListener;
-import i.Strings;
 import java.awt.Canvas;
 import java.awt.Component;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.KeyEventDispatcher;
-import java.awt.KeyboardFocusManager;
-import java.awt.event.ComponentListener;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
-import java.awt.event.WindowFocusListener;
-import java.awt.event.WindowListener;
 import java.awt.im.InputContext;
-import java.awt.image.VolatileImage;
-import java.util.Spliterator;
 import java.util.StringTokenizer;
-import java.util.function.Consumer;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -45,16 +31,9 @@ public interface DoomVideoInterface<V> {
 	void SetPalette(int palette);
 	void FinishUpdate();
 	void SetGamma(int gammalevel);
+    void setTitle();
+    void switchFullscreen();
     InputContext getInputContext();
-    VolatileImage obtainVolatileImage(int width, int height);
-    
-    interface DoomListener extends WindowListener, ComponentListener, KeyEventDispatcher,
-            KeyListener, MouseListener, MouseMotionListener, WindowFocusListener, Spliterator<MochaDoomInputEvent>
-    {
-        void processAllPending(Consumer<? super MochaDoomInputEvent> action);
-        void setMouseIsMoving(boolean set);
-        boolean getMouseWasMoving();
-    }
     
     /**
      * Get an instance of JFrame to draw anything. This will try to create compatible Canvas and
@@ -63,29 +42,9 @@ public interface DoomVideoInterface<V> {
     static <V> DoomVideoInterface<V> createAWTInterface(final DoomMain<?, V> DOOM) {
         final GraphicsDevice device = getDevice();
         final Component content = new Canvas(device.getDefaultConfiguration());
-        final DoomListener listener = new MochaEvents();
+        final MochaEvents listener = new MochaEvents(new DoomEventPoster(DOOM, content));
         final DoomFrame<V> frame = new DoomFrame<>(DOOM, content, device, listener);
-        
-        /**
-         * Add eventHandler listeners to JFrame and its Canvas elememt
-         */
-        content.addKeyListener(listener);
-        content.addMouseListener(listener);
-        content.addMouseMotionListener(listener);
-        frame.addComponentListener(listener);
-        frame.addWindowFocusListener(listener);
-        frame.addWindowListener(listener);
-        
-        /**
-         * AWT: tab is a special case :-/
-         * We need to "peg" it to the JFrame, rather than the canvas,
-         * and the handler itself cannot auto-assign it.
-         */
-        final KeyEventDispatcher dispatcher = new DoomKeyDispatcher(listener, content);
-        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(dispatcher);
-
-        frame.turnOnFrame(frame, frame.content);
-        frame.setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
+        init(frame, content, listener);
         return frame;
     }
     
@@ -96,20 +55,33 @@ public interface DoomVideoInterface<V> {
     static <V> DoomVideoInterface<V> createSwingInterface(final DoomMain<?, V> DOOM) {
         final GraphicsDevice device = getDevice();
         final JComponent content = new JPanel(true);
-        final DoomListener listener = new MochaEvents();
+        final DoomEventPoster poster = new DoomEventPoster(DOOM, content);
+        final MochaEvents listener = new MochaEvents(poster);
         final DoomFrame<V> frame = new DoomFrame<>(DOOM, content, device, listener);
-        
-        content.addKeyListener(listener);
-        //Keys.attachToComponent(content, listener);
+        init(frame, content, listener);
+        return frame;
+    }
+
+    static <V> void init(final DoomFrame<V> frame, final Component content, final DoomListener listener) {
+        /**
+         * This should fix Tab key
+         *  - Good Sign 2017/04/21
+         */
+        frame.setFocusTraversalKeysEnabled(false);
+        content.setFocusTraversalKeysEnabled(false);
+
+        /**
+         * Add eventHandler listeners to JFrame and its Canvas elememt
+         */
+        content.addKeyListener(listener);        
         content.addMouseListener(listener);
         content.addMouseMotionListener(listener);
         frame.addComponentListener(listener);
         frame.addWindowFocusListener(listener);
         frame.addWindowListener(listener);
-
         frame.turnOnFrame(frame, frame.content);
-        frame.setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
-        return frame;
+        frame.showFrame(frame);
+        frame.SetGamma(0);
     }
     
     /**
@@ -122,12 +94,14 @@ public interface DoomVideoInterface<V> {
     
     default void turnOnFrame(final JFrame frame, final Component content) {
         frame.add(content);
-        // this.add(gelatine);
         frame.getContentPane().setPreferredSize(content.getPreferredSize());
 
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
+        setTitle();
+    }
+
+    default void showFrame(final JFrame frame) {
         /**
          * Set it to be later then setResizable to avoid extra space on right and bottom
          *  - Good Sign 2017/04/09
@@ -135,11 +109,9 @@ public interface DoomVideoInterface<V> {
          * JFrame's size is auto-set here.
          */
         frame.pack();
-        
         frame.setVisible(true);
         // Gently tell the eventhandler to wake up and set itself.	  
         frame.requestFocus();
-        SetGamma(0);
     }
     
     /**
@@ -207,14 +179,5 @@ public interface DoomVideoInterface<V> {
         }
         
         return true;
-    }
-    
-    default String processEvents() {
-        final StringBuilder tmp = new StringBuilder();
-        event_t event;
-        while ((event = InputListener.nextEvent()) != null) {
-            tmp.append(event.type.ordinal()).append("\n");
-        }
-        return tmp.toString();
     }
 }

@@ -6,11 +6,11 @@ import data.mapthing_t;
 import defines.*;
 import demo.IDoomDemo;
 import f.Finale;
-import g.Keys;
-import static g.Keys.*;
+import static g.Signals.ScanCode.*;
 import i.Game;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
+import java.util.stream.Stream;
 import m.Settings;
 import p.mobj_t;
 
@@ -388,37 +388,29 @@ public abstract class DoomStatus<T,V> {
     protected byte[] savebuffer;
 
     /* TODO Proper reconfigurable controls. Defaults hardcoded for now. T3h h4x, d00d. */
+    public int key_right = SC_NUMKEY6.ordinal();
+    public int key_left = SC_NUMKEY4.ordinal();
+    public int key_up = SC_W.ordinal();
+    public int key_down = SC_S.ordinal();
+    public int key_strafeleft = SC_A.ordinal();
+    public int key_straferight = SC_D.ordinal();
+    public int key_fire = SC_LCTRL.ordinal();
+    public int key_use = SC_SPACE.ordinal();
+    public int key_strafe = SC_LALT.ordinal();
+    public int key_speed = SC_RSHIFT.ordinal();
 
-    public int key_right=KEY_RIGHTARROW;
-
-    public int key_left=KEY_LEFTARROW;
-
-    public int key_up='w';
-
-    public int key_down='a';
-
-    public int key_strafeleft='s';
-
-    public int key_straferight='d';
-
-    public int key_fire=KEY_CTRL;
-
-    public int key_use=' ';
-    
-    public int key_strafe=KEY_ALT;
-
-    public int key_speed=KEY_SHIFT;
+    public int key_recordstop = SC_Q.ordinal();
+    public int[] key_numbers = Stream.of(SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7, SC_8, SC_9, SC_0)
+        .mapToInt(Enum::ordinal).toArray();
     
     // Heretic stuff
-    public int		key_lookup=KEY_PGUP;
-    public int		key_lookdown=KEY_PGDN;
-    public int      key_lookcenter=KEY_END;
-
-    public int mousebfire=0;
-
-    public int mousebstrafe=2;	// AX: Fixed - Now we use the right mouse buttons
-
-    public int mousebforward=1;	// AX: Fixed - Now we use the right mouse buttons
+    public int key_lookup = SC_PGUP.ordinal();
+    public int key_lookdown = SC_PGDOWN.ordinal();
+    public int key_lookcenter = SC_END.ordinal();
+    
+    public int mousebfire = 0;
+    public int mousebstrafe = 2;	// AX: Fixed - Now we use the right mouse buttons
+    public int mousebforward = 1;	// AX: Fixed - Now we use the right mouse buttons
 
     public int joybfire;
 
@@ -540,16 +532,16 @@ public abstract class DoomStatus<T,V> {
         this.alwaysrun = CM.equals(Settings.alwaysrun, Boolean.TRUE);
 
         // Keys...
-        this.key_right = Keys.getFromDosKey(CM.getValue(Settings.key_right, Integer.class));
-        this.key_left = Keys.getFromDosKey(CM.getValue(Settings.key_left, Integer.class));
-        this.key_up = Keys.getFromDosKey(CM.getValue(Settings.key_up, Integer.class));
-        this.key_down = Keys.getFromDosKey(CM.getValue(Settings.key_down, Integer.class));
-        this.key_strafeleft = Keys.getFromDosKey(CM.getValue(Settings.key_strafeleft, Integer.class));
-        this.key_straferight = Keys.getFromDosKey(CM.getValue(Settings.key_straferight, Integer.class));
-        this.key_fire = Keys.getFromDosKey(CM.getValue(Settings.key_fire, Integer.class));
-        this.key_use = Keys.getFromDosKey(CM.getValue(Settings.key_use, Integer.class));
-        this.key_strafe = Keys.getFromDosKey(CM.getValue(Settings.key_strafe, Integer.class));
-        this.key_speed = Keys.getFromDosKey(CM.getValue(Settings.key_speed, Integer.class));
+        this.key_right = CM.getValue(Settings.key_right, Integer.class);
+        this.key_left = CM.getValue(Settings.key_left, Integer.class);
+        this.key_up = CM.getValue(Settings.key_up, Integer.class);
+        this.key_down = CM.getValue(Settings.key_down, Integer.class);
+        this.key_strafeleft = CM.getValue(Settings.key_strafeleft, Integer.class);
+        this.key_straferight = CM.getValue(Settings.key_straferight, Integer.class);
+        this.key_fire = CM.getValue(Settings.key_fire, Integer.class);
+        this.key_use = CM.getValue(Settings.key_use, Integer.class);
+        this.key_strafe = CM.getValue(Settings.key_strafe, Integer.class);
+        this.key_speed = CM.getValue(Settings.key_speed, Integer.class);
 
         // Mouse buttons
         this.use_mouse = CM.equals(Settings.use_mouse, 1);
@@ -577,16 +569,16 @@ public abstract class DoomStatus<T,V> {
         CM.update(Settings.alwaysrun, this.alwaysrun);
 
         // Keys...
-        CM.update(Settings.key_right, Keys.toDosKey(this.key_right));
-        CM.update(Settings.key_left, Keys.toDosKey(this.key_left));
-        CM.update(Settings.key_up, Keys.toDosKey(this.key_up));
-        CM.update(Settings.key_down, Keys.toDosKey(this.key_down));
-        CM.update(Settings.key_strafeleft, Keys.toDosKey(this.key_strafeleft));
-        CM.update(Settings.key_straferight, Keys.toDosKey(this.key_straferight));
-        CM.update(Settings.key_fire, Keys.toDosKey(this.key_fire));
-        CM.update(Settings.key_use, Keys.toDosKey(this.key_use));
-        CM.update(Settings.key_strafe, Keys.toDosKey(this.key_strafe));
-        CM.update(Settings.key_speed, Keys.toDosKey(this.key_speed));
+        CM.update(Settings.key_right, this.key_right);
+        CM.update(Settings.key_left, this.key_left);
+        CM.update(Settings.key_up, this.key_up);
+        CM.update(Settings.key_down, this.key_down);
+        CM.update(Settings.key_strafeleft, this.key_strafeleft);
+        CM.update(Settings.key_straferight, this.key_straferight);
+        CM.update(Settings.key_fire, this.key_fire);
+        CM.update(Settings.key_use, this.key_use);
+        CM.update(Settings.key_strafe, this.key_strafe);
+        CM.update(Settings.key_speed, this.key_speed);
 
         // Mouse buttons
         CM.update(Settings.use_mouse, this.use_mouse ? 1 : 0);

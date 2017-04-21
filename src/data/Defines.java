@@ -6,7 +6,7 @@ import static data.Limits.MININT;
 import defines.ammotype_t;
 import defines.card_t;
 import doom.weapontype_t;
-import g.Keys;
+import g.Signals;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.MAPFRACUNIT;
@@ -193,7 +193,7 @@ public static final int PU_CACHE     =   101;
 // From hu_lib.h:
 
 //font stuff
-static public final char HU_CHARERASE  =  Keys.KEY_BACKSPACE;
+static public final Signals.ScanCode HU_CHARERASE  =  Signals.ScanCode.SC_BACKSPACE;
 
 public static final int HU_MAXLINES  =   4;
 public static final int HU_MAXLINELENGTH  =  80;
@@ -211,7 +211,7 @@ public static final int HU_FONTSIZE = (HU_FONTEND - HU_FONTSTART + 1);
 
 static public final char HU_BROADCAST   = 5;
 
-static public final char HU_MSGREFRESH =  Keys.KEY_ENTER;
+static public final Signals.ScanCode HU_MSGREFRESH = Signals.ScanCode.SC_ENTER;
 static public final char HU_MSGX     =0;
 static public final char HU_MSGY     =0;
 static public final char HU_MSGWIDTH =64;  // in characters

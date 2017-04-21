@@ -23,7 +23,7 @@ import static doom.ConfigBase.FILE_MOCHADOOM;
 import doom.ConfigBase.Files;
 import doom.ConfigManager;
 import static doom.englsh.*;
-import static g.Keys.DosKeys.*;
+import static g.Signals.ScanCode.*;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -58,9 +58,9 @@ public enum Settings {
     key_down(FILE_DOOM, SC_S.ordinal()),
     key_strafeleft(FILE_DOOM, SC_A.ordinal()),
     key_straferight(FILE_DOOM, SC_D.ordinal()),
-    key_fire(FILE_DOOM, SC_CONTROL.ordinal()),
+    key_fire(FILE_DOOM, SC_LCTRL.ordinal()),
     key_use(FILE_DOOM, SC_SPACE.ordinal()),
-    key_strafe(FILE_DOOM, SC_ALT.ordinal()),
+    key_strafe(FILE_DOOM, SC_LALT.ordinal()),
     key_speed(FILE_DOOM, SC_RSHIFT.ordinal()),
     use_mouse(FILE_DOOM, 1),
     mouseb_fire(FILE_DOOM, 0),

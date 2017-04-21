@@ -37,7 +37,7 @@ import static doom.items.*;
 import doom.player_t;
 import static doom.player_t.*;
 import doom.weapontype_t;
-import static g.Keys.*;
+import g.Signals;
 import java.awt.Rectangle;
 import m.Settings;
 import m.cheatseq_t;
@@ -77,7 +77,7 @@ public class StatusBar extends AbstractStatusBar {
     private static int ST_FACEPROBABILITY = 96;
 
     // For Responder
-    private static int ST_TOGGLECHAT = KEY_ENTER;
+    private static int ST_TOGGLECHAT = Signals.ScanCode.SC_ENTER.c;
 
     // Location of status bar
     private int ST_X = 0;
@@ -743,13 +743,13 @@ public class StatusBar extends AbstractStatusBar {
 
     public boolean Responder(event_t ev) {
         int i;
-        if (ev.type == evtype_t.ev_keydown) {
+        if (ev.isType(evtype_t.ev_keydown)) {
             if (!DOOM.netgame) {
                 // b. - enabled for more debug fun.
                 // if (gameskill != sk_nightmare) {
 
                 // 'dqd' cheat for toggleable god mode
-                if (cheat_god.CheckCheat((char) ev.data1)) {
+                if (ev.ifKeyAsciiChar(cheat_god::CheckCheat)) {
                     plyr.cheats ^= CF_GODMODE;
                     if ((plyr.cheats & CF_GODMODE) != 0) {
                         if (plyr.mo != null)
@@ -761,7 +761,7 @@ public class StatusBar extends AbstractStatusBar {
                         plyr.message = STSTR_DQDOFF;
                 }
                 // 'fa' cheat for killer fucking arsenal
-                else if (cheat_ammonokey.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_ammonokey::CheckCheat)) {
                     plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
@@ -774,7 +774,7 @@ public class StatusBar extends AbstractStatusBar {
                     plyr.message = STSTR_FAADDED;
                 }
                 // 'kfa' cheat for key full ammo
-                else if (cheat_ammo.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_ammo::CheckCheat)) {
                     plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
@@ -790,7 +790,7 @@ public class StatusBar extends AbstractStatusBar {
                     plyr.message = STSTR_KFAADDED;
                 }
                 // 'mus' cheat for changing music
-                else if (cheat_mus.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_mus::CheckCheat)) {
 
                     char[] buf = new char[3];
                     int musnum;
@@ -820,8 +820,7 @@ public class StatusBar extends AbstractStatusBar {
                 }
                 // Simplified, accepting both "noclip" and "idspispopd".
                 // no clipping mode cheat
-                else if (cheat_noclip.CheckCheat((char) ev.data1)
-                        || cheat_commercial_noclip.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_noclip::CheckCheat) || ev.ifKeyAsciiChar(cheat_commercial_noclip::CheckCheat)) {
                     plyr.cheats ^= CF_NOCLIP;
 
                     if ((plyr.cheats & CF_NOCLIP) != 0)
@@ -831,7 +830,7 @@ public class StatusBar extends AbstractStatusBar {
                 }
                 // 'behold?' power-up cheats
                 for (i = 0; i < 6; i++) {
-                    if (cheat_powerup[i].CheckCheat((char) ev.data1)) {
+                    if (ev.ifKeyAsciiChar(cheat_powerup[i]::CheckCheat)) {
                         if (plyr.powers[i] == 0)
                            plyr.GivePower(i);
                         else if (i != pw_strength)
@@ -844,21 +843,21 @@ public class StatusBar extends AbstractStatusBar {
                 }
 
                 // 'behold' power-up menu
-                if (cheat_powerup[6].CheckCheat((char) ev.data1)) {
+                if (ev.ifKeyAsciiChar(cheat_powerup[6]::CheckCheat)) {
                     plyr.message = STSTR_BEHOLD;
                 }
                 // 'choppers' invulnerability & chainsaw
-                else if (cheat_choppers.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_choppers::CheckCheat)) {
                     plyr.weaponowned[weapontype_t.wp_chainsaw.ordinal()] = true;
                     plyr.powers[pw_invulnerability] = 1; // true
                     plyr.message = STSTR_CHOPPERS;
                 }
                 // 'mypos' for player position
-                else if (cheat_mypos.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_mypos::CheckCheat)) {
                     // MAES: made into a toggleable cheat.
                    this.st_idmypos=!st_idmypos;
                 }
-                else if (cheat_tnthom.CheckCheat((char) ev.data1)) {
+                else if (ev.ifKeyAsciiChar(cheat_tnthom::CheckCheat)) {
                     // MAES: made into a toggleable cheat.
                 	plyr.message = (DOOM.flashing_hom = !DOOM.flashing_hom) ? "HOM Detection On" :
                 	    "HOM Detection Off";
@@ -866,7 +865,7 @@ public class StatusBar extends AbstractStatusBar {
             }
 
             // 'clev' change-level cheat
-            if (cheat_clev.CheckCheat((char) ev.data1)) {
+            if (ev.ifKeyAsciiChar(cheat_clev::CheckCheat)) {
                 char[] buf = new char[3];
                 int epsd;
                 int map;
@@ -874,8 +873,7 @@ public class StatusBar extends AbstractStatusBar {
                 cheat_clev.GetParam(buf);
 
                 // This applies to Doom II, Plutonia and TNT.
-                if (DOOM.isCommercial())
-                		{
+                if (DOOM.isCommercial()) {
                     epsd = 0;
                     map = (buf[0] - '0') * 10 + buf[1] - '0';
                 } else {

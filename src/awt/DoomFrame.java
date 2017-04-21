@@ -15,14 +15,13 @@ import java.awt.Image;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.event.InputEvent;
-import java.awt.image.VolatileImage;
 import javax.swing.JFrame;
 import m.Settings;
 
 /**
  * Common code for Doom's video frames
  */
-class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
+public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     protected static final boolean D = false;
     // This stuff should NOT get through in keyboard events.
@@ -57,7 +56,7 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * However I won't make it fully "eternity like" yet
      * also because it works quite flakey on Linux.
      */
-    protected final DoomEventPoster eventposter;
+    protected final ConcurrentEvents events;
     protected DisplayMode oldDisplayMode;
     protected DisplayMode currentDisplayMode;
     protected GraphicsDevice device;
@@ -73,7 +72,7 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * @param content - a pane or canvas
      * @param device - graphics device
      */
-    protected DoomFrame(DoomMain<?, V> DOOM, Component content, GraphicsDevice device, DoomListener eventhandler) {
+    protected DoomFrame(DoomMain<?, V> DOOM, Component content, GraphicsDevice device, ConcurrentEvents events) {
         if (!handleGeom()) {
             DOOM.doomSystem.Error("bad -geom parameter");
         }
@@ -81,11 +80,11 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         this.device = device;
         this.DOOM = DOOM;
         this.content = content;
+        this.events = events;
 
         // Set those here. If fullscreen isn't used, then they won't change.
         // They are necessary for normal initialization, though.
         setDefaultDimension(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
-        this.eventposter = new DoomEventPoster(DOOM, content, eventhandler);
 
         /**
          * AWT: create the canvas.
@@ -143,6 +142,15 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         content.setBackground(Color.black);
     }
 
+    @Override
+    public void switchFullscreen() {
+        dispose();
+        g2d = null;
+        switchToFullScreen(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
+        //turnOnFrame(this, content);
+        showFrame(this);
+    }
+
     /**
      * FULLSCREEN SWITCH CODE TODO: it's not enough to do this without also switching the screen's resolution.
      * Unfortunately, Java only has a handful of options which depend on the OS, driver, display, JVM etc. and it's not
@@ -196,13 +204,13 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         }
 
         //  System.out.println("Getting events...");
-        eventposter.ProcessEvents();
+        events.processAllPending();
         //eventhandler.grabMouse();
     }
     
     @Override
-    public VolatileImage obtainVolatileImage(int width, int height) {
-        return device.getDefaultConfiguration().createCompatibleVolatileImage(width, height);
+    public void setTitle() {
+        setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
     }
     
     private final boolean showFPS = Game.getCVM().bool(CommandVariable.SHOWFPS);
@@ -211,7 +219,7 @@ class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     /**
      * Modified update method: no context needs to passed.
-     * Will render only internal screens. Common between AWT and Swing
+     * Will render only internal screens. Common between AWT and Swing  
      */
     @Override
     public void paint(Graphics g) {

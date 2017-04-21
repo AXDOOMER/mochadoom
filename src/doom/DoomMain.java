@@ -23,7 +23,7 @@ import static doom.englsh.*;
 import f.EndLevel;
 import f.Finale;
 import f.Wiper;
-import static g.Keys.*;
+import static g.Signals.ScanCode.*;
 import hu.HU;
 import i.DiskDrawer;
 import i.DoomSystem;
@@ -134,15 +134,11 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
      * D_PostEvent
      * Called by the I/O functions when input is detected
      */
-
-    public void PostEvent (event_t ev)
-    {
-        // TODO create a pool of reusable messages?
-        // NEVERMIND we can use the original system.
-        events[eventhead].setFrom(ev);
-        eventhead = (++eventhead)&(MAXEVENTS-1);
+    public void PostEvent (event_t ev) {
+        //ev.withKey(evtype_t.ev_keydown, e -> System.out.println(e));
+        events[eventhead] = ev;
+        eventhead = (++eventhead) & (MAXEVENTS - 1);
     }
-
 
     /**
      * D_ProcessEvents
@@ -974,110 +970,103 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
      * gamekeydown etc. arrays by the Responder method.
      * So look there for any fuckups in constructing them.
      * 
-     */ 
-
+     */
+    
     private void BuildTiccmd (ticcmd_t cmd) 
     { 
-        int     i; 
+        int i;
         boolean strafe;
-        boolean bstrafe; 
-        int     speed, tspeed,lspeed; 
-        int     forward;
-        int     side;
+        boolean bstrafe;
+        int speed, tspeed, lspeed;
+        int forward;
+        int side;
         int look;
 
         //base = I_BaseTiccmd ();     // empty, or external driver
         // memcpy (cmd,base,sizeof(*cmd));
         base.copyTo(cmd);
 
-        cmd.consistancy =  consistancy[consoleplayer][maketic%BACKUPTICS]; 
-
-        strafe = gamekeydown[key_strafe] || mousebuttons(mousebstrafe) 
-        || joybuttons(joybstrafe); 
-        speed = ((gamekeydown[key_speed]^alwaysrun) || joybuttons(joybspeed))?1:0;
-
-        forward = side = look= 0;
+        cmd.consistancy = consistancy[consoleplayer][maketic % BACKUPTICS];
         
+        strafe = gamekeydown[key_strafe] || mousebuttons(mousebstrafe) || joybuttons(joybstrafe);
+        speed = ((gamekeydown[key_speed] ^ alwaysrun) || joybuttons(joybspeed)) ? 1 : 0;
+
+        forward = side = look = 0;
+
         // use two stage accelerative turning
         // on the keyboard and joystick
-        if (joyxmove < 0 || joyxmove > 0 ||
-        	gamekeydown[key_right] || gamekeydown[key_left]) 
+        if (joyxmove < 0 || joyxmove > 0 || gamekeydown[key_right] || gamekeydown[key_left]) {
             turnheld += ticdup; 
-        else 
+        } else {
             turnheld = 0; 
+        }
 
-        if (turnheld < SLOWTURNTICS) 
-            tspeed = 2;             // slow turn 
-        else 
-            tspeed = speed;
+        tspeed = turnheld < SLOWTURNTICS ? 2 /* slowturn */ : speed;
 
-        if(gamekeydown[key_lookdown] || gamekeydown[key_lookup])
-    	{
-    		lookheld += ticdup;
-    	}
-    	else
-    	{
-    		lookheld = 0;
-    	}
-    	if(lookheld < SLOWTURNTICS)
-    	{
-    		lspeed = 1;
-    	}
-    	else
-    	{
-    		lspeed = 2;
-    	}
+        if (gamekeydown[key_lookdown] || gamekeydown[key_lookup]) {
+            lookheld += ticdup;
+        } else {
+            lookheld = 0;
+        }
+        
+        lspeed = lookheld < SLOWTURNTICS ? 1 : 2;
         
         // let movement keys cancel each other out
-        if (strafe) 
-        { 
-            if (gamekeydown[key_right]) 
-            {
+        if (strafe) { 
+            if (gamekeydown[key_right]) {
                 // fprintf(stderr, "strafe right\n");
                 side += sidemove[speed]; 
             }
-            if (gamekeydown[key_left]) 
-            {
+            
+            if (gamekeydown[key_left]) {
                 //  fprintf(stderr, "strafe left\n");
                 side -= sidemove[speed]; 
             }
-            if (joyxmove > 0) 
+            
+            if (joyxmove > 0) {
                 side += sidemove[speed]; 
-            if (joyxmove < 0) 
-                side -= sidemove[speed]; 
-
-        } 
-        else 
-        { 
-            if (gamekeydown[key_right]) 
+            } else if (joyxmove < 0) {
+                side -= sidemove[speed];
+            }
+        } else { 
+            if (gamekeydown[key_right]) {
                 cmd.angleturn -= angleturn[tspeed]; 
-            if (gamekeydown[key_left]) 
+            }
+            
+            if (gamekeydown[key_left]) {
                 cmd.angleturn += angleturn[tspeed]; 
-            if (joyxmove > 0) 
+            }
+            
+            if (joyxmove > 0) {
                 cmd.angleturn -= angleturn[tspeed]; 
-            if (joyxmove < 0) 
-                cmd.angleturn += angleturn[tspeed]; 
+            } else if (joyxmove < 0) {
+                cmd.angleturn += angleturn[tspeed];
+            }
         } 
 
-        if (gamekeydown[key_up]) 
-        {
+        if (gamekeydown[key_up]) {
             //System.err.print("up\n");
             forward += forwardmove[speed]; 
         }
-        if (gamekeydown[key_down]) 
-        {
+        
+        if (gamekeydown[key_down]) {
             //System.err.print("down\n");
             forward -= forwardmove[speed]; 
         }        
         
-        if (joyymove < 0) 
+        if (joyymove < 0) {
             forward += forwardmove[speed]; 
-        if (joyymove > 0) 
+        } else if (joyymove > 0) {
             forward -= forwardmove[speed]; 
-        if (gamekeydown[key_straferight]) 
+        }
+        
+        if (gamekeydown[key_straferight]) {
             side += sidemove[speed]; 
-        if (gamekeydown[key_strafeleft]) 
+        }
+        
+        if (gamekeydown[key_strafeleft]) {
             side -= sidemove[speed];
+        }
 
     	// Look up/down/center keys
     	if(gamekeydown[key_lookup])
@@ -1101,26 +1090,25 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         // buttons
         cmd.chatchar = handsUp.dequeueChatChar(); 
 
-        if (gamekeydown[key_fire] || mousebuttons(mousebfire) 
-                || joybuttons(joybfire)) 
+        if (gamekeydown[key_fire] || mousebuttons(mousebfire) || joybuttons(joybfire)) {
             cmd.buttons |= BT_ATTACK; 
+        }
 
-        if (gamekeydown[key_use] || joybuttons(joybuse) ) 
-        { 
+        if (gamekeydown[key_use] || joybuttons(joybuse)) { 
             cmd.buttons |= BT_USE;
             // clear double clicks if hit use button 
             dclicks = 0;                   
         } 
 
         // chainsaw overrides 
-        for (i=0 ; i<NUMWEAPONS-1 ; i++)        
-            if (gamekeydown['1'+i]) 
-            { 
+        for (i = 0; i < NUMWEAPONS - 1; i++) {
+            if (gamekeydown[key_numbers[i]]) {
                 //System.out.println("Attempting weapon change (building ticcmd)");
-                cmd.buttons |= BT_CHANGE; 
-                cmd.buttons |= i<<BT_WEAPONSHIFT; 
-                break; 
+                cmd.buttons |= BT_CHANGE;
+                cmd.buttons |= i << BT_WEAPONSHIFT;
+                break;
             }
+        }
 
         // mouse
         if (mousebuttons(mousebforward)) 
@@ -1326,75 +1314,67 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
     public boolean Responder (event_t ev) 
     { 
         // allow spy mode changes even during the demo
-        if (gamestate == gamestate_t.GS_LEVEL && ev.type == evtype_t.ev_keydown 
-                && ev.data1 == KEY_F12 && (singledemo || !deathmatch) )
-        {
+        if (gamestate == gamestate_t.GS_LEVEL && ev.isKey(SC_F12, evtype_t.ev_keydown) && (singledemo || !deathmatch)) {
             // spy mode 
-            do 
-            { 
-                displayplayer++; 
-                if (displayplayer == MAXPLAYERS) 
-                    displayplayer = 0; 
-            } while (!playeringame[displayplayer] && displayplayer != consoleplayer); 
-            return true; 
+            do {
+                displayplayer++;
+                if (displayplayer == MAXPLAYERS) {
+                    displayplayer = 0;
+                }
+            } while (!playeringame[displayplayer] && displayplayer != consoleplayer);
+            return true;
         }
 
         // any other key pops up menu if in demos
-        if (gameaction == gameaction_t.ga_nothing && !singledemo && 
-                (demoplayback || gamestate == gamestate_t.GS_DEMOSCREEN) 
-        ) 
-        { 
-            if (ev.type == evtype_t.ev_keydown ||  
-                    (ev.type == evtype_t.ev_mouse && ev.data1!=0) || 
-                    (ev.type == evtype_t.ev_joystick && ev.data1!=0) ) 
-            { 
-                menu.StartControlPanel (); 
-                return true; 
-            } 
-            return false; 
-        } 
+        if (gameaction == gameaction_t.ga_nothing && !singledemo
+                && (demoplayback || gamestate == gamestate_t.GS_DEMOSCREEN)) {
+            if (ev.isType(evtype_t.ev_keydown)
+                || ev.ifMouse(evtype_t.ev_mouse, mev -> mev.buttons != 0)
+                || ev.ifJoy(evtype_t.ev_joystick, jev -> jev.buttons != 0))
+            {
+                menu.StartControlPanel();
+                return true;
+            }
+            return false;
+        }
 
-        if (gamestate == gamestate_t.GS_LEVEL) 
-        { 
-
-            if (devparm && ev.type == evtype_t.ev_keydown && ev.data1 == ';') 
-            { 
-                DeathMatchSpawnPlayer (0); 
-                return true; 
-            } 
+        if (gamestate == gamestate_t.GS_LEVEL) {
+            if (devparm && ev.isKey(SC_SEMICOLON, evtype_t.ev_keydown)) {
+                DeathMatchSpawnPlayer(0);
+                return true;
+            }
 
             //automapactive=true;
-
-            if (handsUp.Responder (ev)) 
+            if (handsUp.Responder(ev)) {
                 return true;    // chat ate the event 
-            if (statusBar.Responder (ev)) 
-                return true;    // status window ate it
-            if (autoMap.Responder (ev)) 
-                return true;    // automap ate it 
-
-        } 
-
-        if (gamestate == gamestate_t.GS_FINALE) 
-        { 
-            if (finale.Responder (ev)) 
-                return true;    // finale ate the event 
-        } 
-
-        switch (ev.type) 
-        {
-        case ev_clear:
-        	// PAINFULLY and FORCEFULLY clear the buttons.
-            Arrays.fill(gamekeydown, false);
-            keysCleared = true;
-            return false; // Nothing more to do here. 
-        case ev_keydown: 
-            if (ev.data1 == KEY_PAUSE) 
-            { 
-                sendpause = true; 
-                return true; 
             }
-            
-            /* CAPS lock will only go through as a keyup event
+            if (statusBar.Responder(ev)) {
+                return true;    // status window ate it
+            }
+            if (autoMap.Responder(ev)) {
+                return true;    // automap ate it 
+            }
+        }
+
+        if (gamestate == gamestate_t.GS_FINALE) {
+            if (finale.Responder(ev)) {
+                return true;    // finale ate the event 
+            }
+        }
+
+        switch (ev.type()) { 
+            case ev_clear:
+                // PAINFULLY and FORCEFULLY clear the buttons.
+                Arrays.fill(gamekeydown, false);
+                keysCleared = true;
+                return false; // Nothing more to do here. 
+            case ev_keydown:
+                if (ev.isKey(SC_PAUSE)) {
+                    sendpause = true;
+                    return true;
+                }
+
+                /* CAPS lock will only go through as a keyup event
             if (ev.data1 == KEY_CAPSLOCK) 
             { 
                 if (justfocused) justfocused=false;
@@ -1406,55 +1386,52 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
                     }
                 return true; 
             } */
-            
-            if (ev.data1 <NUMKEYS) 
-                gamekeydown[ev.data1] = true;
-            return true;    // eat key down events 
-
-        case ev_keyup:
-            if (ev.data1 == KEY_CAPSLOCK) 
-            { 
-                if (justfocused) justfocused=false;
-                    else
-                    {
-                    // Just toggle it. It's too hard to read the state.
-                    alwaysrun=!alwaysrun;
-                    players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
+                ev.withKey(sc -> gamekeydown[sc.ordinal()] = true);
+                return true;    // eat key down events 
+            case ev_keyup:
+                if (ev.isKey(SC_CAPSLK)) {
+                    if (justfocused) {
+                        justfocused = false;
+                    } else {
+                        // Just toggle it. It's too hard to read the state.
+                        alwaysrun = !alwaysrun;
+                        players[consoleplayer].message = String.format("Always run: %s", alwaysrun);
                     }
-            }
-            
-            if (ev.data1 <NUMKEYS) 
-                gamekeydown[ev.data1] = false; 
-            return false;   // always let key up events filter down 
+                }
 
-        case ev_mouse:
-            // Ignore them at the responder level
-            if (use_mouse){
-            mousebuttons(0, ev.data1 & 1); 
-            mousebuttons(1, ev.data1 & 2); 
-            mousebuttons(2, ev.data1 & 4);
-            mousex = ev.data2*(mouseSensitivity+5)/10; 
-            mousey = ev.data3*(mouseSensitivity+5)/10;
-            }
-            return true;    // eat events 
+                ev.withKey(sc -> gamekeydown[sc.ordinal()] = false);
+                return false;   // always let key up events filter down 
 
-        case ev_joystick:
-            if (use_joystick){
-            joybuttons(0, ev.data1 & 1); 
-            joybuttons(1, ev.data1 & 2); 
-            joybuttons(2,ev.data1 & 4); 
-            joybuttons(3,ev.data1 & 8); 
-            joyxmove = ev.data2; 
-            joyymove = ev.data3; 
-            }
-            return true;    // eat events 
+            case ev_mouse:
+                // Ignore them at the responder level
+                if (use_mouse) {
+                    mousebuttons(0, ev.isMouse(event_t.MOUSE_LEFT));
+                    mousebuttons(1, ev.isMouse(event_t.MOUSE_RIGHT));
+                    mousebuttons(2, ev.isMouse(event_t.MOUSE_MID));
+                    ev.withMouse(mouseEvent -> {
+                        mousex = mouseEvent.x * (mouseSensitivity + 5) / 10;
+                        mousey = mouseEvent.y * (mouseSensitivity + 5) / 10;
+                    });
+                }
+                return true;    // eat events 
+            case ev_joystick:
+                if (use_joystick) {
+                    joybuttons(0, ev.isJoy(event_t.JOY_1));
+                    joybuttons(1, ev.isJoy(event_t.JOY_2));
+                    joybuttons(2, ev.isJoy(event_t.JOY_3));
+                    joybuttons(3, ev.isJoy(event_t.JOY_4));
+                    ev.withJoy(joyEvent -> {
+                        joyxmove = joyEvent.x;
+                        joyymove = joyEvent.y;
+                    });
+                }
+                return true;    // eat events 
+            default:
+                break;
+        }
 
-        default: 
-            break; 
-        } 
-
-        return false; 
-    } 
+        return false;
+    }
 
 
     private final String turbomessage="is turbo!"; 
@@ -2323,7 +2300,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
 
     public void WriteDemoTiccmd (ticcmd_t cmd) 
     { 
-        if (gamekeydown['q'])           // press q to end demo recording 
+        if (gamekeydown[key_recordstop])           // press q to end demo recording 
             CheckDemoStatus ();
         IDemoTicCmd reccmd=new VanillaTiccmd();
         reccmd.encode(cmd);     
@@ -2579,7 +2556,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         this.cVarManager = Game.getCVM();
 
         // Prepare events array with event instances
-        Arrays.setAll(events, i -> new event_t());
+        Arrays.setAll(events, i -> event_t.EMPTY_EVENT);
 
         // Create DoomSystem
         this.doomSystem = new DoomSystem(this);
@@ -2653,8 +2630,9 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         System.out.print("AM_Init: Init Automap colors - \n");
         this.autoMap = new automap.Map<>(this);
 
-        videoInterface = cVarManager.bool(CommandVariable.AWTFRAME)
-            ? DoomVideoInterface.createAWTInterface(this) : DoomVideoInterface.createSwingInterface(this);
+        videoInterface = //cVarManager.bool(CommandVariable.AWTFRAME)
+            //? 
+                DoomVideoInterface.createAWTInterface(this);// : DoomVideoInterface.createSwingInterface(this);
 
         this.wiper = graphicSystem.createWiper(random);
         
@@ -3529,8 +3507,9 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         ; eventtail = (++eventtail)&(MAXEVENTS-1) ) 
         { 
             ev = events[eventtail]; 
-            if (ev.type == evtype_t.ev_keydown && ev.data1 == KEY_ESCAPE)
+            if (ev.isKey(SC_ESCAPE, evtype_t.ev_keydown)) {
                 doomSystem.Error ("Network game synchronization aborted.");
+            }
         } 
     }
 

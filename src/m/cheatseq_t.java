@@ -138,7 +138,7 @@ public class cheatseq_t {
      * @return
      */
 
-    public boolean CheckCheat(cheatseq_t cht, char key) {
+    public boolean CheckCheat(cheatseq_t cht, int key) {
         boolean rc = false;
 
         if (cht.p < 0)
@@ -147,7 +147,7 @@ public class cheatseq_t {
         if (cht.p == 0)
             // This actually points inside "sequence"
             // *(cht->p++) = key;
-            cht.sequence[cht.p++] = key;
+            cht.sequence[cht.p++] = (char) key;
         else if (cheat_xlate_table[(char) key] == cht.sequence[cht.p])
             cht.p++;
         else
@@ -173,10 +173,8 @@ public class cheatseq_t {
      * @return
      */
 
-    public boolean CheckCheat(char key) {
+    public boolean CheckCheat(int key) {
         boolean rc = false;
-
-
 
         if (this.p < 0)
             this.p = 0; // initialize if first time
@@ -184,7 +182,7 @@ public class cheatseq_t {
         if (sequence[p] == 0)
             // This actually points inside "sequence"
             // *(cht->p++) = key;
-            sequence[p++] = key;
+            sequence[p++] = (char) key;
             //p++;  //_D_: this fixed cheat with parm problem (IDCLIP)
         else if (cheat_xlate_table[(char) key] == sequence[p])
             p++;

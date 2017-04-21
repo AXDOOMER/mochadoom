@@ -502,7 +502,7 @@ public class Finale<T> {
 	 */
 
 	public boolean CastResponder(event_t ev) {
-		if (ev.type != evtype_t.ev_keydown)
+		if (ev.isType(evtype_t.ev_keydown))
 			return false;
 
 		if (castdeath)

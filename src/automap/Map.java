@@ -178,7 +178,8 @@ import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
-import static g.Keys.*;
+import g.Signals.ScanCode;
+import static g.Signals.ScanCode.*;
 import java.awt.Rectangle;
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -289,19 +290,19 @@ public class Map<T, V> implements IAutoMap<T, V> {
     };
     
     // drawing stuff
-    public static final char AM_PANDOWNKEY = KEY_DOWNARROW;
-    public static final char AM_PANUPKEY = KEY_UPARROW;
-    public static final char AM_PANRIGHTKEY = KEY_RIGHTARROW;
-    public static final char AM_PANLEFTKEY = KEY_LEFTARROW;
-    public static final char AM_ZOOMINKEY = '=';
-    public static final char AM_ZOOMOUTKEY = '-';
-    public static final char AM_STARTKEY = KEY_TAB; // KEY_TAB
-    public static final char AM_ENDKEY = KEY_TAB; // KEY_TAB
-    public static final char AM_GOBIGKEY = '0';
-    public static final char AM_FOLLOWKEY = 'f';
-    public static final char AM_GRIDKEY = 'g';
-    public static final char AM_MARKKEY = 'm';
-    public static final char AM_CLEARMARKKEY = 'c';
+    public static final ScanCode AM_PANDOWNKEY = SC_DOWN;
+    public static final ScanCode AM_PANUPKEY = SC_UP;
+    public static final ScanCode AM_PANRIGHTKEY = SC_RIGHT;
+    public static final ScanCode AM_PANLEFTKEY = SC_LEFT;
+    public static final ScanCode AM_ZOOMINKEY = SC_EQUALS;
+    public static final ScanCode AM_ZOOMOUTKEY = SC_MINUS;
+    public static final ScanCode AM_STARTKEY = SC_TAB;
+    public static final ScanCode AM_ENDKEY = SC_TAB;
+    public static final ScanCode AM_GOBIGKEY = SC_0;
+    public static final ScanCode AM_FOLLOWKEY = SC_F;
+    public static final ScanCode AM_GRIDKEY = SC_G;
+    public static final ScanCode AM_MARKKEY = SC_M;
+    public static final ScanCode AM_CLEARMARKKEY = SC_C;
     public static final int AM_NUMMARKPOINTS = 10;
 
     // (fixed_t) scale on entry
@@ -899,122 +900,98 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
         // System.out.println(ev.data1==AM_STARTKEY);
         if (!DOOM.automapactive) {
-            if ((ev.data1 == AM_STARTKEY) && (ev.type == evtype_t.ev_keyup)) {
+            if (ev.isKey(AM_STARTKEY, evtype_t.ev_keyup)) {
                 this.Start();
                 DOOM.viewactive = false;
                 rc = true;
             }
-        }
-
-        else if (ev.type == evtype_t.ev_keydown) {
-
+        } else if (ev.isType(evtype_t.ev_keydown)) {
             rc = true;
-            switch (ev.data1) {
-            case AM_PANRIGHTKEY: // pan right
+            if (ev.isKey(AM_PANRIGHTKEY)) { // pan right
                 if (!followplayer)
                     m_paninc.x = FTOM(F_PANINC);
                 else
                     rc = false;
-                break;
-            case AM_PANLEFTKEY: // pan left
+            } else if (ev.isKey(AM_PANLEFTKEY)) { // pan left
                 if (!followplayer)
                     m_paninc.x = -FTOM(F_PANINC);
                 else
                     rc = false;
-                break;
-            case AM_PANUPKEY: // pan up
+            } else if (ev.isKey(AM_PANUPKEY)) { // pan up
                 if (!followplayer)
                     m_paninc.y = FTOM(F_PANINC);
                 else
                     rc = false;
-                break;
-            case AM_PANDOWNKEY: // pan down
+            } else if (ev.isKey(AM_PANDOWNKEY)) { // pan down
                 if (!followplayer)
                     m_paninc.y = -FTOM(F_PANINC);
                 else
                     rc = false;
-                break;
-            case AM_ZOOMOUTKEY: // zoom out
+            } else if (ev.isKey(AM_ZOOMOUTKEY)) { // zoom out
                 mtof_zoommul = M_ZOOMOUT;
                 ftom_zoommul = M_ZOOMIN;
-                break;
-            case AM_ZOOMINKEY: // zoom in
+            } else if (ev.isKey(AM_ZOOMINKEY)) { // zoom in
                 mtof_zoommul = M_ZOOMIN;
                 ftom_zoommul = M_ZOOMOUT;
-                break;
-
-            case AM_GOBIGKEY:
+            } else if (ev.isKey(AM_GOBIGKEY)) {
                 bigstate = !bigstate;
                 if (bigstate) {
                     this.saveScaleAndLoc();
                     this.minOutWindowScale();
                 } else
                     this.restoreScaleAndLoc();
-                break;
-            case AM_FOLLOWKEY:
+            } else if (ev.isKey(AM_FOLLOWKEY)) {
                 followplayer = !followplayer;
                 f_oldloc.x = MAXINT;
                 plr.message = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
-                break;
-            case AM_GRIDKEY:
+            } else if (ev.isKey(AM_GRIDKEY)) {
                 grid = !grid;
                 plr.message = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
-                break;
-            case AM_MARKKEY:
+            } else if (ev.isKey(AM_MARKKEY)) {
                 buffer = (AMSTR_MARKEDSPOT + " " + markpointnum);
                 plr.message = buffer;
                 this.addMark();
-                break;
-            case AM_CLEARMARKKEY:
+            } else if (ev.isKey(AM_CLEARMARKKEY)) {
                 this.clearMarks();
                 plr.message = AMSTR_MARKSCLEARED;
-                break;
-            default:
+            } else {
                 cheatstate = false;
                 rc = false;
             }
-            if (!DOOM.deathmatch && cheat_amap.CheckCheat((char) ev.data1)) {
+            
+            if (!DOOM.deathmatch && ev.ifKeyAsciiChar(cheat_amap::CheckCheat)) {
                 rc = false;
                 cheating = (cheating + 1) % 3;
             }
+            
             /** 
              * MAES: brought back strobe effect
-             * Good Sign: setting can be saved/loaded from config and is now default
+             * Good Sign: setting can be saved/loaded from config
              */
-            if (cheat_strobe.CheckCheat((char) ev.data1)) {
+            if (ev.ifKeyAsciiChar(cheat_strobe::CheckCheat)) {
                 DOOM.mapstrobe = !DOOM.mapstrobe;
             }
-        }
-
-        else if (ev.type == evtype_t.ev_keyup) {
+        } else if (ev.isType(evtype_t.ev_keyup)) {
             rc = false;
-            switch (ev.data1) {
-            case AM_PANRIGHTKEY:
+            if (ev.isKey(AM_PANRIGHTKEY)) {
                 if (!followplayer)
                     m_paninc.x = 0;
-                break;
-            case AM_PANLEFTKEY:
+            } else if (ev.isKey(AM_PANLEFTKEY)) {
                 if (!followplayer)
                     m_paninc.x = 0;
-                break;
-            case AM_PANUPKEY:
+            } else if (ev.isKey(AM_PANUPKEY)) {
                 if (!followplayer)
                     m_paninc.y = 0;
-                break;
-            case AM_PANDOWNKEY:
+            } else if (ev.isKey(AM_PANDOWNKEY)) {
                 if (!followplayer)
                     m_paninc.y = 0;
-                break;
-            case AM_ZOOMOUTKEY:
-            case AM_ZOOMINKEY:
+            } else if (ev.isKey(AM_ZOOMOUTKEY) || ev.isKey(AM_ZOOMINKEY)) {
                 mtof_zoommul = FRACUNIT;
                 ftom_zoommul = FRACUNIT;
-                break;
-            case AM_ENDKEY:
+            } else if (ev.isKey(AM_ENDKEY)) {
                 bigstate = false;
                 DOOM.viewactive = true;
                 this.Stop();
-                break;
             }
         }
 

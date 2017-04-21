@@ -17,51 +17,11 @@
 
 package awt;
 
-import awt.DoomVideoInterface.DoomListener;
-import static awt.MochaDoomInputEvent.*;
 import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;
-import static g.Keys.KEY_ALT;
-import static g.Keys.KEY_BACKSPACE;
-import static g.Keys.KEY_BRCLOSE;
-import static g.Keys.KEY_BROPEN;
-import static g.Keys.KEY_BSLASH;
-import static g.Keys.KEY_CAPSLOCK;
-import static g.Keys.KEY_COMMA;
-import static g.Keys.KEY_CTRL;
-import static g.Keys.KEY_DOWNARROW;
-import static g.Keys.KEY_END;
-import static g.Keys.KEY_ENTER;
-import static g.Keys.KEY_ESCAPE;
-import static g.Keys.KEY_F1;
-import static g.Keys.KEY_F10;
-import static g.Keys.KEY_F11;
-import static g.Keys.KEY_F12;
-import static g.Keys.KEY_F2;
-import static g.Keys.KEY_F3;
-import static g.Keys.KEY_F4;
-import static g.Keys.KEY_F5;
-import static g.Keys.KEY_F6;
-import static g.Keys.KEY_F7;
-import static g.Keys.KEY_F8;
-import static g.Keys.KEY_F9;
-import static g.Keys.KEY_HOME;
-import static g.Keys.KEY_LEFTARROW;
-import static g.Keys.KEY_MULTPLY;
-import static g.Keys.KEY_NUMLOCK;
-import static g.Keys.KEY_PAUSE;
-import static g.Keys.KEY_PERIOD;
-import static g.Keys.KEY_PGDN;
-import static g.Keys.KEY_PGUP;
-import static g.Keys.KEY_PRNTSCRN;
-import static g.Keys.KEY_QUOTE;
-import static g.Keys.KEY_RIGHTARROW;
-import static g.Keys.KEY_SCROLLLOCK;
-import static g.Keys.KEY_SEMICOLON;
-import static g.Keys.KEY_SHIFT;
-import static g.Keys.KEY_TAB;
-import static g.Keys.KEY_UPARROW;
+import g.Signals;
+import java.awt.AWTEvent;
 import java.awt.AWTException;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -69,19 +29,42 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.Toolkit;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * ///////////////////// QUEUE HANDLING ///////////////////////
+ * This class is catching events thrown at him by someone, and sends them to underlying DOOM engine.
+ * As a way to preserver vanilla until full understand the code, everything inside of underlying engine
+ * is still considered black box and changes to it are minimal.
+ * But I've tried to make high-level API on top level effective.
+ * 
+ * For example, we do not need to create some MochaDoomInputEvent for unique combination of AWTEvent and
+ * its type - it can be easily switched by ID value from AWTEvent's ow information method. Also, we can
+ * certainly know which ScanCodes we will get and what are their minimal and max values, because
+ * of using Enum for them (my favorite type of data structure, huh!) 
+ * And if we know that ScanCodes can only be something very limited, and every KeyEvent (an AWTEvent for keys)
+ * will be translated into one of them, we only have to pre-create two copies of DOOM's event structure
+ * for each entry of ScanCode Enum: one for press state, one for release.
+ * 
+ * Also note: Caps Lock key is handled in a very special way. We do not send him to underlying engine at all.
+ * We only save state of it.
+ * Also note: it seems there is no way to handle Num Lock itself (however, we can handle keys modified by it)
+ * Also note: SysRq / Print Screen key only sends release state, so it has to send press to underlying engine
+ * on release or it will be ignored.
+ *  - Good Sign 2017/04/21
+ * 
+ * @author Good Sign
  * @author vekltron
  */
 public class DoomEventPoster {
     protected static final int POINTER_WARP_COUNTDOWN = 1;
     private static final boolean D = false;
+    
     /**
      * This event here is used as a static scratch copy. When sending out
      * messages, its contents are to be actually copied (struct-like).
@@ -91,25 +74,19 @@ public class DoomEventPoster {
      * As we have now parallel processing of events, one event would eventually
      * overwrite another. So we have to keep thread-local copies of them.
      */
-    private final ThreadLocal<event_t> event = new ThreadLocal<event_t>() {
+    private final ThreadLocal<event_t.mouseevent_t> mouse_event = new ThreadLocal<event_t.mouseevent_t>() {
         @Override
-        protected event_t initialValue() {
-            return new event_t();
+        protected event_t.mouseevent_t initialValue() {
+            return new event_t.mouseevent_t(evtype_t.ev_mouse, 0, 0, 0);
         }
     };
     
     private final DoomMain DM;
     private final Component content;
-    private final DoomListener eventQueue;
     private final Point offset = new Point();
     private final Cursor hidden;
     private final Cursor normal;
     private final Robot robby;
-
-
-    // Special FORCED and PAINFUL key and mouse cancel event.
-    private final event_t cancelkey = new event_t(evtype_t.ev_clear, 0xFF, 0, 0);
-    private final event_t cancelmouse = new event_t(evtype_t.ev_mouse, 0, 0, 0);
 
     //////// CURRENT MOVEMENT AND INPUT STATUS //////////////
     private volatile int mousedx;
@@ -123,7 +100,7 @@ public class DoomEventPoster {
     private volatile boolean capstoggle = false;
     private volatile boolean ignorebutton = false;
 
-    public DoomEventPoster(DoomMain DM, Component content, DoomListener me) {
+    public DoomEventPoster(DoomMain DM, Component content) {
         this.DM = DM;
         this.content = content;
 
@@ -143,8 +120,6 @@ public class DoomEventPoster {
             }
             this.robby = robot;
         }
-
-        this.eventQueue = me;
     }
 
     /**
@@ -153,7 +128,6 @@ public class DoomEventPoster {
      * Create a 'hidden' cursor by using a transparent image
      * ...return the invisible cursor
      */
-
     private Cursor createInvisibleCursor() {
         Dimension bestCursorDim = Toolkit.getDefaultToolkit().getBestCursorSize(2, 2);
         BufferedImage transparentImage = new BufferedImage(bestCursorDim.width, bestCursorDim.height, BufferedImage.TYPE_INT_ARGB);
@@ -185,198 +159,186 @@ public class DoomEventPoster {
         }
     }
     
-    public void ProcessEvents() {
-        eventQueue.processAllPending(this::GetEvent);
+    public void sendEvent(Signals.ScanCode sc, int eventType) {
+        final event_t.mouseevent_t mouseEvent = mouse_event.get();
+        if (eventType == KeyEvent.KEY_PRESSED) {
+            keyPress(sc, mouseEvent);
+        } else if (eventType == KeyEvent.KEY_RELEASED) {
+            keyRelease(sc, mouseEvent);
+        }
     }
-
-    public void GetEvent(MochaDoomInputEvent X_event) {
-        event_t localEvent = event.get();
-        // Unlike most keys, caps lock etc. can be polled, so no need to worry
-        // about them getting stuck.  So they are re-polled after all other
-        // key states have beeen cleared.
-        /*  if (DM.shouldPollLockingKeys()) {
-            for (Map.Entry<Integer, Boolean> e: lockingKeyStates.entrySet()) {
-                e.setValue(null);
-            }
-            updateLockingKeys();
-        } */
-        // put event-grabbing stuff in here
-        //System.out.println("Event type:"+X_event.getID());
-
+    
+    public void sendEvent(AWTEvent X_event) {
+        final event_t.mouseevent_t mouseEvent = mouse_event.get();
         // Keyboard events get priority vs mouse events.
         // In the case of combined input, however, we need
         if (!ignorebutton) {
-            switch (X_event.type) {
-                case KEY_PRESS: {
-                    localEvent.type = evtype_t.ev_keydown;
-                    localEvent.data1 = xlatekey((KeyEvent) X_event.ev, -1);
-
-                    // Toggle, but don't it go through.
-                    if (localEvent.data1 == KEY_CAPSLOCK) {
-                        capstoggle = true;
-                    }
-
-                    if (localEvent.data1 != KEY_CAPSLOCK) {
-                        DM.PostEvent(localEvent);
-                    }
+            switch (X_event.getID()) {
+                case KeyEvent.KEY_PRESSED: {
+                    keyPress(Signals.getScanCode((KeyEvent) X_event), mouseEvent);
+                    break;
+                } case KeyEvent.KEY_RELEASED: {
+                    keyRelease(Signals.getScanCode((KeyEvent) X_event), mouseEvent);
+                    break;
+                } case KeyEvent.KEY_TYPED: {
+                    DM.PostEvent(Signals.getScanCode((KeyEvent) X_event).doomEventUp);
 
                     if (prevmousebuttons != 0) {
                         // Allow combined mouse/keyboard events.
-                        localEvent.data1 = prevmousebuttons;
-                        localEvent.type = evtype_t.ev_mouse;
-                        DM.PostEvent(localEvent);
+                        mouseEvent.buttons = prevmousebuttons;
+                        DM.PostEvent(mouseEvent);
                     }
-                    //System.err.println("k");
                     break;
                 }
-
-                case KEY_RELEASE:
-                    localEvent.type = evtype_t.ev_keyup;
-                    localEvent.data1 = xlatekey((KeyEvent) X_event.ev, -1);
-
-                    if ((localEvent.data1 != KEY_CAPSLOCK) || ((localEvent.data1 == KEY_CAPSLOCK) && capstoggle)) {
-                        DM.PostEvent(localEvent);
-                    }
-
-                    capstoggle = false;
-
-                    if (prevmousebuttons != 0) {
-                        // Allow combined mouse/keyboard events.
-                        localEvent.data1 = prevmousebuttons;
-                        localEvent.type = evtype_t.ev_mouse;
-                        DM.PostEvent(localEvent);
-                    }
-                    //System.err.println( "ku");
-                    break;
-
-                case KEY_TYPE:
-                    localEvent.type = evtype_t.ev_keyup;
-                    localEvent.data1 = xlatekey((KeyEvent) X_event.ev, -1);
-                    DM.PostEvent(localEvent);
-
-                    if (prevmousebuttons != 0) {
-                        // Allow combined mouse/keyboard events.
-                        localEvent.data1 = prevmousebuttons;
-                        localEvent.type = evtype_t.ev_mouse;
-                        DM.PostEvent(localEvent);
-                    }
-                    //System.err.println( "ku");
-                    break;
             }
         }
 
+        // Mouse events are also handled, but with secondary priority.
+        ProcessMouse(X_event, mouseEvent);
+        // Now for window events. This includes the mouse breaking the border.
+        ProcessWindow(X_event); 
+    }
+
+    private void ProcessMouse(AWTEvent X_event, final event_t.mouseevent_t mouseEvent) {
         final MouseEvent MEV;
         final Point tmp;
         // Ignore ALL mouse events if we are moving the window.
-        // Mouse events are also handled, but with secondary priority.
-        switch (X_event.type) {
+        switch (X_event.getID()) {
             // ButtonPress
-            case BUTTON_PRESS:
-                MEV = (MouseEvent) X_event.ev;
-                localEvent.type = evtype_t.ev_mouse;
-                localEvent.data1 = prevmousebuttons
-                        = (MEV.getButton() == MouseEvent.BUTTON1 ? 1 : 0)
-                        | (MEV.getButton() == MouseEvent.BUTTON2 ? 2 : 0)
-                        | (MEV.getButton() == MouseEvent.BUTTON3 ? 4 : 0);
-                localEvent.data2 = localEvent.data3 = 0;
-
-                DM.PostEvent(localEvent);
-                //System.err.println( "b");
+            case MouseEvent.MOUSE_PRESSED:
+                MEV = (MouseEvent) X_event;
+                mouseEvent.type = evtype_t.ev_mouse;
+                mouseEvent.buttons = prevmousebuttons
+                        = (MEV.getButton() == MouseEvent.BUTTON1 ? event_t.MOUSE_LEFT : 0)
+                        | (MEV.getButton() == MouseEvent.BUTTON2 ? event_t.MOUSE_RIGHT : 0)
+                        | (MEV.getButton() == MouseEvent.BUTTON3 ? event_t.MOUSE_MID : 0);
+                mouseEvent.x = mouseEvent.y = 0;
+                DM.PostEvent(mouseEvent);
                 break;
-
             // ButtonRelease
             // This must send out an amended event.
-            case BUTTON_RELEASE:
-                MEV = (MouseEvent) X_event.ev;
-                localEvent.type = evtype_t.ev_mouse;
-                localEvent.data1 = prevmousebuttons
-                        ^= (MEV.getButton() == MouseEvent.BUTTON1 ? 1 : 0)
-                        | (MEV.getButton() == MouseEvent.BUTTON2 ? 2 : 0)
-                        | (MEV.getButton() == MouseEvent.BUTTON3 ? 4 : 0);
+            case MouseEvent.MOUSE_RELEASED:
+                MEV = (MouseEvent) X_event;
+                mouseEvent.type = evtype_t.ev_mouse;
+                mouseEvent.buttons = prevmousebuttons
+                        ^= (MEV.getButton() == MouseEvent.BUTTON1 ? event_t.MOUSE_LEFT : 0)
+                        | (MEV.getButton() == MouseEvent.BUTTON2 ? event_t.MOUSE_RIGHT : 0)
+                        | (MEV.getButton() == MouseEvent.BUTTON3 ? event_t.MOUSE_MID : 0);
                 // A PURE mouse up event has no movement.
-                localEvent.data2 = localEvent.data3 = 0;
-                DM.PostEvent(localEvent);
-                //System.err.println("bu");
+                mouseEvent.x = mouseEvent.y = 0;
+                DM.PostEvent(mouseEvent);
                 break;
-            case MOTION_NOTIFY:
-                MEV = (MouseEvent) X_event.ev;
+            case MouseEvent.MOUSE_MOVED:
+                MEV = (MouseEvent) X_event;
                 tmp = MEV.getPoint();
                 //this.AddPoint(tmp,center);
-                localEvent.type = evtype_t.ev_mouse;
+                mouseEvent.type = evtype_t.ev_mouse;
                 this.mousedx = (tmp.x - win_w2);
                 this.mousedy = (win_h2 - tmp.y);
 
                 // A pure move has no buttons.
-                localEvent.data1 = prevmousebuttons = 0;
-                localEvent.data2 = (mousedx) << 2;
-                localEvent.data3 = (mousedy) << 2;
+                mouseEvent.buttons = prevmousebuttons = 0;
+                mouseEvent.x = (mousedx) << 2;
+                mouseEvent.y = (mousedy) << 2;
 
-                // System.out.printf("Mouse MOVED to %d %d\n", lastmousex, lastmousey);
-                //System.out.println("Mouse moved without buttons: "+event.data1);
-                if ((localEvent.data2 | localEvent.data3) != 0) {
-                    DM.PostEvent(localEvent);
-                    //System.err.println( "m");
+                if ((mouseEvent.x | mouseEvent.y) != 0) {
+                    DM.PostEvent(mouseEvent);
                 }
                 break;
 
-            case DRAG_NOTIFY:
-                MEV = (MouseEvent) X_event.ev;
+            case MouseEvent.MOUSE_DRAGGED:
+                MEV = (MouseEvent) X_event;
                 tmp = MEV.getPoint();
                 this.mousedx = (tmp.x - win_w2);
                 this.mousedy = (win_h2 - tmp.y);
-                localEvent.type = evtype_t.ev_mouse;
+                mouseEvent.type = evtype_t.ev_mouse;
 
                 // A drag means no change in button state.
-                localEvent.data1 = prevmousebuttons;
-                localEvent.data2 = (mousedx) << 2;
-                localEvent.data3 = (mousedy) << 2;
+                mouseEvent.buttons = prevmousebuttons;
+                mouseEvent.x = (mousedx) << 2;
+                mouseEvent.y = (mousedy) << 2;
 
-                if ((localEvent.data2 | localEvent.data3) != 0) {
-                    DM.PostEvent(localEvent);
-                    //System.err.println( "m");
+                if ((mouseEvent.x | mouseEvent.y) != 0) {
+                    DM.PostEvent(mouseEvent);
                 }
                 break;
         }
-
-        ProcessMouse(X_event); 
     }
 
-    private void ProcessMouse(MochaDoomInputEvent X_event) {
-        // Now for window events. This includes the mouse breaking the border.
-        switch (X_event.type) {
-            case MOUSE_CLICKED:
+    private void keyRelease(final Signals.ScanCode sc, final event_t.mouseevent_t mouseEvent) {
+        if (sc == Signals.ScanCode.SC_PRTSCRN) {
+            DM.PostEvent(sc.doomEventDown);
+        }
+        
+        if ((sc != Signals.ScanCode.SC_CAPSLK) || ((sc == Signals.ScanCode.SC_CAPSLK) && capstoggle)) {
+            DM.PostEvent(sc.doomEventUp);
+        }
+        
+        capstoggle = false;
+        
+        if (prevmousebuttons != 0) {
+            // Allow combined mouse/keyboard events.
+            mouseEvent.buttons = prevmousebuttons;
+            DM.PostEvent(mouseEvent);
+        }
+    }
+
+    private void keyPress(final Signals.ScanCode sc, final event_t.mouseevent_t mouseEvent) {
+        // Toggle, but don't it go through.
+        if (sc == Signals.ScanCode.SC_CAPSLK) {
+            capstoggle = true;
+        }
+        
+        if (sc != Signals.ScanCode.SC_CAPSLK) {
+            DM.PostEvent(sc.doomEventDown);
+        }
+        
+        if (prevmousebuttons != 0) {
+            // Allow combined mouse/keyboard events.
+            mouseEvent.buttons = prevmousebuttons;
+            DM.PostEvent(mouseEvent);
+        }
+    }
+    
+    protected volatile boolean we_are_moving = false;
+
+    private void ProcessWindow(AWTEvent X_event) {
+        switch (X_event.getID()) {
+            case MouseEvent.MOUSE_CLICKED:
                 // Marks the end of a move. A press + release during a move will
                 // trigger a "click" event, which is handled specially.
-                if (eventQueue.getMouseWasMoving()) {
-                    eventQueue.setMouseIsMoving(false);
+                if (we_are_moving) {
+                    we_are_moving = false;
                     reposition();
                     ignorebutton = false;
                 }
                 break;
-            case FOCUS_LOST:
-            case MOUSE_EXITED:
+            case WindowEvent.WINDOW_LOST_FOCUS:
+            case MouseEvent.MOUSE_EXITED:
                 // Forcibly clear events                 
-                DM.PostEvent(cancelmouse);
-                DM.PostEvent(cancelkey);
+                DM.PostEvent(event_t.CANCEL_MOUSE);
+                DM.PostEvent(event_t.CANCEL_KEYS);
                 content.setCursor(normal);
                 ignorebutton = true;
                 break;
 
-            case WINDOW_MOVING:
+            case ComponentEvent.COMPONENT_MOVED:
                 // Don't try to reposition immediately during a move
                 // event, wait for a mouse click.
-                eventQueue.setMouseIsMoving(true);
+                we_are_moving = true;
                 ignorebutton = true;
                 // Forcibly clear events                 
-                DM.PostEvent(cancelmouse);
-                DM.PostEvent(cancelkey);
+                DM.PostEvent(event_t.CANCEL_MOUSE);
+                DM.PostEvent(event_t.CANCEL_KEYS);
                 break;
-            case MOUSE_ENTERED:
-            case FOCUS_GAINED:
-                eventQueue.setMouseIsMoving(false);
+            case MouseEvent.MOUSE_ENTERED:
+            case WindowEvent.WINDOW_GAINED_FOCUS:
+                we_are_moving = false;
                 //reposition();
-            case CONFIGURE_NOTIFY:
-            case CREATE_NOTIFY:
+            case WindowEvent.WINDOW_OPENED:
+            case WindowEvent.WINDOW_ACTIVATED:
+            case WindowEvent.WINDOW_DEICONIFIED:
+            case ComponentEvent.COMPONENT_RESIZED:
                 // All events that have to do with the window being changed,
                 // moved etc. should go here. The most often result
                 // in focus being lost and position being changed, so we
@@ -394,7 +356,7 @@ public class DoomEventPoster {
         
         // If the mouse moved, don't wait until it managed to get out of the 
         // window to bring it back.
-        if (!eventQueue.getMouseWasMoving() && (mousedx != 0 || mousedy != 0)) {
+        if (!we_are_moving && (mousedx != 0 || mousedy != 0)) {
             // move the mouse to the window center again
             if (robby != null) {
                 robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
@@ -402,121 +364,5 @@ public class DoomEventPoster {
         }
 
         mousedx = mousedy = 0; // don't spaz.
-    }
-    
-    
-    /**
-     * FIXME: input must be made scancode dependent rather than VK_Dependent,
-     * else a lot of things just don't work. 
-     * 
-     * @param e
-     * @param rc 
-     * @return
-     */
-    public int xlatekey(KeyEvent e, int rc)
-    {
-
-        if (e != null) rc = e.getKeyCode();
-        switch(rc)
-
-        //Event.XKeycodeToKeysym(X_display, X_event.xkey.keycode, 0))
-
-        {
-        case KeyEvent.VK_PRINTSCREEN:   rc = KEY_PRNTSCRN; 
-        case KeyEvent.VK_COMMA:   rc = KEY_COMMA; break;
-        case KeyEvent.VK_PERIOD:   rc = KEY_PERIOD; break;
-        case KeyEvent.VK_QUOTE:   rc = KEY_QUOTE; break;
-        case KeyEvent.VK_SEMICOLON:   rc = KEY_SEMICOLON; break;
-        case KeyEvent.VK_OPEN_BRACKET:   rc = KEY_BROPEN; break;
-        case KeyEvent.VK_CLOSE_BRACKET:   rc = KEY_BRCLOSE; break;
-        case KeyEvent.VK_BACK_SLASH:   rc = KEY_BSLASH; break;
-        case KeyEvent.VK_MULTIPLY:   rc = KEY_MULTPLY; break;
-        case KeyEvent.VK_LEFT:    rc = KEY_LEFTARROW; break;
-        case KeyEvent.VK_RIGHT:   rc = KEY_RIGHTARROW;    break;
-        case KeyEvent.VK_DOWN:    rc = KEY_DOWNARROW; break;
-        case KeyEvent.VK_UP:  rc = KEY_UPARROW;   break;
-        case KeyEvent.VK_ESCAPE:  rc = KEY_ESCAPE;    break;
-        case KeyEvent.VK_ENTER:   rc = KEY_ENTER;     break;
-        case KeyEvent.VK_CONTROL: rc= KEY_CTRL; break;
-        case KeyEvent.VK_ALT: rc=KEY_ALT; break;
-        case KeyEvent.VK_SHIFT: rc=KEY_SHIFT; break;
-        // Added handling of pgup/pgdown/home etc.
-        case KeyEvent.VK_PAGE_DOWN: rc= KEY_PGDN;	break;
-        case KeyEvent.VK_PAGE_UP: rc= KEY_PGUP;	break;
-        case KeyEvent.VK_HOME: rc= KEY_HOME;	break;
-        case KeyEvent.VK_END: rc= KEY_END;	break;
-        case KeyEvent.VK_F1:  rc = KEY_F1;        break;
-        case KeyEvent.VK_F2:  rc = KEY_F2;        break;
-        case KeyEvent.VK_F3:  rc = KEY_F3;        break;
-        case KeyEvent.VK_F4:  rc = KEY_F4;        break;
-        case KeyEvent.VK_F5:  rc = KEY_F5;        break;
-        case KeyEvent.VK_F6:  rc = KEY_F6;        break;
-        case KeyEvent.VK_F7:  rc = KEY_F7;        break;
-        case KeyEvent.VK_F8:  rc = KEY_F8;        break;
-        case KeyEvent.VK_F9:  rc = KEY_F9;        break;
-        case KeyEvent.VK_F10: rc = KEY_F10;       break;
-        case KeyEvent.VK_F11: rc = KEY_F11;       break;
-        case KeyEvent.VK_F12: rc = KEY_F12;       break;
-
-        case KeyEvent.VK_BACK_SPACE:
-        case KeyEvent.VK_DELETE:  rc = KEY_BACKSPACE; break;
-
-        case KeyEvent.VK_PAUSE:   rc = KEY_PAUSE;     break;
-
-        case KeyEvent.VK_TAB: rc = KEY_TAB;       break;
-        case KeyEvent.VK_CAPS_LOCK: rc = KEY_CAPSLOCK; break;
-        case KeyEvent.VK_NUM_LOCK: rc = KEY_NUMLOCK; break;
-        case KeyEvent.VK_SCROLL_LOCK: rc = KEY_SCROLLLOCK; break;
-        /*
-        case KeyEvent.KEY_RELEASED:
-        case KeyEvent.KEY_PRESSED:
-            switch(e.getKeyCode()){
-
-            case KeyEvent.VK_PLUS:
-            case KeyEvent.VK_EQUALS: 
-                rc = KEY_EQUALS;    
-                break;
-
-            case (13):
-            case KeyEvent.VK_SUBTRACT: 
-            case KeyEvent.VK_MINUS:   
-                rc = KEY_MINUS;     
-                break;
-
-            case KeyEvent.VK_SHIFT:
-                rc = KEY_RSHIFT;
-                break;
-
-            case KeyEvent.VK_CONTROL:
-                rc = KEY_RCTRL;
-                break;                           
-
-            case KeyEvent.VK_ALT:
-                rc = KEY_RALT;
-                break;
-
-            case KeyEvent.VK_SPACE:
-                rc = ' ';
-                break;
-
-            }
-            */
-
-        default:
-
-            /*if (rc >= KeyEvent.VK_SPACE && rc <= KeyEvent.VK_DEAD_TILDE)
-            {
-            rc = (int) (rc - KeyEvent.FOCUS_EVENT_MASK + ' ');
-            break;
-            } */
-            if (rc >= KeyEvent.VK_A && rc <= KeyEvent.VK_Z){
-                rc = rc-KeyEvent.VK_A +'a';
-                break;
-            }
-            break;
-        }
-
-        //System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
-        return rc;//Math.min(rc,KEY_F12);
     }
 }

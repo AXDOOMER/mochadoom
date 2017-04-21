@@ -30,7 +30,7 @@ import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
-import static g.Keys.*;
+import g.Signals.ScanCode;
 import java.awt.Rectangle;
 import java.util.Arrays;
 import rr.ViewVars;
@@ -55,7 +55,7 @@ public class HU implements IHeadsUp{
 
     protected int HU_TITLEY;// = (167 - Swap.SHORT(hu_font[0].height));
 
-    protected final static char HU_INPUTTOGGLE = 't';
+    protected final static ScanCode HU_INPUTTOGGLE = ScanCode.SC_T;
 
     protected final static int HU_INPUTX = HU_MSGX;
 
@@ -555,12 +555,11 @@ public class HU implements IHeadsUp{
                         if (c >= 'a' && c <= 'z')
                             c = (char) shiftxform[c];
                         rc = w_inputbuffer[i].keyInIText(c);
-                        if (rc && c == KEY_ENTER) {
+                        if (rc && c == ScanCode.SC_ENTER.c) {
                             if ((w_inputbuffer[i].l.len != 0)
                                     && (chat_dest[i] == DOOM.consoleplayer + 1)
                                     || (chat_dest[i] == HU_BROADCAST)) {
-                                w_message.addMessageToSText(player_names[i]
-                                        , w_inputbuffer[i].l.text.toString());
+                                w_message.addMessageToSText(player_names[i], w_inputbuffer[i].l.text.toString());
 
                                 message_nottobefuckedwith = true;
                                 message_on[0] = true;
@@ -622,8 +621,7 @@ public class HU implements IHeadsUp{
 
     protected boolean altdown = false;
 
-    protected char[] destination_keys =
-        { HUSTR_KEYGREEN, HUSTR_KEYINDIGO, HUSTR_KEYBROWN, HUSTR_KEYRED };
+    protected char[] destination_keys = { HUSTR_KEYGREEN, HUSTR_KEYINDIGO, HUSTR_KEYBROWN, HUSTR_KEYRED };
 
     protected int num_nobrainers = 0;
 
@@ -631,116 +629,117 @@ public class HU implements IHeadsUp{
     public boolean Responder(event_t ev) {
 
     	//System.out.println("Player "+DM.players[0].mo.x);
-        char[] macromessage;
-        boolean eatkey = false;
-
-        char c;
-        int i;
-        int numplayers;
-
-        numplayers = 0;
+        int numplayers = 0;
         // MAES: Adding BOOLEANS to ints, are we ?!
-        for (i = 0; i < MAXPLAYERS; i++) {
+        for (int i = 0; i < MAXPLAYERS; i++) {
             numplayers += (DOOM.playeringame[i]) ? 1 : 0;
         }
 
-        if (ev.data1 == KEY_SHIFT) {
-            shiftdown = (ev.type == evtype_t.ev_keydown);
+        if (ev.isKey(ScanCode.SC_LSHIFT) || ev.isKey(ScanCode.SC_RSHIFT)) {
+            shiftdown = ev.isType(evtype_t.ev_keydown);
             return false;
-        } else if (ev.data1 == KEY_ALT || ev.data1 == KEY_ALT) {
-            altdown = (ev.type == evtype_t.ev_keydown);
+        } else if (ev.isKey(ScanCode.SC_LALT) || ev.isKey(ScanCode.SC_RALT)) {
+            altdown = ev.isType(evtype_t.ev_keydown);
             return false;
         }
 
-        if (ev.type != evtype_t.ev_keydown)
+        if (!ev.isType(evtype_t.ev_keydown))
             return false;
 
+        final boolean eatkey;
         if (!chat_on[0]) {
-            if (ev.data1 == HU_MSGREFRESH) {
+            if (ev.isKey(HU_MSGREFRESH)) {
                 message_on[0] = true;
                 message_counter = HU_MSGTIMEOUT;
                 eatkey = true;
-            } else if (DOOM.netgame && ev.data1 == HU_INPUTTOGGLE) {
+            } else if (DOOM.netgame && ev.isKey(HU_INPUTTOGGLE)) {
                 eatkey = chat_on[0] = true;
                 w_chat.resetIText();
                 this.queueChatChar(HU_BROADCAST);
             } else if (DOOM.netgame && numplayers > 2) {
-                for (i = 0; i < MAXPLAYERS; i++) {
-                    if (ev.data1 == destination_keys[i]) {
-                        if (DOOM.playeringame[i] && i != DOOM.consoleplayer) {
-                            eatkey = chat_on[0] = true;
-                            w_chat.resetIText();
-                            this.queueChatChar((char) (i + 1));
-                            break;
-                        } else if (i == DOOM.consoleplayer) {
-                            num_nobrainers++;
-                            if (num_nobrainers < 3)
-                                plr.message = HUSTR_TALKTOSELF1;
-                            else if (num_nobrainers < 6)
-                                plr.message = HUSTR_TALKTOSELF2;
-                            else if (num_nobrainers < 9)
-                                plr.message = HUSTR_TALKTOSELF3;
-                            else if (num_nobrainers < 32)
-                                plr.message = HUSTR_TALKTOSELF4;
-                            else
-                                plr.message = HUSTR_TALKTOSELF5;
+                eatkey = ev.ifKey(sc -> {
+                    boolean r = false;
+                    for (int i = 0; i < MAXPLAYERS; i++) {
+                        if (sc.c == destination_keys[i]) {
+                            if (DOOM.playeringame[i] && i != DOOM.consoleplayer) {
+                                r = chat_on[0] = true;
+                                w_chat.resetIText();
+                                this.queueChatChar((char) (i + 1));
+                                break;
+                            } else if (i == DOOM.consoleplayer) {
+                                num_nobrainers++;
+                                if (num_nobrainers < 3)
+                                    plr.message = HUSTR_TALKTOSELF1;
+                                else if (num_nobrainers < 6)
+                                    plr.message = HUSTR_TALKTOSELF2;
+                                else if (num_nobrainers < 9)
+                                    plr.message = HUSTR_TALKTOSELF3;
+                                else if (num_nobrainers < 32)
+                                    plr.message = HUSTR_TALKTOSELF4;
+                                else
+                                    plr.message = HUSTR_TALKTOSELF5;
+                            }
                         }
                     }
-                }
-            }
-        } else {
-            c = (char) ev.data1;
+                    return r;
+                });
+            } else eatkey = false;
+        } else eatkey = ev.ifKey(sc -> {
+            final boolean ret;
+            char c = sc.c;
             // send a macro
             if (altdown) {
                 c = (char) (c - '0');
                 if (c > 9)
                     return false;
+                
                 // fprintf(stderr, "got here\n");
-                macromessage = chat_macros[c].toCharArray();
+                char[] macromessage = chat_macros[c].toCharArray();
 
                 // kill last message with a '\n'
-                this.queueChatChar(KEY_ENTER); // DEBUG!!!
+                this.queueChatChar(ScanCode.SC_ENTER.c); // DEBUG!!!
 
                 // send the macro message
                 int index = 0;
                 while (macromessage[index] != 0) {
                     this.queueChatChar(macromessage[index]);
                 }
-                this.queueChatChar(KEY_ENTER);
+                this.queueChatChar(ScanCode.SC_ENTER.c);
 
                 // leave chat mode and notify that it was sent
                 chat_on[0] = false;
                 lastmessage.setLength(0);
                 lastmessage.append(chat_macros[c]);
                 plr.message = lastmessage.toString();
-                eatkey = true;
+                ret = true;
             } else {
                 if (DOOM.language == Language_t.french)
                     c = ForeignTranslation(c);
                 if (shiftdown || (c >= 'a' && c <= 'z'))
                     c = shiftxform[c];
-                eatkey = w_chat.keyInIText(c);
-                if (eatkey) {
+                ret = w_chat.keyInIText(c);
+                if (ret) {
                     // static unsigned char buf[20]; // DEBUG
                     this.queueChatChar(c);
 
                     // sprintf(buf, "KEY: %d => %d", ev->data1, c);
                     // plr->message = buf;
                 }
-                if (c == KEY_ENTER) {
+                if (c == ScanCode.SC_ENTER.c) {
                     chat_on[0] = false;
                     if ((w_chat.l.len != 0)) {
                         lastmessage.setLength(0);
                         lastmessage.append( w_chat.l.text);
                         plr.message = new String(lastmessage);
                     }
-                } else if (c == KEY_ESCAPE)
+                } else if (c == ScanCode.SC_ESCAPE.c) {
                     chat_on[0] = false;
+                }
             }
-        }
+            return ret;
+        });
 
         return eatkey;
-
     }
 
     // ///////////////////////////////// STRUCTS
@@ -816,9 +815,9 @@ public class HU implements IHeadsUp{
 
             if (ch >= ' ' && ch <= '_')
                 this.l.addCharToTextLine((char) ch);
-            else if (ch == KEY_BACKSPACE)
+            else if (ch == ScanCode.SC_BACKSPACE.c)
                 this.delCharFromIText();
-            else if (ch != KEY_ENTER)
+            else if (ch != ScanCode.SC_ENTER.c)
                 return false; // did not eat key
 
             return true; // ate the key

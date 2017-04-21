@@ -16,56 +16,70 @@
  */
 package awt;
 
-import awt.DoomVideoInterface.DoomListener;
-import static awt.MochaDoomInputEvent.EV_CONFIGURE_NOTIFY;
 import i.Game;
-import java.util.Spliterators.AbstractSpliterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ForkJoinPool;
+import java.awt.AWTEvent;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.stream.StreamSupport;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import m.Settings;
 
 /**
  * Reworked intermediate class for storing events being already heard by listener
- * by not yet processed by the game event queue
+ * by not yet processed by the game event queue.
+ * Supports more robust concurrency then its predecessors and provides unique parallelism.
  * 
- * Supports more robust concurrency then its predecessors and provides unique parallelism
+ * The purpose of this very abstract and very reusable class is to provide way of performant, concurrent input.
+ * If the main loop is stuck by rendering complex frames, with low FPS, the difference between
+ * plain and concurrent and concurrent approaches will be boldly visible.
+ * 
+ * However, it will also provide improvement for smoothness over very-high FPS.
+ * 
+ * It took some effort to separate event handling into three different classes: one for listening the input,
+ * one for queuing it and one for sending to underlying DOOM engine. But it best for them to be separated and
+ * abstracted for each other for portability reason. For example, if you'll have to rewrite Mocha Doom for
+ * new OS of year 2030, which do not have AWT, but have some other input framework (maybe even working with
+ * think-reader helmet instead of keyboard) you will only have to put much effort on rewriting DoomFrame and MochaEvents
  * @author Good Sign
  */
-abstract class ConcurrentEvents extends AbstractSpliterator<MochaDoomInputEvent> implements DoomListener {
+public abstract class ConcurrentEvents {
     /**
      * Parallelism
      */
     private static final int INPUT_THREADS = Game.getConfig().getValue(Settings.parallelism_input, Integer.class);
-    private static final ForkJoinPool pool = INPUT_THREADS > 0 ? new ForkJoinPool(INPUT_THREADS) : null;
 
     /**
      * modifications of eventQueue must be thread safe!
      * But do not invent a wheel. Use one already existent.
      */
-    protected final ConcurrentLinkedQueue<MochaDoomInputEvent> eventQueue = new ConcurrentLinkedQueue<>();
+    protected final ArrayBlockingQueue<AWTEvent> eventQueue = new ArrayBlockingQueue<>(Math.min(4, INPUT_THREADS << 3), false);
+    protected final Executor executor = INPUT_THREADS > 0 ? Executors.newFixedThreadPool(INPUT_THREADS) : null;
+    protected final Consumer<? super AWTEvent> action;
     protected static final boolean D = false;
-    protected volatile boolean we_are_moving = false;
 
     /**
      * We have absolutely no idea about "how many events do we have total", so
      * we report max value of long. It is normal for Java! If I remember correctly, this exact value
      * is a special case and will cause StreamSupport framework to assume infinity
      */
-    ConcurrentEvents() {
-        super(Long.MAX_VALUE, ORDERED|CONCURRENT);
-        eventQueue.add(EV_CONFIGURE_NOTIFY);
-    }
-
-    @Override
-    public void setMouseIsMoving(boolean set) {
-        this.we_are_moving = set;
-    }
-
-    @Override
-    public boolean getMouseWasMoving() {
-        return this.we_are_moving;
+    ConcurrentEvents(Consumer<? super AWTEvent> action) {
+        if (INPUT_THREADS > 0) {
+            IntStream.range(0, INPUT_THREADS).forEach(i -> {
+                executor.execute(() -> {
+                    for(;;) {
+                        try {
+                            action.accept(eventQueue.take());
+                        } catch (InterruptedException ex) {
+                            Logger.getLogger(ConcurrentEvents.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                });
+            });
+        }
+        this.action = action;
     }
 
     /**
@@ -75,25 +89,9 @@ abstract class ConcurrentEvents extends AbstractSpliterator<MochaDoomInputEvent>
      * 
      * @param action whoever will eat events
      */
-    @Override
-    public void processAllPending(Consumer<? super MochaDoomInputEvent> action) {
-        if (INPUT_THREADS > 0) {
-            pool.submit(() -> StreamSupport.stream(this, true).forEach(action::accept));
-        } else {
-            StreamSupport.stream(this, false).forEach(action::accept);
+    public void processAllPending() {
+        if (INPUT_THREADS <= 0) {
+            eventQueue.forEach(action::accept);
         }
-    }
-    
-    /**
-     * A part of spliterator interface implementation, nothing special there
-     */
-    @Override
-    public boolean tryAdvance(Consumer<? super MochaDoomInputEvent> action) {
-        if (!eventQueue.isEmpty()) {
-            action.accept(eventQueue.remove());
-            return true;
-        }
-        
-        return false;
     }
 }
