@@ -537,11 +537,7 @@ public class EndLevel<T, V> extends AbstractEndLevel {
      * Draws a number. If digits > 0, then use that many digits minimum, otherwise only use as many as necessary.
      * Returns new x position.
      */
-    protected int
-            drawNum(int x,
-                    int y,
-                    int n,
-                    int digits) {
+    protected int drawNum(int x, int y, int n, int digits) {
 
         int fontwidth = num[0].width;
         boolean neg;
@@ -589,10 +585,7 @@ public class EndLevel<T, V> extends AbstractEndLevel {
 
     }
 
-    protected void
-            drawPercent(int x,
-                    int y,
-                    int p) {
+    protected void drawPercent(int x, int y, int p) {
         if (p < 0) {
             return;
         }
@@ -1199,12 +1192,12 @@ public class EndLevel<T, V> extends AbstractEndLevel {
         drawLF();
 
         // draw stat titles (top line)
-        DOOM.graphicSystem.DrawPatch(FG, kills, NG_STATSX() + NG_SPACINGX - kills.width, NG_STATSY);
-        DOOM.graphicSystem.DrawPatch(FG, items, NG_STATSX() + 2 * NG_SPACINGX - items.width, NG_STATSY);
-        DOOM.graphicSystem.DrawPatch(FG, secret, NG_STATSX() + 3 * NG_SPACINGX - secret.width, NG_STATSY);
+        DOOM.graphicSystem.DrawPatchScaled(FG, kills, DOOM.vs, NG_STATSX() + NG_SPACINGX - kills.width, NG_STATSY);
+        DOOM.graphicSystem.DrawPatchScaled(FG, items, DOOM.vs, NG_STATSX() + 2 * NG_SPACINGX - items.width, NG_STATSY);
+        DOOM.graphicSystem.DrawPatchScaled(FG, secret, DOOM.vs, NG_STATSX() + 3 * NG_SPACINGX - secret.width, NG_STATSY);
 
         if (dofrags != 0) {
-            DOOM.graphicSystem.DrawPatch(FG, frags, NG_STATSX() + 4 * NG_SPACINGX - frags.width, NG_STATSY);
+            DOOM.graphicSystem.DrawPatchScaled(FG, frags, DOOM.vs, NG_STATSX() + 4 * NG_SPACINGX - frags.width, NG_STATSY);
         }
 
         // draw stats
@@ -1216,22 +1209,22 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             }
 
             x = NG_STATSX();
-            DOOM.graphicSystem.DrawPatch(FG, p[i], x - p[i].width, y);
+            DOOM.graphicSystem.DrawPatchScaled(FG, p[i], DOOM.vs, x - p[i].width, y);
 
             if (i == me) {
-                DOOM.graphicSystem.DrawPatch(FG, star, x - p[i].width, y);
+                DOOM.graphicSystem.DrawPatchScaled(FG, star, DOOM.vs, x - p[i].width, y);
             }
 
             x += NG_SPACINGX;
-            drawPercent(x - pwidth, y + 10, cnt_kills[i]);
+            drawPercent((x - pwidth) * DOOM.vs.getScalingX(), (y + 10) * DOOM.vs.getScalingY(), cnt_kills[i]);
             x += NG_SPACINGX;
-            drawPercent(x - pwidth, y + 10, cnt_items[i]);
+            drawPercent((x - pwidth) * DOOM.vs.getScalingX(), (y + 10) * DOOM.vs.getScalingY(), cnt_items[i]);
             x += NG_SPACINGX;
-            drawPercent(x - pwidth, y + 10, cnt_secret[i]);
+            drawPercent((x - pwidth) * DOOM.vs.getScalingX(), (y + 10) * DOOM.vs.getScalingY(), cnt_secret[i]);
             x += NG_SPACINGX;
 
             if (dofrags != 0) {
-                drawNum(x, y + 10, cnt_frags[i], -1);
+                drawNum(x * DOOM.vs.getScalingX(), (y + 10) * DOOM.vs.getScalingY(), cnt_frags[i], -1);
             }
 
             y += WI_SPACINGY;
@@ -1768,7 +1761,7 @@ public void WI_unloadData()
     }
 
     protected int NG_STATSX() {
-        return 32 + star.width / 2 + 32 * ~dofrags;
+        return 32 + star.width / 2 + 32 * (!(dofrags > 0) ? 1 : 0);
     }
 
     protected static boolean RNGCHECK(int what, int min, int max) {
