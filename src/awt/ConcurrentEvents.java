@@ -94,4 +94,7 @@ public abstract class ConcurrentEvents {
             eventQueue.forEach(action::accept);
         }
     }
+    
+    abstract void setMouseLoose();
+    abstract void setMouseCaptured();
 }

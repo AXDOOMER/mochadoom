@@ -1,5 +1,6 @@
 package awt;
 
+import awt.DoomVideoInterface.DoomListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -22,6 +23,16 @@ final class MochaEvents extends ConcurrentEvents implements DoomListener {
         super(poster::sendEvent);
         this.poster = poster;
     }
+
+    @Override
+    void setMouseCaptured() {
+        poster.setMouseCaptured();
+    }
+
+    @Override
+    void setMouseLoose() {
+        poster.setMouseLoose();
+    }
     
     ///////////////////// WINDOW STUFF //////////////////////
     @Override public void windowActivated(WindowEvent windowevent) { eventQueue.add(windowevent); }
@@ -41,21 +52,8 @@ final class MochaEvents extends ConcurrentEvents implements DoomListener {
     @Override public void mouseClicked(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
     @Override public void mouseEntered(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
     @Override public void mouseExited(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-
-    @Override
-    public void mousePressed(MouseEvent mouseevent) {
-        if (!poster.we_are_moving) { // Don't let presses go through when moving.
-            eventQueue.add(mouseevent);
-        }
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent mouseevent) {
-        if (!poster.we_are_moving) { // Don't let presses go through when moving.
-            eventQueue.add(mouseevent);
-        }
-    }
-
+    @Override public void mousePressed(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
+    @Override public void mouseReleased(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
     @Override public void mouseDragged(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
     @Override public void mouseMoved(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
     @Override public void componentHidden(ComponentEvent e) {} // Do what, here? Pausing would be a good idea.

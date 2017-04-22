@@ -197,6 +197,16 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
     public void setTitle() {
         setTitle(Strings.MOCHA_DOOM_TITLE + " - " + DOOM.bppMode);
     }
+
+    @Override
+    public void setMouseLoose() {
+        events.setMouseLoose();
+    }
+
+    @Override
+    public void setMouseCaptured() {
+        events.setMouseCaptured();
+    }
     
     private final boolean showFPS = Game.getCVM().bool(CommandVariable.SHOWFPS);
     private long lastTime = System.currentTimeMillis();

@@ -62,9 +62,6 @@ import java.util.logging.Logger;
  * @author vekltron
  */
 public class DoomEventPoster {
-    protected static final int POINTER_WARP_COUNTDOWN = 1;
-    private static final boolean D = false;
-    
     /**
      * This event here is used as a static scratch copy. When sending out
      * messages, its contents are to be actually copied (struct-like).
@@ -109,17 +106,20 @@ public class DoomEventPoster {
         this.hidden = createInvisibleCursor();
 
         // Create AWT Robot for forcing mouse
-        {
-            Robot robot;
-            try {
-                robot = new Robot();
-            } catch (AWTException e) {
-                Logger.getLogger(DoomEventPoster.class.getName()).log(Level.SEVERE, e.getMessage(), e);
-                System.err.println("AWT Robot could not be created, mouse input focus will be loose!");
-                robot = null;
-            }
-            this.robby = robot;
+        Robot robot;
+        try {
+            /**
+             * In my opinion, its better turn off mouse at all, then without Robot.
+             * But it will certainly stay there for someone's edge cases.
+             * - Good Sign 2017/04/22
+             */
+            robot = new Robot();
+        } catch (AWTException e) {
+            Logger.getLogger(DoomEventPoster.class.getName()).log(Level.SEVERE, e.getMessage(), e);
+            System.err.println("AWT Robot could not be created, mouse input focus will be loose!");
+            robot = null;
         }
+        this.robby = robot;
     }
 
     /**
@@ -134,11 +134,30 @@ public class DoomEventPoster {
         Cursor hiddenCursor = Toolkit.getDefaultToolkit().createCustomCursor(transparentImage, new Point(1, 1), "HiddenCursor");
         return hiddenCursor;
     }
+    
+    private volatile boolean mouseLoose = false;
+    
+    void setMouseLoose() {
+        mouseLoose = true;
+        content.setCursor(normal);
+    }
+    
+    void setMouseCaptured() {
+        mouseLoose = false;
+        forceKeyboardReaction();
+        forceMouseAutoCapture();
+        autoPositionMouse();
+        autoCaptureMouse();
+    }
 
 	/**
      * Update relative position offset, and force mouse there.
 	 */
     void reposition() {
+        if (!content.isShowing() || mouseLoose) {
+            return;
+        }
+        
         offset.x = content.getLocationOnScreen().x;
         offset.y = content.getLocationOnScreen().y;
         // Shamelessly ripped from Jake 2. Maybe it works better?
@@ -153,6 +172,55 @@ public class DoomEventPoster {
         content.setCursor(hidden);
     }
     
+    private volatile boolean alt_enter_fullscreen = false;
+    
+    private void keyRelease(final Signals.ScanCode sc, final event_t.mouseevent_t mouseEvent) {
+        if(sc == Signals.ScanCode.SC_ENTER && alt_enter_fullscreen) {
+            alt_enter_fullscreen = false;
+            DM.videoInterface.switchFullscreen();
+            return;
+        }
+        alt_enter_fullscreen = false;
+        
+        if (sc == Signals.ScanCode.SC_PRTSCRN) {
+            DM.PostEvent(sc.doomEventDown);
+        }
+        
+        if ((sc != Signals.ScanCode.SC_CAPSLK) || ((sc == Signals.ScanCode.SC_CAPSLK) && capstoggle)) {
+            DM.PostEvent(sc.doomEventUp);
+        }
+        
+        capstoggle = false;
+        
+        if (prevmousebuttons != 0) {
+            // Allow combined mouse/keyboard events.
+            mouseEvent.buttons = prevmousebuttons;
+            DM.PostEvent(mouseEvent);
+        }
+    }
+
+    private void keyPress(final Signals.ScanCode sc, final event_t.mouseevent_t mouseEvent) {
+        if (sc == Signals.ScanCode.SC_LALT) {
+            alt_enter_fullscreen = true;
+            System.out.println("ALT+");
+        }
+        
+        // Toggle, but don't it go through.
+        if (sc == Signals.ScanCode.SC_CAPSLK) {
+            capstoggle = true;
+        }
+        
+        if (sc != Signals.ScanCode.SC_CAPSLK) {
+            DM.PostEvent(sc.doomEventDown);
+        }
+        
+        if (prevmousebuttons != 0) {
+            // Allow combined mouse/keyboard events.
+            mouseEvent.buttons = prevmousebuttons;
+            DM.PostEvent(mouseEvent);
+        }
+    }
+    
     public void sendEvent(Signals.ScanCode sc, int eventType) {
         final event_t.mouseevent_t mouseEvent = mouse_event.get();
         if (eventType == KeyEvent.KEY_PRESSED) {
@@ -163,6 +231,13 @@ public class DoomEventPoster {
     }
     
     public void sendEvent(AWTEvent X_event) {
+        if (enableAutoCapture && autoCaptureTimeout < System.currentTimeMillis()) {
+            enableAutoCapture = false;
+            forceKeyboardReaction();
+            forceMouseAutoCapture();
+            autoPositionMouse();
+        }
+        
         final event_t.mouseevent_t mouseEvent = mouse_event.get();
         // Keyboard events get priority vs mouse events.
         // In the case of combined input, however, we need
@@ -188,7 +263,11 @@ public class DoomEventPoster {
         }
 
         // Mouse events are also handled, but with secondary priority.
-        ProcessMouse(X_event, mouseEvent);
+        // Ignore ALL mouse events if we are moving the window.
+        if (!weAreMoving) {
+            ProcessMouse(X_event, mouseEvent);
+        }
+        
         // Now for window events. This includes the mouse breaking the border.
         ProcessWindow(X_event); 
     }
@@ -196,7 +275,6 @@ public class DoomEventPoster {
     private void ProcessMouse(AWTEvent X_event, final event_t.mouseevent_t mouseEvent) {
         final MouseEvent MEV;
         final Point tmp;
-        // Ignore ALL mouse events if we are moving the window.
         switch (X_event.getID()) {
             // ButtonPress
             case MouseEvent.MOUSE_PRESSED:
@@ -259,104 +337,168 @@ public class DoomEventPoster {
         }
     }
 
-    private void keyRelease(final Signals.ScanCode sc, final event_t.mouseevent_t mouseEvent) {
-        if (sc == Signals.ScanCode.SC_PRTSCRN) {
-            DM.PostEvent(sc.doomEventDown);
-        }
-        
-        if ((sc != Signals.ScanCode.SC_CAPSLK) || ((sc == Signals.ScanCode.SC_CAPSLK) && capstoggle)) {
-            DM.PostEvent(sc.doomEventUp);
-        }
-        
-        capstoggle = false;
-        
-        if (prevmousebuttons != 0) {
-            // Allow combined mouse/keyboard events.
-            mouseEvent.buttons = prevmousebuttons;
-            DM.PostEvent(mouseEvent);
-        }
-    }
+    protected volatile boolean weAreMoving = false;
+    protected volatile boolean enableAutoCapture = false;
+    protected volatile long autoCaptureTimeout = 0L;
 
-    private void keyPress(final Signals.ScanCode sc, final event_t.mouseevent_t mouseEvent) {
-        // Toggle, but don't it go through.
-        if (sc == Signals.ScanCode.SC_CAPSLK) {
-            capstoggle = true;
-        }
-        
-        if (sc != Signals.ScanCode.SC_CAPSLK) {
-            DM.PostEvent(sc.doomEventDown);
-        }
-        
-        if (prevmousebuttons != 0) {
-            // Allow combined mouse/keyboard events.
-            mouseEvent.buttons = prevmousebuttons;
-            DM.PostEvent(mouseEvent);
-        }
-    }
-    
-    protected volatile boolean we_are_moving = false;
-
+    /**
+     * Ehrwww.. This amount of gain-lost-exit-click-boom-puff-splesk-drink scenarios are so fucked up!
+     * I hope I've fixed most of them - say 85% of what a player will usually encounter.
+     * 
+     * However, I am sure there are still cases when it will break a bit.
+     *  - Good Sign 2017/04/22
+     */
     private void ProcessWindow(AWTEvent X_event) {
         switch (X_event.getID()) {
-            case MouseEvent.MOUSE_CLICKED:
-                // Marks the end of a move. A press + release during a move will
-                // trigger a "click" event, which is handled specially.
-                if (we_are_moving) {
-                    we_are_moving = false;
-                    reposition();
-                    ignorebutton = false;
-                }
-                break;
-            case WindowEvent.WINDOW_LOST_FOCUS:
-            case MouseEvent.MOUSE_EXITED:
-                // Forcibly clear events                 
-                DM.PostEvent(event_t.CANCEL_MOUSE);
-                DM.PostEvent(event_t.CANCEL_KEYS);
-                content.setCursor(normal);
-                ignorebutton = true;
-                break;
-
-            case ComponentEvent.COMPONENT_MOVED:
-                // Don't try to reposition immediately during a move
-                // event, wait for a mouse click.
-                we_are_moving = true;
-                ignorebutton = true;
-                // Forcibly clear events                 
-                DM.PostEvent(event_t.CANCEL_MOUSE);
-                DM.PostEvent(event_t.CANCEL_KEYS);
-                break;
-            case MouseEvent.MOUSE_ENTERED:
-            case WindowEvent.WINDOW_GAINED_FOCUS:
-                we_are_moving = false;
-                //reposition();
-            case WindowEvent.WINDOW_OPENED:
+            /**
+             * All events that have to do with the window being changed,
+             * moved etc. should go here. The most often result
+             * in focus being lost and position being changed, so we
+             * need to take charge.
+             */
             case WindowEvent.WINDOW_ACTIVATED:
             case WindowEvent.WINDOW_DEICONIFIED:
             case ComponentEvent.COMPONENT_RESIZED:
-                // All events that have to do with the window being changed,
-                // moved etc. should go here. The most often result
-                // in focus being lost and position being changed, so we
-                // need to take charge.
-                DM.justfocused = true;
-                content.requestFocus();
-                reposition();
-                ignorebutton = false;
-                break;
-            default:
-                // NOT NEEDED in AWT if (doShm && X_event.type == X_shmeventtype) shmFinished = true;
+                content.requestFocusInWindow();
                 break;
 
+            /**
+             * This set of events is for passive focus gain. The focus will be automatically
+             * gain and keys and mouse captured as fast as the game will start.
+             * Also they will be captured normally when the mouse moves into the window,
+             * for example, after switching tasks.
+             * 
+             * The window opened event also repeats if you switch full screen, and muse entered
+             * event will not happen if you have dragged the window, until you click into it
+             * or switch to another window, then back.
+             */
+            case MouseEvent.MOUSE_ENTERED:
+                autoPositionMouse();
+                break;
+            case WindowEvent.WINDOW_OPENED:
+                forceMouseAutoCapture();
+                forceKeyboardReaction();
+                autoPositionMouse();
+                
+            /**
+             * The next set of rules is for active focus gain. It could be done in two ways:
+             * natural, when window become visible topmost window with active borders,
+             * and when you click with mouse into the window.
+             * 
+             * Focus gain *must not* capture the mouse and keys immediately, or it will
+             * start to process undesirable events, i.e. start firing your weapon or
+             * navigating menus.
+             */
+            case MouseEvent.MOUSE_CLICKED:
+            case WindowEvent.WINDOW_GAINED_FOCUS:
+                // Re-elable acquiring mouse and keyboard focus after 300 millisecond delay
+                delayedAutoCapture(300);
+                break;
+                
+            /**
+             * This set of rules are for ultimately releasing any capture on mouse and keyboard
+             * When mouse exits the window, it no longer is listened by the game.
+             * When the mouse returns to the window, it should be captured back.
+             * 
+             * When the window additionally loses focus, keyboard reactions are disabled and events already
+             * sent to the underlying engine are cleared, or when you drag the window by its border,
+             * the mouse will not be captured back upon return to the window. You will have to
+             * click inside the window or make window inactive, then active again.
+             */
+            case WindowEvent.WINDOW_LOST_FOCUS:
+                forciblyClearEvents();
+                disableKeyboardReaction();
+            case ComponentEvent.COMPONENT_MOVED:
+                disableMouseAutoCapture();
+            case MouseEvent.MOUSE_EXITED:
+                // If we happen to barely slide mouse through window, disable the timeout to capture it
+                enableAutoCapture = false;
+                break;
         }
         
-        // If the mouse moved, don't wait until it managed to get out of the 
-        // window to bring it back.
-        if (!we_are_moving && (mousedx != 0 || mousedy != 0)) {
+        /**
+         * If all the conditions are set up properly, capture the mouse
+         * and move its real cursor using Robot
+         */
+        autoCaptureMouse();
+        mousedx = mousedy = 0; // don't spaz.
+    }
+
+    /**
+     * Will hide the cursor and set internal component positions tracking it,
+     * but not touching the cursor's real position. After 300 ms will
+     * enable processing of mouse clicks and keyboard strokes
+     */
+    private void delayedAutoCapture(int delayMs) {
+        if (!mouseLoose) {
+            content.setCursor(hidden);
+        }
+        
+        autoCaptureTimeout= System.currentTimeMillis() + delayMs;
+        enableAutoCapture = true;
+    }
+
+    /**
+     * As the window gains focus, keyboard input should be processed
+     */
+    private void forceKeyboardReaction() {
+        ignorebutton = false;
+    }
+
+    /**
+     * If the mouse moved, don't wait until it managed to get out of the
+     * window to bring it back.
+     */
+    private void autoCaptureMouse() {
+        if (mouseLoose) {
+            return;
+        }
+        
+        if ((!weAreMoving || enableAutoCapture) && (mousedx != 0 || mousedy != 0)) {
             // move the mouse to the window center again
             if (robby != null) {
                 robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
             }
         }
+    }
 
-        mousedx = mousedy = 0; // don't spaz.
+    /**
+     * As the window gains focus, mouse capture should be enabled again
+     */
+    private void forceMouseAutoCapture() {
+        weAreMoving = false;
+    }
+
+    /**
+     * Repositions the mouse if auto-capture is enabled
+     */
+    private void autoPositionMouse() {
+        if (!weAreMoving || enableAutoCapture) {
+            reposition();
+        }
+    }
+
+    /**
+     * If the window is not in focus, do not capture the mouse
+     */
+    private void disableMouseAutoCapture() {
+        weAreMoving = true;
+    }
+    
+    /**
+     * Do not react on user keyboard key presses in the game
+     */
+    private void disableKeyboardReaction() {
+        ignorebutton = true;
+    }
+
+    /**
+     * Forcibly clear mouse and key events in the underlying engine
+     * Discard cursor modifications
+     */
+    private void forciblyClearEvents() {
+        DM.PostEvent(event_t.CANCEL_MOUSE);
+        DM.PostEvent(event_t.CANCEL_KEYS);
+        content.setCursor(normal);
     }
 }

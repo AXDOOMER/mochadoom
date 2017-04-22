@@ -32,6 +32,7 @@ public enum GameMode {
             case DOOM2_WAD:
                 return commercial;
             case DOOMU_WAD:
+            case UDOOM_WAD:
                 return retail;
             case DOOM_WAD:
                 return registered;

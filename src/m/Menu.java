@@ -903,25 +903,10 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
 
     private int lastx = 0;
 
-    private boolean switchfullscreen_alt = false;
-    private boolean switchfullscreen_enter = false;
-
+    @Override
     public boolean Responder(event_t ev) {
-
         final ScanCode sc;
         //System.out.println("Processing keyevent:" +(ev.type==evtype_t.ev_keydown || ev.type==evtype_t.ev_keyup)+ " value = "+(char)ev.data1);
-        
-        if (!(switchfullscreen_alt || switchfullscreen_enter))
-            ev.withKey(SC_LALT, evtype_t.ev_keydown, () -> switchfullscreen_alt = true);
-        else if (switchfullscreen_alt && !switchfullscreen_enter)
-            ev.withKey(SC_ENTER, evtype_t.ev_keydown, () -> switchfullscreen_enter = true);
-        else if (switchfullscreen_alt && switchfullscreen_enter) {
-            if (!ev.withKey(SC_LALT, evtype_t.ev_keyup, () -> switchfullscreen_enter = switchfullscreen_alt = false))
-                ev.withKey(SC_ENTER, evtype_t.ev_keyup, () -> {
-                    DOOM.videoInterface.switchFullscreen();
-                    switchfullscreen_enter = switchfullscreen_alt = false;
-                });
-        } else switchfullscreen_enter = switchfullscreen_alt = false;
         
         if (ev.isType(evtype_t.ev_joystick) && joywait < DOOM.ticker.GetTime()) {
             // Joystick input
@@ -1256,6 +1241,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
             return;
 
         DOOM.menuactive = true;
+        DOOM.videoInterface.setMouseLoose();
         currentMenu = MainDef; // JDC
         itemOn = (short) currentMenu.lastOn; // JDC
     }
@@ -1328,6 +1314,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     //
     public void ClearMenus() {
         DOOM.menuactive = false;
+        DOOM.videoInterface.setMouseCaptured();
         DOOM.graphicSystem.forcePalette();
         
         // MAES: was commented out :-/

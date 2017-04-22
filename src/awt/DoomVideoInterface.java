@@ -7,6 +7,13 @@ import java.awt.Canvas;
 import java.awt.Component;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.KeyEventDispatcher;
+import java.awt.event.ComponentListener;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.WindowFocusListener;
+import java.awt.event.WindowListener;
 import java.awt.im.InputContext;
 import java.util.StringTokenizer;
 import javax.swing.JComponent;
@@ -33,6 +40,8 @@ public interface DoomVideoInterface<V> {
 	void SetGamma(int gammalevel);
     void setTitle();
     void switchFullscreen();
+    void setMouseLoose();
+    void setMouseCaptured();
     InputContext getInputContext();
     
     /**
@@ -180,4 +189,20 @@ public interface DoomVideoInterface<V> {
         
         return true;
     }
+
+    /**
+     * An interface to combine all needed listeners plus provide method to stop answering other mouse events
+     * when it is moving and a function to process all queued events
+     *
+     * @author Good Sign
+     */
+    public static interface DoomListener extends
+            WindowListener,
+            ComponentListener,
+            KeyListener,
+            MouseListener,
+            MouseMotionListener,
+            WindowFocusListener,
+            KeyEventDispatcher
+    {}
 }
