@@ -55,7 +55,7 @@ public abstract class ConcurrentEvents {
      * modifications of eventQueue must be thread safe!
      * But do not invent a wheel. Use one already existent.
      */
-    protected final ArrayBlockingQueue<AWTEvent> eventQueue = new ArrayBlockingQueue<>(Math.min(4, INPUT_THREADS << 3), false);
+    protected final ArrayBlockingQueue<AWTEvent> eventQueue = new ArrayBlockingQueue<>(Math.max(4, INPUT_THREADS << 3), false);
     protected final Executor executor = INPUT_THREADS > 0 ? Executors.newFixedThreadPool(INPUT_THREADS) : null;
     protected final Consumer<? super AWTEvent> action;
     protected static final boolean D = false;
@@ -91,7 +91,9 @@ public abstract class ConcurrentEvents {
      */
     public void processAllPending() {
         if (INPUT_THREADS <= 0) {
-            eventQueue.forEach(action::accept);
+            while(!eventQueue.isEmpty()) {
+                action.accept(eventQueue.remove());
+            }
         }
     }
     

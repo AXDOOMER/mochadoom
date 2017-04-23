@@ -35,32 +35,32 @@ final class MochaEvents extends ConcurrentEvents implements DoomListener {
     }
     
     ///////////////////// WINDOW STUFF //////////////////////
-    @Override public void windowActivated(WindowEvent windowevent) { eventQueue.add(windowevent); }
+    @Override public void windowActivated(WindowEvent windowevent) { eventQueue.offer(windowevent); }
     @Override public void windowClosed(WindowEvent windowevent) {}
     @Override public void windowClosing(WindowEvent windowevent) {}
     @Override public void windowDeactivated(WindowEvent windowevent) { eventQueue.clear(); } // Clear the queue if focus is lost.
-    @Override public void windowDeiconified(WindowEvent windowevent) { eventQueue.add(windowevent); }
+    @Override public void windowDeiconified(WindowEvent windowevent) { eventQueue.offer(windowevent); }
     @Override public void windowIconified(WindowEvent windowevent) { eventQueue.clear(); }
-    @Override public void windowOpened(WindowEvent windowevent) { eventQueue.add(windowevent); }
+    @Override public void windowOpened(WindowEvent windowevent) { eventQueue.offer(windowevent); }
     
     //////////// KEYS LISTENERS //////////
-    @Override public void keyPressed(KeyEvent e) { eventQueue.add(e); e.consume(); }
-    @Override public void keyReleased(KeyEvent e) { eventQueue.add(e); e.consume(); }
-    @Override public void keyTyped(KeyEvent e) { eventQueue.add(e); e.consume(); }
+    @Override public void keyPressed(KeyEvent e) { eventQueue.offer(e); e.consume(); }
+    @Override public void keyReleased(KeyEvent e) { eventQueue.offer(e); e.consume(); }
+    @Override public void keyTyped(KeyEvent e) { eventQueue.offer(e); e.consume(); }
 
     //////////////////////////// MOUSE EVENTS ////////////////////////////
-    @Override public void mouseClicked(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-    @Override public void mouseEntered(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-    @Override public void mouseExited(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-    @Override public void mousePressed(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-    @Override public void mouseReleased(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-    @Override public void mouseDragged(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
-    @Override public void mouseMoved(MouseEvent mouseevent) { eventQueue.add(mouseevent); }
+    @Override public void mouseClicked(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
+    @Override public void mouseEntered(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
+    @Override public void mouseExited(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
+    @Override public void mousePressed(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
+    @Override public void mouseReleased(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
+    @Override public void mouseDragged(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
+    @Override public void mouseMoved(MouseEvent mouseevent) { eventQueue.offer(mouseevent); }
     @Override public void componentHidden(ComponentEvent e) {} // Do what, here? Pausing would be a good idea.
-    @Override public void componentMoved(ComponentEvent e) { eventQueue.add(e);}
-    @Override public void componentResized(ComponentEvent e) { eventQueue.add(e); }
-    @Override public void componentShown(ComponentEvent e) { eventQueue.add(e); }
-    @Override public void windowGainedFocus(WindowEvent e) { eventQueue.add(e); }
-    @Override public void windowLostFocus(WindowEvent e) { eventQueue.add(e); }
+    @Override public void componentMoved(ComponentEvent e) { eventQueue.offer(e);}
+    @Override public void componentResized(ComponentEvent e) { eventQueue.offer(e); }
+    @Override public void componentShown(ComponentEvent e) { eventQueue.offer(e); }
+    @Override public void windowGainedFocus(WindowEvent e) { eventQueue.offer(e); }
+    @Override public void windowLostFocus(WindowEvent e) { eventQueue.offer(e); }
     @Override public boolean dispatchKeyEvent(KeyEvent e) { return false; }
 }
