@@ -112,7 +112,6 @@ public enum Settings {
     scale_melt(FILE_MOCHADOOM, true), // If you scale melt and use DoomRandom generator (not truly random), it looks exacly like vanilla
     semi_translucent_fuzz(FILE_MOCHADOOM, false), // only works in AlphaTrueColor mode. Also ignored with fuzz_mix = true
     fuzz_mix(FILE_MOCHADOOM, false), // Maes unique features on Fuzz effect. Vanilla dont have that, so they are switched off by default
-    parallelism_input(FILE_MOCHADOOM, 1), // Experimental keyboard/mouse events parallelism, by default DO parallel but only 1 thread
     parallelism_realcolor_tint(FILE_MOCHADOOM, Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(FILE_MOCHADOOM, 0), // When drawing screen graphics patches, this speeds up column drawing, <= 0 is serial
     greyscale_filter(FILE_MOCHADOOM, GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)
