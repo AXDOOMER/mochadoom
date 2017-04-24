@@ -14,23 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package awt;
 
 import g.Signals;
 import java.awt.AWTEvent;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
@@ -90,6 +86,13 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
         return true;
     }
     
+    enum KeyStateSatisfaction {
+        SATISFIED_ATE,
+        GENEOROUS_PASS,
+        WANTS_MORE_ATE,
+        WANTS_MORE_PASS
+    }
+    
     enum ActionMode {
         PERFORM, DEPEND, CAUSE, REVERT;
     }
@@ -138,21 +141,22 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
     }
     
     @FunctionalInterface
-    interface EventAction<Handler extends Enum<Handler> & EventBase<Handler>> extends BiConsumer<EventObserver<Handler>, AWTEvent> {
-        default EventAction<Handler> act(EventObserver<Handler> obs, AWTEvent ev) {
-            accept(obs, ev);
-            return this;
-        }
+    interface EventAction<Handler extends Enum<Handler> & EventBase<Handler>> {
+        void act(EventObserver<Handler> obs, AWTEvent ev);
+    }
+    
+    interface KeyStateCallback<Handler extends Enum<Handler> & EventBase<Handler>>  {
+        KeyStateSatisfaction call(EventObserver<Handler> observer);
     }
     
     final class KeyStateInterest<Handler extends Enum<Handler> & EventBase<Handler>> {
         private final Set<Signals.ScanCode> interestSet;
-        private final Consumer<EventObserver<Handler>> satisfiedCallback;
+        private final KeyStateCallback<Handler> satisfiedCallback;
         private final boolean repeatable;
 
         public KeyStateInterest(
             final boolean repeatable,
-            final Consumer<EventObserver<Handler>> satisfiedCallback,
+            final KeyStateCallback<Handler> satisfiedCallback,
             final Signals.ScanCode interestFirstKey,
             Signals.ScanCode... interestKeyChain
         ) {
@@ -164,13 +168,12 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
     
     final class KeyStateHolder<Handler extends Enum<Handler> & EventBase<Handler>> {
         private final Set<Signals.ScanCode> holdingSet;
-        private final Deque<KeyStateInterest<Handler>> keyInterests;
-        private final List<KeyStateInterest<Handler>> satisfied;
+        private final LinkedHashSet<KeyStateInterest<Handler>> keyInterests;
+        private final IntFunction<KeyStateInterest<Handler>[]> generator = KeyStateInterest[]::new;
 
         public KeyStateHolder() {
             this.holdingSet = EnumSet.noneOf(Signals.ScanCode.class);
-            this.keyInterests = new ArrayDeque<>();
-            this.satisfied = new ArrayList<>(4);
+            this.keyInterests = new LinkedHashSet<>();
         }
         
         public void removeAllKeys() {
@@ -189,25 +192,32 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
             this.keyInterests.remove(interest);
         }
         
+        public boolean matchInterest(final KeyStateInterest<Handler> check) {
+            return holdingSet.containsAll(check.interestSet);
+        }
+        
         public boolean notifyKeyChange(EventObserver<Handler> observer, Signals.ScanCode code, boolean press) {
             if (press) {
                 holdingSet.add(code);
-                final boolean ret = keyInterests.removeIf(stateInterest -> {
-                    if (holdingSet.containsAll(stateInterest.interestSet)) {
-                        holdingSet.removeAll(stateInterest.interestSet);
-                        stateInterest.satisfiedCallback.accept(observer);
-                        satisfied.add(stateInterest);
-                        return true;
-                    }
-                    
-                    return false;
-                });
                 
-                satisfied.forEach(i -> {
-                    if (i.repeatable) {
-                        keyInterests.add(i);
+                final KeyStateInterest<Handler>[] matched = keyInterests.stream()
+                    .filter(this::matchInterest)
+                    .toArray(this.generator);
+                
+                boolean ret = false;
+                for (int i = 0; i < matched.length; ++i) {
+                    switch (matched[i].satisfiedCallback.call(observer)) {
+                        case SATISFIED_ATE:
+                            ret = true;
+                        case GENEOROUS_PASS:
+                            keyInterests.remove(matched[i]);
+                            break;
+                        case WANTS_MORE_ATE:
+                            ret = true;
+                        case WANTS_MORE_PASS:
+                            break;
                     }
-                });
+                }
                 
                 return ret;
             } else {
@@ -444,5 +454,5 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
             this.sourceHandler = sourceHandler;
             this.targetHandler = targetHandler;
         }
-    }   
+    }
 }

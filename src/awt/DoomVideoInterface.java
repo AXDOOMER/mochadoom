@@ -94,11 +94,8 @@ public interface DoomVideoInterface<V> {
         final Logger logger = Loggers.getLogger(DoomVideoInterface.class.getName());
         final KeyStateInterest<EventHandler> altEnter = new KeyStateInterest<>(true, obs -> {
             logger.log(Level.FINE, () -> "==== SWITCHED FULLSCREEN ====");
-            if (frame.switchFullscreen()) {
-                setFullscreenInputs(frame);
-            } else {
-                setWindowedInputs(frame);
-            }
+            EventHandler.fullscreenChanges(frame.observer, frame.switchFullscreen());
+            return EventBase.KeyStateSatisfaction.WANTS_MORE_ATE;
         }, SC_LALT, SC_ENTER);
         frame.observer.keyStateHolder.addInterest(altEnter);
         
@@ -134,14 +131,6 @@ public interface DoomVideoInterface<V> {
     void setMouseCaptured();
     boolean isFullscreen();
     InputContext getInputContext();
-    
-    static <V> void setFullscreenInputs(final DoomFrame<V, EventHandler> frame) {
-        EventHandler.fullscreenChanges(frame.observer, true);
-    }
-    
-    static <V> void setWindowedInputs(final DoomFrame<V, EventHandler> frame) {
-        EventHandler.fullscreenChanges(frame.observer, false);
-    }
     
     default void turnOnFrame(final JFrame frame, final Component content) {
         frame.add(content);
