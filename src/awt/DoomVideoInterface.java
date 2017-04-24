@@ -5,6 +5,7 @@ import doom.CommandVariable;
 import doom.DoomMain;
 import static g.Signals.ScanCode.*;
 import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -60,6 +61,9 @@ public interface DoomVideoInterface<V> {
     static <V> DoomVideoInterface<V> createSwingInterface(final DoomMain<?, V> DOOM) {
         final GraphicsDevice device = getDevice();
         final JComponent content = new JPanel(true);
+        content.setOpaque(true);
+        content.setDoubleBuffered(true);
+        content.setBackground(Color.red);
         final DoomFrame<V, EventHandler> frame = new DoomFrame<>(DOOM, content, device, toolkitObserver(content, DOOM));
         init(frame, content);
         return frame;

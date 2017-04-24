@@ -167,40 +167,34 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
             return;
         }
         
-        // In case of debug. If level > FINE (most of cases) it will not affect anything
-        LOGGER.log(Level.FINEST, ev::toString);
-        LOGGER.log(Level.FINER, handler::toString);
+        if (handler == EventHandler.WINDOW_ACTIVATE) {
+            int u = 8;
+        }
         
-        actionStateHolder.cooperations(handler, RelationType.DEPEND).forEach(h -> {
-            actionStateHolder.run(h, ActionMode.DEPEND, ev);
-            LOGGER.log(Level.FINE, () -> String.format("%s: %s", ActionMode.DEPEND, h));
-        });
+        // In case of debug. If level > FINE (most of cases) it will not affect anything
+        Loggers.LogEvent(LOGGER, actionStateHolder, handler, ev);
         
         actionStateHolder.run(handler, ActionMode.PERFORM, ev);
         actionStateHolder.adjustments(handler).forEach((relation, affected) -> {
             switch (relation.affection) {
-                case ENABLE:
+                case ENABLES:
                     affected.forEach(h -> {
                         actionStateHolder.enableAction(h, relation.affectedMode);
-                        LOGGER.log(Level.FINER, () -> String.format("%s: %s [%s]", relation.affection, h, relation.affectedMode));
                     });
                     return;
-                case DISABLE:
+                case DISABLES:
                     affected.forEach(h -> {
                         actionStateHolder.disableAction(h, relation.affectedMode);
-                        LOGGER.log(Level.FINER, () -> String.format("%s: %s [%s]", relation.affection, h, relation.affectedMode));
                     });
             }
         });
         
         actionStateHolder.cooperations(handler, RelationType.CAUSE).forEach(h -> {
             actionStateHolder.run(h, ActionMode.CAUSE, ev);
-            LOGGER.log(Level.FINER, () -> String.format("%s: %s", ActionMode.CAUSE, h));
         });
         
         actionStateHolder.cooperations(handler, RelationType.REVERT).forEach(h -> {
             actionStateHolder.run(h, ActionMode.REVERT, ev);
-            LOGGER.log(Level.FINER, () -> String.format("%s: %s", ActionMode.REVERT, h));
         });
     }
 
@@ -250,6 +244,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      */
     protected void cancelKeys(final AWTEvent ev) {
         feed(event_t.CANCEL_KEYS);
+        keyStateHolder.removeAllKeys();
     }
 
     /**
@@ -288,61 +283,79 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
     
     protected final void enableAction(final Handler h, ActionMode mode) {
         actionStateHolder.enableAction(h, mode);
-        LOGGER.log(Level.FINE, () -> String.format("ENABLE ACTION: %s [%s]", h, mode));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("ENABLE ACTION: %s [%s]", h, mode));
+        }
     }
     
     protected final void disableAction(final Handler h, ActionMode mode) {
         actionStateHolder.disableAction(h, mode);
-        LOGGER.log(Level.FINE, () -> String.format("DISABLE ACTION: %s [%s]", h, mode));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("DISABLE ACTION: %s [%s]", h, mode));
+        }
     }
     
     @SafeVarargs
     protected final void mapRelation(final Handler h, RelationType type, Handler... targets) {
-        if (type.affection == EventBase.RelationAffection.COOPERATE) {
+        if (type.affection == EventBase.RelationAffection.COOPERATES) {
             actionStateHolder.mapCooperation(h, type, targets);
         } else {
             actionStateHolder.mapAdjustment(h, type, targets);
         }
-        LOGGER.log(Level.FINE, () -> String.format("RELATION MAPPING: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("RELATION MAPPING: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
+        }
     }
     
     @SafeVarargs
     protected final void unmapRelation(final Handler h, RelationType type, Handler... targets) {
-        if (type.affection == EventBase.RelationAffection.COOPERATE) {
+        if (type.affection == EventBase.RelationAffection.COOPERATES) {
             actionStateHolder.unmapCooperation(h, type, targets);
         } else {
             actionStateHolder.unmapAdjustment(h, type, targets);
         }
-        LOGGER.log(Level.FINE, () -> String.format("RELATION UNMAP: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("RELATION UNMAP: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
+        }
     }
     
     @SafeVarargs
     protected final void restoreRelation(final Handler h, RelationType type, Handler... targets) {
-        if (type.affection == EventBase.RelationAffection.COOPERATE) {
+        if (type.affection == EventBase.RelationAffection.COOPERATES) {
             actionStateHolder.restoreCooperation(h, type, targets);
         } else {
             actionStateHolder.restoreAdjustment(h, type, targets);
         }
-        LOGGER.log(Level.FINE, () -> String.format("RELATION RESTORE: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("RELATION RESTORE: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
+        }
     }
     
     protected void mapAction(final Handler h, ActionMode mode, EventAction<Handler> remap) {
         actionStateHolder.mapAction(h, mode, remap);
-        LOGGER.log(Level.FINE, () -> String.format("ACTION MAPPING (MAP): %s [%s]", h, mode));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("ACTION MAPPING (MAP): %s [%s]", h, mode));
+        }
     }
     
     protected void remapAction(final Handler h, ActionMode mode, EventAction<Handler> remap) {
         actionStateHolder.remapAction(h, mode, remap);
-        LOGGER.log(Level.FINE, () -> String.format("ACTION MAPPING (REMAP): %s [%s]", h, mode));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("ACTION MAPPING (REMAP): %s [%s]", h, mode));
+        }
     }
     
     protected void unmapAction(final Handler h, ActionMode mode) {
         actionStateHolder.unmapAction(h, mode);
-        LOGGER.log(Level.FINE, () -> String.format("UNMAP ACTION: %s [%s]", h, mode));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("UNMAP ACTION: %s [%s]", h, mode));
+        }
     }
     
     protected void restoreAction(final Handler h, ActionMode mode) {
         actionStateHolder.restoreAction(h, mode);
-        LOGGER.log(Level.FINE, () -> String.format("RESTORE ACTION: %s [%s]", h, mode));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, () -> String.format("RESTORE ACTION: %s [%s]", h, mode));
+        }
     }
 }

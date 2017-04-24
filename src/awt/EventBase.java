@@ -95,23 +95,23 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
     }
     
     enum RelationAffection {
-        ENABLE, DISABLE, COOPERATE;
+        ENABLES, DISABLES, COOPERATES;
     }
     
     enum RelationType {
-        ENABLE(RelationAffection.ENABLE, ActionMode.PERFORM),
-        ENABLE_DEPEND(RelationAffection.ENABLE, ActionMode.DEPEND),
-        ENABLE_CAUSE(RelationAffection.ENABLE, ActionMode.CAUSE),
-        ENABLE_REVERT(RelationAffection.ENABLE, ActionMode.REVERT),
+        ENABLE(RelationAffection.ENABLES, ActionMode.PERFORM),
+        ENABLE_DEPEND(RelationAffection.ENABLES, ActionMode.DEPEND),
+        ENABLE_CAUSE(RelationAffection.ENABLES, ActionMode.CAUSE),
+        ENABLE_REVERT(RelationAffection.ENABLES, ActionMode.REVERT),
         
-        DISABLE(RelationAffection.DISABLE, ActionMode.PERFORM),
-        DISABLE_DEPEND(RelationAffection.DISABLE, ActionMode.DEPEND),
-        DISABLE_CAUSE(RelationAffection.DISABLE, ActionMode.CAUSE),
-        DISABLE_REVERT(RelationAffection.DISABLE, ActionMode.REVERT),
+        DISABLE(RelationAffection.DISABLES, ActionMode.PERFORM),
+        DISABLE_DEPEND(RelationAffection.DISABLES, ActionMode.DEPEND),
+        DISABLE_CAUSE(RelationAffection.DISABLES, ActionMode.CAUSE),
+        DISABLE_REVERT(RelationAffection.DISABLES, ActionMode.REVERT),
         
-        DEPEND(RelationAffection.COOPERATE, ActionMode.DEPEND),
-        CAUSE(RelationAffection.COOPERATE, ActionMode.CAUSE),
-        REVERT(RelationAffection.COOPERATE, ActionMode.REVERT);
+        DEPEND(RelationAffection.COOPERATES, ActionMode.DEPEND),
+        CAUSE(RelationAffection.COOPERATES, ActionMode.CAUSE),
+        REVERT(RelationAffection.COOPERATES, ActionMode.REVERT);
         
         final RelationAffection affection;
         final ActionMode affectedMode;
@@ -119,6 +119,11 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
         private RelationType(RelationAffection affection, ActionMode affectedMode) {
             this.affection = affection;
             this.affectedMode = affectedMode;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s on [%s]", affection, affectedMode);
         }
     }
     
@@ -166,6 +171,10 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
             this.holdingSet = EnumSet.noneOf(Signals.ScanCode.class);
             this.keyInterests = new ArrayDeque<>();
             this.satisfied = new ArrayList<>(4);
+        }
+        
+        public void removeAllKeys() {
+            holdingSet.clear();
         }
         
         public boolean contains(Signals.ScanCode sc) {
@@ -272,7 +281,7 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
         
         public ActionStateHolder<Handler> run(final Handler h, final ActionMode mode, final AWTEvent ev) {
             if (enabledActions.get(h).contains(mode)) {
-                actionsMap.get(h).computeIfPresent(mode, (mk, action) -> action.act(observer, ev));
+                Optional.ofNullable(actionsMap.get(h).get(mode)).ifPresent(action -> action.act(observer, ev));
             }
 
             return this;
@@ -436,4 +445,4 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
             this.targetHandler = targetHandler;
         }
     }   
-    }
+}
