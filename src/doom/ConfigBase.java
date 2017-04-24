@@ -18,7 +18,7 @@
 package doom;
 
 import data.dstrings;
-import i.Game;
+import mochadoom.Engine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -122,12 +122,12 @@ public enum ConfigBase {
         
         private static String getFolder() {
             return folder != null ? folder : (folder =
-                Game.getCVM().bool(CommandVariable.SHDEV) ||
-                Game.getCVM().bool(CommandVariable.REGDEV) ||
-                Game.getCVM().bool(CommandVariable.FR1DEV) ||
-                Game.getCVM().bool(CommandVariable.FRDMDEV) ||
-                Game.getCVM().bool(CommandVariable.FR2DEV) ||
-                Game.getCVM().bool(CommandVariable.COMDEV)
+                Engine.getCVM().bool(CommandVariable.SHDEV) ||
+                Engine.getCVM().bool(CommandVariable.REGDEV) ||
+                Engine.getCVM().bool(CommandVariable.FR1DEV) ||
+                Engine.getCVM().bool(CommandVariable.FRDMDEV) ||
+                Engine.getCVM().bool(CommandVariable.FR2DEV) ||
+                Engine.getCVM().bool(CommandVariable.COMDEV)
                     ? dstrings.DEVDATA + System.getProperty("file.separator")
                     : ""
             );
@@ -144,7 +144,7 @@ public enum ConfigBase {
         /**
          * If user supplied -config argument, it will only use the values from these files instead of defaults
          */
-        if (!Game.getCVM()
+        if (!Engine.getCVM()
             .with(CommandVariable.CONFIG, 0, (String[] fileNames) ->
                 Arrays.stream(fileNames).map(Files::new).forEach(ret::add))
                 

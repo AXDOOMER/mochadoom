@@ -20,6 +20,9 @@ package doom;
 // Event structure.
 
 import g.Signals.ScanCode;
+import java.awt.Point;
+import java.awt.Robot;
+import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -186,6 +189,19 @@ public interface event_t {
         return false;
     }
     
+    static int mouseBits(int button) {
+        switch(button) {
+            case MouseEvent.BUTTON1:
+                return MOUSE_LEFT;
+            case MouseEvent.BUTTON2:
+                return MOUSE_RIGHT;
+            case MouseEvent.BUTTON3:
+                return MOUSE_MID;
+        }
+        
+        return 0;
+    }
+    
     final class keyevent_t implements event_t {
         public evtype_t type;
         public ScanCode sc;
@@ -265,9 +281,10 @@ public interface event_t {
     }
     
     final class mouseevent_t implements event_t {
-        public evtype_t type;
-        public int buttons;
-        public int x, y;
+        public volatile evtype_t type;
+        public volatile boolean robotMove;
+        public volatile int buttons;
+        public volatile int x, y;
 
         public mouseevent_t(evtype_t type, int buttons, int x, int y) {
             this.type = type;
@@ -275,7 +292,45 @@ public interface event_t {
             this.x = x;
             this.y = y;
         }
+        
+        public void buttonOn(MouseEvent ev) {
+            buttons |= mouseBits(ev.getButton());
+        }
 
+        public void buttonOff(MouseEvent ev) {
+            buttons ^= mouseBits(ev.getButton());
+        }
+        
+        public void moveIn(MouseEvent ev, int centreX, int centreY, boolean drag) {
+            final int mouseX = ev.getX(), mouseY = ev.getY();
+            
+            // Mouse haven't left centre of the window
+            if (mouseX == centreX && mouseY == centreY) {
+                return;
+            }
+            
+            // A pure move has no buttons.
+            if (!drag) {
+                buttons = 0;
+            }
+            
+            this.x = (mouseX - centreX) << 2;
+            this.y = (centreY - mouseY) << 2;
+        }
+        
+        public void moveIn(MouseEvent ev, Robot robot, Point windowOffset, int centreX, int centreY, boolean drag) {
+            moveIn(ev, centreX, centreY, drag);
+            resetIn(robot, windowOffset, centreX, centreY);
+        }
+
+        public void resetIn(Robot robot, Point windowOffset, int centreX, int centreY) {
+            // Mark that the next event will be from robot
+            robotMove = true;
+
+            // Move the mouse to the window center
+            robot.mouseMove(windowOffset.x + centreX, windowOffset.y + centreY);
+        }
+        
         @Override
         public evtype_t type() {
             return type;

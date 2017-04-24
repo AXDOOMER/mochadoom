@@ -1,6 +1,6 @@
 package rr;
 
-import i.Game;
+import mochadoom.Engine;
 import java.util.Arrays;
 import m.BBox;
 import m.ISyncLogger;
@@ -189,7 +189,7 @@ public class node_t implements Resettable{
             right == left ? 2 : 1;
     }
 
-    private static final boolean olddemo = Game.getConfig().equals(Settings.line_of_sight, Settings.LOS.Vanilla);
+    private static final boolean olddemo = Engine.getConfig().equals(Settings.line_of_sight, Settings.LOS.Vanilla);
  	
  	  public int
  	    DivlineSide

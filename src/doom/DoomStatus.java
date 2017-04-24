@@ -7,7 +7,7 @@ import defines.*;
 import demo.IDoomDemo;
 import f.Finale;
 import static g.Signals.ScanCode.*;
-import i.Game;
+import mochadoom.Engine;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -518,7 +518,7 @@ public abstract class DoomStatus<T,V> {
     
     public static int compatibility_level;
     
-    public final ConfigManager CM = Game.getConfig();
+    public final ConfigManager CM = Engine.getConfig();
     
     public DoomStatus() {
     	this.wminfo=new wbstartstruct_t();

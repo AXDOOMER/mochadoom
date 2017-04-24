@@ -16,7 +16,7 @@
  */
 package v.tables;
 
-import i.Game;
+import mochadoom.Engine;
 import m.Settings;
 
 /**
@@ -74,7 +74,7 @@ public enum GreyscaleFilter {
     }
 
     private static void readSetting() {
-        FILTER = Game.getConfig().getValue(Settings.greyscale_filter, GreyscaleFilter.class);
+        FILTER = Engine.getConfig().getValue(Settings.greyscale_filter, GreyscaleFilter.class);
     }
         
     public int getComponent(int r, int g, int b) {

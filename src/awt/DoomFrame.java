@@ -2,7 +2,6 @@ package awt;
 
 import doom.CommandVariable;
 import doom.DoomMain;
-import i.Game;
 import i.Strings;
 import java.awt.Color;
 import java.awt.Component;
@@ -12,40 +11,56 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.Image;
-import java.awt.Point;
+import java.util.logging.Level;
 import javax.swing.JFrame;
 import m.Settings;
+import mochadoom.Engine;
+import mochadoom.Loggers;
 
 /**
  * Common code for Doom's video frames
  */
-public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
+public class DoomFrame<V, EvHandler extends Enum<EvHandler> & EventBase<EvHandler>> extends JFrame implements DoomVideoInterface<V> {
     private static final long serialVersionUID = -4130528877723831825L;
 
-    // Must be aware of "Doom" so we can pass it event messages inside a crude queue.
-    public final DoomMain<?, V> DOOM;
+    /**
+     * Must be aware of "Doom" so we can pass it event messages inside a crude queue.
+     */
+    protected final DoomMain<?, V> DOOM;
+    
+    /**
+     * Canvas or JPanel
+     */
+    protected final Component content;
+    
+    /**
+     * Graphics to draw image on
+     */
     protected volatile Graphics2D g2d;
 
     /**
-     * Normally only used in fullscreen mode
-     * This might differ from the raster's width & height attribute for number of reasons
+     * Display, its configuration and resolution related stuff
      */
-    protected Dimension size;
-    
-    /**
-     * Separate event handler a la _D_.
-     * However I won't make it fully "eternity like" yet
-     * also because it works quite flakey on Linux.
-     */
-    protected final ConcurrentEvents events;
     protected final DisplayModePicker dmp;
     protected final GraphicsDevice device;
+    protected final int defaultWidth, defaultHeight;
     protected DisplayMode oldDisplayMode;
     protected DisplayMode displayMode;
-    protected Component content;
-    protected Point center;
+
+    /**
+     * Default window size. It might change upon entering full screen, so don't consider it absolute.
+     * Due to letter boxing and screen doubling, stretching etc. it might be different that the screen buffer
+     * (typically, larger).
+     */
+    protected final Dimension dimension;
+
+    /**
+     * Normally only used in full screen mode
+     */
     protected int X_OFF;
     protected int Y_OFF;
+    
+    protected final EventObserver<EvHandler> observer;
     
     /**
      * Very generic JFrame. Along that it only initializes various properties of Doom Frame.
@@ -53,7 +68,7 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      * @param content - a pane or canvas
      * @param device - graphics device
      */
-    protected DoomFrame(DoomMain<?, V> DOOM, Component content, GraphicsDevice device, ConcurrentEvents events) {
+    protected DoomFrame(DoomMain<?, V> DOOM, Component content, GraphicsDevice device, EventObserver<EvHandler> observer) {
         if (!handleGeom()) {
             DOOM.doomSystem.Error("bad -geom parameter");
         }
@@ -61,23 +76,25 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         this.device = device;
         this.DOOM = DOOM;
         this.content = content;
-        this.events = events;
         this.dmp = new DisplayModePicker(device);
 
         // Set those here. If fullscreen isn't used, then they won't change.
         // They are necessary for normal initialization, though.
-        setDefaultDimension(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
+        this.defaultWidth = DOOM.graphicSystem.getScreenWidth();
+        this.defaultHeight = DOOM.graphicSystem.getScreenHeight();
+        this.dimension = new Dimension(defaultWidth, defaultHeight);
+        this.observer = observer;
 
         /**
          * AWT: create the canvas.
          * MAES: this method works even on "stubborn" Linux distros that fuck up the window size.
          */
         try {
-            setCanvasSize(size);
-            if (DOOM.CM.equals(Settings.fullscreen, Boolean.TRUE)) {
-                switchToFullScreen(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
+            if (!(DOOM.CM.equals(Settings.fullscreen, Boolean.TRUE) && switchToFullScreen())) {
+                updateSize();
             }
         } catch (Exception e) {
+            Loggers.getLogger(DoomFrame.class.getName()).log(Level.SEVERE, e.getMessage(), e);
             DOOM.doomSystem.Error("Error creating DOOM AWT frame. Exiting. Reason: %s", e.getMessage());
         }
     }
@@ -93,16 +110,6 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
     }
     
     /**
-     * Default window size and center spot. These might change upon entering full screen, so don't consider them
-     * absolute. Due to letterboxing and screen doubling, stretching etc. they might be different that the screen buffer
-     * (typically, larger).
-     */
-    private void setDefaultDimension(int width, int height) {
-        this.size = new Dimension(width, height);
-        this.center = new Point(X_OFF + size.width / 2, Y_OFF + size.height / 2);
-    }
-
-    /**
      * I_SetPalette
      *
      * Any bit-depth specific palette manipulation is performed by the VideoRenderer. It can range from simple
@@ -115,23 +122,21 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
         DOOM.graphicSystem.setPalette(palette);
     }
 
-    private void setCanvasSize(Dimension size) {
-        content.setPreferredSize(size);
-        content.setBounds(0, 0, content.getWidth() - 1, content.getHeight() - 1);
-        content.setBackground(Color.black);
+    @Override
+    public boolean switchFullscreen() {
+        Loggers.getLogger(DoomFrame.class.getName()).log(Level.WARNING, "FULLSCREEN SWITHED");
+        // remove the frame from view
+        dispose();
+        // change all the properties
+        final boolean ret = switchToFullScreen();
+        // now show back the frame
+        showFrame(this);
+        return ret;
     }
 
     @Override
-    public void switchFullscreen() {
-        // remove the frame from view
-        g2d.dispose();
-        dispose();
-        // uninitialize graphics, so it can be reset on the next repaint
-        g2d = null;
-        // change all the properties
-        switchToFullScreen(DOOM.graphicSystem.getScreenWidth(), DOOM.graphicSystem.getScreenHeight());
-        // now show back the frame
-        showFrame(this);
+    public boolean isFullscreen() {
+        return oldDisplayMode != null;
     }
 
     /**
@@ -141,57 +146,64 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      *
      * Therefore, a "best fit" strategy with centering is used.
      */
-    private void switchToFullScreen(final int width, final int height) {
-        // In case we need to revert.
-        oldDisplayMode = device.getDisplayMode();
-        
-
-        // TODO: what if bit depths are too small?
-        displayMode = dmp.pickClosest(width, height);
-        setModeOffset(dmp, width, height);
-        switchToMode();
-    }
-
-    private void switchToMode() {
-        boolean isFullScreen = device.isFullScreenSupported();
-        setUndecorated(isFullScreen);
-        setResizable(!isFullScreen);
-
-        device.getDisplayModes();
-        if (isFullScreen) {
-            // Full-screen mode
-            device.setFullScreenWindow(this);
-            if (device.isDisplayChangeSupported()) {
-                device.setDisplayMode(displayMode);
+    private boolean switchToFullScreen() {
+        final boolean isFullScreen;
+        if (oldDisplayMode == null) {
+            isFullScreen = device.isFullScreenSupported();
+            if (!isFullScreen) {
+                return false;
             }
-            validate();
-            final Dimension newsize = new Dimension(displayMode.getWidth(), displayMode.getHeight());
-            this.setDefaultDimension(displayMode.getWidth(), displayMode.getHeight());
-            setCanvasSize(newsize);
 
+            // In case we need to revert.
+            oldDisplayMode = device.getDisplayMode();
+            // TODO: what if bit depths are too small?
+            displayMode = dmp.pickClosest(defaultWidth, defaultHeight);
         } else {
-            // Windowed mode
-            pack();
-            setVisible(true);
+            isFullScreen = false;
+            
+            // We restore the original resolution
+            displayMode = oldDisplayMode;
+            oldDisplayMode = null;
+        }
+        setUndecorated(isFullScreen);
+
+        // Full-screen mode
+        device.setFullScreenWindow(isFullScreen ? this : null);
+        if (device.isDisplayChangeSupported()) {
+            device.setDisplayMode(displayMode);
+        }
+        
+        validate();
+        dimension.width = isFullScreen ? displayMode.getWidth() : defaultWidth;
+        dimension.height = isFullScreen ? displayMode.getHeight() : defaultHeight;
+        X_OFF = (dimension.width - defaultWidth) / 2;
+        Y_OFF = (dimension.height - defaultHeight) / 2;
+        updateSize();
+        return isFullScreen;
+    }
+
+    private void updateSize() {
+        setPreferredSize(isFullscreen() ? dimension : null);
+        content.setPreferredSize(dimension);
+        content.setBounds(0, 0, content.getWidth() - 1, content.getHeight() - 1);
+        content.setBackground(Color.black);
+        
+        // uninitialize graphics, so it can be reset on the next repaint
+        final Graphics2D localG2d = g2d;
+        g2d = null;
+        if (localG2d != null) {
+            localG2d.dispose();
         }
     }
 
-    private void setModeOffset(DisplayModePicker dmp, final int width, final int height) {
-        int[] xy = dmp.getCentering(width, height, displayMode);
-        this.X_OFF = xy[0];
-        this.Y_OFF = xy[1];
-    }
-
-    @Override
-    public void StartTic() {
-        if (!this.isActive()) {
+    //@Override
+    //public void StartTic() {
+        /*if (!this.isActive()) {
             return;
-        }
+        }*/
 
-        //  System.out.println("Getting events...");
-        events.processAllPending();
-        //eventhandler.grabMouse();
-    }
+        //events.processAllPending();
+    //}
     
     @Override
     public void setTitle() {
@@ -200,15 +212,15 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     @Override
     public void setMouseLoose() {
-        events.setMouseLoose();
+        //events.setMouseLoose();
     }
 
     @Override
     public void setMouseCaptured() {
-        events.setMouseCaptured();
+        //events.setMouseCaptured();
     }
     
-    private final boolean showFPS = Game.getCVM().bool(CommandVariable.SHOWFPS);
+    private final boolean showFPS = Engine.getCVM().bool(CommandVariable.SHOWFPS);
     private long lastTime = System.currentTimeMillis();
     private int frames = 0;
 
@@ -218,13 +230,22 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
      */
     @Override
     public void paint(Graphics g) {
+        if (!this.isDisplayable()) {
+            return;
+        }
+        
+        /**
+         * Work on a local copy of the stack - global one can become null at any moment
+         */
+        Graphics2D localG2d;
+        
         /**
          * Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
          * Should probably run just once. Overhead is minimal
          * compared to actually DRAWING the stuff.
          */
-        if (g2d == null) {
-            g2d = (Graphics2D) content.getGraphics();
+        if ((localG2d = g2d) == null) {
+            g2d = localG2d = (Graphics2D) content.getGraphics();
         }
         
         /**
@@ -233,11 +254,11 @@ public class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
          * but we wouldn't just be quiet either in case of "something really bad happened"
          * - Good Sign 2017/04/09
          */
-        if (g2d == null) {
-            System.out.println("Starting too fast, haven't got Graphics2D yet, skipping paint");
+        if (localG2d == null) {
+            Loggers.getLogger(DoomFrame.class.getName()).log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
         } else {
             final Image image = DOOM.graphicSystem.getScreenImage();
-            g2d.drawImage(image, X_OFF, Y_OFF, this);
+            localG2d.drawImage(image, X_OFF, Y_OFF, this);
             if (showFPS) {
                 ++frames;
                 final long now = System.currentTimeMillis();

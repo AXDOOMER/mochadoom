@@ -27,7 +27,7 @@ import java.awt.image.DataBufferInt;
 import java.awt.image.VolatileImage;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import mochadoom.Loggers;
 import static v.renderers.SoftwareParallelVideoRenderer.PARALLELISM;
 import v.tables.BlurryTable;
 import v.tables.ColorTint;
@@ -123,7 +123,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
         try {
             updateBarrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
-            Logger.getLogger(BufferedRenderer32.class.getName(), null).log(Level.SEVERE, e, null);
+            Loggers.getLogger(BufferedRenderer32.class.getName()).log(Level.SEVERE, e, null);
         }
 
         final Graphics2D g = screen.createGraphics();
@@ -189,7 +189,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
             try {
                 updateBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
-                Logger.getLogger(BufferedRenderer32.class.getName(), null).log(Level.WARNING, e, null);
+                Loggers.getLogger(BufferedRenderer32.class.getName()).log(Level.WARNING, e, null);
             }
         }
     }

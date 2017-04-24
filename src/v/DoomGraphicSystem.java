@@ -18,7 +18,7 @@
 package v;
 
 import f.Wiper;
-import i.Game;
+import mochadoom.Engine;
 import java.awt.Image;
 import java.awt.Rectangle;
 import m.IRandom;
@@ -185,7 +185,7 @@ public interface DoomGraphicSystem<T, V> {
      * Plotter for point-by-point drawing of AutoMap
      */
     default Plotter<V> createPlotter(DoomScreen screen) {
-        switch(Game.getConfig().getValue(Settings.automap_plotter_style, Plotter.Style.class)) {
+        switch(Engine.getConfig().getValue(Settings.automap_plotter_style, Plotter.Style.class)) {
             case Thick:
                 return new Plotter.Thick<>(getScreen(screen), getScreenWidth(), getScreenHeight());
             case Deep:

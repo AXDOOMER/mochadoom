@@ -30,7 +30,7 @@ import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
-import i.Game;
+import mochadoom.Engine;
 import i.IDoomSystem;
 import java.awt.Rectangle;
 import java.io.IOException;
@@ -2354,7 +2354,7 @@ public abstract class RendererState<T, V>
          * Now supports configurable vanilla-like scaling of tiles
          *  - Good Sign 2017/04/09
          */
-        if (Game.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
+        if (Engine.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
             final V scaled = DOOM.graphicSystem.ScaleBlock(DOOM.graphicSystem.convertPalettedBlock(src.data), DOOM.vs, 64, 64);
             DOOM.graphicSystem.TileScreenArea(BG, new Rectangle(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()),
                 scaled, new Rectangle(0, 0, 64 * DOOM.graphicSystem.getScalingX(), 64 * DOOM.graphicSystem.getScalingY()));

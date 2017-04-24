@@ -4,7 +4,7 @@ import doom.CommandVariable;
 import doom.DoomMain;
 import doom.NetConsts;
 import doom.doomcom_t;
-import i.Game;
+import mochadoom.Engine;
 
 /** Does nothing.
  *  Allows running single-player games without an actual network.
@@ -31,7 +31,7 @@ public class DummyNetworkDriver<T, V> implements NetConsts, DoomSystemNetworking
 		doomcom.ticdup=1;
 
 		// single player game
-        DOOM.netgame = Game.getCVM().present(CommandVariable.NET);
+        DOOM.netgame = Engine.getCVM().present(CommandVariable.NET);
 		doomcom.id = DOOMCOM_ID;
 		doomcom.numplayers = doomcom.numnodes = 1;
 		doomcom.deathmatch = 0;

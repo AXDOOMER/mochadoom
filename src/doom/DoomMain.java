@@ -27,7 +27,6 @@ import static g.Signals.ScanCode.*;
 import hu.HU;
 import i.DiskDrawer;
 import i.DoomSystem;
-import i.Game;
 import i.IDiskDrawer;
 import i.IDoomSystem;
 import i.Strings;
@@ -48,6 +47,7 @@ import m.MenuMisc;
 import m.Settings;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.MAPFRACUNIT;
+import mochadoom.Engine;
 import n.DoomSystemNetworking;
 import n.DummyNetworkDriver;
 import p.AbstractLevelLoader;
@@ -135,8 +135,18 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
      * D_PostEvent
      * Called by the I/O functions when input is detected
      */
-    public void PostEvent (event_t ev) {
-        //ev.withKey(evtype_t.ev_keydown, e -> System.out.println(e));
+    public void PostEvent(event_t ev) {
+        /**
+         * Do not pollute DOOM's internal event queue - clear keys there
+         * - Good Sign 2017/04/24
+         */
+        if (ev == event_t.CANCEL_KEYS) {
+            // PAINFULLY and FORCEFULLY clear the buttons.
+            Arrays.fill(gamekeydown, false);
+            keysCleared = true;
+            return; // Nothing more to do here.
+        }
+
         events[eventhead] = ev;
         eventhead = (++eventhead) & (MAXEVENTS - 1);
     }
@@ -145,21 +155,20 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
      * D_ProcessEvents
      * Send all the events of the given timestamp down the responder chain
      */ 
-    public void ProcessEvents ()
-    {
-        event_t	ev;
-
+    public void ProcessEvents() {
         // IF STORE DEMO, DO NOT ACCEPT INPUT
         if ((isCommercial()) && (wadLoader.CheckNumForName("MAP01") < 0))
             return; 
 
-        for (; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
-            ev = events[eventtail];
+        for(; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
+            final event_t ev = events[eventtail];
+            
             if (menu.Responder(ev)) {
                 //epool.checkIn(ev);
-                continue;               // menu ate the event
+                continue; // menu ate the event
             }
-            Responder (ev);
+            
+            Responder(ev);
             // We're done with it, return it to the pool.
             //epool.checkIn(ev);
         }
@@ -370,7 +379,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         while (true) {
             // process one or more tics
             if (singletics) {
-                videoInterface.StartTic();
+                //videoInterface.StartTic();
                 ProcessEvents();
                 BuildTiccmd(netcmds[consoleplayer][maketic % BACKUPTICS]);
                 if (advancedemo) {
@@ -1190,11 +1199,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         }
 
         switch (ev.type()) { 
-            case ev_clear:
-                // PAINFULLY and FORCEFULLY clear the buttons.
-                Arrays.fill(gamekeydown, false);
-                keysCleared = true;
-                return false; // Nothing more to do here. 
             case ev_keydown:
                 if (ev.isKey(SC_PAUSE)) {
                     sendpause = true;
@@ -2300,7 +2304,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         Arrays.setAll(players, i -> new player_t(this));
 
         // Init objects
-        this.cVarManager = Game.getCVM();
+        this.cVarManager = Engine.getCVM();
 
         // Prepare events array with event instances
         Arrays.setAll(events, i -> event_t.EMPTY_EVENT);
@@ -3190,7 +3194,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             // build new ticcmds for console player
             gameticdiv = gametic / ticdup;
             for (i = 0; i < newtics; i++) {
-                videoInterface.StartTic();
+                //videoInterface.StartTic();
                 ProcessEvents();
                 if (maketic - gameticdiv >= BACKUPTICS / 2 - 1) {
                     break;          // can't hold any more
@@ -3242,10 +3246,10 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         int     stoptic;
 
         stoptic = ticker.GetTime () + 2; 
-        while (ticker.GetTime() < stoptic) 
-            videoInterface.StartTic (); 
+        while (ticker.GetTime() < stoptic) {}
+            //videoInterface.StartTic (); 
 
-        videoInterface.StartTic ();
+        //videoInterface.StartTic ();
         for (; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
             ev = events[eventtail]; 
             if (ev.isKey(SC_ESCAPE, evtype_t.ev_keydown)) {

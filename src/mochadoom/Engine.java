@@ -1,4 +1,4 @@
-package i;
+package mochadoom;
 
 import doom.CVarManager;
 import doom.ConfigManager;
@@ -6,7 +6,7 @@ import doom.DoomMain;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class Game {
+public class Engine {
     private static String[] myArgs = {};
     private static volatile CVarManager cvm = null;
     private static volatile ConfigManager cm = null;
@@ -17,12 +17,12 @@ public class Game {
     }
     
     public static CVarManager getCVM() {
-        CVarManager local = Game.cvm;
+        CVarManager local = Engine.cvm;
         if (local == null) {
             synchronized (CVarManager.class) {
-                local = Game.cvm;
+                local = Engine.cvm;
                 if (local == null) {
-                    Game.cvm = local = new CVarManager(Arrays.asList(myArgs));
+                    Engine.cvm = local = new CVarManager(Arrays.asList(myArgs));
                 }
             }
         }
@@ -30,12 +30,12 @@ public class Game {
     }
     
     public static ConfigManager getConfig() {
-        ConfigManager local = Game.cm;
+        ConfigManager local = Engine.cm;
         if (local == null) {
             synchronized (ConfigManager.class) {
-                local = Game.cm;
+                local = Engine.cm;
                 if (local == null) {
-                    Game.cm = local = new ConfigManager();
+                    Engine.cm = local = new ConfigManager();
                 }
             }
         }

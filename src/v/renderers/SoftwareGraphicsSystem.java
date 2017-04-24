@@ -18,7 +18,7 @@ package v.renderers;
 
 import doom.CommandVariable;
 import f.Wiper;
-import i.Game;
+import mochadoom.Engine;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.DataBuffer;
@@ -107,9 +107,9 @@ abstract class SoftwareGraphicsSystem<T, V>
     @SuppressWarnings("unchecked")
     private V palette(RendererFactory.WithWadLoader rf) {
         /*final byte[] */playpal = 
-            Game.getCVM().bool(CommandVariable.GREYPAL)
+            Engine.getCVM().bool(CommandVariable.GREYPAL)
                 ? Playpal.greypal()
-                : Game.getCVM().bool(CommandVariable.NOPLAYPAL)
+                : Engine.getCVM().bool(CommandVariable.NOPLAYPAL)
                     ? Playpal.properPlaypal(null)
                     : rf.getWadLoader().LoadPlaypal();
         
@@ -131,8 +131,8 @@ abstract class SoftwareGraphicsSystem<T, V>
     
     @SuppressWarnings("unchecked")
     private V[] colormap(RendererFactory.WithWadLoader rf) {
-        final boolean colormapEnabled = !Game.getCVM().bool(CommandVariable.NOCOLORMAP)
-            && Game.getConfig().equals(Settings.enable_colormap_lump, Boolean.TRUE);
+        final boolean colormapEnabled = !Engine.getCVM().bool(CommandVariable.NOCOLORMAP)
+            && Engine.getConfig().equals(Settings.enable_colormap_lump, Boolean.TRUE);
         
         return
             /**
@@ -236,7 +236,7 @@ abstract class SoftwareGraphicsSystem<T, V>
          * Because of switching gamma stops powerup palette except for invlunerablity
          * Settings.fixgammapalette handles the fix
          */
-        if (Game.getConfig().equals(Settings.fix_gamma_palette, Boolean.FALSE)) {
+        if (Engine.getConfig().equals(Settings.fix_gamma_palette, Boolean.FALSE)) {
             this.usepalette = 0;
         }
         

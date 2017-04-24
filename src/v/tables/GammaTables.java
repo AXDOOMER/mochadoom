@@ -21,7 +21,7 @@
 
 package v.tables;
 
-import i.Game;
+import mochadoom.Engine;
 import m.Settings;
 
 public class GammaTables {
@@ -111,7 +111,7 @@ public class GammaTables {
     };
     
     static {
-        if (Game.getConfig().equals(Settings.fix_gamma_ramp, Boolean.TRUE)) {
+        if (Engine.getConfig().equals(Settings.fix_gamma_ramp, Boolean.TRUE)) {
             for (int i = 0; i < 128; --LUT[0][i++]) {}
         }
     }

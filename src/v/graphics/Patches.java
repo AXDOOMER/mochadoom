@@ -16,6 +16,8 @@
  */
 package v.graphics;
 
+import java.util.logging.Level;
+import mochadoom.Loggers;
 import rr.patch_t;
 import utils.C2JUtils;
 import static v.DoomGraphicSystem.V_FLIPPEDPATCH;
@@ -116,22 +118,23 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
         }
     }
 
+    /**
+     * This method should help to debug bad patches or bad placement of them
+     *  - Good Sign 2017/04/22
+     */
     default void printDebugPatchInfo(patch_t patch, int x, int y, final boolean predevide, final boolean scaleOffset, final boolean scaleStart, int dupx, int dupy) {
-        // Do not abort!
-        System.err.print("V_DrawPatch: bad patch (ignored)\n");
-        System.err.print(String.format(
-            "Patch %s at %d, %d exceeds LFB\n",
-            patch.name, x, y)
-        );
-        System.err.print(String.format(
-            "\tpredevide: %s\n"
-            + "\tscaleOffset: %s\n"
-            + "\tscaleStart: %s\n"
-            + "\tdupx: %s, dupy: %s\n"
-            + "\tleftoffset: %s\n"
-            + "\ttopoffset: %s\n",
-            predevide, scaleOffset, scaleStart, dupx, dupy, patch.leftoffset, patch.topoffset)
-        );
+        Loggers.getLogger(Patches.class.getName()).log(Level.INFO, () -> String.format(
+            "V_DrawPatch: bad patch (ignored)\n" +
+            "Patch %s at %d, %d exceeds LFB\n" + 
+            "\tpredevide: %s\n" +
+            "\tscaleOffset: %s\n" +
+            "\tscaleStart: %s\n" +
+            "\tdupx: %s, dupy: %s\n" +
+            "\tleftoffset: %s\n" +
+            "\ttopoffset: %s\n",
+            patch.name, x, y,
+            predevide, scaleOffset, scaleStart, dupx, dupy, patch.leftoffset, patch.topoffset
+        ));
     }
     
     /**

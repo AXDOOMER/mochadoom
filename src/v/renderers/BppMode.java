@@ -19,7 +19,7 @@ package v.renderers;
 import doom.CVarManager;
 import doom.CommandVariable;
 import doom.DoomMain;
-import i.Game;
+import mochadoom.Engine;
 import java.awt.Transparency;
 import java.util.function.Function;
 import m.Settings;
@@ -62,7 +62,7 @@ public enum BppMode {
         } else if (CVM.bool(CommandVariable.ALPHATRUECOLOR)) {
             return AlphaTrueColor;
         } else {
-            return Game.getConfig().getValue(Settings.color_depth, BppMode.class);
+            return Engine.getConfig().getValue(Settings.color_depth, BppMode.class);
         }
     }
     

@@ -16,14 +16,14 @@
  */
 package v.graphics;
 
-import i.Game;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.IntConsumer;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import m.Settings;
+import mochadoom.Engine;
+import mochadoom.Loggers;
 import rr.column_t;
 import rr.patch_t;
 
@@ -94,14 +94,14 @@ public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
         if (U.COLUMN_THREADS > 0) try {
             U.pool.submit(() -> IntStream.range(0, patch.width).parallel().forEach(task)).get();
         } catch (InterruptedException | ExecutionException ex) {
-            Logger.getLogger(Columns.class.getName()).log(Level.SEVERE, null, ex);
+            Loggers.getLogger(Columns.class.getName()).log(Level.SEVERE, null, ex);
         } else for (int i = 0; i < patch.width; ++i) {
             task.accept(i);
         }
     }
     
     class U {
-        static final int COLUMN_THREADS = Game.getConfig().getValue(Settings.parallelism_patch_columns, Integer.class);
+        static final int COLUMN_THREADS = Engine.getConfig().getValue(Settings.parallelism_patch_columns, Integer.class);
         private static final ForkJoinPool pool = COLUMN_THREADS > 0 ? new ForkJoinPool(COLUMN_THREADS) : null;
         private U() {}
     }
