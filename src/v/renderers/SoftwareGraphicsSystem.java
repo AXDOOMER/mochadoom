@@ -18,7 +18,6 @@ package v.renderers;
 
 import doom.CommandVariable;
 import f.Wiper;
-import mochadoom.Engine;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.DataBuffer;
@@ -28,6 +27,7 @@ import java.awt.image.DataBufferUShort;
 import java.util.Map;
 import m.IRandom;
 import m.Settings;
+import mochadoom.Engine;
 import rr.patch_t;
 import v.DoomGraphicSystem;
 import v.graphics.Blocks;
@@ -216,11 +216,16 @@ abstract class SoftwareGraphicsSystem<T, V>
     {return DoomGraphicSystem.super.createPlotter(screen);}
     
     /**
+     * I_SetPalette
+     * 
+     * Any bit-depth specific palette manipulation is performed by the VideoRenderer. It can range from simple
+     * (paintjob) to complex (multiple BufferedImages with locked data bits...) ugh!
+     * 
      * In order to change palette properly, we must invalidate
      * the colormap cache if any, otherwise older colormaps will persist.
      * The screen must be fully updated then
      * 
-     * @param palette 
+     * @param palette index (normally between 0-14).
      */
     @Override
     public void setPalette(int palette) {

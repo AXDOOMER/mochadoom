@@ -714,7 +714,7 @@ public class StatusBar extends AbstractStatusBar {
         if (st_stopped)
             return;
         // Reset palette.
-        DOOM.videoInterface.SetPalette (0);
+        DOOM.graphicSystem.setPalette(0);
 
         st_stopped = true;
     }
@@ -1223,7 +1223,7 @@ public class StatusBar extends AbstractStatusBar {
 
         if (palette != st_palette) {
             st_palette = palette;
-            DOOM.videoInterface.SetPalette (palette);
+            DOOM.graphicSystem.setPalette(palette);
         }
 
     }

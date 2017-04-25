@@ -1,7 +1,6 @@
 package doom;
 
 import automap.IAutoMap;
-import awt.DoomVideoInterface;
 import static data.Defines.*;
 import static data.Limits.*;
 import data.Tables;
@@ -117,7 +116,7 @@ import w.WadLoader;
     "override",
     "StringBufferMayBeStringBuilder"
 })
-public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom {
+public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetworking, IDoomGame, IDoom {
 
     public static final String RCSID = "$Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $";
 
@@ -268,7 +267,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
 
         // clean up border stuff
         if (gamestate != oldgamestate && gamestate != gamestate_t.GS_LEVEL) {
-            videoInterface.SetPalette(0);
+            graphicSystem.setPalette(0);
         }
 
         // see if the border needs to be initially drawn
@@ -320,7 +319,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         if (!wipe) {
             //System.out.print("Tick "+gametic+"\t");
             //System.out.print(players[0]);
-            videoInterface.FinishUpdate(); // page flip or blit buffer
+            Engine.updateFrame(); // page flip or blit buffer
             return;
         }
 
@@ -344,7 +343,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
             soundDriver.UpdateSound();
             soundDriver.SubmitSound();             // update sounds after one wipe tic.
             menu.Drawer();                    // menu is drawn even on top of wipes
-            videoInterface.FinishUpdate();             // page flip or blit buffer
+            Engine.updateFrame();             // page flip or blit buffer
         } while (!done);
     }
 
@@ -2260,7 +2259,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
     public final IDoomSound doomSound;
     public final ISoundDriver soundDriver;
     public final IMusic music;
-    public final DoomVideoInterface<V> videoInterface;
     public final AbstractStatusBar statusBar;
     public final DoomGraphicSystem<T, V> graphicSystem;
     public final DoomSystemNetworking systemNetworking;
@@ -2381,10 +2379,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         System.out.print("AM_Init: Init Automap colors - \n");
         this.autoMap = new automap.Map<>(this);
 
-        videoInterface = //cVarManager.bool(CommandVariable.AWTFRAME)
-            //? 
-                DoomVideoInterface.createAWTInterface(this);// : DoomVideoInterface.createSwingInterface(this);
-
         this.wiper = graphicSystem.createWiper(random);
         
         // Update variables and stuff NOW.
@@ -2435,7 +2429,6 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
 
         // NOW it's safe to init the disk reader.
         diskDrawer.Init();
-        setupLoop();
     }
 
     @Override
@@ -2472,7 +2465,7 @@ public class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworkin
         }
     }
     
-    private void setupLoop() throws IOException {
+    public void setupLoop() throws IOException {
         //p = CM.CheckParm ("-timedemo");
         if (singletics) {
             TimeDemo(loaddemo);

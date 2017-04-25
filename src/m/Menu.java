@@ -1117,7 +1117,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
                 if (usegamma > 4)
                     usegamma = 0;
                 DOOM.players[DOOM.consoleplayer].message = gammamsg[usegamma];
-                DOOM.videoInterface.SetGamma(usegamma);
+                DOOM.graphicSystem.setUsegamma(usegamma);
                 DOOM.autoMap.Repalette();
                 return true;
 
@@ -1241,7 +1241,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
             return;
 
         DOOM.menuactive = true;
-        DOOM.videoInterface.setMouseLoose();
+        //Engine.getEngine().window.setMouseLoose();
         currentMenu = MainDef; // JDC
         itemOn = (short) currentMenu.lastOn; // JDC
     }
@@ -1314,7 +1314,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     //
     public void ClearMenus() {
         DOOM.menuactive = false;
-        DOOM.videoInterface.setMouseCaptured();
+        //Engine.getEngine().window.setMouseCaptured();
         DOOM.graphicSystem.forcePalette();
         
         // MAES: was commented out :-/

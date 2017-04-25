@@ -155,6 +155,14 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         this.initialCursor = component.getCursor();
         this.keyStateHolder = new KeyStateHolder<>();
     }
+    
+    public void addInterest(EventBase.KeyStateInterest<Handler> interest) {
+        keyStateHolder.addInterest(interest);
+    }
+
+    public void removeInterest(EventBase.KeyStateInterest<Handler> interest) {
+        keyStateHolder.removeInterest(interest);
+    }
 
     /**
      * This method is designed to acquire events from some kind of listener.
