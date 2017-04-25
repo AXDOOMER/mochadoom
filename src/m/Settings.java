@@ -103,6 +103,7 @@ public enum Settings {
     color_depth(FILE_MOCHADOOM, BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
     fix_gamma_ramp(FILE_MOCHADOOM, false), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
     fix_gamma_palette(FILE_MOCHADOOM, false), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
+    fix_sky_change(FILE_MOCHADOOM, false), // In vanilla, sky does not change when you exit the level and the next level with new sky
     fix_sky_palette(FILE_MOCHADOOM, false), // In vanilla, sky color does not change when under effect of Invulnerability powerup
     fix_medi_need(FILE_MOCHADOOM, false), // In vanilla, message "Picked up a medikit that you REALLY need!" never appears due to bug
     fix_ouch_face(FILE_MOCHADOOM, false), // In vanilla, ouch face displayed only when acuired 25+ health when damaged for 25+ health

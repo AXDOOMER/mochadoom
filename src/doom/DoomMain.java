@@ -1067,11 +1067,16 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         //  setting one.
         textureManager.setSkyFlatNum(textureManager.FlatNumForName ( SKYFLATNAME ));
 
-        // DOOM determines the sky texture to be used
-        // depending on the current episode, and the game version.
-        if (isCommercial()
+        /**
+         * Added a config switch to this fix
+         * -  Good Sign 2017/04/26
+         * 
+         * DOOM determines the sky texture to be used
+         * depending on the current episode, and the game version.
+         */
+        if (Engine.getConfig().equals(Settings.fix_sky_change, Boolean.TRUE) && (isCommercial()
                 || ( gamemission == GameMission_t.pack_tnt )
-                || ( gamemission == GameMission_t.pack_plut ) )
+                || ( gamemission == GameMission_t.pack_plut )))
         {
             textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY3"));
             if (gamemap < 12)
@@ -1277,37 +1282,37 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         // do things to change the game state
         while (gameaction != gameaction_t.ga_nothing) { 
             switch (gameaction) { 
-            case ga_loadlevel: 
-                DoLoadLevel ();
-                break; 
-            case ga_newgame: 
-                DoNewGame (); 
-                break; 
-            case ga_loadgame:
-                DoLoadGame (); 
-                break; 
-            case ga_savegame: 
-                DoSaveGame (); 
-                break; 
-            case ga_playdemo: 
-                DoPlayDemo (); 
-                break; 
-            case ga_completed: 
-                DoCompleted (); 
-                break; 
-            case ga_victory: 
-                finale.StartFinale (); 
-                break; 
-            case ga_worlddone: 
-                DoWorldDone (); 
-                break; 
-            case ga_screenshot: 
-                ScreenShot (); 
-                gameaction = gameaction_t.ga_nothing; 
-                break; 
-            case ga_nothing: 
-                break; 
-            } 
+                case ga_loadlevel:
+                    DoLoadLevel();
+                    break;
+                case ga_newgame:
+                    DoNewGame();
+                    break;
+                case ga_loadgame:
+                    DoLoadGame();
+                    break;
+                case ga_savegame:
+                    DoSaveGame();
+                    break;
+                case ga_playdemo:
+                    DoPlayDemo();
+                    break;
+                case ga_completed:
+                    DoCompleted();
+                    break;
+                case ga_victory:
+                    finale.StartFinale();
+                    break;
+                case ga_worlddone:
+                    DoWorldDone();
+                    break;
+                case ga_screenshot:
+                    ScreenShot();
+                    gameaction = gameaction_t.ga_nothing;
+                    break;
+                case ga_nothing:
+                    break;
+            }
         }
 
         // get commands, check consistancy,
@@ -2466,30 +2471,45 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     }
     
     public void setupLoop() throws IOException {
-        //p = CM.CheckParm ("-timedemo");
-        if (singletics) {
-            TimeDemo(loaddemo);
+        // check for a driver that wants intermission stats
+        cVarManager.with(CommandVariable.STATCOPY, 0, (String s) -> {
+            // TODO: this should be chained to a logger
+            statcopy = s;
+            System.out.print("External statistics registered.\n");
+        });
+
+        // start the apropriate game based on parms
+        cVarManager.with(CommandVariable.RECORD, 0, (String s) -> {
+            RecordDemo(s);
             autostart = true;
-            DoomLoop();  // never returns
-        }
+        });
 
-        if (gameaction != gameaction_t.ga_loadgame) {
-            if (autostart || netgame) {
+        //p = CM.CheckParm ("-timedemo");
+        ChooseLoop: {
+            if (singletics) {
+                TimeDemo(loaddemo);
+                autostart = true;
+                break ChooseLoop; // DoomLoop();  // never returns
+            }
+
+            if (fastdemo || normaldemo) {
+                singledemo = true;              // quit after one demo
+                if (fastdemo) {
+                    timingdemo = true;
+                }
                 InitNew(startskill, startepisode, startmap);
-            } else {
-                StartTitle();                // start up intro loop
+                gamestate = gamestate_t.GS_DEMOSCREEN;
+                DeferedPlayDemo(loaddemo);
+                break ChooseLoop; // DoomLoop();  // never returns
             }
-        }
 
-        if (fastdemo || normaldemo) {
-            singledemo = true;              // quit after one demo
-            if (fastdemo) {
-                timingdemo = true;
+            if (gameaction != gameaction_t.ga_loadgame) {
+                if (autostart || netgame) {
+                    InitNew(startskill, startepisode, startmap);
+                } else {
+                    StartTitle();                // start up intro loop
+                }
             }
-            InitNew(startskill, startepisode, startmap);
-            gamestate = gamestate_t.GS_DEMOSCREEN;
-            DeferedPlayDemo(loaddemo);
-            DoomLoop();  // never returns
         }
 
         DoomLoop();  // never returns
@@ -2745,19 +2765,6 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             
             file.append(String.format("%s%d.dsg", SAVEGAMENAME, c));
             LoadGame(file.toString());
-        });
-        
-        // check for a driver that wants intermission stats
-        cVarManager.with(CommandVariable.STATCOPY, 0, (String s) -> {
-            // TODO: this should be chained to a logger
-            statcopy = s;
-            System.out.print("External statistics registered.\n");
-        });
-
-        // start the apropriate game based on parms
-        cVarManager.with(CommandVariable.RECORD, 0, (String s) -> {
-            RecordDemo(s);
-            autostart = true;
         });
     }
 

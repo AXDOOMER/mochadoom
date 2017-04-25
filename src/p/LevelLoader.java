@@ -800,7 +800,7 @@ public LevelLoader(DoomMain<?,?> DM) {
           if (DOOM.playeringame[i])
           {
           DOOM.players[i].mo = null;
-       //   DM.DeathMatchSpawnPlayer (i);
+          DOOM.DeathMatchSpawnPlayer (i);
           }
               
       }
