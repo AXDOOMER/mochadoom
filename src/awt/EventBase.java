@@ -152,15 +152,12 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
     final class KeyStateInterest<Handler extends Enum<Handler> & EventBase<Handler>> {
         private final Set<Signals.ScanCode> interestSet;
         private final KeyStateCallback<Handler> satisfiedCallback;
-        private final boolean repeatable;
 
         public KeyStateInterest(
-            final boolean repeatable,
             final KeyStateCallback<Handler> satisfiedCallback,
             final Signals.ScanCode interestFirstKey,
             Signals.ScanCode... interestKeyChain
         ) {
-            this.repeatable = repeatable;
             this.interestSet = EnumSet.of(interestFirstKey, interestKeyChain);
             this.satisfiedCallback = satisfiedCallback;
         }

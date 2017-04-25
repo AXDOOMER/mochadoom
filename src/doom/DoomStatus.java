@@ -7,11 +7,11 @@ import defines.*;
 import demo.IDoomDemo;
 import f.Finale;
 import static g.Signals.ScanCode.*;
-import mochadoom.Engine;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import m.Settings;
+import mochadoom.Engine;
 import p.mobj_t;
 
 /**
@@ -166,6 +166,8 @@ public abstract class DoomStatus<T,V> {
     public boolean automapactive; // In AutoMap mode?
 
     public boolean menuactive; // Menu overlayed?
+    
+    public boolean mousecaptured = true;
 
     public boolean paused; // Game Pause?
 

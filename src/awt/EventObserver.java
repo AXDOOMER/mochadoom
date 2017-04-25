@@ -156,12 +156,14 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         this.keyStateHolder = new KeyStateHolder<>();
     }
     
-    public void addInterest(EventBase.KeyStateInterest<Handler> interest) {
+    public EventObserver<Handler> addInterest(EventBase.KeyStateInterest<Handler> interest) {
         keyStateHolder.addInterest(interest);
+        return this;
     }
 
-    public void removeInterest(EventBase.KeyStateInterest<Handler> interest) {
+    public EventObserver<Handler>  removeInterest(EventBase.KeyStateInterest<Handler> interest) {
         keyStateHolder.removeInterest(interest);
+        return this;
     }
 
     /**
