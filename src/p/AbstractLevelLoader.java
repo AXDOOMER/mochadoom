@@ -8,6 +8,8 @@ import static data.Defines.PU_LEVEL;
 import data.Limits;
 import data.mapthing_t;
 import doom.DoomMain;
+import doom.SourceCode.P_MapUtl;
+import static doom.SourceCode.P_MapUtl.P_SetThingPosition;
 import doom.SourceCode.R_Main;
 import static doom.SourceCode.R_Main.*;
 import doom.SourceCode.fixed_t;
@@ -121,6 +123,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      */
 
     @Override
+    @P_MapUtl.C(P_SetThingPosition)
     public void SetThingPosition(mobj_t thing) {
         final subsector_t ss;
         final sector_t sec;
@@ -129,7 +132,9 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         final mobj_t link;
 
         // link into subsector
-        ss = PointInSubsector(thing.x, thing.y);
+        R_PointInSubsector: {
+            ss = PointInSubsector(thing.x, thing.y);
+        }
         thing.subsector = ss;
 
         if (!flags(thing.flags, MF_NOSECTOR)) {
@@ -139,8 +144,9 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             thing.sprev = null;
             thing.snext = sec.thinglist;
 
-            if (sec.thinglist != null)
+            if (sec.thinglist != null) {
                 sec.thinglist.sprev = thing;
+            }
 
             sec.thinglist = thing;
         }
@@ -152,16 +158,19 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             blocky = getSafeBlockY(thing.y - bmaporgy);
             
             // Valid block?
-            if (blockx >= 0 && blockx < bmapwidth && blocky >= 0
-                    && blocky < bmapheight) {
-
+            if (blockx >= 0
+                && blockx < bmapwidth
+                && blocky >= 0
+                && blocky < bmapheight
+            ) {
                 // Get said block.
                 link = blocklinks[blocky * bmapwidth + blockx];
                 thing.bprev = null; // Thing is put at head of block...
                 thing.bnext = link;
-                if (link != null) // block links back at thing...
+                if (link != null) { // block links back at thing...
                     // This will work
                     link.bprev = thing;
+                }
 
                 // "thing" is now effectively the new head
                 // Iterators only follow "bnext", not "bprev".

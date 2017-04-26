@@ -1528,7 +1528,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
         // Angles stored in things are supposed to be "sanitized" against rollovers.
         final int angle = (int) ((ANG45 * (mthing.angle / 45)) >>> ANGLETOFINESHIFT);
-        final mobj_t mo = actions.SpawnMobj(x + 20 * finecosine[angle], y + 20 * finesine[angle], ss.sector.floorheight, mobjtype_t.MT_TFOG);
+        final mobj_t mo;
+        P_SpawnMobj: {
+             mo = actions.SpawnMobj(x + 20 * finecosine[angle], y + 20 * finesine[angle], ss.sector.floorheight, mobjtype_t.MT_TFOG);
+        }
 
         // FIXME: maybe false fix
         if (players[consoleplayer].viewz != 1) {

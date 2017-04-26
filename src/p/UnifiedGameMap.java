@@ -1807,6 +1807,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
      * P_AddThinker Adds a new thinker at the end of the list.
      */
     @Override
+    @P_Tick.C(P_AddThinker)
     public void AddThinker(thinker_t thinker) {
     	// If something was too weird to be wired before, it will
     	// be wired here for sure, so don't worry about searching 

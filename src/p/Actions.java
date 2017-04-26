@@ -1488,7 +1488,9 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         // and that was without using locking. Just let the GC do its
         // job.
         // mobj = mobjpool.checkOut();
-        mobj = new mobj_t(this);
+        Z_Malloc: {
+            mobj = new mobj_t(this);
+        }
         info = mobjinfo[type.ordinal()];
 
         mobj.type = type;
@@ -1504,7 +1506,9 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             mobj.reactiontime = info.reactiontime;
         }
 
-        mobj.lastlook = DOOM.random.P_Random() % MAXPLAYERS;
+        P_Random: {
+            mobj.lastlook = DOOM.random.P_Random() % MAXPLAYERS;
+        }
         // do not set the state with P_SetMobjState,
         // because action routines can not be called yet
         st = states[info.spawnstate.ordinal()];
@@ -1515,7 +1519,9 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         mobj.frame = st.frame;
 
         // set subsector and/or block links
-        DOOM.levelLoader.SetThingPosition(mobj);
+        P_SetThingPosition: {
+            DOOM.levelLoader.SetThingPosition(mobj);
+        }
 
         mobj.floorz = mobj.subsector.sector.floorheight;
         mobj.ceilingz = mobj.subsector.sector.ceilingheight;
@@ -1529,7 +1535,9 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         }
 
         mobj.function = think_t.P_MobjThinker;
-        AddThinker(mobj);
+        P_AddThinker: {
+            AddThinker(mobj);
+        }
 
         return mobj;
     }

@@ -22,7 +22,6 @@ import awt.EventBase;
 import awt.EventBase.ActionMode;
 import awt.EventBase.ActionStateHolder;
 import awt.EventBase.RelationType;
-import awt.EventObserver;
 import java.awt.AWTEvent;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -54,7 +53,7 @@ public class Loggers {
     private static final HashMap<String, Logger> INDIVIDUAL_CLASS_LOGGERS = new HashMap<>();
     
     static {
-        INDIVIDUAL_CLASS_LOGGERS.put(EventObserver.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINE));
+        //INDIVIDUAL_CLASS_LOGGERS.put(EventObserver.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINE));
         INDIVIDUAL_CLASS_LOGGERS.put(DoomWindow.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINE));
         INDIVIDUAL_CLASS_LOGGERS.put(Patches.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
     }

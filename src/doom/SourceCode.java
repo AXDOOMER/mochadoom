@@ -119,6 +119,7 @@ public @interface SourceCode {
         P_BlockLinesIterator,
         P_PathTraverse,
         P_UnsetThingPosition,
+        P_SetThingPosition,
         PIT_AddLineIntercepts,
         PIT_AddThingIntercepts;
         @Documented
@@ -197,6 +198,13 @@ public @interface SourceCode {
         @Documented
         @Retention(SOURCE) public
         @interface C { W_Wad value(); }
+    }
+    
+    public enum Z_Zone {
+        Z_Malloc;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { Z_Zone value(); }
     }
 
     @Documented
