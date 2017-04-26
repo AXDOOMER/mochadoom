@@ -1,11 +1,13 @@
 package data;
 
-import p.ActionType1;
-import p.ActionType2;
-import p.ActionTypeSS;
-import doom.think_t;
-import defines.statenum_t;
 import static data.Defines.TIC_MUL;
+import defines.statenum_t;
+import doom.player_t;
+import doom.think_t;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import p.mobj_t;
+import p.pspdef_t;
 
 public class state_t {
 
@@ -44,9 +46,9 @@ public class state_t {
          *  
          */
         public think_t         action;
-        public ActionType1 acp1;
-        public ActionType2 acp2;
-        public ActionTypeSS acpss;
+        public Consumer<mobj_t> acp1;
+        public BiConsumer<player_t, pspdef_t> acp2;
+        public p.ActionFunctions.TypedAction acpss;
         
         public statenum_t            nextstate;
         public int misc1, misc2;

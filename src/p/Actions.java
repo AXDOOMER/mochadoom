@@ -41,6 +41,16 @@ import data.state_t;
 import defines.*;
 import doom.CommandVariable;
 import doom.DoomMain;
+import doom.SourceCode.P_Enemy;
+import static doom.SourceCode.P_Enemy.*;
+import doom.SourceCode.P_Map;
+import static doom.SourceCode.P_Map.*;
+import doom.SourceCode.P_MapUtl;
+import static doom.SourceCode.P_MapUtl.*;
+import doom.SourceCode.P_Mobj;
+import static doom.SourceCode.P_Mobj.*;
+import doom.SourceCode.angle_t;
+import doom.SourceCode.fixed_t;
 import static doom.englsh.PD_BLUEK;
 import static doom.englsh.PD_BLUEO;
 import static doom.englsh.PD_REDK;
@@ -51,6 +61,7 @@ import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
+import java.util.function.Predicate;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
@@ -80,7 +91,7 @@ import v.graphics.Palettes;
  * @author admin
  *
  */
-public class Actions extends UnifiedGameMap {
+public class Actions<T, V> extends UnifiedGameMap<T, V> {
 
     //
     // CEILINGS
@@ -1200,9 +1211,7 @@ public class Actions extends UnifiedGameMap {
     }
 
     boolean Move(mobj_t actor) {
-        // fixed_t
-        int tryx;
-        int tryy;
+        @fixed_t int tryx, tryy;
 
         line_t ld;
 
@@ -1268,8 +1277,7 @@ public class Actions extends UnifiedGameMap {
     private int d1, d2;
 
     void NewChaseDir(mobj_t actor) {
-        // fixed_t
-        int deltax, deltay;
+        @fixed_t int deltax, deltay;
 
         int tdir;
         int olddir;
@@ -1469,20 +1477,17 @@ public class Actions extends UnifiedGameMap {
      * @param type
      * @return
      */
-    public mobj_t
-            SpawnMobj(int x,
-                    int y,
-                    int z,
-                    mobjtype_t type) {
+    @P_Mobj.C(P_SpawnMobj)
+    public mobj_t SpawnMobj(@fixed_t int x, @fixed_t int y, @fixed_t int z, mobjtype_t type) {
         mobj_t mobj;
         state_t st;
         mobjinfo_t info;
 
-// MAES: I tried this approach but it's not really worth it.
-// Testing with NUTS.WAD yielded pretty much identical results,
-// and that was without using locking. Just let the GC do its
-// job.
-// mobj = mobjpool.checkOut();
+        // MAES: I tried this approach but it's not really worth it.
+        // Testing with NUTS.WAD yielded pretty much identical results,
+        // and that was without using locking. Just let the GC do its
+        // job.
+        // mobj = mobjpool.checkOut();
         mobj = new mobj_t(this);
         info = mobjinfo[type.ordinal()];
 
@@ -1500,8 +1505,8 @@ public class Actions extends UnifiedGameMap {
         }
 
         mobj.lastlook = DOOM.random.P_Random() % MAXPLAYERS;
-// do not set the state with P_SetMobjState,
-// because action routines can not be called yet
+        // do not set the state with P_SetMobjState,
+        // because action routines can not be called yet
         st = states[info.spawnstate.ordinal()];
 
         mobj.state = st;
@@ -1509,7 +1514,7 @@ public class Actions extends UnifiedGameMap {
         mobj.sprite = st.sprite;
         mobj.frame = st.frame;
 
-// set subsector and/or block links
+        // set subsector and/or block links
         DOOM.levelLoader.SetThingPosition(mobj);
 
         mobj.floorz = mobj.subsector.sector.floorheight;
@@ -1583,7 +1588,7 @@ public class Actions extends UnifiedGameMap {
         mo.spawnpoint = mthing;
         mo.angle = ANG45 * (mthing.angle / 45);
 
-// pull it from the que
+        // pull it from the que
         iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
     }
 
@@ -1591,17 +1596,13 @@ public class Actions extends UnifiedGameMap {
      * P_SpawnPlayer Called when a player is spawned on the level. Most of the player structure stays unchanged between
      * levels.
      */
+    @P_Mobj.C(P_SpawnPlayer)
     public void SpawnPlayer(mapthing_t mthing) {
         player_t p;
-        int x;
-        int y;
-        int z;
-
+        @fixed_t int x, y, z;
         mobj_t mobj;
 
-        int i;
-
-// not playing?
+        // not playing?
         if (!DOOM.playeringame[mthing.type - 1]) {
             return;
         }
@@ -1609,16 +1610,20 @@ public class Actions extends UnifiedGameMap {
         p = DOOM.players[mthing.type - 1];
 
         if (p.playerstate == PST_REBORN) {
-            p.PlayerReborn();
+            G_PlayerReborn: {
+                p.PlayerReborn();
+            }
         }
-//DM.PlayerReborn (mthing.type-1);
+        //DM.PlayerReborn (mthing.type-1);
 
         x = mthing.x << FRACBITS;
         y = mthing.y << FRACBITS;
         z = ONFLOORZ;
-        mobj = SpawnMobj(x, y, z, mobjtype_t.MT_PLAYER);
+        P_SpawnMobj: {
+            mobj = SpawnMobj(x, y, z, mobjtype_t.MT_PLAYER);
+        }
 
-// set color translations for player sprites
+        // set color translations for player sprites
         if (mthing.type > 1) {
             mobj.flags |= (mthing.type - 1) << MF_TRANSSHIFT;
         }
@@ -1638,20 +1643,26 @@ public class Actions extends UnifiedGameMap {
         p.viewheight = VIEWHEIGHT;
 
         // setup gun psprite
-        p.SetupPsprites();
+        P_SetupPsprites: {
+            p.SetupPsprites();
+        }
 
         // give all cards in death match mode
         if (DOOM.deathmatch) {
-            for (i = 0; i < NUMCARDS; i++) {
+            for (int i = 0; i < NUMCARDS; i++) {
                 p.cards[i] = true;
             }
         }
 
         if (mthing.type - 1 == DOOM.consoleplayer) {
             // wake up the status bar
-            DOOM.statusBar.Start();
+            ST_Start: {
+                DOOM.statusBar.Start();
+            }
             // wake up the heads up text
-            DOOM.handsUp.Start();
+            HU_Start: {
+                DOOM.handsUp.Start();
+            }
         }
     }
 
@@ -1702,12 +1713,12 @@ public class Actions extends UnifiedGameMap {
             return null;
         }
 
-        if (DOOM.gameskill == skill_t.sk_baby) {
-            bit = 1;
-        } else if (DOOM.gameskill == skill_t.sk_nightmare) {
-            bit = 4;
-        } else {
-            bit = 1 << (DOOM.gameskill.ordinal() - 1);
+        switch (DOOM.gameskill) {
+            case sk_baby: bit = 1; break;
+            case sk_nightmare: bit = 4; break;
+            default:
+                bit = 1 << (DOOM.gameskill.ordinal() - 1);
+                break;
         }
 
         if (!eval(mthing.options & bit)) {
@@ -1725,9 +1736,7 @@ public class Actions extends UnifiedGameMap {
         // Do not abort because of an unknown thing. Ignore it, but post a
         // warning message for the player.
         if (i == NUMMOBJTYPES) {
-            System.err.printf("P_SpawnMapThing: Unknown type %d at (%d, %d)",
-                    mthing.type,
-                    mthing.x, mthing.y);
+            System.err.printf("P_SpawnMapThing: Unknown type %d at (%d, %d)", mthing.type, mthing.x, mthing.y);
             return null;
         }
 
@@ -1834,7 +1843,7 @@ public class Actions extends UnifiedGameMap {
      */
     protected mobj_t SpawnMissile(mobj_t source, mobj_t dest, mobjtype_t type) {
         mobj_t th;
-        long an; // angle_t
+        @angle_t long an;
         int dist;
 
         th = SpawnMobj(source.x,
@@ -1859,7 +1868,7 @@ public class Actions extends UnifiedGameMap {
         th.momy = FixedMul(th.info.speed, finesine(an));
 
         dist = AproxDistance(dest.x - source.x, dest.y - source.y);
-        dist = dist / th.info.speed;
+        dist /= th.info.speed;
 
         if (dist < 1) {
             dist = 1;
@@ -1876,7 +1885,7 @@ public class Actions extends UnifiedGameMap {
      */
     public void SpawnPlayerMissile(mobj_t source, mobjtype_t type) {
         mobj_t th;
-        long an; // angle_t
+        @angle_t long an;
         int x, y, z, slope; // think_t
 
         // see which target is to be aimed at
@@ -1936,7 +1945,7 @@ public class Actions extends UnifiedGameMap {
         long ang; // unsigned
         int saved;
         player_t player;
-        int thrust; // fixed_t
+        @fixed_t int thrust;
         int temp;
 
         if (!eval(target.flags & MF_SHOOTABLE)) {
@@ -2171,7 +2180,7 @@ public class Actions extends UnifiedGameMap {
         int an;
         thinker_t thinker;
         sector_t sector;
-        int oldx, oldy, oldz; // fixed_t
+        @fixed_t int oldx, oldy, oldz;
 
         // don't teleport missiles
         if ((thing.flags & MF_MISSILE) != 0) {
@@ -2187,10 +2196,8 @@ public class Actions extends UnifiedGameMap {
         tag = line.tag;
         for (i = 0; i < DOOM.levelLoader.numsectors; i++) {
             if (DOOM.levelLoader.sectors[i].tag == tag) {
-                thinker = thinkercap.next;
-                for (thinker = thinkercap.next;
-                        thinker != thinkercap;
-                        thinker = thinker.next) {
+                //thinker = thinkercap.next;
+                for (thinker = thinkercap.next; thinker != thinkercap; thinker = thinker.next) {
                     // not a mobj
                     if (thinker.function != think_t.P_MobjThinker) {
                         continue;
@@ -2708,26 +2715,17 @@ public class Actions extends UnifiedGameMap {
     }
 
     ///////////////// MOVEMENT'S ACTIONS ////////////////////////
-    /**
-     * fixed_t
-     */
-    int[] tmbbox = new int[4];
+    @fixed_t int[] tmbbox = new int[4];
     mobj_t tmthing;
     long tmflags;
-    /**
-     * fixed_t
-     */
-    int tmx, tmy;
+    @fixed_t int tmx, tmy;
 
     /**
      * If "floatok" true, move would be ok if within "tmfloorz - tmceilingz".
      */
     public boolean floatok;
 
-    /**
-     * fixed_t
-     */
-    public int tmfloorz, tmceilingz, tmdropoffz;
+    @fixed_t public int tmfloorz, tmceilingz, tmdropoffz;
 
     // keep track of the line that lowers the ceiling,
     // so missiles don't explode against sky hack walls
@@ -2741,264 +2739,253 @@ public class Actions extends UnifiedGameMap {
     }
 
     ////////////////// PTR Traverse Interception Functions ///////////////////////    
-    public class PTR_AimTraverse implements PTR_InterceptFunc {
+    mobj_t shootthing;
+    @fixed_t int attackrange;
+    // Height if not aiming up or down
+    // ???: use slope for monsters?
+    @fixed_t int shootz;
+    int la_damage;
+    @fixed_t int aimslope;
+    @P_Map.C(PTR_AimTraverse) Predicate<intercept_t> AimTraverse = (intercept_t in) -> {
+        line_t li;
+        mobj_t th;
+        int slope;
+        int thingtopslope;
+        int thingbottomslope;
+        int dist;
 
-        public boolean invoke(intercept_t in) {
-            line_t li;
-            mobj_t th;
-            int slope;
-            int thingtopslope;
-            int thingbottomslope;
-            int dist;
+        if (in.isaline) {
+            li = (line_t) in.d();
 
-            if (in.isaline) {
-                li = (line_t) in.d();
-
-                if (!eval(li.flags & ML_TWOSIDED)) {
-                    return false;       // stop
-                }
-                // Crosses a two sided line.
-                // A two sided line will restrict
-                // the possible target ranges.
-                LineOpening(li);
-
-                if (openbottom >= opentop) {
-                    return false;       // stop
-                }
-                dist = FixedMul(attackrange, in.frac);
-
-                if (li.frontsector.floorheight != li.backsector.floorheight) {
-                    slope = FixedDiv(openbottom - shootz, dist);
-                    if (slope > bottomslope) {
-                        bottomslope = slope;
-                    }
-                }
-
-                if (li.frontsector.ceilingheight != li.backsector.ceilingheight) {
-                    slope = FixedDiv(opentop - shootz, dist);
-                    if (slope < topslope) {
-                        topslope = slope;
-                    }
-                }
-
-                if (topslope <= bottomslope) {
-                    return false;       // stop
-                }
-                return true;            // shot continues
+            if (!eval(li.flags & ML_TWOSIDED)) {
+                return false;       // stop
             }
+            // Crosses a two sided line.
+            // A two sided line will restrict
+            // the possible target ranges.
+            LineOpening(li);
 
-            // shoot a thing
-            th = (mobj_t) in.d();
-            if (th == shootthing) {
-                return true;            // can't shoot self
+            if (openbottom >= opentop) {
+                return false;       // stop
             }
-            if (!eval(th.flags & MF_SHOOTABLE)) {
-                return true;            // corpse or something
-            }
-            // check angles to see if the thing can be aimed at
             dist = FixedMul(attackrange, in.frac);
-            thingtopslope = FixedDiv(th.z + th.height - shootz, dist);
 
-            if (thingtopslope < bottomslope) {
-                return true;            // shot over the thing
-            }
-            thingbottomslope = FixedDiv(th.z - shootz, dist);
-
-            if (thingbottomslope > topslope) {
-                return true;            // shot under the thing
-            }
-            // this thing can be hit!
-            if (thingtopslope > topslope) {
-                thingtopslope = topslope;
+            if (li.frontsector.floorheight != li.backsector.floorheight) {
+                slope = FixedDiv(openbottom - shootz, dist);
+                if (slope > bottomslope) {
+                    bottomslope = slope;
+                }
             }
 
-            if (thingbottomslope < bottomslope) {
-                thingbottomslope = bottomslope;
+            if (li.frontsector.ceilingheight != li.backsector.ceilingheight) {
+                slope = FixedDiv(opentop - shootz, dist);
+                if (slope < topslope) {
+                    topslope = slope;
+                }
             }
-
-            aimslope = (thingtopslope + thingbottomslope) / 2;
-            linetarget = th;
-
-            return false;           // don't go any farther
+            
+            // determine whether shot continues
+            return topslope > bottomslope;            
         }
-    }
+
+        // shoot a thing
+        th = (mobj_t) in.d();
+        if (th == shootthing) {
+            return true;            // can't shoot self
+        }
+        if (!eval(th.flags & MF_SHOOTABLE)) {
+            return true;            // corpse or something
+        }
+        // check angles to see if the thing can be aimed at
+        dist = FixedMul(attackrange, in.frac);
+        thingtopslope = FixedDiv(th.z + th.height - shootz, dist);
+
+        if (thingtopslope < bottomslope) {
+            return true;            // shot over the thing
+        }
+        thingbottomslope = FixedDiv(th.z - shootz, dist);
+
+        if (thingbottomslope > topslope) {
+            return true;            // shot under the thing
+        }
+        // this thing can be hit!
+        if (thingtopslope > topslope) {
+            thingtopslope = topslope;
+        }
+
+        if (thingbottomslope < bottomslope) {
+            thingbottomslope = bottomslope;
+        }
+
+        aimslope = (thingtopslope + thingbottomslope) / 2;
+        linetarget = th;
+
+        return false;           // don't go any farther
+    };
 
     /**
      * PTR_ShootTraverse
      *
      * 9/5/2011: Accepted _D_'s fix
      */
-    public class PTR_ShootTraverse implements PTR_InterceptFunc {
+    @P_Map.C(PTR_ShootTraverse) Predicate<intercept_t> ShootTraverse = (intercept_t in) -> {
+        @fixed_t int x, y, z, frac;
+        line_t li;
+        mobj_t th;
 
-        public boolean invoke(intercept_t in) {
-            int x, y, z, frac; // fixed_t
-            line_t li;
-            mobj_t th;
+        @fixed_t int slope, dist, thingtopslope, thingbottomslope;
 
-            int slope, dist, thingtopslope, thingbottomslope; // fixed_t
+        if (in.isaline) {
+            li = (line_t) in.d();
 
-            if (in.isaline) {
-                li = (line_t) in.d();
+            if (li.special != 0) {
+                ShootSpecialLine(shootthing, li);
+            }
 
-                if (li.special != 0) {
-                    ShootSpecialLine(shootthing, li);
-                }
+            if (!eval(li.flags & ML_TWOSIDED)) {
+                return gotoHitLine(in, li);
+            }
 
-                if (!eval(li.flags & ML_TWOSIDED)) {
+            // crosses a two sided line
+            LineOpening(li);
+
+            dist = FixedMul(attackrange, in.frac);
+
+            if (li.frontsector.floorheight != li.backsector.floorheight) {
+                slope = FixedDiv(openbottom - shootz, dist);
+                if (slope > aimslope) {
                     return gotoHitLine(in, li);
                 }
+            }
 
-                // crosses a two sided line
-                LineOpening(li);
-
-                dist = FixedMul(attackrange, in.frac);
-
-                if (li.frontsector.floorheight != li.backsector.floorheight) {
-                    slope = FixedDiv(openbottom - shootz, dist);
-                    if (slope > aimslope) {
-                        return gotoHitLine(in, li);
-                    }
+            if (li.frontsector.ceilingheight != li.backsector.ceilingheight) {
+                slope = FixedDiv(opentop - shootz, dist);
+                if (slope < aimslope) {
+                    return gotoHitLine(in, li);
                 }
-
-                if (li.frontsector.ceilingheight != li.backsector.ceilingheight) {
-                    slope = FixedDiv(opentop - shootz, dist);
-                    if (slope < aimslope) {
-                        return gotoHitLine(in, li);
-                    }
-                }
-
-                // shot continues
-                return true;
-
             }
 
-            // shoot a thing
-            th = (mobj_t) in.d();
-            if (th == shootthing) {
-                return true;        // can't shoot self
-            }
-            if (!eval(th.flags & MF_SHOOTABLE)) {
-                return true;        // corpse or something
-            }
-            // check angles to see if the thing can be aimed at
-            dist = FixedMul(attackrange, in.frac);
-            thingtopslope = FixedDiv(th.z + th.height - shootz, dist);
-
-            if (thingtopslope < aimslope) {
-                return true;        // shot over the thing
-            }
-            thingbottomslope = FixedDiv(th.z - shootz, dist);
-
-            if (thingbottomslope > aimslope) {
-                return true;        // shot under the thing
-            }
-
-            // hit thing
-            // position a bit closer
-            frac = in.frac - FixedDiv(10 * FRACUNIT, attackrange);
-
-            x = trace.x + FixedMul(trace.dx, frac);
-            y = trace.y + FixedMul(trace.dy, frac);
-            z = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
-
-            // Spawn bullet puffs or blod spots,
-            // depending on target type.
-            if (eval(((mobj_t) in.d()).flags & MF_NOBLOOD)) {
-                SpawnPuff(x, y, z);
-            } else {
-                SpawnBlood(x, y, z, la_damage);
-            }
-
-            if (la_damage != 0) {
-                DamageMobj(th, shootthing, shootthing, la_damage);
-            }
-
-            // don't go any farther
-            return false;
+            // shot continues
+            return true;
 
         }
 
-        //_D_: NOTE: this function was added, because replacing a goto by a boolean flag caused a bug if shooting a single sided line
-        protected boolean gotoHitLine(intercept_t in, line_t li) {
-            int x, y, z, frac;
+        // shoot a thing
+        th = (mobj_t) in.d();
+        if (th == shootthing) {
+            return true;        // can't shoot self
+        }
+        if (!eval(th.flags & MF_SHOOTABLE)) {
+            return true;        // corpse or something
+        }
+        // check angles to see if the thing can be aimed at
+        dist = FixedMul(attackrange, in.frac);
+        thingtopslope = FixedDiv(th.z + th.height - shootz, dist);
 
-            // position a bit closer
-            frac = in.frac - FixedDiv(4 * FRACUNIT, attackrange);
-            x = trace.x + FixedMul(trace.dx, frac);
-            y = trace.y + FixedMul(trace.dy, frac);
-            z = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
+        if (thingtopslope < aimslope) {
+            return true;        // shot over the thing
+        }
+        thingbottomslope = FixedDiv(th.z - shootz, dist);
 
-            if (li.frontsector.ceilingpic == DOOM.textureManager.getSkyFlatNum()) {
-                // don't shoot the sky!
-                if (z > li.frontsector.ceilingheight) {
-                    return false;
-                }
+        if (thingbottomslope > aimslope) {
+            return true;        // shot under the thing
+        }
 
-                // it's a sky hack wall
-                if (li.backsector != null && li.backsector.ceilingpic == DOOM.textureManager.getSkyFlatNum()) {
-                    return false;
-                }
-            }
+        // hit thing
+        // position a bit closer
+        frac = in.frac - FixedDiv(10 * FRACUNIT, attackrange);
 
-            // Spawn bullet puffs.
+        x = trace.x + FixedMul(trace.dx, frac);
+        y = trace.y + FixedMul(trace.dy, frac);
+        z = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
+
+        // Spawn bullet puffs or blod spots,
+        // depending on target type.
+        if (eval(((mobj_t) in.d()).flags & MF_NOBLOOD)) {
             SpawnPuff(x, y, z);
-
-            // don't go any farther
-            return false;
+        } else {
+            SpawnBlood(x, y, z, la_damage);
         }
+
+        if (la_damage != 0) {
+            DamageMobj(th, shootthing, shootthing, la_damage);
+        }
+
+        // don't go any farther
+        return false;
+    };
+
+    //_D_: NOTE: this function was added, because replacing a goto by a boolean flag caused a bug if shooting a single sided line
+    protected boolean gotoHitLine(intercept_t in, line_t li) {
+        int x, y, z, frac;
+
+        // position a bit closer
+        frac = in.frac - FixedDiv(4 * FRACUNIT, attackrange);
+        x = trace.x + FixedMul(trace.dx, frac);
+        y = trace.y + FixedMul(trace.dy, frac);
+        z = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
+
+        if (li.frontsector.ceilingpic == DOOM.textureManager.getSkyFlatNum()) {
+            // don't shoot the sky!
+            if (z > li.frontsector.ceilingheight) {
+                return false;
+            }
+
+            // it's a sky hack wall
+            if (li.backsector != null && li.backsector.ceilingpic == DOOM.textureManager.getSkyFlatNum()) {
+                return false;
+            }
+        }
+
+        // Spawn bullet puffs.
+        SpawnPuff(x, y, z);
+
+        // don't go any farther
+        return false;
     }
+
+    //
+    // SLIDE MOVE
+    // Allows the player to slide along any angled walls.
+    //
+    mobj_t slidemo;
+    int bestslidefrac; // fixed
+    int secondslidefrac;
+
+    line_t bestslideline;
+    line_t secondslideline;
+
+    @fixed_t int tmxmove, tmymove;
 
     //
     // PTR_SlideTraverse
     //   
-    public class PTR_SlideTraverse implements PTR_InterceptFunc {
+    @P_Map.C(PTR_SlideTraverse) Predicate<intercept_t> SlideTraverse = (intercept_t in) -> {
+        line_t li;
 
-        public boolean
-                invoke(intercept_t in) {
-            line_t li;
-
-            if (!in.isaline) {
-                DOOM.doomSystem.Error("PTR_SlideTraverse: not a line?");
-            }
-
-            li = (line_t) in.d();
-
-            if (!eval(li.flags & ML_TWOSIDED)) {
-                if (li.PointOnLineSide(slidemo.x, slidemo.y)) {
-                    // don't hit the back side
-                    return true;
-                }
-                return isblocking(in, li);
-            }
-
-            // set openrange, opentop, openbottom
-            LineOpening(li);
-
-            if ((openrange < slidemo.height)
-                    || // doesn't fit
-                    (opentop - slidemo.z < slidemo.height)
-                    || // mobj is too high
-                    (openbottom - slidemo.z > 24 * FRACUNIT)) // too big a step up
-            {
-                if (in.frac < bestslidefrac) {
-                    secondslidefrac = bestslidefrac;
-                    secondslideline = bestslideline;
-                    bestslidefrac = in.frac;
-                    bestslideline = li;
-                }
-
-                return false;   // stop
-            } else // this line doesn't block movement
-            {
-                return true;
-            }
-
+        if (!in.isaline) {
+            DOOM.doomSystem.Error("PTR_SlideTraverse: not a line?");
         }
 
-        private final boolean isblocking(intercept_t in, line_t li) {
-            // the line does block movement,
-            // see if it is closer than best so far
+        li = (line_t) in.d();
 
+        if (!eval(li.flags & ML_TWOSIDED)) {
+            if (li.PointOnLineSide(slidemo.x, slidemo.y)) {
+                // don't hit the back side
+                return true;
+            }
+            return isblocking(in, li);
+        }
+
+        // set openrange, opentop, openbottom
+        LineOpening(li);
+
+        if ((openrange < slidemo.height)
+                || // doesn't fit
+                (opentop - slidemo.z < slidemo.height)
+                || // mobj is too high
+                (openbottom - slidemo.z > 24 * FRACUNIT)) // too big a step up
+        {
             if (in.frac < bestslidefrac) {
                 secondslidefrac = bestslidefrac;
                 secondslideline = bestslideline;
@@ -3007,60 +2994,72 @@ public class Actions extends UnifiedGameMap {
             }
 
             return false;   // stop
+        } else // this line doesn't block movement
+        {
+            return true;
         }
+
+    };
+
+    private boolean isblocking(intercept_t in, line_t li) {
+        // the line does block movement,
+        // see if it is closer than best so far
+
+        if (in.frac < bestslidefrac) {
+            secondslidefrac = bestslidefrac;
+            secondslideline = bestslideline;
+            bestslidefrac = in.frac;
+            bestslideline = li;
+        }
+
+        return false;   // stop
     }
 
     //
     // USE LINES
     //
-    public class PTR_UseTraverse implements PTR_InterceptFunc {
+    @P_Map.C(PTR_UseTraverse) Predicate<intercept_t> UseTraverse = (intercept_t in) -> {
+        boolean side;
+        // FIXME: some sanity check here?
+        line_t line = (line_t) in.d();
 
-        public boolean invoke(intercept_t in) {
-            boolean side;
-            // FIXME: some sanity check here?
-            line_t line = (line_t) in.d();
+        if (line.special == 0) {
+            LineOpening(line);
+            if (openrange <= 0) {
+                DOOM.doomSound.StartSound(A.usething, sfxenum_t.sfx_noway);
 
-            if (line.special == 0) {
-                LineOpening(line);
-                if (openrange <= 0) {
-                    DOOM.doomSound.StartSound(A.usething, sfxenum_t.sfx_noway);
-
-                    // can't use through a wall
-                    return false;
-                }
-                // not a special line, but keep checking
-                return true;
+                // can't use through a wall
+                return false;
             }
-
-            side = false;
-            if (line.PointOnLineSide(A.usething.x, A.usething.y)) {
-                side = true;
-            }
-
-            //  return false;       // don't use back side
-            A.UseSpecialLine(A.usething, line, side);
-
-            // can't use for than one special line in a row
-            return false;
+            // not a special line, but keep checking
+            return true;
         }
-    }
+
+        side = false;
+        if (line.PointOnLineSide(A.usething.x, A.usething.y)) {
+            side = true;
+        }
+
+        //  return false;       // don't use back side
+        A.UseSpecialLine(A.usething, line, side);
+
+        // can't use for than one special line in a row
+        return false;
+    };
 
     //
     //P_BlockThingsIterator
     //
-    final boolean BlockThingsIterator(int x, int y, PIT_MobjFunction func) {
+    @P_MapUtl.C(P_BlockThingsIterator) final boolean BlockThingsIterator(int x, int y, Predicate<mobj_t> func) {
         mobj_t mobj;
 
-        if (x < 0
-                || y < 0
-                || x >= DOOM.levelLoader.bmapwidth
-                || y >= DOOM.levelLoader.bmapheight) {
+        if (x < 0 || y < 0 || x >= DOOM.levelLoader.bmapwidth || y >= DOOM.levelLoader.bmapheight) {
             return true;
         }
 
         for (mobj = DOOM.levelLoader.blocklinks[y * DOOM.levelLoader.bmapwidth + x]; mobj != null;
                 mobj = (mobj_t) mobj.bnext) {
-            if (!func.invoke(mobj)) {
+            if (!func.test(mobj)) {
                 return false;
             }
         }
@@ -3153,7 +3152,8 @@ public class Actions extends UnifiedGameMap {
      * @param x fixed_t
      * @param y fixed_t
      */
-    public boolean CheckPosition(mobj_t thing, int x, int y) {
+    @P_Map.C(P_CheckPosition)
+    public boolean CheckPosition(mobj_t thing, @fixed_t int x, @fixed_t int y) {
         int xl;
         int xh;
         int yl;
@@ -3173,7 +3173,9 @@ public class Actions extends UnifiedGameMap {
         tmbbox[BOXRIGHT] = x + tmthing.radius;
         tmbbox[BOXLEFT] = x - tmthing.radius;
 
-        newsubsec = DOOM.levelLoader.PointInSubsector(x, y);
+        R_PointInSubsector: {
+            newsubsec = DOOM.levelLoader.PointInSubsector(x, y);
+        }
         ceilingline = null;
 
         // The base floor / ceiling is from the subsector
@@ -3202,8 +3204,10 @@ public class Actions extends UnifiedGameMap {
 
         for (bx = xl; bx <= xh; bx++) {
             for (by = yl; by <= yh; by++) {
-                if (!BlockThingsIterator(bx, by, CheckThing)) {
-                    return false;
+                P_BlockThingsIterator: {
+                    if (!BlockThingsIterator(bx, by, CheckThing)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -3231,8 +3235,10 @@ public class Actions extends UnifiedGameMap {
         }
         for (bx = xl; bx <= xh; bx++) {
             for (by = yl; by <= yh; by++) {
-                if (!BlockLinesIterator(bx, by, CheckLine)) {
-                    return false;
+                P_BlockLinesIterator: {
+                    if (!BlockLinesIterator(bx, by, CheckLine)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -3247,8 +3253,8 @@ public class Actions extends UnifiedGameMap {
      * @param y fixed_t
      *
      */
-    boolean TryMove(mobj_t thing, int x, int y) {
-        int oldx, oldy; // fixed_t    
+    boolean TryMove(mobj_t thing, @fixed_t int x, @fixed_t int y) {
+        @fixed_t int oldx, oldy;
         boolean side, oldside; // both were int
         line_t ld;
 
@@ -3338,27 +3344,8 @@ public class Actions extends UnifiedGameMap {
             }
         }
 
-        if (thing.ceilingz - thing.floorz < thing.height) {
-            return false;
-        }
-
-        return true;
+        return thing.ceilingz - thing.floorz >= thing.height;
     }
-
-    //
-    // SLIDE MOVE
-    // Allows the player to slide along any angled walls.
-    //
-    int bestslidefrac; // fixed
-    int secondslidefrac;
-
-    line_t bestslideline;
-    line_t secondslideline;
-
-    mobj_t slidemo;
-
-    int tmxmove; //fixed_t
-    int tmymove;
 
     //
     // P_HitSlideLine
@@ -3371,8 +3358,7 @@ public class Actions extends UnifiedGameMap {
         // all angles
         long lineangle, moveangle, deltaangle;
 
-        // fixed_t
-        int movelen, newlen;
+        @fixed_t int movelen, newlen;
 
         if (ld.slopetype == slopetype_t.ST_HORIZONTAL) {
             tmymove = 0;
@@ -3421,8 +3407,7 @@ public class Actions extends UnifiedGameMap {
     // This is a kludgy mess.
     //
     void SlideMove(mobj_t mo) {
-        // fixed_t
-        int leadx, leady, trailx, traily, newx, newy;
+        @fixed_t int leadx, leady, trailx, traily, newx, newy;
         int hitcount;
 
         slidemo = mo;
@@ -3454,12 +3439,9 @@ public class Actions extends UnifiedGameMap {
 
             bestslidefrac = FRACUNIT + 1;
 
-            PathTraverse(leadx, leady, leadx + mo.momx, leady + mo.momy,
-                    PT_ADDLINES, SlideTraverse);
-            PathTraverse(trailx, leady, trailx + mo.momx, leady + mo.momy,
-                    PT_ADDLINES, SlideTraverse);
-            PathTraverse(leadx, traily, leadx + mo.momx, traily + mo.momy,
-                    PT_ADDLINES, SlideTraverse);
+            PathTraverse(leadx, leady, leadx + mo.momx, leady + mo.momy, PT_ADDLINES, SlideTraverse);
+            PathTraverse(trailx, leady, trailx + mo.momx, leady + mo.momy, PT_ADDLINES, SlideTraverse);
+            PathTraverse(leadx, traily, leadx + mo.momx, traily + mo.momy, PT_ADDLINES, SlideTraverse);
 
             // move up to the wall
             if (bestslidefrac == FRACUNIT + 1) {
@@ -3510,7 +3492,7 @@ public class Actions extends UnifiedGameMap {
      *
      * @param mo
      */
-    private final void stairstep(mobj_t mo) {
+    private void stairstep(mobj_t mo) {
         if (!TryMove(mo, mo.x, mo.y + mo.momy)) {
             TryMove(mo, mo.x + mo.momx, mo.y);
         }
@@ -3524,9 +3506,9 @@ public class Actions extends UnifiedGameMap {
 
     public void XYMovement(mobj_t mo) {
         //System.out.println("XYMovement");
-        int ptryx, ptryy; // pointers to fixed_t ???
+        @fixed_t int ptryx, ptryy; // pointers to fixed_t ???
         player_t player;
-        int xmove, ymove; // fixed_t
+        @fixed_t int xmove, ymove;
 
         if ((mo.momx == 0) && (mo.momy == 0)) {
             if ((mo.flags & MF_SKULLFLY) != 0) {
@@ -3626,7 +3608,7 @@ public class Actions extends UnifiedGameMap {
             // if in a walking frame, stop moving
             // TODO: we need a way to get state indexed inside of states[], to sim pointer arithmetic.
             // FIX: added an "id" field.
-            if (player != null && (int) (player.mo.state.id - statenum_t.S_PLAY_RUN1.ordinal()) < 4) {
+            if (player != null && player.mo.state.id - statenum_t.S_PLAY_RUN1.ordinal() < 4) {
                 player.mo.SetMobjState(statenum_t.S_PLAY);
             }
 
@@ -3644,16 +3626,7 @@ public class Actions extends UnifiedGameMap {
      * who got hit (or NULL)
      */
     public mobj_t linetarget;
-    mobj_t shootthing;
 
-    // Height if not aiming up or down
-    // ???: use slope for monsters?
-    int shootz; // fixed_t
-
-    int la_damage;
-    int attackrange; // fixed_t
-
-    int aimslope; // fixed_t
 
     /**
      * P_AimLineAttack
@@ -3677,10 +3650,7 @@ public class Actions extends UnifiedGameMap {
         attackrange = distance;
         linetarget = null;
 
-        PathTraverse(t1.x, t1.y,
-                x2, y2,
-                PT_ADDLINES | PT_ADDTHINGS,
-                AimTraverse);
+        PathTraverse(t1.x, t1.y, x2, y2, PT_ADDLINES | PT_ADDTHINGS, AimTraverse);
 
         if (linetarget != null) {
             return aimslope;
@@ -3698,7 +3668,7 @@ public class Actions extends UnifiedGameMap {
      * @param slope fixed_t
      * @param damage
      */
-    void LineAttack(mobj_t t1, long angle, int distance, int slope, int damage) {
+    void LineAttack(mobj_t t1, @angle_t long angle, @fixed_t int distance, @fixed_t int slope, int damage) {
         int x2, y2;
 
         shootthing = t1;
@@ -3709,10 +3679,7 @@ public class Actions extends UnifiedGameMap {
         attackrange = distance;
         aimslope = slope;
 
-        PathTraverse(t1.x, t1.y,
-                x2, y2,
-                PT_ADDLINES | PT_ADDTHINGS,
-                ShootTraverse);
+        PathTraverse(t1.x, t1.y, x2, y2, PT_ADDLINES | PT_ADDTHINGS, ShootTraverse);
     }
 
     //
@@ -4207,7 +4174,7 @@ public class Actions extends UnifiedGameMap {
         int yl;
         int yh;
 
-        int dist; // fixed_t
+        @fixed_t int dist;
 
         dist = (damage + MAXRADIUS) << FRACBITS;
         yh = DOOM.levelLoader.getSafeBlockY(spot.y + dist - DOOM.levelLoader.bmaporgy);
@@ -4265,7 +4232,7 @@ public class Actions extends UnifiedGameMap {
      * P_BlockLinesIterator The validcount flags are used to avoid checking lines that are marked in multiple mapblocks,
      * so increment validcount before the first call to P_BlockLinesIterator, then make one or more calls to it.
      */
-    public boolean BlockLinesIterator(int x, int y, PIT_LineFunction func) {
+    @P_MapUtl.C(P_BlockLinesIterator) public boolean BlockLinesIterator(int x, int y, Predicate<line_t> func) {
         int offset;
         int lineinblock;
         line_t ld;
@@ -4294,7 +4261,7 @@ public class Actions extends UnifiedGameMap {
                 continue;   // line has already been checked
             }
             ld.validcount = validcount;
-            if (!func.invoke(ld)) {
+            if (!func.test(ld)) {
                 return false;
             }
         }
@@ -4305,8 +4272,7 @@ public class Actions extends UnifiedGameMap {
      * P_PathTraverse Traces a line from x1,y1 to x2,y2, calling the traverser function for each. Returns true if the
      * traverser function returns true for all lines.
      */
-    private final boolean PathTraverse(int x1, int y1, int x2, int y2, int flags,
-            PTR_InterceptFunc trav) {
+    @P_MapUtl.C(P_PathTraverse) private boolean PathTraverse(int x1, int y1, int x2, int y2, int flags, Predicate<intercept_t> trav) {
         // System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , "
         // +y2);
         final int xt1, yt1;
@@ -4377,7 +4343,7 @@ public class Actions extends UnifiedGameMap {
             ystep = 256 * FRACUNIT;
         }
 
-        yintercept = (int) (mapy1 + FixedMul(partial, ystep));
+        yintercept = mapy1 + FixedMul(partial, ystep);
 
         if (yt2 > yt1) {
             mapystep = 1;
@@ -4392,7 +4358,7 @@ public class Actions extends UnifiedGameMap {
             partial = FRACUNIT;
             xstep = 256 * FRACUNIT;
         }
-        xintercept = (int) (mapx1 + FixedMul(partial, xstep));
+        xintercept = mapx1 + FixedMul(partial, xstep);
 
         // Step through map blocks.
         // Count is present to prevent a round off error
@@ -4452,7 +4418,7 @@ public class Actions extends UnifiedGameMap {
      */
     result_e MovePlane(sector_t sector, int speed, int dest, boolean crush, int floorOrCeiling, int direction) {
         boolean flag;
-        int lastpos; // fixed_t
+        @fixed_t int lastpos;
 
         switch (floorOrCeiling) {
             case 0:
@@ -4563,12 +4529,12 @@ public class Actions extends UnifiedGameMap {
                             flag = ChangeSector(sector, crush);
                             // UNUSED
                             /*
-            if (flag == true)
-            {
-                sector.ceilingheight = lastpos;
-                P_ChangeSector(sector,crush);
-                return crushed;
-            }
+                            if (flag == true)
+                            {
+                                sector.ceilingheight = lastpos;
+                                P_ChangeSector(sector,crush);
+                                return crushed;
+                            }
                              */
                         }
                         break;
@@ -4872,23 +4838,9 @@ public class Actions extends UnifiedGameMap {
         }
     }
 
-    public Actions(DoomMain DM) {
+    public Actions(DoomMain<T, V> DM) {
         super(DM);
         this.A = this;
-        SlideTraverse = new PTR_SlideTraverse();
-        AimTraverse = new PTR_AimTraverse();
-        ShootTraverse = new PTR_ShootTraverse();
-        UseTraverse = new PTR_UseTraverse();
-
-        AddLineIntercepts = new PIT_AddLineIntercepts();
-        AddThingIntercepts = new PIT_AddThingIntercepts();
-        VileCheck = new PIT_VileCheck();
-        CheckLine = new PIT_CheckLine();
-        StompThing = new PIT_StompThing();
-        CheckThing = new PIT_CheckThing();
-        RadiusAttack = new PIT_RadiusAttack();
-        ChangeSector = new PIT_ChangeSector();
-
     }
 
     //
@@ -4921,9 +4873,9 @@ public class Actions extends UnifiedGameMap {
             } else {
                 if (currentthinker.acp1 != null) // Execute thinker's function.
                 {
-                    currentthinker.acp1.invoke((mobj_t) currentthinker);
+                    currentthinker.acp1.accept((mobj_t) currentthinker);
                 } else if (currentthinker.acpss != null) {
-                    currentthinker.acpss.invoke(currentthinker);
+                    currentthinker.acpss.accept(currentthinker);
                 }
             }
             currentthinker = currentthinker.next;
@@ -4943,359 +4895,326 @@ public class Actions extends UnifiedGameMap {
     }
 
     ///////////////////// PIT AND PTR FUNCTIONS //////////////////
-    PTR_InterceptFunc SlideTraverse;
-    PTR_InterceptFunc AimTraverse;
-    PTR_InterceptFunc ShootTraverse;
-    PTR_InterceptFunc UseTraverse;
-
-    PIT_AddLineIntercepts AddLineIntercepts;
-    PIT_AddThingIntercepts AddThingIntercepts;
-    PIT_VileCheck VileCheck;
-    PIT_CheckLine CheckLine;
-    PIT_StompThing StompThing;
-    PIT_CheckThing CheckThing;
-    PIT_RadiusAttack RadiusAttack;
-    PIT_ChangeSector ChangeSector;
-
     /**
      * PIT_VileCheck Detect a corpse that could be raised.
      */
-    class PIT_VileCheck implements PIT_MobjFunction {
+    mobj_t vileCorpseHit, vileObj;
+    int vileTryX, vileTryY;
+    
+    @P_Enemy.C(PIT_VileCheck) Predicate<mobj_t> VileCheck = (mobj_t thing) -> {
+        int maxdist;
+        boolean check;
 
-        public mobj_t corpsehit;
-        public mobj_t vileobj;
-        public int viletryx;
-        public int viletryy;
-
-        public boolean invoke(mobj_t thing) {
-            int maxdist;
-            boolean check;
-
-            if (!eval(thing.flags & MF_CORPSE)) {
-                return true;    // not a monster
-            }
-            if (thing.tics != -1) {
-                return true;    // not lying still yet
-            }
-            if (thing.info.raisestate == statenum_t.S_NULL) {
-                return true;    // monster doesn't have a raise state
-            }
-            maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE.ordinal()].radius;
-
-            if (Math.abs(thing.x - viletryx) > maxdist
-                    || Math.abs(thing.y - viletryy) > maxdist) {
-                return true;        // not actually touching
-            }
-            corpsehit = thing;
-            corpsehit.momx = corpsehit.momy = 0;
-            corpsehit.height <<= 2;
-            check = CheckPosition(corpsehit, corpsehit.x, corpsehit.y);
-            corpsehit.height >>= 2;
-
-            if (!check) {
-                return true;        // doesn't fit here
-            }
-            return false;       // got one, so stop checking
+        if (!eval(thing.flags & MF_CORPSE)) {
+            return true;    // not a monster
         }
+        if (thing.tics != -1) {
+            return true;    // not lying still yet
+        }
+        if (thing.info.raisestate == statenum_t.S_NULL) {
+            return true;    // monster doesn't have a raise state
+        }
+        maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE.ordinal()].radius;
 
-    }
+        if (Math.abs(thing.x - vileTryX) > maxdist
+                || Math.abs(thing.y - vileTryY) > maxdist) {
+            return true;        // not actually touching
+        }
+        vileCorpseHit = thing;
+        vileCorpseHit.momx = vileCorpseHit.momy = 0;
+        vileCorpseHit.height <<= 2;
+        check = CheckPosition(vileCorpseHit, vileCorpseHit.x, vileCorpseHit.y);
+        vileCorpseHit.height >>= 2;
+
+        // check it doesn't fit here, or stop checking
+        return !check;
+    };
 
     /**
      * PIT_ChangeSector
      */
-    private class PIT_ChangeSector implements PIT_MobjFunction {
+    @P_Map.C(PIT_ChangeSector) Predicate<mobj_t> ChangeSector = (mobj_t thing) -> {
+        mobj_t mo;
 
-        public boolean invoke(mobj_t thing) {
-            mobj_t mo;
-
-            if (ThingHeightClip(thing)) {
-                // keep checking
-                return true;
-            }
-
-            // crunch bodies to giblets
-            if (thing.health <= 0) {
-                thing.SetMobjState(statenum_t.S_GIBS);
-
-                thing.flags &= ~MF_SOLID;
-                thing.height = 0;
-                thing.radius = 0;
-
-                // keep checking
-                return true;
-            }
-
-            // crunch dropped items
-            if (eval(thing.flags & MF_DROPPED)) {
-                A.RemoveMobj(thing);
-
-                // keep checking
-                return true;
-            }
-
-            if (!eval(thing.flags & MF_SHOOTABLE)) {
-                // assume it is bloody gibs or something
-                return true;
-            }
-
-            nofit = true;
-
-            if (crushchange && !eval(DOOM.leveltime & 3)) {
-                A.DamageMobj(thing, null, null, 10);
-
-                // spray blood in a random direction
-                mo = A.SpawnMobj(thing.x,
-                        thing.y,
-                        thing.z + thing.height / 2, mobjtype_t.MT_BLOOD);
-
-                mo.momx = (DOOM.random.P_Random() - DOOM.random.P_Random()) << 12;
-                mo.momy = (DOOM.random.P_Random() - DOOM.random.P_Random()) << 12;
-            }
-
-            // keep checking (crush other things)   
+        if (ThingHeightClip(thing)) {
+            // keep checking
             return true;
         }
-    }
+
+        // crunch bodies to giblets
+        if (thing.health <= 0) {
+            thing.SetMobjState(statenum_t.S_GIBS);
+
+            thing.flags &= ~MF_SOLID;
+            thing.height = 0;
+            thing.radius = 0;
+
+            // keep checking
+            return true;
+        }
+
+        // crunch dropped items
+        if (eval(thing.flags & MF_DROPPED)) {
+            A.RemoveMobj(thing);
+
+            // keep checking
+            return true;
+        }
+
+        if (!eval(thing.flags & MF_SHOOTABLE)) {
+            // assume it is bloody gibs or something
+            return true;
+        }
+
+        nofit = true;
+
+        if (crushchange && !eval(DOOM.leveltime & 3)) {
+            A.DamageMobj(thing, null, null, 10);
+
+            // spray blood in a random direction
+            mo = A.SpawnMobj(thing.x,
+                    thing.y,
+                    thing.z + thing.height / 2, mobjtype_t.MT_BLOOD);
+
+            mo.momx = (DOOM.random.P_Random() - DOOM.random.P_Random()) << 12;
+            mo.momy = (DOOM.random.P_Random() - DOOM.random.P_Random()) << 12;
+        }
+
+        // keep checking (crush other things)   
+        return true;
+    };
 
     /**
      * PIT_CheckLine Adjusts tmfloorz and tmceilingz as lines are contacted
      *
      */
-    protected class PIT_CheckLine implements PIT_LineFunction {
-
-        public boolean invoke(line_t ld) {
-            if (tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
-                    || tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
-                    || tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]
-                    || tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP]) {
-                return true;
-            }
-
-            if (ld.BoxOnLineSide(tmbbox) != -1) {
-                return true;
-            }
-
-            // A line has been hit
-            // The moving thing's destination position will cross
-            // the given line.
-            // If this should not be allowed, return false.
-            // If the line is special, keep track of it
-            // to process later if the move is proven ok.
-            // NOTE: specials are NOT sorted by order,
-            // so two special lines that are only 8 pixels apart
-            // could be crossed in either order.
-            if (ld.backsector == null) {
-                return false;       // one sided line
-            }
-            if (!eval(tmthing.flags & MF_MISSILE)) {
-                if (eval(ld.flags & ML_BLOCKING)) {
-                    return false;   // explicitly blocking everything
-                }
-                if ((tmthing.player == null) && eval(ld.flags & ML_BLOCKMONSTERS)) {
-                    return false;   // block monsters only
-                }
-            }
-
-            // set openrange, opentop, openbottom
-            LineOpening(ld);
-
-            // adjust floor / ceiling heights
-            if (opentop < tmceilingz) {
-                tmceilingz = opentop;
-                ceilingline = ld;
-            }
-
-            if (openbottom > tmfloorz) {
-                tmfloorz = openbottom;
-            }
-
-            if (lowfloor < tmdropoffz) {
-                tmdropoffz = lowfloor;
-            }
-
-            // if contacted a special line, add it to the list
-            if (ld.special != 0) {
-                spechit[numspechit] = ld;
-                numspechit++;
-                // Let's be proactive about this.
-                if (numspechit >= spechit.length) {
-                    ResizeSpechits();
-                }
-            }
-
+    @P_Map.C(PIT_CheckLine) Predicate<line_t> CheckLine = (line_t ld) -> {
+        if (tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
+                || tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
+                || tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]
+                || tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP]) {
             return true;
         }
 
-    }
+        if (ld.BoxOnLineSide(tmbbox) != -1) {
+            return true;
+        }
+
+        // A line has been hit
+        // The moving thing's destination position will cross
+        // the given line.
+        // If this should not be allowed, return false.
+        // If the line is special, keep track of it
+        // to process later if the move is proven ok.
+        // NOTE: specials are NOT sorted by order,
+        // so two special lines that are only 8 pixels apart
+        // could be crossed in either order.
+        if (ld.backsector == null) {
+            return false;       // one sided line
+        }
+        if (!eval(tmthing.flags & MF_MISSILE)) {
+            if (eval(ld.flags & ML_BLOCKING)) {
+                return false;   // explicitly blocking everything
+            }
+            if ((tmthing.player == null) && eval(ld.flags & ML_BLOCKMONSTERS)) {
+                return false;   // block monsters only
+            }
+        }
+
+        // set openrange, opentop, openbottom
+        LineOpening(ld);
+
+        // adjust floor / ceiling heights
+        if (opentop < tmceilingz) {
+            tmceilingz = opentop;
+            ceilingline = ld;
+        }
+
+        if (openbottom > tmfloorz) {
+            tmfloorz = openbottom;
+        }
+
+        if (lowfloor < tmdropoffz) {
+            tmdropoffz = lowfloor;
+        }
+
+        // if contacted a special line, add it to the list
+        if (ld.special != 0) {
+            spechit[numspechit] = ld;
+            numspechit++;
+            // Let's be proactive about this.
+            if (numspechit >= spechit.length) {
+                ResizeSpechits();
+            }
+        }
+
+        return true;
+    };
 
     /**
      * PIT_CheckThing
      */
-    private class PIT_CheckThing implements PIT_MobjFunction {
+    @P_Map.C(PIT_CheckThing) Predicate<mobj_t> CheckThing = (mobj_t thing) -> {
+        @fixed_t int blockdist;
+        boolean solid;
+        int damage;
 
-        public boolean invoke(mobj_t thing) {
-            int blockdist; // fixed_t
-            boolean solid;
-            int damage;
-
-            if ((thing.flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE)) == 0) {
-                return true;
-            }
-
-            blockdist = thing.radius + tmthing.radius;
-
-            if (Math.abs(thing.x - tmx) >= blockdist
-                    || Math.abs(thing.y - tmy) >= blockdist) {
-                // didn't hit it
-                return true;
-            }
-
-            // don't clip against self
-            if (thing == tmthing) {
-                return true;
-            }
-
-            // check for skulls slamming into things
-            if ((tmthing.flags & MF_SKULLFLY) != 0) {
-                damage = ((DOOM.random.P_Random() % 8) + 1) * tmthing.info.damage;
-
-                A.DamageMobj(thing, tmthing, tmthing, damage);
-
-                tmthing.flags &= ~MF_SKULLFLY;
-                tmthing.momx = tmthing.momy = tmthing.momz = 0;
-
-                tmthing.SetMobjState(tmthing.info.spawnstate);
-
-                return false;       // stop moving
-            }
-
-            // missiles can hit other things
-            if (eval(tmthing.flags & MF_MISSILE)) {
-                // see if it went over / under
-                if (tmthing.z > thing.z + thing.height) {
-                    return true;        // overhead
-                }
-                if (tmthing.z + tmthing.height < thing.z) {
-                    return true;        // underneath
-                }
-                if (tmthing.target != null && (tmthing.target.type == thing.type
-                        || (tmthing.target.type == mobjtype_t.MT_KNIGHT && thing.type == mobjtype_t.MT_BRUISER)
-                        || (tmthing.target.type == mobjtype_t.MT_BRUISER && thing.type == mobjtype_t.MT_KNIGHT))) {
-                    // Don't hit same species as originator.
-                    if (thing == tmthing.target) {
-                        return true;
-                    }
-
-                    if (thing.type != mobjtype_t.MT_PLAYER) {
-                        // Explode, but do no damage.
-                        // Let players missile other players.
-                        return false;
-                    }
-                }
-
-                if (!eval(thing.flags & MF_SHOOTABLE)) {
-                    // didn't do any damage
-                    return !eval(thing.flags & MF_SOLID);
-                }
-
-                // damage / explode
-                damage = ((DOOM.random.P_Random() % 8) + 1) * tmthing.info.damage;
-                A.DamageMobj(thing, tmthing, tmthing.target, damage);
-
-                // don't traverse any more
-                return false;
-            }
-
-            // check for special pickup
-            if (eval(thing.flags & MF_SPECIAL)) {
-                solid = eval(thing.flags & MF_SOLID);
-                if (eval(tmflags & MF_PICKUP)) {
-                    // can remove thing
-                    A.TouchSpecialThing(thing, tmthing);
-                }
-                return !solid;
-            }
-
-            return !eval(thing.flags & MF_SOLID);
+        if ((thing.flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE)) == 0) {
+            return true;
         }
 
-    }
+        blockdist = thing.radius + tmthing.radius;
+
+        if (Math.abs(thing.x - tmx) >= blockdist
+                || Math.abs(thing.y - tmy) >= blockdist) {
+            // didn't hit it
+            return true;
+        }
+
+        // don't clip against self
+        if (thing == tmthing) {
+            return true;
+        }
+
+        // check for skulls slamming into things
+        if ((tmthing.flags & MF_SKULLFLY) != 0) {
+            damage = ((DOOM.random.P_Random() % 8) + 1) * tmthing.info.damage;
+
+            A.DamageMobj(thing, tmthing, tmthing, damage);
+
+            tmthing.flags &= ~MF_SKULLFLY;
+            tmthing.momx = tmthing.momy = tmthing.momz = 0;
+
+            tmthing.SetMobjState(tmthing.info.spawnstate);
+
+            return false;       // stop moving
+        }
+
+        // missiles can hit other things
+        if (eval(tmthing.flags & MF_MISSILE)) {
+            // see if it went over / under
+            if (tmthing.z > thing.z + thing.height) {
+                return true;        // overhead
+            }
+            if (tmthing.z + tmthing.height < thing.z) {
+                return true;        // underneath
+            }
+            if (tmthing.target != null && (tmthing.target.type == thing.type
+                    || (tmthing.target.type == mobjtype_t.MT_KNIGHT && thing.type == mobjtype_t.MT_BRUISER)
+                    || (tmthing.target.type == mobjtype_t.MT_BRUISER && thing.type == mobjtype_t.MT_KNIGHT))) {
+                // Don't hit same species as originator.
+                if (thing == tmthing.target) {
+                    return true;
+                }
+
+                if (thing.type != mobjtype_t.MT_PLAYER) {
+                    // Explode, but do no damage.
+                    // Let players missile other players.
+                    return false;
+                }
+            }
+
+            if (!eval(thing.flags & MF_SHOOTABLE)) {
+                // didn't do any damage
+                return !eval(thing.flags & MF_SOLID);
+            }
+
+            // damage / explode
+            damage = ((DOOM.random.P_Random() % 8) + 1) * tmthing.info.damage;
+            A.DamageMobj(thing, tmthing, tmthing.target, damage);
+
+            // don't traverse any more
+            return false;
+        }
+
+        // check for special pickup
+        if (eval(thing.flags & MF_SPECIAL)) {
+            solid = eval(thing.flags & MF_SOLID);
+            if (eval(tmflags & MF_PICKUP)) {
+                // can remove thing
+                A.TouchSpecialThing(thing, tmthing);
+            }
+            return !solid;
+        }
+
+        return !eval(thing.flags & MF_SOLID);
+    };
 
     /**
      * PIT_RadiusAttack "bombsource" is the creature that caused the explosion at "bombspot".
      */
-    private class PIT_RadiusAttack implements PIT_MobjFunction {
+    @P_Map.C(PIT_RadiusAttack) Predicate<mobj_t> RadiusAttack = (mobj_t thing) -> {
+        int dx, dy, dist;
+        fixed_t: {
+            dx: dy: dist:;
+        }
 
-        public boolean invoke(mobj_t thing) {
-            int dx, dy, dist; // fixed_t
-
-            if (!eval(thing.flags & MF_SHOOTABLE)) {
-                return true;
-            }
-
-            // Boss spider and cyborg
-            // take no damage from concussion.
-            if (thing.type == mobjtype_t.MT_CYBORG
-                    || thing.type == mobjtype_t.MT_SPIDER) {
-                return true;
-            }
-
-            dx = Math.abs(thing.x - bombspot.x);
-            dy = Math.abs(thing.y - bombspot.y);
-
-            dist = dx > dy ? dx : dy;
-            dist = (dist - thing.radius) >> FRACBITS;
-
-            if (dist < 0) {
-                dist = 0;
-            }
-
-            if (dist >= bombdamage) {
-                return true;    // out of range
-            }
-            if (EN.CheckSight(thing, bombspot)) {
-                // must be in direct path
-                A.DamageMobj(thing, bombspot, bombsource, bombdamage - dist);
-            }
-
+        if (!eval(thing.flags & MF_SHOOTABLE)) {
             return true;
         }
-    }
+
+        // Boss spider and cyborg
+        // take no damage from concussion.
+        if (thing.type == mobjtype_t.MT_CYBORG
+                || thing.type == mobjtype_t.MT_SPIDER) {
+            return true;
+        }
+
+        dx = Math.abs(thing.x - bombspot.x);
+        dy = Math.abs(thing.y - bombspot.y);
+
+        dist = dx > dy ? dx : dy;
+        dist = (dist - thing.radius) >> FRACBITS;
+
+        if (dist < 0) {
+            dist = 0;
+        }
+
+        if (dist >= bombdamage) {
+            return true;    // out of range
+        }
+        if (EN.CheckSight(thing, bombspot)) {
+            // must be in direct path
+            A.DamageMobj(thing, bombspot, bombsource, bombdamage - dist);
+        }
+
+        return true;
+    };
 
     /**
      * PIT_StompThing
      */
-    private class PIT_StompThing implements PIT_MobjFunction {
+    @P_Map.C(PIT_StompThing) Predicate<mobj_t> StompThing = (mobj_t thing) -> {
+        int blockdist;
+        fixed_t: {
+            blockdist:;
+        }
 
-        public boolean invoke(mobj_t thing) {
-            int blockdist; // fixed_t
-
-            if ((thing.flags & MF_SHOOTABLE) == 0) {
-                return true;
-            }
-
-            blockdist = thing.radius + tmthing.radius;
-
-            if (Math.abs(thing.x - tmx) >= blockdist
-                    || Math.abs(thing.y - tmy) >= blockdist) {
-                // didn't hit it
-                return true;
-            }
-
-            // don't clip against self
-            if (thing == tmthing) {
-                return true;
-            }
-
-            // monsters don't stomp things except on boss level
-            if ((tmthing.player == null) && (DOOM.gamemap != 30)) {
-                return false;
-            }
-
-            A.DamageMobj(thing, tmthing, tmthing, 10000); // in interaction
-
+        if ((thing.flags & MF_SHOOTABLE) == 0) {
             return true;
         }
-    }
+
+        blockdist = thing.radius + tmthing.radius;
+
+        if (Math.abs(thing.x - tmx) >= blockdist
+                || Math.abs(thing.y - tmy) >= blockdist) {
+            // didn't hit it
+            return true;
+        }
+
+        // don't clip against self
+        if (thing == tmthing) {
+            return true;
+        }
+
+        // monsters don't stomp things except on boss level
+        if ((tmthing.player == null) && (DOOM.gamemap != 30)) {
+            return false;
+        }
+
+        A.DamageMobj(thing, tmthing, tmthing, 10000); // in interaction
+
+        return true;
+    };
 
 }

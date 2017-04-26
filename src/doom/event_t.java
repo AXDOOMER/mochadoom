@@ -46,6 +46,7 @@ public interface event_t {
     event_t CANCEL_KEYS = () -> evtype_t.ev_clear;
     event_t CANCEL_MOUSE = new event_t.mouseevent_t(evtype_t.ev_mouse, 0, 0, 0);
 
+    default boolean hasData() { return false; }
     default boolean isKey() { return false; }
     default boolean isKey(ScanCode sc) { return false; }
     default <T> T mapByKey(Function<? super ScanCode, ? extends T> scMapper) { return scMapper.apply(null); }
@@ -212,6 +213,11 @@ public interface event_t {
         }
 
         @Override
+        public boolean hasData() {
+            return sc != ScanCode.SC_NULL;
+        }
+
+        @Override
         public evtype_t type() {
             return type;
         }
@@ -291,6 +297,11 @@ public interface event_t {
             this.buttons = buttons;
             this.x = x;
             this.y = y;
+        }
+
+        @Override
+        public boolean hasData() {
+            return buttons != 0;
         }
         
         public void buttonOn(MouseEvent ev) {
@@ -385,6 +396,11 @@ public interface event_t {
             this.x = x;
             this.y = y;
         }
+
+        @Override
+        public boolean hasData() {
+            return buttons != 0;
+        }        
 
         @Override
         public evtype_t type() {

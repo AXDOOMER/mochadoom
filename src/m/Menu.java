@@ -906,7 +906,6 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     @Override
     public boolean Responder(event_t ev) {
         final ScanCode sc;
-        //System.out.println("Processing keyevent:" +(ev.type==evtype_t.ev_keydown || ev.type==evtype_t.ev_keyup)+ " value = "+(char)ev.data1);
         
         if (ev.isType(evtype_t.ev_joystick) && joywait < DOOM.ticker.GetTime()) {
             // Joystick input
@@ -1235,10 +1234,12 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     /**
      * M_StartControlPanel
      */
+    @Override
     public void StartControlPanel() {
         // intro might call this repeatedly
-        if (DOOM.menuactive)
+        if (DOOM.menuactive) {
             return;
+        }
 
         DOOM.menuactive = true;
         //Engine.getEngine().window.setMouseLoose();

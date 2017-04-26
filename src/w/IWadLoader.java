@@ -1,6 +1,8 @@
 package w;
 
 import data.Defines;
+import doom.SourceCode.W_Wad;
+import static doom.SourceCode.W_Wad.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import rr.patch_t;
@@ -17,6 +19,7 @@ public interface IWadLoader {
 	 * 
 	 * @throws Exception
 	 */
+    @W_Wad.C(W_Reload)
 	public abstract void Reload() throws Exception;
 
 	/**
@@ -42,6 +45,7 @@ public interface IWadLoader {
 	 * 
 	 */
 
+    @W_Wad.C(W_InitMultipleFiles)
 	public abstract void InitMultipleFiles(String[] filenames) throws Exception;
 
 	/**
@@ -77,6 +81,7 @@ public interface IWadLoader {
 	 * Calls W_CheckNumForName, but bombs out if not found.
 	 */
 
+    @W_Wad.C(W_GetNumForName)
 	public abstract int GetNumForName(String name);
 
 	/**
@@ -90,6 +95,7 @@ public interface IWadLoader {
 	// W_LumpLength
 	// Returns the buffer size needed to load the given lump.
 	//
+    @W_Wad.C(W_LumpLength)
 	public abstract int LumpLength(int lump);
 
 
@@ -99,6 +105,7 @@ public interface IWadLoader {
      * generic DoomBuffer object is left in the lump cache and returned.
      * @param <T>
      */
+    @W_Wad.C(W_CacheLumpNum)
     public abstract <T> T CacheLumpNum(int lump, int tag,
             Class<T> what);
 
@@ -140,6 +147,7 @@ public interface IWadLoader {
 	 * @return
 	 */
 	
+    @W_Wad.C(W_CacheLumpName)
 	public abstract DoomBuffer CacheLumpName(String name, int tag);
 
     /** Get a DoomBuffer of the specified lump num
@@ -193,6 +201,7 @@ public interface IWadLoader {
 
 	public abstract String GetNameForLump(int lump);
 
+    @W_Wad.C(W_CheckNumForName)
 	public abstract int CheckNumForName(String name/* , int namespace */);
 	
 	/** Return ALL possible results for a given name, in order to resolve name clashes without
@@ -262,6 +271,7 @@ public interface IWadLoader {
 	 * @param lump
 	 * @return
 	 */
+    @W_Wad.C(W_ReadLump)
     byte[] ReadLump(int lump);
 
     /** Use your own buffer, of proper size of course.

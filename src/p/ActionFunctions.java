@@ -39,6 +39,8 @@ import static doom.player_t.ps_weapon;
 import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
@@ -160,90 +162,90 @@ public class ActionFunctions<T, V> {
 	protected SlideDoor SL;
 	
 
-	ActionType2  WeaponReady;
-	ActionType2  Lower;
-	ActionType2  Raise;
-	ActionType2  Punch;
-	ActionType2  ReFire;
-	ActionType2  FirePistol;
-	ActionType2  Light0;
-	ActionType2  Light1;
-	ActionType2  Light2;
-	ActionType2   FireShotgun;	
-	ActionType2  FireShotgun2;
-	ActionType2  CheckReload;
-	ActionType2  OpenShotgun2;
-	ActionType2  LoadShotgun2;
-	ActionType2  CloseShotgun2;
-	ActionType2  FireCGun;
-	ActionType2  GunFlash;
-	ActionType2  FireMissile;
-	ActionType2  Saw;
-	ActionType2  FirePlasma;
-	ActionType2  BFGsound;
-	ActionType2  FireBFG;
-    ActionType1  BFGSpray;
-    ActionType1  Explode;
-    ActionType1  Pain;
-    ActionType1  PlayerScream;
-    ActionType1 Fall;
-    ActionType1  XScream;
-    ActionType1  Look;
-    ActionType1  Chase;
-    ActionType1  FaceTarget;
-    ActionType1  PosAttack;
-    ActionType1  Scream;
-    ActionType1  SPosAttack;
-    ActionType1  VileChase;
-    ActionType1  VileStart;
-    ActionType1  VileTarget;
-    ActionType1  VileAttack;
-    ActionType1 StartFire;
-    ActionType1  Fire;
-    ActionType1  FireCrackle;
-    ActionType1  Tracer;
-    ActionType1  SkelWhoosh;
-    ActionType1  SkelFist;
-    ActionType1  SkelMissile;
-    ActionType1  FatRaise;
-    ActionType1  FatAttack1;
-    ActionType1  FatAttack2;
-    ActionType1 FatAttack3;
-    ActionType1  BossDeath;
-    ActionType1  CPosAttack;
-    ActionType1  CPosRefire;
-    ActionType1  TroopAttack;
-    ActionType1  SargAttack;
-    ActionType1  HeadAttack;
-    ActionType1 BruisAttack;
-    ActionType1  SkullAttack;
-    ActionType1  Metal;
-    ActionType1  SpidRefire;
-    ActionType1 BabyMetal;
-    ActionType1 BspiAttack;
-    ActionType1  Hoof;
-    ActionType1  CyberAttack;
-    ActionType1  PainAttack;
-    ActionType1  PainDie;
-    ActionType1 KeenDie;
-    ActionType1  BrainPain;
-    ActionType1  BrainScream;
-    ActionType1  BrainDie;
-    ActionType1  BrainAwake;
-    ActionType1  BrainSpit;
-    ActionType1  SpawnSound;
-    ActionType1  SpawnFly;
-    ActionType1  BrainExplode;
-    ActionType1  MobjThinker;
-    ActionTypeSS<?>  FireFlicker;
-    ActionTypeSS<?>  LightFlash;
-	ActionTypeSS<?> StrobeFlash;
-	ActionTypeSS<?>  Glow;
-	ActionTypeSS<?>  MoveCeiling;
-	ActionTypeSS<?>  MoveFloor;
-	ActionTypeSS<?>  VerticalDoor;
-	ActionTypeSS<?> PlatRaise;
-	ActionTypeSS<?> SlidingDoor;
+    BiConsumer<player_t, pspdef_t>  WeaponReady;
+	BiConsumer<player_t, pspdef_t>  Lower;
+	BiConsumer<player_t, pspdef_t>  Raise;
+	BiConsumer<player_t, pspdef_t>  Punch;
+	BiConsumer<player_t, pspdef_t>  ReFire;
+	BiConsumer<player_t, pspdef_t>  FirePistol;
+	BiConsumer<player_t, pspdef_t>  Light0;
+	BiConsumer<player_t, pspdef_t>  Light1;
+	BiConsumer<player_t, pspdef_t>  Light2;
+	BiConsumer<player_t, pspdef_t>   FireShotgun;	
+	BiConsumer<player_t, pspdef_t>  FireShotgun2;
+	BiConsumer<player_t, pspdef_t>  CheckReload;
+	BiConsumer<player_t, pspdef_t>  OpenShotgun2;
+	BiConsumer<player_t, pspdef_t>  LoadShotgun2;
+	BiConsumer<player_t, pspdef_t>  CloseShotgun2;
+	BiConsumer<player_t, pspdef_t>  FireCGun;
+	BiConsumer<player_t, pspdef_t>  GunFlash;
+	BiConsumer<player_t, pspdef_t>  FireMissile;
+	BiConsumer<player_t, pspdef_t>  Saw;
+	BiConsumer<player_t, pspdef_t>  FirePlasma;
+	BiConsumer<player_t, pspdef_t>  BFGsound;
+	BiConsumer<player_t, pspdef_t>  FireBFG;
+    Consumer<mobj_t>  BFGSpray;
+    Consumer<mobj_t>  Explode;
+    Consumer<mobj_t>  Pain;
+    Consumer<mobj_t>  PlayerScream;
+    Consumer<mobj_t> Fall;
+    Consumer<mobj_t>  XScream;
+    Consumer<mobj_t>  Look;
+    Consumer<mobj_t>  Chase;
+    Consumer<mobj_t>  FaceTarget;
+    Consumer<mobj_t>  PosAttack;
+    Consumer<mobj_t>  Scream;
+    Consumer<mobj_t>  SPosAttack;
+    Consumer<mobj_t>  VileChase;
+    Consumer<mobj_t>  VileStart;
+    Consumer<mobj_t>  VileTarget;
+    Consumer<mobj_t>  VileAttack;
+    Consumer<mobj_t> StartFire;
+    Consumer<mobj_t>  Fire;
+    Consumer<mobj_t>  FireCrackle;
+    Consumer<mobj_t>  Tracer;
+    Consumer<mobj_t>  SkelWhoosh;
+    Consumer<mobj_t>  SkelFist;
+    Consumer<mobj_t>  SkelMissile;
+    Consumer<mobj_t>  FatRaise;
+    Consumer<mobj_t>  FatAttack1;
+    Consumer<mobj_t>  FatAttack2;
+    Consumer<mobj_t> FatAttack3;
+    Consumer<mobj_t>  BossDeath;
+    Consumer<mobj_t>  CPosAttack;
+    Consumer<mobj_t>  CPosRefire;
+    Consumer<mobj_t>  TroopAttack;
+    Consumer<mobj_t>  SargAttack;
+    Consumer<mobj_t>  HeadAttack;
+    Consumer<mobj_t> BruisAttack;
+    Consumer<mobj_t>  SkullAttack;
+    Consumer<mobj_t>  Metal;
+    Consumer<mobj_t>  SpidRefire;
+    Consumer<mobj_t> BabyMetal;
+    Consumer<mobj_t> BspiAttack;
+    Consumer<mobj_t>  Hoof;
+    Consumer<mobj_t>  CyberAttack;
+    Consumer<mobj_t>  PainAttack;
+    Consumer<mobj_t>  PainDie;
+    Consumer<mobj_t> KeenDie;
+    Consumer<mobj_t>  BrainPain;
+    Consumer<mobj_t>  BrainScream;
+    Consumer<mobj_t>  BrainDie;
+    Consumer<mobj_t>  BrainAwake;
+    Consumer<mobj_t>  BrainSpit;
+    Consumer<mobj_t>  SpawnSound;
+    Consumer<mobj_t>  SpawnFly;
+    Consumer<mobj_t>  BrainExplode;
+    Consumer<mobj_t>  MobjThinker;
+    TypedAction<fireflicker_t>  FireFlicker;
+    TypedAction<lightflash_t>  LightFlash;
+	TypedAction<strobe_t> StrobeFlash;
+	TypedAction<glow_t>  Glow;
+	TypedAction<ceiling_t>  MoveCeiling;
+	TypedAction<floormove_t>  MoveFloor;
+	TypedAction<vldoor_t>  VerticalDoor;
+	TypedAction<plat_t> PlatRaise;
+	TypedAction<slidedoor_t> SlidingDoor;
 	
 	/** Wires a state to an actual callback depending on its
 	 *  enum. This eliminates the need to have a giant
@@ -779,6 +781,16 @@ public class ActionFunctions<T, V> {
 	      }
 	      
 	  }
+
+    /** Generic single-thinker argument action function.
+     *  Useful for handling stuff such as sector actions, doors, etc.
+     *  or special thinker objects that don't qualify as mobj_t's.
+     *
+     * @author velktron
+     *
+     * @param <T>
+     */
+    public interface TypedAction<T extends thinker_t> extends Consumer<T> {}
 	
 	
 	/** Causes object to move and perform actions.
@@ -788,8 +800,8 @@ public class ActionFunctions<T, V> {
 	 */
 	      
 
-	class P_MobjThinker implements ActionType1{
-	    public void invoke(mobj_t  mobj){
+	class P_MobjThinker implements Consumer<mobj_t> {
+	    public void accept(mobj_t  mobj){
 			// momentum movement
 			if (mobj.momx != 0 || mobj.momy != 0
 					|| (eval(mobj.flags& MF_SKULLFLY))) {
@@ -842,75 +854,75 @@ public class ActionFunctions<T, V> {
 		}
 	}
 
-	class T_FireFlicker implements ActionTypeSS<fireflicker_t>{
+	class T_FireFlicker implements TypedAction<fireflicker_t>{
 
 		@Override
-		public void invoke(fireflicker_t a) {
+		public void accept(fireflicker_t a) {
 			a.FireFlicker();
 			
 		}
 		
 	}
 	
-	class T_LightFlash implements ActionTypeSS<lightflash_t>{
+	class T_LightFlash implements TypedAction<lightflash_t>{
 
 		@Override
-		public void invoke(lightflash_t a) {
+		public void accept(lightflash_t a) {
 			a.LightFlash();			
 		}
 		
 	}
 	
-	class T_StrobeFlash implements ActionTypeSS<strobe_t>{
+	class T_StrobeFlash implements TypedAction<strobe_t>{
 
 		@Override
-		public void invoke(strobe_t a) {
+		public void accept(strobe_t a) {
 			a.StrobeFlash();			
 		}
 		
 	}
 	
-	class T_Glow implements ActionTypeSS<glow_t>{
+	class T_Glow implements TypedAction<glow_t>{
 
 		@Override
-		public void invoke(glow_t a) {
+		public void accept(glow_t a) {
 			a.Glow();
 			
 		}
 		
 	}
 	
-	class	T_MoveCeiling implements ActionTypeSS<ceiling_t>{
+	class	T_MoveCeiling implements TypedAction<ceiling_t>{
 
 		@Override
-		public void invoke(ceiling_t a) {
+		public void accept(ceiling_t a) {
 			DOOM.actions.MoveCeiling(a);			
 		}
 	
 	}
 
-	class T_MoveFloor implements ActionTypeSS<floormove_t>{
+	class T_MoveFloor implements TypedAction<floormove_t>{
 
 		@Override
-		public void invoke(floormove_t a) {
+		public void accept(floormove_t a) {
 			DOOM.actions.MoveFloor(a);			
 		}
 	
 	}
 	
-	class	T_VerticalDoor implements ActionTypeSS<vldoor_t>{
+	class	T_VerticalDoor implements TypedAction<vldoor_t>{
 
 		@Override
-		public void invoke(vldoor_t a) {
+		public void accept(vldoor_t a) {
 			DOOM.actions.VerticalDoor(a);	
 		}
 	
 	}
 
-	class T_SlidingDoor implements ActionTypeSS<slidedoor_t> {
+	class T_SlidingDoor implements TypedAction<slidedoor_t> {
 
 		@Override
-		public void invoke(slidedoor_t door) {
+		public void accept(slidedoor_t door) {
 
 			switch (door.status) {
 			case sd_opening:
@@ -977,10 +989,10 @@ public class ActionFunctions<T, V> {
 	}
 	
 	
-	class	T_PlatRaise implements ActionTypeSS<plat_t>{
+	class	T_PlatRaise implements TypedAction<plat_t>{
 
 		@Override
-		public void invoke(plat_t a) {
+		public void accept(plat_t a) {
 			DOOM.actions.PlatRaise(a);
 		}
 	
@@ -991,8 +1003,8 @@ public class ActionFunctions<T, V> {
     // A_FaceTarget
     //
 	
-	public class A_FaceTarget implements ActionType1{
-    public void invoke(mobj_t  actor)
+	public class A_FaceTarget implements Consumer<mobj_t>{
+    public void accept(mobj_t  actor)
     {   
         if (actor.target==null)
         return;
@@ -1014,8 +1026,8 @@ public class ActionFunctions<T, V> {
     //
     // A_PosAttack
     //
-	class A_PosAttack implements ActionType1{
-	    public void invoke(mobj_t  actor)
+	class A_PosAttack implements Consumer<mobj_t>{
+	    public void accept(mobj_t  actor)
 	    {   
         int     angle;
         int     damage;
@@ -1023,7 +1035,7 @@ public class ActionFunctions<T, V> {
         
         if (actor.target==null)
         return;
-        FaceTarget.invoke(actor);
+        FaceTarget.accept(actor);
         angle = (int) actor.angle;
         slope = DOOM.actions.AimLineAttack (actor, angle, MISSILERANGE);
 
@@ -1035,8 +1047,8 @@ public class ActionFunctions<T, V> {
 	}
 
 
-	class A_SPosAttack implements ActionType1{
-        public void invoke(mobj_t  actor)
+	class A_SPosAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor)
         {   
         int     i;
         long     angle;
@@ -1061,8 +1073,8 @@ public class ActionFunctions<T, V> {
         }
 	}
 
-	class A_CPosAttack implements ActionType1{
-        public void invoke(mobj_t  actor)
+	class A_CPosAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor)
         {   
         long     angle;
         long     bangle;
@@ -1083,8 +1095,8 @@ public class ActionFunctions<T, V> {
         }
 	}
 
-	class A_CPosRefire implements ActionType1{
-        public void invoke(mobj_t  actor){
+	class A_CPosRefire implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){
         // keep firing unless target got out of sight
         A_FaceTarget (actor);
 
@@ -1101,8 +1113,8 @@ public class ActionFunctions<T, V> {
 	}
 
 
-	class A_SpidRefire implements ActionType1{
-        public void invoke(mobj_t  actor){
+	class A_SpidRefire implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){
         // keep firing unless target got out of sight
         A_FaceTarget (actor);
 
@@ -1118,8 +1130,8 @@ public class ActionFunctions<T, V> {
         }
 	}
 
-	class A_BspiAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+	class A_BspiAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         if (actor.target==null)
         return;
             
@@ -1134,8 +1146,8 @@ public class ActionFunctions<T, V> {
     //
     // A_TroopAttack
     //
-	class A_TroopAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+	class A_TroopAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         int     damage;
         
         if (actor.target==null)
@@ -1156,8 +1168,8 @@ public class ActionFunctions<T, V> {
         }
 	}
 
-    class A_SargAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_SargAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         int     damage;
 
         if (actor.target==null)
@@ -1173,8 +1185,8 @@ public class ActionFunctions<T, V> {
     }
 
 
-    class A_HeadAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_HeadAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         int     damage;
         
         if (actor.target==null)
@@ -1193,8 +1205,8 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_CyberAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_CyberAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         if (actor.target==null)
         return;
             
@@ -1203,8 +1215,8 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_BruisAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_BruisAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         int     damage;
         
         if (actor.target==null)
@@ -1227,8 +1239,8 @@ public class ActionFunctions<T, V> {
     //
     // A_SkelMissile
     //
-    class A_SkelMissile implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_SkelMissile implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  mo;
         
         if (actor.target==null)
@@ -1247,8 +1259,8 @@ public class ActionFunctions<T, V> {
 
     private static final int TRACEANGLE = 0xc000000;
 
-    class A_Tracer implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_Tracer implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         long exact; //angle_t
         int dist,slope; // fixed
         mobj_t  dest;
@@ -1324,8 +1336,8 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_SkelWhoosh implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_SkelWhoosh implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         if (actor.target==null)
         return;
         A_FaceTarget (actor);
@@ -1333,8 +1345,8 @@ public class ActionFunctions<T, V> {
         }
     }
     
-    class A_SkelFist implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_SkelFist implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         int     damage;
 
         if (actor.target==null)
@@ -1355,8 +1367,8 @@ public class ActionFunctions<T, V> {
     // A_VileChase
     // Check for ressurecting a body
     //
-    class A_VileChase implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_VileChase implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         int         xl;
         int         xh;
         int         yl;
@@ -1371,17 +1383,17 @@ public class ActionFunctions<T, V> {
         if (actor.movedir != DI_NODIR)
         {
         // check for corpses to raise
-        DOOM.actions.VileCheck.viletryx =
+        DOOM.actions.vileTryX =
             actor.x + actor.info.speed*xspeed[actor.movedir];
-        DOOM.actions.VileCheck.viletryy =
+        DOOM.actions.vileTryY =
             actor.y + actor.info.speed*yspeed[actor.movedir];
 
-        xl = DOOM.levelLoader.getSafeBlockX(DOOM.actions.VileCheck.viletryx - DOOM.levelLoader.bmaporgx - MAXRADIUS*2);
-        xh = DOOM.levelLoader.getSafeBlockX(DOOM.actions.VileCheck.viletryx - DOOM.levelLoader.bmaporgx + MAXRADIUS*2);
-        yl = DOOM.levelLoader.getSafeBlockY(DOOM.actions.VileCheck.viletryy - DOOM.levelLoader.bmaporgy - MAXRADIUS*2);
-        yh = DOOM.levelLoader.getSafeBlockY(DOOM.actions.VileCheck.viletryy - DOOM.levelLoader.bmaporgy + MAXRADIUS*2);
+        xl = DOOM.levelLoader.getSafeBlockX(DOOM.actions.vileTryX - DOOM.levelLoader.bmaporgx - MAXRADIUS*2);
+        xh = DOOM.levelLoader.getSafeBlockX(DOOM.actions.vileTryX - DOOM.levelLoader.bmaporgx + MAXRADIUS*2);
+        yl = DOOM.levelLoader.getSafeBlockY(DOOM.actions.vileTryY - DOOM.levelLoader.bmaporgy - MAXRADIUS*2);
+        yh = DOOM.levelLoader.getSafeBlockY(DOOM.actions.vileTryY - DOOM.levelLoader.bmaporgy + MAXRADIUS*2);
         
-        DOOM.actions.VileCheck.vileobj = actor;
+        DOOM.actions.vileObj = actor;
         for (bx=xl ; bx<=xh ; bx++)
         {
             for (by=yl ; by<=yh ; by++)
@@ -1393,19 +1405,19 @@ public class ActionFunctions<T, V> {
             {
                 // got one!
                 temp = actor.target;
-                actor.target = DOOM.actions.VileCheck.corpsehit;
+                actor.target = DOOM.actions.vileCorpseHit;
                 A_FaceTarget (actor);
                 actor.target = temp;
                         
                 actor.SetMobjState ( statenum_t.S_VILE_HEAL1);
-                DOOM.doomSound.StartSound(DOOM.actions.VileCheck.corpsehit, sfxenum_t.sfx_slop);
-                info = DOOM.actions.VileCheck.corpsehit.info;
+                DOOM.doomSound.StartSound(DOOM.actions.vileCorpseHit, sfxenum_t.sfx_slop);
+                info = DOOM.actions.vileCorpseHit.info;
                 
-                DOOM.actions.VileCheck.corpsehit.SetMobjState (info.raisestate);
-                DOOM.actions.VileCheck.corpsehit.height <<= 2;
-                DOOM.actions.VileCheck.corpsehit.flags = info.flags;
-                DOOM.actions.VileCheck.corpsehit.health = info.spawnhealth;
-                DOOM.actions.VileCheck.corpsehit.target = null;
+                DOOM.actions.vileCorpseHit.SetMobjState (info.raisestate);
+                DOOM.actions.vileCorpseHit.height <<= 2;
+                DOOM.actions.vileCorpseHit.flags = info.flags;
+                DOOM.actions.vileCorpseHit.health = info.spawnhealth;
+                DOOM.actions.vileCorpseHit.target = null;
 
                 return;
             }
@@ -1414,7 +1426,7 @@ public class ActionFunctions<T, V> {
         }
 
         // Return to normal attack.
-        Chase.invoke (actor);
+        Chase.accept (actor);
         }
     }
 
@@ -1422,8 +1434,8 @@ public class ActionFunctions<T, V> {
     //
     // A_VileStart
     //
-    class A_VileStart implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_VileStart implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
     	DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_vilatk);
         }
     }
@@ -1434,25 +1446,25 @@ public class ActionFunctions<T, V> {
     // Keep fire in front of player unless out of sight
     //
     
-    class A_StartFire implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_StartFire implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
     	DOOM.doomSound.StartSound(actor,sfxenum_t.sfx_flamst);
-        Fire.invoke(actor);
+        Fire.accept(actor);
         }
     }
 
-    class A_FireCrackle implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_FireCrackle implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
     	DOOM.doomSound.StartSound(actor,sfxenum_t.sfx_flame);
-        Fire.invoke(actor);
+        Fire.accept(actor);
         }
      }
     
     //
     // A_FirePistol
     //
-    class A_FirePistol implements ActionType2{
-    public void invoke( player_t player, pspdef_t psp ) 
+    class A_FirePistol implements BiConsumer<player_t, pspdef_t>{
+    public void accept( player_t player, pspdef_t psp ) 
     {
   	  DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_pistol);
 
@@ -1471,8 +1483,8 @@ public class ActionFunctions<T, V> {
     //
     // A_FireShotgun
     //
-    class A_FireShotgun implements ActionType2{
-        public void invoke( player_t player, pspdef_t psp ) 
+    class A_FireShotgun implements BiConsumer<player_t, pspdef_t>{
+        public void accept( player_t player, pspdef_t psp ) 
         {
         int     i;
         
@@ -1497,8 +1509,8 @@ public class ActionFunctions<T, V> {
      * A_FireShotgun2
      */
     
-    class A_FireShotgun2 implements ActionType2{
-        public void invoke( player_t player, pspdef_t psp ) 
+    class A_FireShotgun2 implements BiConsumer<player_t, pspdef_t>{
+        public void accept( player_t player, pspdef_t psp ) 
         {
         int     i;
         long angle;
@@ -1530,8 +1542,8 @@ public class ActionFunctions<T, V> {
     }
     
     
-    class A_Fire implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_Fire implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  dest;
         //long    an;
             
@@ -1559,8 +1571,8 @@ public class ActionFunctions<T, V> {
     // A_VileTarget
     // Spawn the hellfire
     //
-    class A_VileTarget implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_VileTarget implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  fog;
         
         if (actor.target==null)
@@ -1575,7 +1587,7 @@ public class ActionFunctions<T, V> {
         actor.tracer = fog;
         fog.target = actor;
         fog.tracer = actor.target;
-        Fire.invoke(fog);
+        Fire.accept(fog);
         }
     }
 
@@ -1585,8 +1597,8 @@ public class ActionFunctions<T, V> {
     //
     // A_VileAttack
     //
-    class A_VileAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_VileAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  fire;
         //int     an;
         
@@ -1626,16 +1638,16 @@ public class ActionFunctions<T, V> {
     //
     private static final long FATSPREAD =  (ANG90/8);
 
-    class A_FatRaise implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_FatRaise implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         A_FaceTarget (actor);
         DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_manatk);
         }
     }
 
 
-    class A_FatAttack1 implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_FatAttack1 implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  mo;
         int     an;
         
@@ -1652,8 +1664,8 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_FatAttack2 implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_FatAttack2 implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  mo;
         int     an;
 
@@ -1670,8 +1682,8 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_FatAttack3 implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_FatAttack3 implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t  mo;
         int     an;
 
@@ -1698,8 +1710,8 @@ public class ActionFunctions<T, V> {
      * SkullAttack
      * Fly at the player like a missile.
      */
-    class A_SkullAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_SkullAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         mobj_t      dest;
         int     an;
         int         dist;
@@ -1711,7 +1723,7 @@ public class ActionFunctions<T, V> {
         actor.flags |= MF_SKULLFLY;
 
         DOOM.doomSound.StartSound(actor, actor.info.attacksound);
-        FaceTarget.invoke(actor);
+        FaceTarget.accept(actor);
         an = Tables.toBAMIndex(actor.angle);
         actor.momx = FixedMul (SKULLSPEED, finecosine[an]);
         actor.momy = FixedMul (SKULLSPEED, finesine[an]);
@@ -1786,7 +1798,7 @@ public class ActionFunctions<T, V> {
         }
             
         newmobj.target = actor.target;
-        SkullAttack.invoke (newmobj);
+        SkullAttack.accept (newmobj);
     }
 
 
@@ -1794,8 +1806,8 @@ public class ActionFunctions<T, V> {
     // A_PainAttack
     // Spawn a lost soul and launch it at the target
     // 
-    class A_PainAttack implements ActionType1{
-        public void invoke(mobj_t  actor){ 
+    class A_PainAttack implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
         if (actor.target==null)
         return;
 
@@ -1805,9 +1817,9 @@ public class ActionFunctions<T, V> {
     }
 
 
-    class A_PainDie implements ActionType1{
-        public void invoke(mobj_t  actor){ 
-        Fall.invoke (actor);
+    class A_PainDie implements Consumer<mobj_t>{
+        public void accept(mobj_t  actor){ 
+        Fall.accept (actor);
         A_PainShootSkull (actor, actor.angle+ANG90);
         A_PainShootSkull (actor, actor.angle+ANG180);
         A_PainShootSkull (actor, actor.angle+ANG270);
@@ -1819,8 +1831,8 @@ public class ActionFunctions<T, V> {
 
 
 
-    class A_Scream implements ActionType1 {
-        public void invoke(mobj_t  actor){ 
+    class A_Scream implements Consumer<mobj_t> {
+        public void accept(mobj_t  actor){ 
         int     sound;
         
         switch (actor.info.deathsound)
@@ -1865,8 +1877,8 @@ public class ActionFunctions<T, V> {
      * or after previous attack/fire sequence.
      */
 
-    class A_WeaponReady implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_WeaponReady implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
     {   
         statenum_t  newstate;
         int     angle;
@@ -1922,8 +1934,8 @@ public class ActionFunctions<T, V> {
     //
     // A_Raise
     //
-    class A_Raise implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_Raise implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         statenum_t  newstate;
         
@@ -1953,8 +1965,8 @@ public class ActionFunctions<T, V> {
     // The player can re-fire the weapon
     // without lowering it entirely.
     //
-    class A_ReFire implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_ReFire implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         
         // check for fire
@@ -1978,8 +1990,8 @@ public class ActionFunctions<T, V> {
     //
     // A_GunFlash
     //
-    class A_GunFlash implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_GunFlash implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {    
         player.mo.SetMobjState (statenum_t.S_PLAY_ATK2);
         player.SetPsprite (ps_flash,weaponinfo[player.readyweapon.ordinal()].flashstate);
@@ -1989,8 +2001,8 @@ public class ActionFunctions<T, V> {
     //
     // A_Punch
     //
-    class A_Punch implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_Punch implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         long angle; //angle_t
         int     damage;
@@ -2025,8 +2037,8 @@ public class ActionFunctions<T, V> {
     //
     // A_Saw
     //
-    class A_Saw implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_Saw implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         long angle; // angle_t
         int     damage;
@@ -2087,8 +2099,8 @@ public class ActionFunctions<T, V> {
     //
     // A_FireMissile
     //
-    class A_FireMissile implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_FireMissile implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
         DOOM.actions.SpawnPlayerMissile (player.mo, mobjtype_t.MT_ROCKET);
@@ -2099,14 +2111,14 @@ public class ActionFunctions<T, V> {
     //
     // A_FireBFG
     //
-    class A_FireBFG implements ActionType2 {
+    class A_FireBFG implements BiConsumer<player_t, pspdef_t> {
     	 
     	
     	 // plasma cells for a bfg attack
     	 // IDEA: make action functions partially parametrizable?
     	private static final int BFGCELLS      =  40;     
     	
-    	public void invoke( player_t player, pspdef_t psp )
+    	public void accept( player_t player, pspdef_t psp )
         {   
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= BFGCELLS;
         DOOM.actions.SpawnPlayerMissile (player.mo, mobjtype_t.MT_BFG);
@@ -2117,8 +2129,8 @@ public class ActionFunctions<T, V> {
     //
     // A_FireCGun
     //
-    class A_FireCGun implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_FireCGun implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         // For convenience.
         int readyweap=player.readyweapon.ordinal();
@@ -2148,8 +2160,8 @@ public class ActionFunctions<T, V> {
     //
     // A_FirePlasma
     //
-    class A_FirePlasma implements ActionType2 {
-    	public void invoke( player_t player, pspdef_t psp )
+    class A_FirePlasma implements BiConsumer<player_t, pspdef_t> {
+    	public void accept( player_t player, pspdef_t psp )
         {   
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
 
@@ -2161,14 +2173,14 @@ public class ActionFunctions<T, V> {
         }
     }
     
-    class A_XScream implements ActionType1 {
-        public void invoke(mobj_t  actor){ 
+    class A_XScream implements Consumer<mobj_t> {
+        public void accept(mobj_t  actor){ 
         DOOM.doomSound.StartSound (actor, sfxenum_t.sfx_slop); 
         }
     }
 
-    class A_Pain implements ActionType1 {
-        public void invoke(mobj_t  actor){ 
+    class A_Pain implements Consumer<mobj_t> {
+        public void accept(mobj_t  actor){ 
         if (actor.info.painsound!=null)
         	DOOM.doomSound.StartSound(actor, actor.info.painsound);   
         }
@@ -2176,8 +2188,8 @@ public class ActionFunctions<T, V> {
 
 
 
-    class A_Fall implements ActionType1 {
-        public void invoke(mobj_t  actor){ 
+    class A_Fall implements Consumer<mobj_t> {
+        public void accept(mobj_t  actor){ 
         // actor is on ground, it can be walked over
         actor.flags &= ~MF_SOLID;
 
@@ -2190,8 +2202,8 @@ public class ActionFunctions<T, V> {
     //
     // A_Explode
     //
-    class A_Explode implements ActionType1 {
-        public void invoke(mobj_t  thingy){ 
+    class A_Explode implements Consumer<mobj_t> {
+        public void accept(mobj_t  thingy){ 
         DOOM.actions.RadiusAttack ( thingy, thingy.target, 128 );
         }
     }
@@ -2206,8 +2218,8 @@ public class ActionFunctions<T, V> {
      * Special clauses?
      *
      */
-    class A_BossDeath implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_BossDeath implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
         thinker_t  th;
         mobj_t  mo2;
         line_t  junk = new line_t();
@@ -2352,20 +2364,20 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_Hoof implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_Hoof implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
     	DOOM.doomSound.StartSound(mo, sfxenum_t.sfx_hoof);
-    	 Chase.invoke(mo);
+    	 Chase.accept(mo);
         }
     }
     
-    class A_KeenDie implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_KeenDie implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
         thinker_t  th;
         mobj_t mo2;
         line_t  junk = new line_t(); // MAES: fixed null 21/5/2011
 
-        Fall.invoke(mo);
+        Fall.accept(mo);
         
         // scan the remaining thinkers
         // to see if all Keens are dead
@@ -2389,25 +2401,25 @@ public class ActionFunctions<T, V> {
         }
     }
 
-    class A_Metal implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_Metal implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
     	DOOM.doomSound.StartSound(mo, sfxenum_t.sfx_metal);
-        Chase.invoke(mo);
+        Chase.accept(mo);
         }
     }
 
-    class A_BabyMetal implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_BabyMetal implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
     	DOOM.doomSound.StartSound(mo, sfxenum_t.sfx_bspwlk);
-        Chase.invoke (mo);
+        Chase.accept (mo);
         }
     }
     
     //
     // A_BFGsound
     //
-    class A_BFGsound implements ActionType2{
-    	public void invoke( player_t player, pspdef_t psp )	{
+    class A_BFGsound implements BiConsumer<player_t, pspdef_t>{
+    	public void accept( player_t player, pspdef_t psp )	{
     		DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_bfg);
     	}	
     }
@@ -2416,8 +2428,8 @@ public class ActionFunctions<T, V> {
     // A_BFGSpray
     // Spawn a BFG explosion on every monster in view
     //
-    class A_BFGSpray implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_BFGSpray implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
         int         i;
         int         j;
         int         damage;
@@ -2450,14 +2462,14 @@ public class ActionFunctions<T, V> {
     }
 
 
-    class A_OpenShotgun2 implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_OpenShotgun2 implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
     	DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_dbopn);
 		}
     }
     
-    class A_LoadShotgun2 implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_LoadShotgun2 implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
     	DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_dbload);
 		}
     }
@@ -2466,8 +2478,8 @@ public class ActionFunctions<T, V> {
     // A_Look
     // Stay in state until a player is sighted.
     //
-    class A_Look implements ActionType1 {
-        public void invoke(mobj_t  actor){ 
+    class A_Look implements Consumer<mobj_t> {
+        public void accept(mobj_t  actor){ 
         mobj_t targ;
         boolean seeyou=false; // to avoid the fugly goto
         
@@ -2528,30 +2540,30 @@ public class ActionFunctions<T, V> {
         }
     }
     
-    class A_CloseShotgun2 implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_CloseShotgun2 implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
     	DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_dbcls);
-        ReFire.invoke(player,psp);
+        ReFire.accept(player,psp);
 		}
     }
 
     //
     // ?
     //
-    class A_Light0 implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_Light0 implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
         player.extralight = 0;
 		}
     }
 
-    class A_Light1 implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_Light1 implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
         player.extralight = 1;
 		}
     }
     
-    class A_Light2 implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_Light2 implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
         player.extralight = 2;
 		}
     }
@@ -2562,8 +2574,8 @@ public class ActionFunctions<T, V> {
     // Lowers current weapon,
     //  and changes weapon at bottom.
     //
-    class A_Lower implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_Lower implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
         psp.sy += LOWERSPEED;
 
         // Is already down.
@@ -2594,8 +2606,8 @@ public class ActionFunctions<T, V> {
 		}
     }
     
-    class A_CheckReload implements ActionType2{
-		public void invoke (player_t player,pspdef_t psp){
+    class A_CheckReload implements BiConsumer<player_t, pspdef_t>{
+		public void accept (player_t player,pspdef_t psp){
         player.CheckAmmo ();
     /*
         if (player.ammo[am_shell]<2)
@@ -2609,9 +2621,9 @@ public class ActionFunctions<T, V> {
     int     numbraintargets;
     int     braintargeton;
     
-    class A_BrainAwake implements ActionType1{
+    class A_BrainAwake implements Consumer<mobj_t>{
     	
-        public void invoke(mobj_t  mo){ 
+        public void accept(mobj_t  mo){ 
         thinker_t  thinker;
         mobj_t  m;
         
@@ -2641,15 +2653,15 @@ public class ActionFunctions<T, V> {
     }
 
 
-    class A_BrainPain implements ActionType1 {
-        public void invoke(mobj_t  mo){ 
+    class A_BrainPain implements Consumer<mobj_t> {
+        public void accept(mobj_t  mo){ 
     	DOOM.doomSound.StartSound(null,sfxenum_t.sfx_bospn);
         }
     }
 
 
-    class A_BrainScream implements ActionType1{
-        public void invoke(mobj_t  mo){ 
+    class A_BrainScream implements Consumer<mobj_t>{
+        public void accept(mobj_t  mo){ 
         int     x;
         int     y;
         int     z;
@@ -2675,8 +2687,8 @@ public class ActionFunctions<T, V> {
 
 
 
-    class A_BrainExplode implements ActionType1{
-        public void invoke(mobj_t  mo){ 
+    class A_BrainExplode implements Consumer<mobj_t>{
+        public void accept(mobj_t  mo){ 
         int     x;
         int     y;
         int     z;
@@ -2697,16 +2709,16 @@ public class ActionFunctions<T, V> {
     }
 
 
-    class A_BrainDie implements ActionType1{
-        public void invoke(mobj_t  mo){ 
+    class A_BrainDie implements Consumer<mobj_t>{
+        public void accept(mobj_t  mo){ 
         DOOM.ExitLevel ();
         }
     }
 
     private int  easy = 0;
     
-    class A_BrainSpit implements ActionType1{
-        public void invoke(mobj_t  mo){ 
+    class A_BrainSpit implements Consumer<mobj_t>{
+        public void accept(mobj_t  mo){ 
         mobj_t  targ;
         mobj_t  newmobj;
         
@@ -2718,7 +2730,7 @@ public class ActionFunctions<T, V> {
         targ = braintargets[braintargeton];
         
         // Load-time fix: awake on zero numbrain targets, if A_BrainSpit is called.
-        if (numbraintargets==0) {BrainAwake.invoke(mo);
+        if (numbraintargets==0) {BrainAwake.accept(mo);
         						 return;
         						}
         braintargeton = (braintargeton+1)%numbraintargets;
@@ -2735,16 +2747,16 @@ public class ActionFunctions<T, V> {
 
 
     // travelling cube sound
-    class A_SpawnSound implements ActionType1{
-        public void invoke(mobj_t  mo){ 
+    class A_SpawnSound implements Consumer<mobj_t>{
+        public void accept(mobj_t  mo){ 
         DOOM.doomSound.StartSound (mo,sfxenum_t.sfx_boscub);
-        SpawnFly.invoke(mo);
+        SpawnFly.accept(mo);
         }
     }
 
      
-    class A_SpawnFly implements ActionType1{
-        public void invoke(mobj_t  mo){ 
+    class A_SpawnFly implements Consumer<mobj_t>{
+        public void accept(mobj_t  mo){ 
         mobj_t  newmobj;
         mobj_t  fog;
         mobj_t  targ;
@@ -2803,8 +2815,8 @@ public class ActionFunctions<T, V> {
 //P_MobjThinker
 //
   
-      class A_PlayerScream implements ActionType1{
-          public void invoke(mobj_t  actor){ 
+      class A_PlayerScream implements Consumer<mobj_t>{
+          public void accept(mobj_t  actor){ 
           // Default death sound.
           sfxenum_t     sound = sfxenum_t.sfx_pldeth;
           
@@ -2847,8 +2859,8 @@ public class ActionFunctions<T, V> {
        * so it tries to close as fast as possible
        */
       
-      class A_Chase implements ActionType1{
-          public void invoke(mobj_t  actor){ 
+      class A_Chase implements Consumer<mobj_t>{
+          public void accept(mobj_t  actor){ 
           int     delta;
           boolean nomissile=false; // for the fugly goto
 

@@ -304,7 +304,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
             // TODO: try find a bug
 
 			if (st.acp1 != null) {
-				st.acp1.invoke(this);
+				st.acp1.accept(this);
 			}
 
 			state = st.nextstate;

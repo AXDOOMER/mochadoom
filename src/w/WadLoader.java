@@ -33,10 +33,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import mochadoom.Loggers;
 import rr.patch_t;
 import utils.C2JUtils;
 
@@ -52,7 +54,7 @@ public class WadLoader implements IWadLoader {
 
     public WadLoader() {
         lumpinfo = new lumpinfo_t[0];
-        zone = new Hashtable<>();
+        zone = new HashMap<>();
         wadfiles = new ArrayList<>();
         this.I = new DummySystem();
     }
@@ -482,7 +484,7 @@ public class WadLoader implements IWadLoader {
 	 * A slightly better implementation, uses string hashes
 	 * as direct comparators (though 64-bit long descriptors
 	 * could be used). It's faster than the old method, but
-	 * still short from the Hashtable's performance by 
+	 * still short from the HashMap's performance by 
 	 * an order of magnitude. 
 	 * 
      * @param name
@@ -516,7 +518,7 @@ public class WadLoader implements IWadLoader {
 	 * translation of how the C original worked, which was none too good 
 	 * even without the overhead of converting a string to
 	 * its integer representation. It's so bad, that it's two orders
-	 * of magnitude slower than a Hashtable implemetation, and one from
+	 * of magnitude slower than a HashMap implemetation, and one from
 	 * a direct hash/longname comparison with linear search.
 	 * 
 	 * @param name
@@ -881,8 +883,8 @@ public class WadLoader implements IWadLoader {
 	 *  @return a properly sized array of the correct type.
 	 */
 	
-	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num,
-			Class<T> what){
+    @Override
+	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num, Class<T> what){
 
 		if (lump >= numlumps) {
 			I.Error("CacheLumpNumIntoArray: %i >= numlumps", lump);
@@ -893,39 +895,39 @@ public class WadLoader implements IWadLoader {
 		}
 	
 		// Nothing cached here...
-		if ((lumpcache[lump] == null)&&(what!=null)) {
+		if ((lumpcache[lump] == null) && (what != null)) {
 			//System.out.println("cache miss on lump " + lump);
 			// Read as a byte buffer anyway.
 		    ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
 
-			T[] stuff=(T[]) C2JUtils.createArrayOfObjects(what, num);
+			T[] stuff = C2JUtils.createArrayOfObjects(what, num);
 			
 			// Store the buffer anyway (as a CacheableDoomObjectContainer)
-			lumpcache[lump] = new CacheableDoomObjectContainer<T>(stuff);
+			lumpcache[lump] = new CacheableDoomObjectContainer<>(stuff);
 			
 			// Auto-unpack it, if possible.
 
-			try {
-				thebuffer.rewind();
-				lumpcache[lump].unpack(thebuffer);
-				} catch (Exception e) {
-					System.err.println("Could not auto-unpack lump " + lump
-							+ " into an array of objects of class " + what);
-					e.printStackTrace();
-				}
+            try {
+                thebuffer.rewind();
+                lumpcache[lump].unpack(thebuffer);
+            } catch (IOException e) {
+                Loggers.getLogger(WadLoader.class.getName()).log(Level.WARNING, String.format(
+                        "Could not auto-unpack lump %s into an array of objects of class %s", lump, what
+                ), e);
+            }
 			
 			// Track it (as ONE lump)
 			Track(lumpcache[lump],lump);
-
-
 		} else {
 			//System.out.println("cache hit on lump " + lump);
 			// Z.ChangeTag (lumpcache[lump],tag);
 		}
 
-		if (lumpcache[lump]==null) return null;
+        if (lumpcache[lump] == null) {
+            return null;
+        }
 		
-		return (T[]) ((CacheableDoomObjectContainer<T>)lumpcache[lump]).getStuff();
+        return ((CacheableDoomObjectContainer<T>) lumpcache[lump]).getStuff();
 	}
 	
 	public CacheableDoomObject CacheLumpNum(int lump)
@@ -1100,17 +1102,17 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 * TO get an idea of how superior using a hashtable is, on 1000000 random
 	 * lump searches the original takes 48 seconds, searching for precomputed
-	 * hashes takes 2.84, and using a Hashtable takes 0.2 sec.
+	 * hashes takes 2.84, and using a HashMap takes 0.2 sec.
 	 * 
 	 * And the best part is that Java provides a perfectly reasonable implementation.
 	 * 
 	 */
 
-	Hashtable<String, Integer> doomhash;
+	HashMap<String, Integer> doomhash;
 
 	protected void InitLumpHash() {
 
-		doomhash = new Hashtable<String, Integer>(numlumps);
+		doomhash = new HashMap<String, Integer>(numlumps);
 
 		//for (int i = 0; i < numlumps; i++)
 		//	lumpinfo[i].index = -1; // mark slots empty
@@ -1127,14 +1129,13 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CheckNumForName(java.lang.String)
 	 */
-	public int CheckNumForName(String name/* , int namespace */)
-
-	{
+    @Override
+	public int CheckNumForName(String name/* , int namespace */) {
 		Integer r = doomhash.get(name);
 		// System.out.print("Found "+r);
 
 		if (r != null)
-			return r.intValue();
+			return r;
 
 		// System.out.print(" found "+lumpinfo[i]+"\n" );
 		return -1;
@@ -1328,7 +1329,7 @@ public class WadLoader implements IWadLoader {
 	
 	//// Merged remnants from LumpZone here.
 
-	Hashtable<CacheableDoomObject, Integer> zone;
+    HashMap<CacheableDoomObject, Integer> zone;
 
 	/** Add a lump to the tracking */
 

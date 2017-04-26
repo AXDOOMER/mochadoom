@@ -8,6 +8,8 @@ import static data.info.*;
 import data.sounds.sfxenum_t;
 import data.state_t;
 import defines.*;
+import doom.SourceCode.G_Game;
+import static doom.SourceCode.G_Game.*;
 import static doom.items.weaponinfo;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -210,9 +212,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
     public boolean didsecret;
 
     /** It's probably faster to clone the null player */
-
     public void reset() {
-
         Arrays.fill(this.ammo, 0);
         Arrays.fill(this.armorpoints, 0);
         Arrays.fill(this.cards, false);
@@ -222,13 +222,12 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         Arrays.fill(this.powers, 0);
         Arrays.fill(this.weaponowned, false);
         //Arrays.fill(this.psprites, null);
-        this.cheats=0; // Forgot to clear up cheats flag...
+        this.cheats = 0; // Forgot to clear up cheats flag...
         this.armortype = 0;
         this.attackdown = false;
         this.attacker = null;
         this.backpack = false;
         this.bob = 0;
-
     }
 
     @Override
@@ -889,7 +888,7 @@ SetPsprite
     // Modified handling.
     if (state.acp2!=null)
     {
-        state.acp2.invoke(this, psp);
+        state.acp2.accept(this, psp);
         if (psp.state==null)
         break;
     }
@@ -1330,20 +1329,17 @@ SetPsprite
      *
      */
 
-    public void PlayerReborn () 
-    { 
-        int     i; 
-        int[]     frags=new int [MAXPLAYERS]; 
-        int     killcount;
-        int     itemcount;
-        int     secretcount; 
+    @G_Game.C(G_PlayerReborn)
+    public void PlayerReborn() {
+        final int[] localFrags = new int[MAXPLAYERS];
+        final int localKillCount, localItemCount, localSecretCount;
 
         // System.arraycopy(players[player].frags, 0, frags, 0, frags.length);
         // We save the player's frags here...
-        C2JUtils.memcpy (frags,this.frags,frags.length); 
-        killcount = this.killcount; 
-        itemcount = this.itemcount; 
-        secretcount = this.secretcount; 
+        C2JUtils.memcpy(localFrags, this.frags, localFrags.length);
+        localKillCount = this.killcount;
+        localItemCount = this.itemcount;
+        localSecretCount = this.secretcount;
 
         //MAES: we need to simulate an erasure, possibly without making
         // a new object.memset (p, 0, sizeof(*p));
@@ -1352,24 +1348,22 @@ SetPsprite
         this.reset();
 
         // And we copy the old frags into the "new" player. 
-        C2JUtils.memcpy(this.frags, frags, this.frags.length); 
+        C2JUtils.memcpy(this.frags, localFrags, this.frags.length);
 
-        this.killcount = killcount; 
-        this.itemcount = itemcount; 
-        this.secretcount = secretcount; 
+        this.killcount = localKillCount;
+        this.itemcount = localItemCount;
+        this.secretcount = localSecretCount;
 
         usedown = attackdown = true;  // don't do anything immediately 
-        playerstate = PST_LIVE;       
-        health[0] = MAXHEALTH; 
-        readyweapon = pendingweapon = weapontype_t.wp_pistol; 
-        weaponowned[weapontype_t.wp_fist.ordinal()] = true; 
-        weaponowned[weapontype_t.wp_pistol.ordinal()] = true;        
-        ammo[ammotype_t.am_clip.ordinal()] = 50; 
+        playerstate = PST_LIVE;
+        health[0] = MAXHEALTH;
+        readyweapon = pendingweapon = weapontype_t.wp_pistol;
+        weaponowned[weapontype_t.wp_fist.ordinal()] = true;
+        weaponowned[weapontype_t.wp_pistol.ordinal()] = true;
+        ammo[ammotype_t.am_clip.ordinal()] = 50;
         lookdir = 0; // From Heretic
-
-        for (i=0 ; i<NUMAMMO ; i++) 
-        	this.maxammo[i] = DoomStatus.maxammo[i]; 
-
+        
+        System.arraycopy(DoomStatus.maxammo, 0, this.maxammo, 0, NUMAMMO);
     }
 
     

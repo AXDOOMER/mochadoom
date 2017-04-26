@@ -4,14 +4,14 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import p.mobj_t;
+import p.pspdef_t;
 import static utils.C2JUtils.pointer;
 import w.CacheableDoomObject;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
-import p.ActionType1;
-import p.ActionType2;
-import p.ActionTypeSS;
 
 public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPackableDoomObject{
    
@@ -31,9 +31,9 @@ public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPacka
    // Thinkers can either have one parameter of type (mobj_t),
    // Or otherwise be sector specials, flickering lights etc.
    // Those are atypical and need special handling.
-   public ActionType1     acp1;
-   public ActionType2     acp2;
-   public ActionTypeSS     acpss;
+   public Consumer<mobj_t>     acp1;
+   public BiConsumer<player_t, pspdef_t>     acp2;
+   public p.ActionFunctions.TypedAction     acpss;
    
    /** extra fields, to use when archiving/unarchiving for
     * identification. Also in blocklinks, etc.

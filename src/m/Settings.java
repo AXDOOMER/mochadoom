@@ -101,6 +101,9 @@ public enum Settings {
     automap_plotter_style(FILE_MOCHADOOM, Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
     enable_colormap_lump(FILE_MOCHADOOM, true), // Enables usage of COLORMAP lump read from wad during lights and specials generation
     color_depth(FILE_MOCHADOOM, BppMode.Indexed), // Indexed: 256, HiColor: 32 768, TrueColor: 16 777 216
+    extend_plats_limit(FILE_MOCHADOOM, true), // Resize instead of "P_AddActivePlat: no more plats!"
+    extend_button_slots_limit(FILE_MOCHADOOM, true), // Resize instead of "P_StartButton: no button slots left!"
+    fix_blockmap(FILE_MOCHADOOM, true), // Add support for 512x512 blockmap
     fix_gamma_ramp(FILE_MOCHADOOM, false), // Vanilla do not use pure black color because Gamma LUT calculated without it, doubling 128
     fix_gamma_palette(FILE_MOCHADOOM, false), // In vanilla, switching gamma with F11 hides Berserk or Rad suit tint
     fix_sky_change(FILE_MOCHADOOM, false), // In vanilla, sky does not change when you exit the level and the next level with new sky

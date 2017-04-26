@@ -1,5 +1,7 @@
 package m;
 
+import doom.SourceCode.M_Menu;
+import static doom.SourceCode.M_Menu.*;
 import doom.event_t;
 
 // Emacs style mode select -*- C++ -*-
@@ -39,27 +41,32 @@ public interface IDoomMenu {
      * Even when the menu is not displayed, this can resize the view and change
      * game parameters. Does all the real work of the menu interaction.
      */
+    @M_Menu.C(M_Responder)
     public boolean Responder(event_t ev);
 
     /**
      * Called by main loop, only used for menu (skull cursor) animation.
      */
+    @M_Menu.C(M_Ticker)
     public void Ticker();
 
     /**
      * Called by main loop, draws the menus directly into the screen buffer.
      */
+    @M_Menu.C(M_Drawer)
     public void Drawer();
 
     /**
      * Called by D_DoomMain, loads the config file.
      */
+    @M_Menu.C(M_Init)
     public void Init();
 
     /**
      * Called by intro code to force menu up upon a keypress, does nothing if
      * menu is already up.
      */
+    @M_Menu.C(M_StartControlPanel)
     public void StartControlPanel();
 
     public boolean getShowMessages();

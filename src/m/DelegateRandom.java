@@ -18,6 +18,8 @@ package m;
 
 import data.Defines;
 import data.mobjtype_t;
+import doom.SourceCode.M_Random;
+import static doom.SourceCode.M_Random.*;
 import doom.think_t;
 import utils.C2JUtils;
 
@@ -28,7 +30,7 @@ import utils.C2JUtils;
  * whenever you start recording or playing demo. When you start then new game, MochaDoom restores new JavaRandom.
  * 
  * However, if you start MochaDoom with -javarandom command line argument and -record demo,
- * then MochaDoom will record the demo using JavaRandom. Such demo will be niether compatible
+ * then MochaDoom will record the demo using JavaRandom. Such demo will be neither compatible
  * with Vanilla DOOM v1.9, nor with another source port.
  * 
  * Only MochaDoom can play JavaRandom demos.
@@ -68,16 +70,19 @@ public class DelegateRandom implements IRandom {
     }
 
     @Override
+    @M_Random.C(P_Random)
     public int P_Random() {
         return random.P_Random();
     }
 
     @Override
+    @M_Random.C(M_Random)
     public int M_Random() {
         return random.M_Random();
     }
 
     @Override
+    @M_Random.C(M_ClearRandom)
     public void ClearRandom() {
         random.ClearRandom();
     }
