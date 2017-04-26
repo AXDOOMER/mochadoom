@@ -18,6 +18,7 @@
 
 package m;
 
+import awt.FullscreenOptions;
 import static doom.ConfigBase.FILE_DOOM;
 import static doom.ConfigBase.FILE_MOCHADOOM;
 import doom.ConfigBase.Files;
@@ -97,6 +98,9 @@ public enum Settings {
      */
     mb_used(FILE_MOCHADOOM, 2),
     fullscreen(FILE_MOCHADOOM, false),
+    fullscreen_mode(FILE_MOCHADOOM, FullscreenOptions.FullMode.Best),
+    fullscreen_stretch(FILE_MOCHADOOM, FullscreenOptions.StretchMode.Fit),
+    fullscreen_interpolation(FILE_MOCHADOOM, FullscreenOptions.InterpolationMode.Nearest),
     alwaysrun(FILE_MOCHADOOM, false), // Always run is OFF
     automap_plotter_style(FILE_MOCHADOOM, Plotter.Style.Thin), // Thin is vanilla, Thick is scaled, Deep slightly rounded scaled
     enable_colormap_lump(FILE_MOCHADOOM, true), // Enables usage of COLORMAP lump read from wad during lights and specials generation

@@ -129,7 +129,7 @@ public interface DoomWindow<E extends Component & DoomWindow<E>> {
         return true;
     }
     
-    static class JPanelWindow extends JPanel implements DoomWindow<JPanelWindow> {
+    final static class JPanelWindow extends JPanel implements DoomWindow<JPanelWindow> {
         private JPanelWindow() {
             init();
         }
@@ -146,7 +146,7 @@ public interface DoomWindow<E extends Component & DoomWindow<E>> {
         }
     }
     
-    static class CanvasWindow extends Canvas implements DoomWindow<CanvasWindow> {
+    final static class CanvasWindow extends Canvas implements DoomWindow<CanvasWindow> {
         private CanvasWindow(GraphicsConfiguration config) {
             super(config);
         }

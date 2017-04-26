@@ -6,6 +6,7 @@ import java.awt.Container;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Image;
+import static java.awt.RenderingHints.*;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import javax.swing.JFrame;
@@ -15,7 +16,7 @@ import mochadoom.Loggers;
 /**
  * Common code for Doom's video frames
  */
-public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JFrame {
+public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JFrame implements FullscreenOptions {
     private static final long serialVersionUID = -4130528877723831825L;
     
     /**
@@ -31,17 +32,19 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
     /**
      * Provider of video content to display
      */
-    private final Supplier<Image> imageSupplier;
-
+    final Supplier<? extends Image> imageSupplier;
+    
     /**
-     * Normally only used in full screen mode
+     * Default window size. It might change upon entering full screen, so don't consider it absolute. Due to letter
+     * boxing and screen doubling, stretching etc. it might be different that the screen buffer (typically, larger).
      */
-    int X_OFF, Y_OFF;
-
+    final Dimension dim;
+    
     /**
      * Very generic JFrame. Along that it only initializes various properties of Doom Frame.
      */
-    public DoomFrame(Window content, Supplier<Image> imageSupplier) throws HeadlessException {
+    DoomFrame(Dimension dim, Window content, Supplier<? extends Image> imageSupplier) throws HeadlessException {
+        this.dim = dim;
         this.content = content;
         this.imageSupplier = imageSupplier;
         init();
@@ -108,16 +111,7 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
         /**
          * Work on a local copy of the stack - global one can become null at any moment
          */
-        Graphics2D localG2d;
-        
-        /**
-         * Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
-         * Should probably run just once. Overhead is minimal
-         * compared to actually DRAWING the stuff.
-         */
-        if ((localG2d = g2d) == null) {
-            g2d = localG2d = (Graphics2D) content.getGraphics();
-        }
+        final Graphics2D localG2d = getGraphics2D();
         
         /**
          * If the game starts too fast, it is possible to raise an exception there
@@ -126,9 +120,10 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
          * - Good Sign 2017/04/09
          */
         if (localG2d == null) {
-            Loggers.getLogger(DoomFrame.class.getName()).log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
+            Loggers.getLogger(DoomFrame.class.getName())
+                .log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
         } else {
-            localG2d.drawImage(imageSupplier.get(), X_OFF, Y_OFF, this);
+            draw(g2d, imageSupplier.get(), dim, this);
             if (showFPS) {
                 ++frames;
                 final long now = System.currentTimeMillis();
@@ -140,6 +135,28 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
                 }
             }
         }
+    }
+
+    /**
+     * Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
+     * Should probably run just once. Overhead is minimal
+     * compared to actually DRAWING the stuff.
+     */
+    private Graphics2D getGraphics2D() {
+        Graphics2D localG2d;
+        if ((localG2d = g2d) == null) {
+            // add double-checked locking
+            synchronized(DoomFrame.class) {
+                if ((localG2d = g2d) == null) {
+                    g2d = localG2d = (Graphics2D) content.getGraphics();
+                    localG2d.setRenderingHint(KEY_ALPHA_INTERPOLATION, VALUE_ALPHA_INTERPOLATION_SPEED);
+                    localG2d.setRenderingHint(KEY_ANTIALIASING, VALUE_ANTIALIAS_OFF);
+                    localG2d.setRenderingHint(KEY_RENDERING, VALUE_RENDER_SPEED);
+                }
+            }
+        }
+        
+        return localG2d;
     }
 
     private final boolean showFPS = Engine.getCVM().bool(CommandVariable.SHOWFPS);

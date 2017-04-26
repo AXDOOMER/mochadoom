@@ -135,11 +135,7 @@ public enum EventHandler implements EventBase<EventHandler> {
         mapper.map(ActionMode.PERFORM, mouseMoveAction(true));
     }, ActionMode.PERFORM),
     
-    WINDOW_ACTIVATE(WindowEvent.WINDOW_ACTIVATED, mapper -> {
-        mapper.map(ActionMode.CAUSE, (observer, ev) -> {
-            observer.component.requestFocusInWindow();
-        });
-    }, ActionMode.PERFORM, ActionMode.CAUSE),
+    WINDOW_ACTIVATE(WindowEvent.WINDOW_ACTIVATED, ActionMode.PERFORM, ActionMode.CAUSE),
     
     WINDOW_DEICONIFY(WindowEvent.WINDOW_DEICONIFIED, ActionMode.PERFORM),
     

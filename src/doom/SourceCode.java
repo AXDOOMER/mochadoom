@@ -16,20 +16,20 @@
  */
 package doom;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 @Target({})
-@Retention(RetentionPolicy.SOURCE)
+@Retention(SOURCE)
 public @interface SourceCode {
+    
     public enum D_Main {
         D_DoomLoop,
         D_ProcessEvents;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { D_Main value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { D_Main value(); }
     }
     
     public enum G_Game {
@@ -53,8 +53,9 @@ public @interface SourceCode {
         G_Ticker,
         G_Responder,
         G_ScreenShot;
-        
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { G_Game value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { G_Game value(); }
     }
     
     public enum I_IBM {
@@ -65,17 +66,16 @@ public @interface SourceCode {
         I_StartTic,
         I_InitNetwork,
         I_NetCmd;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { I_IBM value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { I_IBM value(); }
     }
 
     public enum M_Argv {
         M_CheckParm;
-
-        @Documented @Retention(RetentionPolicy.SOURCE)
-        public @interface C {
-            M_Argv value();
-        }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { M_Argv value(); }
     }
     
     public enum M_Menu {
@@ -84,16 +84,18 @@ public @interface SourceCode {
         M_Drawer,
         M_Init,
         M_StartControlPanel;
-        
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { M_Menu value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { M_Menu value(); }
     }
     
     public enum M_Random {
         M_Random,
         P_Random,
         M_ClearRandom;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { M_Random value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { M_Random value(); }
     }
     
     public enum P_Map {
@@ -107,8 +109,9 @@ public @interface SourceCode {
         PTR_AimTraverse,
         PTR_ShootTraverse,
         PTR_UseTraverse;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { P_Map value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Map value(); }
     }
     
     public enum P_MapUtl {
@@ -118,8 +121,9 @@ public @interface SourceCode {
         P_UnsetThingPosition,
         PIT_AddLineIntercepts,
         PIT_AddThingIntercepts;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { P_MapUtl value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_MapUtl value(); }
     }
     
     public enum P_Mobj {
@@ -140,14 +144,16 @@ public @interface SourceCode {
         P_CheckMissileSpawn,
         P_SpawnMissile,
         P_SpawnPlayerMissile;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { P_Mobj value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Mobj value(); }
     }
     
     public enum P_Enemy {
         PIT_VileCheck;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { P_Enemy value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Enemy value(); }
     }
     
     public enum P_Tick {
@@ -157,7 +163,9 @@ public @interface SourceCode {
         P_AllocateThinker,
         P_RunThinkers,
         P_Ticker;
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { P_Tick value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Tick value(); }
     }
     
     public enum R_Main {
@@ -172,8 +180,9 @@ public @interface SourceCode {
         R_RenderPlayerView,
         R_Init,
         R_SetViewSize;
-
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { R_Main value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { R_Main value(); }
     }
     
     public enum W_Wad {
@@ -185,17 +194,18 @@ public @interface SourceCode {
         W_ReadLump,
         W_CacheLumpNum,
         W_CacheLumpName;
-        
-        @Documented @Retention(RetentionPolicy.SOURCE) public @interface C { W_Wad value(); }
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { W_Wad value(); }
     }
 
     @Documented
-    @Retention(RetentionPolicy.SOURCE)
-    @Target({ElementType.FIELD, ElementType.LOCAL_VARIABLE, ElementType.PARAMETER})
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface angle_t {}
     
     @Documented
-    @Retention(RetentionPolicy.SOURCE)
-    @Target({ElementType.FIELD, ElementType.LOCAL_VARIABLE, ElementType.PARAMETER})
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface fixed_t {}
 }

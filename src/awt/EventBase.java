@@ -313,7 +313,7 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
         @SafeVarargs
         public final ActionStateHolder<Handler> unmapCooperation(final Handler h, RelationType type, final Handler... targets) {
             final Set<Handler> set = cooperationMap.get(h).get(type);
-            if (set.isEmpty()) {
+            if (set == null || set.isEmpty()) {
                 return this;
             }
             
@@ -358,7 +358,7 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
         @SafeVarargs
         public final ActionStateHolder<Handler> unmapAdjustment(final Handler h, RelationType type, final Handler... targets) {
             final Set<Handler> set = adjustmentMap.get(h).get(type);
-            if (set.isEmpty()) {
+            if (set == null || set.isEmpty()) {
                 return this;
             }
             

@@ -19,7 +19,6 @@ package awt;
 import doom.event_t;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.Image;
@@ -36,24 +35,23 @@ import mochadoom.Loggers;
  * DoomFrame creation, full-screen related code. Window recreation control.
  * That sort of things.
  */
-public class DoomWindowController<E extends Component & DoomWindow<E>, H extends Enum<H> & EventBase<H>> {
+public class DoomWindowController<E extends Component & DoomWindow<E>, H extends Enum<H> & EventBase<H>> implements FullscreenOptions {
     private static final long ALL_EVENTS_MASK = 0xFFFF_FFFF_FFFF_FFFFL;
 
     final GraphicsDevice device;
-    final DisplayModePicker dmp;
+    final FullscreenFunction switcher;
     final int defaultWidth, defaultHeight;
-    DisplayMode oldDisplayMode;
-    DisplayMode displayMode;
 
-    private E component;
+    private final E component;
+    private final EventObserver<H> observer;
     private DoomFrame<E> doomFrame;
-    private EventObserver<H> observer;
 
     /**
      * Default window size. It might change upon entering full screen, so don't consider it absolute. Due to letter
      * boxing and screen doubling, stretching etc. it might be different that the screen buffer (typically, larger).
      */
-    protected final Dimension dimension;
+    private final DimensionImpl dimension;
+    private boolean isFullScreen;
 
     DoomWindowController(
         final Class<H> handlerClass,
@@ -65,12 +63,12 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
         final int defaultHeight
     ) {
         this.device = device;
-        this.dmp = new DisplayModePicker(device);
+        this.switcher = createFullSwitcher(device);
         this.component = component;
         this.defaultWidth = defaultWidth;
         this.defaultHeight = defaultHeight;
-        this.dimension = new Dimension(defaultWidth, defaultHeight);
-        this.doomFrame = new DoomFrame<>(component, imageSource);
+        this.dimension = new DimensionImpl(defaultWidth, defaultHeight);
+        this.doomFrame = new DoomFrame<>(dimension, component, imageSource);
         this.observer = new EventObserver<>(handlerClass, component, doomEventConsumer);
         Toolkit.getDefaultToolkit().addAWTEventListener(observer::observe, ALL_EVENTS_MASK);
         sizeInit();
@@ -101,15 +99,11 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
         Loggers.getLogger(DoomFrame.class.getName()).log(Level.WARNING, "FULLSCREEN SWITHED");
         // remove the frame from view
         doomFrame.dispose();
+        doomFrame = new DoomFrame<>(dimension, component, doomFrame.imageSupplier);
         // change all the properties
         final boolean ret = switchToFullScreen();
         // now show back the frame
-        doomFrame.pack();
-        doomFrame.setVisible(true);
-        
-        // Gently tell the eventhandler to wake up and set itself.	  
-        doomFrame.requestFocus();
-        component.requestFocusInWindow();
+        doomFrame.turnOn();
         return ret;
     }
 
@@ -121,24 +115,15 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
      * Therefore, a "best fit" strategy with centering is used.
      */
     public final boolean switchToFullScreen() {
-        final boolean isFullScreen;
-        if (oldDisplayMode == null) {
+        if (!isFullScreen) {
             isFullScreen = device.isFullScreenSupported();
             if (!isFullScreen) {
                 return false;
             }
-
-            // In case we need to revert.
-            oldDisplayMode = device.getDisplayMode();
-            // TODO: what if bit depths are too small?
-            displayMode = dmp.pickClosest(defaultWidth, defaultHeight);
         } else {
             isFullScreen = false;
-
-            // We restore the original resolution
-            displayMode = oldDisplayMode;
-            oldDisplayMode = null;
         }
+        final DisplayMode displayMode = switcher.get(defaultWidth, defaultHeight);
         doomFrame.setUndecorated(isFullScreen);
 
         // Full-screen mode
@@ -148,10 +133,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
         }
 
         component.validate();
-        dimension.width = isFullScreen ? displayMode.getWidth() : defaultWidth;
-        dimension.height = isFullScreen ? displayMode.getHeight() : defaultHeight;
-        doomFrame.X_OFF = (dimension.width - defaultWidth) / 2;
-        doomFrame.Y_OFF = (dimension.height - defaultHeight) / 2;
+        dimension.setSize(displayMode);
         updateSize();
         return isFullScreen;
     }
@@ -165,6 +147,76 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
     }
 
     public boolean isFullscreen() {
-        return oldDisplayMode != null;
+        return isFullScreen;
+    }
+    
+    private class DimensionImpl extends java.awt.Dimension implements Dimension {
+        private int offsetX, offsetY;
+        private int fitWidth, fitHeight;
+
+        DimensionImpl(int width, int height) {
+            this.width = defaultWidth;
+            this.height = defaultHeight;
+            this.offsetX = offsetY = 0;
+            this.fitWidth = width;
+            this.fitHeight = height;
+        }
+        
+        @Override
+        public int width() {
+            return width;
+        }
+
+        @Override
+        public int height() {
+            return height;
+        }
+
+        @Override
+        public int defWidth() {
+            return defaultWidth;
+        }
+
+        @Override
+        public int defHeight() {
+            return defaultHeight;
+        }
+
+        @Override
+        public int fitX() {
+            return fitWidth;
+        }
+
+        @Override
+        public int fitY() {
+            return fitHeight;
+        }
+
+        @Override
+        public int offsX() {
+            return offsetX;
+        }
+
+        @Override
+        public int offsY() {
+            return offsetY;
+        }
+        
+        private void setSize(DisplayMode mode) {
+            if (isFullScreen) {
+                this.width = mode.getWidth();
+                this.height = mode.getHeight();
+                this.offsetX = Dimension.super.offsX();
+                this.offsetY = Dimension.super.offsY();
+                this.fitWidth = Dimension.super.fitX();
+                this.fitHeight = Dimension.super.fitY();
+            } else {
+                this.width = defaultWidth;
+                this.height = defaultHeight;
+                this.offsetX = offsetY = 0;
+                this.fitWidth = width;
+                this.fitHeight = height;
+            }
+        }
     }
 }
