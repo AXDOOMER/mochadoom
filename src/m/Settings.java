@@ -123,7 +123,8 @@ public enum Settings {
     parallelism_realcolor_tint(FILE_MOCHADOOM, Runtime.getRuntime().availableProcessors()), // Used for real color tinting to speed up
     parallelism_patch_columns(FILE_MOCHADOOM, 0), // When drawing screen graphics patches, this speeds up column drawing, <= 0 is serial
     greyscale_filter(FILE_MOCHADOOM, GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)
-    scene_renderer_mode(FILE_MOCHADOOM, SceneRendererMode.Serial); // In vanilla, scene renderer is serial. Parallel can be faster
+    scene_renderer_mode(FILE_MOCHADOOM, SceneRendererMode.Serial), // In vanilla, scene renderer is serial. Parallel can be faster
+    reconstruct_savegame_pointers(FILE_MOCHADOOM, true); // In vanilla, infighting targets are not restored on savegame load
     
     public final static Map<Files, EnumSet<Settings>> SETTINGS_MAP = new HashMap<>();
     

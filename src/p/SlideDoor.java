@@ -1,8 +1,10 @@
 package p;
 
 import doom.DoomMain;
-import doom.think_t;
 import java.util.Arrays;
+import java.util.logging.Level;
+import mochadoom.Loggers;
+import static p.ActionFunction.think_t.T_SlidingDoor;
 import rr.line_t;
 import rr.sector_t;
 
@@ -96,9 +98,7 @@ public class SlideDoor<T, V> {
         return -1;
     }
 
-    public void
-            EV_SlidingDoor(line_t line,
-                    mobj_t thing) {
+    public void EV_SlidingDoor(line_t line, mobj_t thing) {
         sector_t sec;
         slidedoor_t door;
 
@@ -107,7 +107,7 @@ public class SlideDoor<T, V> {
             return;
         }
 
-        System.err.println("EV_SlidingDoor");
+        Loggers.getLogger(SlideDoor.class.getName()).log(Level.WARNING, "EV_SlidingDoor");
 
         // Make sure door isn't already being animated
         sec = line.frontsector;
@@ -143,7 +143,7 @@ public class SlideDoor<T, V> {
 
             door.frontsector = sec;
             door.backsector = line.backsector;
-            door.function = think_t.T_SlidingDoor;
+            door.thinkerFunction = T_SlidingDoor;
             door.timer = SWAITTICS;
             door.frame = 0;
             door.line = line;

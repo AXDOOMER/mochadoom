@@ -2,18 +2,17 @@ package rr;
 
 import static data.Limits.MAXINT;
 import static data.Limits.MAX_ADJOINING_SECTORS;
-import static m.fixed_t.FRACUNIT;
-import static m.fixed_t.FRACBITS;
-import static p.DoorDefines.*;
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
+import java.util.logging.Level;
 import m.IRandom;
-import doom.think_t;
-import doom.thinker_t;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
+import mochadoom.Loggers;
+import static p.ActionFunction.think_t.*;
+import static p.DoorDefines.*;
 import p.Resettable;
 import p.ThinkerList;
 import p.fireflicker_t;
@@ -34,8 +33,7 @@ import w.IReadableDoomObject;
  * 
  * @author Maes
  */
-public class sector_t
-        implements IReadableDoomObject, IPackableDoomObject, Resettable {
+public class sector_t implements IReadableDoomObject, IPackableDoomObject, Resettable {
 
     public ThinkerList TL;
 
@@ -98,6 +96,7 @@ public class sector_t
     /** killough 1/30/98: improves searches for tags. */
     public int nexttag,firsttag;  
 
+    @Override
     public String toString() {
         String str =
             String.format("Sector: %d %x %x %d %d %d %d %d", id, floorheight,
@@ -105,7 +104,6 @@ public class sector_t
                 tag); // needed?
 
         return str;
-
     }
 
     //
@@ -218,8 +216,8 @@ public class sector_t
 
             // Check for overflow. Exit.
             if (h >= MAX_ADJOINING_SECTORS) {
-                System.err
-                        .print("Sector with more than 20 adjoining sectors\n");
+                Loggers.getLogger(sector_t.class.getName()).log(Level.WARNING,
+                    "Sector with more than 20 adjoining sectors\n");
                 break;
             }
         }
@@ -293,7 +291,7 @@ public class sector_t
         this.special = 0;
 
         flick = new fireflicker_t(RND);
-        flick.function = think_t.T_FireFlicker;
+        flick.thinkerFunction = T_FireFlicker;
         TL.AddThinker(flick);
         flick.sector = this;
         flick.maxlight = this.lightlevel;
@@ -312,7 +310,7 @@ public class sector_t
 
         this.specialdata = door;
         this.special = 0;
-        door.function = think_t.T_VerticalDoor;
+        door.thinkerFunction = T_VerticalDoor;
         TL.AddThinker(door);
         door.sector = this;
         door.direction = 2;
@@ -335,7 +333,7 @@ public class sector_t
         this.specialdata = door;
         this.special = 0;
 
-        door.function = think_t.T_VerticalDoor;
+        door.thinkerFunction = T_VerticalDoor;
         TL.AddThinker(door);
         door.sector = this;
         door.direction = 0;
@@ -356,7 +354,7 @@ public class sector_t
         flash.sector = this;
         flash.darktime = fastOrSlow;
         flash.brighttime = STROBEBRIGHT;
-        flash.function = think_t.T_StrobeFlash;
+        flash.thinkerFunction = T_StrobeFlash;
         TL.AddThinker(flash);
         flash.maxlight = this.lightlevel;
         flash.minlight = this.FindMinSurroundingLight(this.lightlevel);
@@ -385,8 +383,8 @@ public class sector_t
         special = 0;
 
         flash = new lightflash_t(RND);
-        flash.function = think_t.T_LightFlash;
-        TL.AddThinker((thinker_t) flash);
+        flash.thinkerFunction = T_LightFlash;
+        TL.AddThinker(flash);
         flash.sector = this;
         flash.maxlight = lightlevel;
 
@@ -403,7 +401,7 @@ public class sector_t
         g.sector = this;
         g.minlight = FindMinSurroundingLight(this.lightlevel);
         g.maxlight = lightlevel;
-        g.function = think_t.T_Glow;
+        g.thinkerFunction = T_Glow;
         TL.AddThinker(g);
         g.direction = -1;
 
@@ -423,8 +421,8 @@ public class sector_t
         this.ceilingheight = DoomIO.readLEShort(f) << FRACBITS;
         // MAES: it may be necessary to apply a hack in order to
         // read vanilla savegames.
-        this.floorpic = (short) DoomIO.readLEShort(f);
-        this.ceilingpic = (short) DoomIO.readLEShort(f);
+        this.floorpic = DoomIO.readLEShort(f);
+        this.ceilingpic = DoomIO.readLEShort(f);
         // f.skipBytes(4);
         this.lightlevel = DoomIO.readLEShort(f);
         this.special = DoomIO.readLEShort(f); // needed?

@@ -41,6 +41,8 @@ import data.state_t;
 import defines.*;
 import doom.CommandVariable;
 import doom.DoomMain;
+import doom.SourceCode.P_Ceiling;
+import static doom.SourceCode.P_Ceiling.EV_DoCeiling;
 import doom.SourceCode.P_Enemy;
 import static doom.SourceCode.P_Enemy.*;
 import doom.SourceCode.P_Map;
@@ -58,7 +60,6 @@ import static doom.englsh.PD_REDO;
 import static doom.englsh.PD_YELLOWK;
 import static doom.englsh.PD_YELLOWO;
 import doom.player_t;
-import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
 import java.util.function.Predicate;
@@ -71,6 +72,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
+import p.ActionFunction.think_t;
 import static p.ChaseDirections.*;
 import static p.DoorDefines.*;
 import static p.MapUtils.AproxDistance;
@@ -83,6 +85,8 @@ import rr.subsector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.*;
 import v.graphics.Palettes;
+import static p.ActionFunction.Param.Mobj;
+import static p.ActionFunction.Param.Thinker;
 
 /**
  * Action functions need to be aware of: Random number generator (RND) Broader gameplay context (DoomGame) Some door
@@ -92,6 +96,8 @@ import v.graphics.Palettes;
  *
  */
 public class Actions<T, V> extends UnifiedGameMap<T, V> {
+    public ActionFunctions<T, V> FUNS;
+    
 
     //
     // CEILINGS
@@ -257,9 +263,8 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
                     && (getActiveCeilings()[i].tag == line.tag)
                     && (getActiveCeilings()[i].direction == 0)) {
                 getActiveCeilings()[i].direction = getActiveCeilings()[i].olddirection;
-                getActiveCeilings()[i].function
-                        = think_t.T_MoveCeiling;
-                FUNS.doWireThinker(getActiveCeilings()[i]);
+                getActiveCeilings()[i].thinkerFunction = think_t.T_MoveCeiling;
+                //FUNS.doWireThinker(getActiveCeilings()[i]);
             }
         }
     }
@@ -315,6 +320,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
     // EV.DoCeiling
     // Move a ceiling up/down and all around!
     //
+    @P_Ceiling.C(EV_DoCeiling)
     protected boolean DoCeiling(line_t line, ceiling_e type) {
         int secnum = -1;
         boolean rtn = false;
@@ -341,7 +347,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             rtn = true;
             ceiling = new ceiling_t();
             sec.specialdata = ceiling;
-            ceiling.function = think_t.T_MoveCeiling;
+            ceiling.thinkerFunction = think_t.T_MoveCeiling;
             AddThinker(ceiling);
             ceiling.sector = sec;
             ceiling.crush = false;
@@ -422,7 +428,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
                 //  Spawn rising slime
                 floor = new floormove_t();
                 s2.specialdata = floor;
-                floor.function = think_t.T_MoveFloor;
+                floor.thinkerFunction = think_t.T_MoveFloor;
                 AddThinker(floor);
                 floor.type = floor_e.donutRaise;
                 floor.crush = false;
@@ -436,7 +442,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
                 //  Spawn lowering donut-hole
                 floor = new floormove_t();
                 s1.specialdata = floor;
-                floor.function = think_t.T_MoveFloor;
+                floor.thinkerFunction = think_t.T_MoveFloor;
                 AddThinker(floor);
                 floor.type = floor_e.lowerFloor;
                 floor.crush = false;
@@ -472,7 +478,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             rtn = true;
             floor = new floormove_t();
             sec.specialdata = floor;
-            floor.function = think_t.T_MoveFloor;
+            floor.thinkerFunction = think_t.T_MoveFloor;
             AddThinker(floor);
             floor.type = floortype;
             floor.crush = false;
@@ -645,7 +651,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
                 getActiveCeilings()[i].olddirection = getActiveCeilings()[i].direction;
                 // MAES: don't set it to NOP here, otherwise its thinker will be
                 // removed and it won't be possible to restart it.
-                getActiveCeilings()[i].function = null;
+                getActiveCeilings()[i].thinkerFunction = null;
                 getActiveCeilings()[i].direction = 0;       // in-stasis
                 rtn = 1;
             }
@@ -688,7 +694,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             rtn = true;
             floor = new floormove_t();
             sec.specialdata = floor;
-            floor.function = think_t.T_MoveFloor;
+            floor.thinkerFunction = think_t.T_MoveFloor;
             AddThinker(floor);
             floor.direction = 1;
             floor.sector = sec;
@@ -742,7 +748,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
                     secnum = newsecnum;
                     floor = new floormove_t();
                     sec.specialdata = floor;
-                    floor.function = think_t.T_MoveFloor;
+                    floor.thinkerFunction = think_t.T_MoveFloor;
                     AddThinker(floor);
                     floor.direction = 1;
                     floor.sector = sec;
@@ -951,7 +957,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             rtn = true;
             door = new vldoor_t();
             sec.specialdata = door;
-            door.function = think_t.T_VerticalDoor;
+            door.thinkerFunction = think_t.T_VerticalDoor;
             AddThinker(door);
             door.sector = sec;
             door.type = type;
@@ -1117,7 +1123,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         // new door thinker
         door = new vldoor_t();
         sec.specialdata = door;
-        door.function = think_t.T_VerticalDoor;
+        door.thinkerFunction = think_t.T_VerticalDoor;
         AddThinker(door);
         door.sector = sec;
         door.direction = 1;
@@ -1513,10 +1519,10 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         // because action routines can not be called yet
         st = states[info.spawnstate.ordinal()];
 
-        mobj.state = st;
-        mobj.tics = st.tics;
-        mobj.sprite = st.sprite;
-        mobj.frame = st.frame;
+        mobj.mobj_state = st;
+        mobj.mobj_tics = st.tics;
+        mobj.mobj_sprite = st.sprite;
+        mobj.mobj_frame = st.frame;
 
         // set subsector and/or block links
         P_SetThingPosition: {
@@ -1534,7 +1540,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             mobj.z = z;
         }
 
-        mobj.function = think_t.P_MobjThinker;
+        mobj.thinkerFunction = think_t.P_MobjThinker;
         P_AddThinker: {
             AddThinker(mobj);
         }
@@ -1773,8 +1779,8 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         mobj = SpawnMobj(x, y, z, mobjtype_t.values()[i]);
         mobj.spawnpoint.copyFrom(mthing);
 
-        if (mobj.tics > 0) {
-            mobj.tics = 1 + (DOOM.random.P_Random() % mobj.tics);
+        if (mobj.mobj_tics > 0) {
+            mobj.mobj_tics = 1 + (DOOM.random.P_Random() % mobj.mobj_tics);
         }
         if (eval(mobj.flags & MF_COUNTKILL)) {
             DOOM.totalkills++;
@@ -1806,10 +1812,10 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         z += ((DOOM.random.P_Random() - DOOM.random.P_Random()) << 10);
         th = SpawnMobj(x, y, z, mobjtype_t.MT_BLOOD);
         th.momz = FRACUNIT * 2;
-        th.tics -= DOOM.random.P_Random() & 3;
+        th.mobj_tics -= DOOM.random.P_Random() & 3;
 
-        if (th.tics < 1) {
-            th.tics = 1;
+        if (th.mobj_tics < 1) {
+            th.mobj_tics = 1;
         }
 
         if (damage <= 12 && damage >= 9) {
@@ -1834,10 +1840,10 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
 
         th = SpawnMobj(x, y, z, mobjtype_t.MT_PUFF);
         th.momz = FRACUNIT;
-        th.tics -= DOOM.random.P_Random() & 3;
+        th.mobj_tics -= DOOM.random.P_Random() & 3;
 
-        if (th.tics < 1) {
-            th.tics = 1;
+        if (th.mobj_tics < 1) {
+            th.mobj_tics = 1;
         }
 
         // don't make punches spark on the wall
@@ -2073,7 +2079,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             // chase after this one
             target.target = source;
             target.threshold = BASETHRESHOLD;
-            if (target.state == states[target.info.spawnstate.ordinal()]
+            if (target.mobj_state == states[target.info.spawnstate.ordinal()]
                     && target.info.seestate != statenum_t.S_NULL) {
                 target.SetMobjState(target.info.seestate);
             }
@@ -2145,10 +2151,10 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         } else {
             target.SetMobjState(target.info.deathstate);
         }
-        target.tics -= DOOM.random.P_Random() & 3;
+        target.mobj_tics -= DOOM.random.P_Random() & 3;
 
-        if (target.tics < 1) {
-            target.tics = 1;
+        if (target.mobj_tics < 1) {
+            target.mobj_tics = 1;
         }
 
         //  I_StartSound (&actor.r, actor.info.deathsound);
@@ -2207,7 +2213,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
                 //thinker = thinkercap.next;
                 for (thinker = thinkercap.next; thinker != thinkercap; thinker = thinker.next) {
                     // not a mobj
-                    if (thinker.function != think_t.P_MobjThinker) {
+                    if (thinker.thinkerFunction != think_t.P_MobjThinker) {
                         continue;
                     }
 
@@ -3616,7 +3622,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
             // if in a walking frame, stop moving
             // TODO: we need a way to get state indexed inside of states[], to sim pointer arithmetic.
             // FIX: added an "id" field.
-            if (player != null && player.mo.state.id - statenum_t.S_PLAY_RUN1.ordinal() < 4) {
+            if (player != null && player.mo.mobj_state.id - statenum_t.S_PLAY_RUN1.ordinal() < 4) {
                 player.mo.SetMobjState(statenum_t.S_PLAY);
             }
 
@@ -4559,9 +4565,9 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
      * @param th
      */
     void CheckMissileSpawn(mobj_t th) {
-        th.tics -= DOOM.random.P_Random() & 3;
-        if (th.tics < 1) {
-            th.tics = 1;
+        th.mobj_tics -= DOOM.random.P_Random() & 3;
+        if (th.mobj_tics < 1) {
+            th.mobj_tics = 1;
         }
 
         // move a little forward so an angle can
@@ -4849,44 +4855,30 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
     public Actions(DoomMain<T, V> DM) {
         super(DM);
         this.A = this;
+        this.FUNS = new ActionFunctions<>(this.DOOM, this, EN);
     }
 
     //
     // P_RunThinkers
     //
     public void RunThinkers() {
-        thinker_t currentthinker;
+        thinker_t thinker;
 
-        currentthinker = thinkercap.next;
-        while (currentthinker != thinkercap) {
-            if (currentthinker.function == think_t.NOP) {
+        thinker = thinkercap.next;
+        while (thinker != thinkercap) {
+            if (thinker.thinkerFunction == think_t.NOP) {
                 // time to remove it
-                currentthinker.next.prev = currentthinker.prev;
-                currentthinker.prev.next = currentthinker.next;
-
-                // Problem: freeing was done explicitly on think_t's, not mobj_t's.
-                /*try {
-            	  
-            // According to certian gurus, this method is faster than instanceof
-            // and almost on par with id checking. 
-            // 
-            // http://stackoverflow.com/questions/103564/the-performance-impact-of-using-instanceof-in-java
-            	  if (currentthinker.getClass()==mobj_t.class)
-              
-              mobjpool.checkIn((mobj_t)currentthinker);
-              } catch (ClassCastException e){
-            	  // Object will simply be destroyed without reuse, in this case.
-              }  */
+                thinker.next.prev = thinker.prev;
+                thinker.prev.next = thinker.next;
                 // Z_Free (currentthinker);
             } else {
-                if (currentthinker.acp1 != null) // Execute thinker's function.
-                {
-                    currentthinker.acp1.accept((mobj_t) currentthinker);
-                } else if (currentthinker.acpss != null) {
-                    currentthinker.acpss.accept(currentthinker);
+                if (thinker.thinkerFunction.ac(Mobj)) {
+                    thinker.thinkerFunction.acp1(FUNS, (mobj_t) thinker);
+                } else if (thinker.thinkerFunction.ac(Thinker)) {
+                    thinker.thinkerFunction.acv(FUNS, thinker);
                 }
             }
-            currentthinker = currentthinker.next;
+            thinker = thinker.next;
         }
     }
 
@@ -4916,7 +4908,7 @@ public class Actions<T, V> extends UnifiedGameMap<T, V> {
         if (!eval(thing.flags & MF_CORPSE)) {
             return true;    // not a monster
         }
-        if (thing.tics != -1) {
+        if (thing.mobj_tics != -1) {
             return true;    // not lying still yet
         }
         if (thing.info.raisestate == statenum_t.S_NULL) {

@@ -557,7 +557,8 @@ public final class C2JUtils {
         return s;
     }
 
-    /** Return either 0 or a hashcode 
+    /**
+     * Return either 0 or a hashcode 
      * 
      * @param o 
      */

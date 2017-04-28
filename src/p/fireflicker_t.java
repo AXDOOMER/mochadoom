@@ -37,5 +37,4 @@ public class fireflicker_t extends SectorAction{
 
          count = 4;
      }
-     
  } 

@@ -157,6 +157,27 @@ public @interface SourceCode {
         @interface C { P_Enemy value(); }
     }
     
+    public enum P_SaveG {
+        P_ArchivePlayers,
+        P_UnArchivePlayers,
+        P_ArchiveWorld,
+        P_UnArchiveWorld,
+        P_ArchiveThinkers,
+        P_UnArchiveThinkers,
+        P_ArchiveSpecials,
+        P_UnArchiveSpecials;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_SaveG value(); }
+    }
+    
+    public enum P_Ceiling {
+        EV_DoCeiling;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Ceiling value(); }
+    }
+    
     public enum P_Tick {
         P_InitThinkers,
         P_RemoveThinker,

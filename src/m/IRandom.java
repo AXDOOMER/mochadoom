@@ -1,7 +1,7 @@
 package m;
 
 import data.mobjtype_t;
-import doom.think_t;
+import p.ActionFunction.think_t;
 
 public interface IRandom {
 	public int P_Random ();

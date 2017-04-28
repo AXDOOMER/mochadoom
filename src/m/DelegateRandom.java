@@ -20,7 +20,7 @@ import data.Defines;
 import data.mobjtype_t;
 import doom.SourceCode.M_Random;
 import static doom.SourceCode.M_Random.*;
-import doom.think_t;
+import p.ActionFunction.think_t;
 import utils.C2JUtils;
 
 /**

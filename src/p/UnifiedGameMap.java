@@ -25,11 +25,9 @@ import static data.Tables.ANG270;
 import static data.Tables.ANG90;
 import static data.Tables.BITS32;
 import static data.info.mobjinfo;
-import static data.info.states;
 import data.mapthing_t;
 import data.mobjtype_t;
 import data.sounds.sfxenum_t;
-import data.state_t;
 import defines.ammotype_t;
 import defines.card_t;
 import defines.statenum_t;
@@ -81,7 +79,6 @@ import static doom.englsh.GOTYELWSKUL;
 import static doom.items.weaponinfo;
 import doom.player_t;
 import doom.th_class;
-import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
 import java.util.Arrays;
@@ -94,6 +91,9 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.MAPFRACUNIT;
 import mochadoom.Engine;
 import mochadoom.Loggers;
+import static p.ActionFunction.think_t.NOP;
+import static p.ActionFunction.think_t.P_MobjThinker;
+import static p.ActionFunction.think_t.T_PlatRaise;
 import static p.DoorDefines.SLOWDARK;
 import static p.MapUtils.AproxDistance;
 import static p.MapUtils.InterceptVector;
@@ -135,12 +135,10 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         //this.SL=new SlideDoor(DS);
         //DS.SL=SL;
         this.DOOM = DOOM;
-        this.FUNS = new ActionFunctions<>(this.DOOM, EN);
-        
         // "Wire" all states to the proper functions.
-        for (state_t state : states) {
+        /*for (state_t state : states) {
             FUNS.doWireState(state);
-        }
+        }*/
     }
     
     /////////////////// STATUS ///////////////////
@@ -163,8 +161,6 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
     Sight See;
 
     Enemies EN;
-    
-    protected ActionFunctions<T, V> FUNS;
     
     protected SlideDoor SL;
 
@@ -389,7 +385,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         // find the class the thinker belongs to
 
         th_class cls
-            = thinker.function == think_t.NOP ? th_class.th_delete : thinker.function == think_t.P_MobjThinker
+            = thinker.thinkerFunction == NOP ? th_class.th_delete : thinker.thinkerFunction == P_MobjThinker
                 && ((mobj_t) thinker).health > 0
                 && (eval((((mobj_t) thinker).flags) & MF_COUNTKILL)
                 || ((mobj_t) thinker).type == mobjtype_t.MT_SKULL) ? eval((((mobj_t) thinker).flags) & MF_FRIEND)
@@ -829,7 +825,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
                 plat.type = type;
                 plat.sector = sec;
                 plat.sector.specialdata = plat;
-                plat.function = think_t.T_PlatRaise;
+                plat.thinkerFunction = T_PlatRaise;
                 AddThinker(plat);
                 plat.crush = false;
                 plat.tag = line.tag;
@@ -914,8 +910,8 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
                 if ((activeplats[i] != null) && (activeplats[i].tag == tag)
                         && (activeplats[i].status == plat_e.in_stasis)) {
                     (activeplats[i]).status = (activeplats[i]).oldstatus;
-                    (activeplats[i]).function = think_t.T_PlatRaise;
-                    FUNS.doWireThinker(activeplats[i]);
+                    (activeplats[i]).thinkerFunction = T_PlatRaise;
+                    //FUNS.doWireThinker(activeplats[i]);
                 }
         }
 
@@ -928,8 +924,8 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
                         && (activeplats[j].tag == line.tag)) {
                     (activeplats[j]).oldstatus = (activeplats[j]).status;
                     (activeplats[j]).status = plat_e.in_stasis;
-                    (activeplats[j]).function = null;
-                    FUNS.doWireThinker(activeplats[j]);
+                    (activeplats[j]).thinkerFunction = null;
+                    //FUNS.doWireThinker(activeplats[j]);
                 }
         }
 
@@ -1690,10 +1686,10 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         // MAES 9/5/2011: using mobj code for that.
         mo.SetMobjState(mobjinfo[mo.type.ordinal()].deathstate);
 
-        mo.tics -= DOOM.random.P_Random() & 3;
+        mo.mobj_tics -= DOOM.random.P_Random() & 3;
 
-        if (mo.tics < 1)
-            mo.tics = 1;
+        if (mo.mobj_tics < 1)
+            mo.mobj_tics = 1;
 
         mo.flags &= ~MF_MISSILE;
 
@@ -1812,9 +1808,9 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
     	// If something was too weird to be wired before, it will
     	// be wired here for sure, so don't worry about searching 
     	// all of the code.
-        if (thinker.function != null && (thinker.acp1 == null && thinker.acp2 == null)) {
+        /*if (thinker.function != null && (thinker.acp1 == null && thinker.acp2 == null)) {
             FUNS.doWireThinker(thinker);
-        }
+        }*/
 	
         thinkercap.prev.next = thinker;
         thinker.next = thinkercap;
@@ -1877,13 +1873,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
     @Override
     @P_Tick.C(P_RemoveThinker)
     public void RemoveThinker(thinker_t thinker) {
-        //thinker.function = think_t.NOP;
-        // Wire to this special function.
-        thinker.function = think_t.NOP;
-        thinker.acpss = this.RemoveThinkerDelayed;
-        // Remove any type 1 or 2 special functions.
-        thinker.acp1 = null;
-        thinker.acp2 = null;
+        thinker.thinkerFunction = NOP;
     }
 
     //
@@ -1948,7 +1938,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         }
 
         // Identify by sprite.
-        switch (special.sprite) {
+        switch (special.mobj_sprite) {
             // armor
             case SPR_ARM1:
                 if (!player.GiveArmor(1)) {

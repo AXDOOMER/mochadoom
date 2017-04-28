@@ -3,7 +3,6 @@ package p;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import m.IRandom;
 import rr.SectorAction;
 import w.DoomIO;
@@ -71,5 +70,4 @@ public class lightflash_t extends SectorAction{
         b.putInt(maxtime);//32
         b.putInt(mintime);//36
     }
-    
 }

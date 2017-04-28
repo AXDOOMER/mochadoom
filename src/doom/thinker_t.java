@@ -4,10 +4,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import p.mobj_t;
-import p.pspdef_t;
+import p.ActionFunction.think_t;
 import static utils.C2JUtils.pointer;
 import w.CacheableDoomObject;
 import w.IPackableDoomObject;
@@ -17,7 +14,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
 
     public thinker_t prev;
     public thinker_t next;
-    public think_t function;
+    public think_t thinkerFunction;
 
     /* killough 8/29/98: we maintain thinkers in several equivalence classes,
     * according to various criteria, so as to allow quicker searches.
@@ -26,13 +23,6 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
      * Next, previous thinkers in same class
      */
     public thinker_t cnext, cprev;
-
-    // Thinkers can either have one parameter of type (mobj_t),
-    // Or otherwise be sector specials, flickering lights etc.
-    // Those are atypical and need special handling.
-    public Consumer<mobj_t> acp1;
-    public BiConsumer<player_t, pspdef_t> acp2;
-    public p.ActionFunctions.TypedAction acpss;
 
     /**
      * extra fields, to use when archiving/unarchiving for
@@ -60,7 +50,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
         b.order(ByteOrder.LITTLE_ENDIAN);
         b.putInt(pointer(prev));
         b.putInt(pointer(next));
-        b.putInt(pointer(function));
+        b.putInt(pointer(thinkerFunction.ordinal()));
         //System.out.printf("Packed thinker %d %d %d\n",pointer(prev),pointer(next),pointer(function));
     }
 
@@ -76,6 +66,6 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
         //System.out.printf("Unpacked thinker %d %d %d\n",pointer(previd),pointer(nextid),pointer(functionid));
     }
 
-    private static ByteBuffer readbuffer = ByteBuffer.allocate(12);
+    private static final ByteBuffer readbuffer = ByteBuffer.allocate(12);
 
 }

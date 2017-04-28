@@ -29,6 +29,7 @@ import w.DoomBuffer;
 import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
+import static p.ActionFunction.Param.PlayerSprite;
 
 /**
  * Extended player object info: player_t The player data structure depends on a
@@ -74,7 +75,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         weaponowned = new boolean[NUMWEAPONS];
         psprites = new pspdef_t[NUMPSPRITES];
         Arrays.setAll(psprites, i -> new pspdef_t());
-        this.mo=new mobj_t();
+        this.mo=new mobj_t(DOOM.actions);
         // If a player doesn't reference himself through his object, he will have an existential crisis.
         this.mo.player=this;
         readyweapon=weapontype_t.wp_fist;
@@ -275,7 +276,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
             Thrust((mo.angle - ANG90)&BITS32, cmd.sidemove * PLAYERTHRUST);
 
         if ((cmd.forwardmove != 0 || cmd.sidemove != 0)
-                && mo.state == states[statenum_t.S_PLAY.ordinal()]) {
+                && mo.mobj_state == states[statenum_t.S_PLAY.ordinal()]) {
             this.mo.SetMobjState(statenum_t.S_PLAY_RUN1);
         }
         
@@ -886,9 +887,9 @@ SetPsprite
     
     // Call action routine.
     // Modified handling.
-    if (state.acp2!=null)
+    if (state.action.ac(PlayerSprite))
     {
-        state.acp2.accept(this, psp);
+        state.action.acp2(DOOM.actions.FUNS, this, psp);
         if (psp.state==null)
         break;
     }
@@ -1519,19 +1520,20 @@ SetPsprite
         buf.putInt(this.extralight);
         // Current PLAYPAL, ???
         //  can be set to REDCOLORMAP for pain, etc.
-        
+
         /**
          * Here the fixed color map of player is written when player_t object is packed.
          * Make sure not to write any preshifted value there! Do not scale player_r.fixedcolormap,
          * scale dependent array accesses.
-         *  - Good Sign 2017/04/15
+         * - Good Sign 2017/04/15
          */
         buf.putInt(this.fixedcolormap);
         buf.putInt(this.colormap);
         // PSPDEF _is_ readable.
-        for (pspdef_t p: this.psprites)
+        for (pspdef_t p : this.psprites) {
             p.pack(buf);
-        buf.putInt(this.didsecret?1:0);
-        
+        }
+        buf.putInt(this.didsecret ? 1 : 0);
+
     }
 }

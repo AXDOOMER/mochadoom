@@ -1277,8 +1277,8 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         mobj_t mobj;
         int mobjcount = 0;
-        mobj_t[] mobjlist =
-            C2JUtils.createArrayOfObjects(mobj_t.class, numthings);
+        mobj_t[] mobjlist = new mobj_t[numthings];
+        Arrays.setAll(mobjlist, j -> new mobj_t(DOOM.actions));
 
         if ((data == null) || (numthings == 0))
             DOOM.doomSystem.Error("P_LoadThings: no things in level");

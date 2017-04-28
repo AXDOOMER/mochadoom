@@ -138,17 +138,17 @@ public final class VisSprites<V>
 
         // decide which patch to use for sprite relative to player
         if (RANGECHECK) {
-            if (thing.sprite.ordinal() >= rendererState.DOOM.spriteManager.getNumSprites())
+            if (thing.mobj_sprite.ordinal() >= rendererState.DOOM.spriteManager.getNumSprites())
                 rendererState.DOOM.doomSystem.Error("R_ProjectSprite: invalid sprite number %d ",
-                    thing.sprite);
+                    thing.mobj_sprite);
         }
-        sprdef = rendererState.DOOM.spriteManager.getSprite(thing.sprite.ordinal());
+        sprdef = rendererState.DOOM.spriteManager.getSprite(thing.mobj_sprite.ordinal());
         if (RANGECHECK) {
-            if ((thing.frame & FF_FRAMEMASK) >= sprdef.numframes)
+            if ((thing.mobj_frame & FF_FRAMEMASK) >= sprdef.numframes)
                 rendererState.DOOM.doomSystem.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
-                    thing.sprite, thing.frame);
+                    thing.mobj_sprite, thing.mobj_frame);
         }
-        sprframe = sprdef.spriteframes[thing.frame & FF_FRAMEMASK];
+        sprframe = sprdef.spriteframes[thing.mobj_frame & FF_FRAMEMASK];
 
         if (sprframe.rotate != 0) {
             // choose a different rotation based on player view
@@ -214,7 +214,7 @@ public final class VisSprites<V>
             // fixed map
             vis.colormap = (V) rendererState.colormaps.fixedcolormap;
             // vis.pcolormap=0;
-        } else if ((thing.frame & FF_FULLBRIGHT) != 0) {
+        } else if ((thing.mobj_frame & FF_FULLBRIGHT) != 0) {
             // full bright
             vis.colormap = (V) rendererState.colormaps.colormaps[Palettes.COLORMAP_FIXED];
             // vis.pcolormap=0;

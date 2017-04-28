@@ -28,9 +28,7 @@ import static data.Tables.tantoangle;
 import doom.CommandVariable;
 import doom.DoomMain;
 import doom.player_t;
-import doom.think_t;
 import doom.thinker_t;
-import mochadoom.Engine;
 import i.IDoomSystem;
 import java.awt.Rectangle;
 import java.io.IOException;
@@ -48,6 +46,8 @@ import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import mochadoom.Engine;
+import p.ActionFunction;
 import p.mobj_t;
 import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
@@ -74,8 +74,7 @@ import w.IWadLoader;
  * @author velktron
  */
 
-public abstract class RendererState<T, V>
-        implements SceneRenderer<T, V>, ILimitResettable {
+public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimitResettable, ActionFunction {
 
     protected static final boolean DEBUG = false;
 
@@ -2810,6 +2809,7 @@ public abstract class RendererState<T, V>
      * 
      * @return
      */
+    @Override
     public void PreCacheThinkers() {
 
         boolean[] spritepresent;
@@ -2824,8 +2824,9 @@ public abstract class RendererState<T, V>
         spritepresent = new boolean[numsprites];
 
         for (th = DOOM.actions.getThinkerCap().next; th != DOOM.actions.getThinkerCap(); th = th.next) {
-            if (th.function == think_t.P_MobjThinker)
-                spritepresent[((mobj_t) th).sprite.ordinal()] = true;
+            if (th.thinkerFunction == think_t.P_MobjThinker) {
+                spritepresent[((mobj_t) th).mobj_sprite.ordinal()] = true;
+            }
         }
 
         spritememory = 0;

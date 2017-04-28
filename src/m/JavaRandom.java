@@ -1,8 +1,8 @@
 package m;
 
 import data.mobjtype_t;
-import doom.think_t;
 import java.util.Random;
+import p.ActionFunction.think_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------

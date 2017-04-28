@@ -12,6 +12,7 @@ import data.sounds.sfxenum_t;
 import data.spritenum_t;
 import data.state_t;
 import defines.*;
+import doom.SourceCode.fixed_t;
 import doom.player_t;
 import doom.thinker_t;
 import java.io.DataInputStream;
@@ -19,9 +20,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import static p.ActionFunction.Param.Mobj;
 import static p.MapUtils.AproxDistance;
 import rr.subsector_t;
 import s.ISoundOrigin;
+import static utils.C2JUtils.eval;
 import static utils.C2JUtils.pointer;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -84,14 +87,10 @@ import w.IWritableDoomObject;
 public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		IWritableDoomObject, IPackableDoomObject, IReadableDoomObject {
 
-	Actions A;
-
-	public mobj_t() {
-		this.spawnpoint = new mapthing_t();
-	}
+	public final Actions A;
 
 	public mobj_t(Actions A) {
-		this();
+		this.spawnpoint = new mapthing_t();
 		this.A = A;
 		// A mobj_t is ALSO a thinker, as it always contains the struct.
 		// Don't fall for C's trickery ;-)
@@ -101,8 +100,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	/* List: thinker links. */
 	// public thinker_t thinker;
 
-	/** (fixed_t) Info for drawing: position. */
-	public int x, y, z;
+	/** Info for drawing: position. */
+	@fixed_t public int x, y, z;
 
 	/** More list: links in sector (if needed) */
 	public thinker_t snext, sprev;
@@ -115,9 +114,9 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	public long angle;
 
 	/** used to find patch_t and flip value */
-	public spritenum_t sprite;
+	public spritenum_t mobj_sprite;
 	/** might be ORed with FF_FULLBRIGHT */
-	public int frame;
+	public int mobj_frame;
 
 	/** Interaction info, by BLOCKMAP. Links in blocks (if needed). */
 	public thinker_t bnext, bprev;
@@ -125,14 +124,14 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	/** MAES: was actually a pointer to a struct subsector_s */
 	public subsector_t subsector;
 
-	/** (fixed_t) The closest interval over all contacted Sectors. */
-	public int floorz, ceilingz;
+	/** The closest interval over all contacted Sectors. */
+	@fixed_t public int floorz, ceilingz;
 
-	/** (fixed_t) For movement checking. */
-	public int radius, height;
+	/** For movement checking. */
+	@fixed_t public int radius, height;
 
-	/** (fixed_t) Momentums, used to update position. */
-	public int momx, momy, momz;
+	/** Momentums, used to update position. */
+	@fixed_t public int momx, momy, momz;
 
 	/** If == validcount, already checked. */
 	public int validcount;
@@ -141,9 +140,9 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	// MAES: was a pointer
 	public mobjinfo_t info; // &mobjinfo[mobj.type]
 
-	public long tics; // state tic counter
+	public long mobj_tics; // state tic counter
 	// MAES: was a pointer
-	public state_t state;
+	public state_t mobj_state;
 	public long flags;
 	public int health;
 
@@ -287,28 +286,27 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 
 		do {
 			if (state == statenum_t.S_NULL) {
-				state = null;
+                mobj_state = null;
 				// MAES/_D_: uncommented this as it should work by now (?).
 				A.RemoveMobj(this);
 				return false;
 			}
 
 			st = states[state.ordinal()];
-			this.state = st;
-			tics = st.tics;
-			sprite = st.sprite;
-			frame = (int) st.frame;
+			mobj_state = st;
+			mobj_tics = st.tics;
+			mobj_sprite = st.sprite;
+			mobj_frame = st.frame;
 
 			// Modified handling.
 			// Call action functions when the state is set
             // TODO: try find a bug
-
-			if (st.acp1 != null) {
-				st.acp1.accept(this);
-			}
+            if (st.action.ac(Mobj)) {
+                st.action.acp1(A.FUNS, this);
+            }
 
 			state = st.nextstate;
-		} while (tics == 0);
+		} while (!eval(mobj_tics));
 
 		return true;
 	}
@@ -318,9 +316,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	 */
 
 	public void ZMovement() {
-		// fixed_t
-		int dist;
-		int delta;
+		@fixed_t int dist, delta;
 
 		// check for smooth step up
 		if ((player != null) && z < floorz) {
@@ -398,7 +394,6 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 
 			if ((flags & MF_MISSILE) != 0 && (flags & MF_NOCLIP) == 0) {
 				A.ExplodeMissile(this);
-				return;
 			}
 		}
 	}
@@ -424,6 +419,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	}
 
 	// _D_: to permit this object to save/load
+    @Override
 	public void read(DataInputStream f) throws IOException {
 		// More efficient, avoids duplicating code and
 		// handles little endian better.
@@ -445,6 +441,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 
 	}
 
+    @Override
 	public void pack(ByteBuffer b) throws IOException {
 		b.order(ByteOrder.LITTLE_ENDIAN);
 		super.pack(b); // Pack the head thinker.
@@ -454,8 +451,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		b.putInt(pointer(snext));
 		b.putInt(pointer(sprev));
 		b.putInt((int) (this.angle & Tables.BITS32));
-		b.putInt(this.sprite.ordinal());
-		b.putInt(this.frame);
+		b.putInt(this.mobj_sprite.ordinal());
+		b.putInt(this.mobj_frame);
 		b.putInt(pointer(bnext));
 		b.putInt(pointer(bprev));
 		b.putInt(pointer(subsector));
@@ -469,8 +466,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		b.putInt(validcount);
 		b.putInt(type.ordinal());
 		b.putInt(pointer(info)); // TODO: mobjinfo
-		b.putInt((int) (this.tics & Tables.BITS32));
-		b.putInt(this.state.id); // TODO: state OK?
+		b.putInt((int) (this.mobj_tics & Tables.BITS32));
+		b.putInt(this.mobj_state.id); // TODO: state OK?
 		b.putInt((int) this.flags); // truncate
 		b.putInt(this.health);
 		b.putInt(this.movedir);
@@ -491,6 +488,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 
 	}
 
+    @Override
 	public void unpack(ByteBuffer b) throws IOException {
 		b.order(ByteOrder.LITTLE_ENDIAN);
 		super.unpack(b); // 12 Read the head thinker.
@@ -499,8 +497,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		this.z = b.getInt(); // 24
 		b.getLong(); // TODO: snext, sprev. When are those set? 32
 		this.angle = Tables.BITS32 & b.getInt(); // 36
-		this.sprite = spritenum_t.values()[b.getInt()]; // 40
-		this.frame = b.getInt(); // 44
+		this.mobj_sprite = spritenum_t.values()[b.getInt()]; // 40
+		this.mobj_frame = b.getInt(); // 44
 		b.getLong(); // TODO: bnext, bprev. When are those set? 52
 		b.getInt(); // TODO: subsector 56
 		this.floorz = b.getInt(); // 60
@@ -513,7 +511,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		this.validcount = b.getInt(); // 88
 		this.type = mobjtype_t.values()[b.getInt()]; // 92
 		b.getInt(); // TODO: mobjinfo (deduced from type) //96
-		this.tics = Tables.BITS32 & b.getInt(); // 100
+		this.mobj_tics = Tables.BITS32 & b.getInt(); // 100
 		// System.out.println("State"+f.readLEInt());
 		this.stateid = b.getInt(); // TODO: state OK?
 		this.flags = b.getInt()&Tables.BITS32; // Only 32-bit flags can be restored
@@ -561,6 +559,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		return z;
 	}
 	
+    @Override
 	public String toString(){
 	    return String.format("%s %d",this.type,this.thingnum);
 	}
