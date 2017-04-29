@@ -20,7 +20,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import static p.ActionFunction.Param.Mobj;
+import static p.ActionFunction.ParamType.Mobj;
 import static p.MapUtils.AproxDistance;
 import rr.subsector_t;
 import s.ISoundOrigin;
@@ -301,8 +301,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 			// Modified handling.
 			// Call action functions when the state is set
             // TODO: try find a bug
-            if (st.action.ac(Mobj)) {
-                st.action.acp1(A.FUNS, this);
+            if (st.action.isParamType(Mobj)) {
+                st.action.callMobjFun(A.DOOM.actionFunctions, this);
             }
 
 			state = st.nextstate;

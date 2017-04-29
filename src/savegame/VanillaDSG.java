@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import m.Settings;
 import mochadoom.Engine;
 import mochadoom.Loggers;
-import static p.ActionFunction.think_t.*;
+import static p.ActionFunction.*;
 import p.ThinkerList;
 import p.ceiling_t;
 import p.floormove_t;

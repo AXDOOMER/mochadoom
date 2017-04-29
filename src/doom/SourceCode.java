@@ -221,6 +221,18 @@ public @interface SourceCode {
         @interface C { W_Wad value(); }
     }
     
+    public interface D_Think {
+        public enum actionf_t {
+            acp1,
+            acv,
+            acp2
+        }
+        
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { actionf_t value(); }
+    }
+    
     public enum Z_Zone {
         Z_Malloc;
         @Documented
@@ -237,4 +249,29 @@ public @interface SourceCode {
     @Retention(SOURCE)
     @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface fixed_t {}
+    
+    @Documented
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    public @interface actionf_p1 {}
+    
+    @Documented
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    public @interface actionf_v {}
+    
+    @Documented
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    public @interface actionf_p2 {}
+    
+    @Documented
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    public @interface thinker_t {}
+    
+    @Documented
+    @Retention(SOURCE)
+    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    public @interface think_t {}
 }

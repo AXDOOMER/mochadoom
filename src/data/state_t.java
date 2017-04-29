@@ -2,8 +2,8 @@ package data;
 
 import static data.Defines.TIC_MUL;
 import defines.statenum_t;
-import p.ActionFunction.think_t;
-import static p.ActionFunction.think_t.NOP;
+import p.ActionFunction;
+import static p.ActionFunction.NOP;
 
 public class state_t {
 
@@ -11,7 +11,7 @@ public class state_t {
 
     }
 
-    public state_t(spritenum_t sprite, int frame, int tics, think_t action, statenum_t nextstate, int misc1, int misc2) {
+    public state_t(spritenum_t sprite, int frame, int tics, ActionFunction action, statenum_t nextstate, int misc1, int misc2) {
         this.sprite = sprite;
         this.frame = frame;
         this.tics = tics * TIC_MUL;
@@ -31,7 +31,7 @@ public class state_t {
     public int frame;
     public int tics;
     //TODO: proper implementation of (*action)
-    // MAES: was actionp_t... which is typedeffed to think_t anyway,
+    // MAES: was actionp_t... which is typedeffed to ActionFunction anyway,
     // and this is the only place it's invoked explicitly.
     /**
      * OK...this is the most infamous part of Doom to implement in Java.
@@ -42,7 +42,7 @@ public class state_t {
      * This a
      *
      */
-    public think_t action;
+    public ActionFunction action;
 
     public statenum_t nextstate;
     public int misc1, misc2;
@@ -72,7 +72,7 @@ public class state_t {
         this.sprite = spritenum_t.values()[f.readLEInt()];
         this.frame = f.readLEInt();
         this.tics = f.readLong();
-        this.action = think_t.values()[f.readInt()];
+        this.action = ActionFunction.values()[f.readInt()];
         this.nextstate = statenum_t.values()[f.readInt()];
         this.misc1 = f.readInt();
         this.misc2 = f.readInt();

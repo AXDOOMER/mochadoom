@@ -43,14 +43,12 @@ import java.util.function.Consumer;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
-import p.ActionFunction.actionf_t;
-import p.ActionFunction.think_t;
-import static p.ActionFunction.think_t.*;
+import static p.ActionFunction.*;
+import p.ActionFunction.Observer;
 import static p.ChaseDirections.DI_NODIR;
 import static p.ChaseDirections.xspeed;
 import static p.ChaseDirections.yspeed;
 import static p.MapUtils.AproxDistance;
-import p.UnifiedGameMap.Enemies;
 import static p.mobj_t.MF_AMBUSH;
 import static p.mobj_t.MF_COUNTKILL;
 import static p.mobj_t.MF_JUSTATTACKED;
@@ -62,11 +60,12 @@ import rr.line_t;
 import static rr.line_t.ML_BLOCKING;
 import static utils.C2JUtils.eval;
 
-public class ActionFunctions<T, V> implements actionf_t {
-    private final EnumMap<think_t, Consumer<mobj_t>> actionf_p1 = new EnumMap<>(think_t.class);
-    private final EnumMap<think_t, TypedAction<? extends thinker_t>> actionf_v = new EnumMap<>(think_t.class);
-    private final EnumMap<think_t, BiConsumer<player_t, pspdef_t>> actionf_p2 = new EnumMap<>(think_t.class);
-    
+public class ActionFunctions<T, V> implements Observer {
+
+    private final EnumMap<ActionFunction, Consumer<mobj_t>> actionf_p1 = new EnumMap<>(ActionFunction.class);
+    private final EnumMap<ActionFunction, TypedAction<? extends thinker_t>> actionf_v = new EnumMap<>(ActionFunction.class);
+    private final EnumMap<ActionFunction, BiConsumer<player_t, pspdef_t>> actionf_p2 = new EnumMap<>(ActionFunction.class);
+
     private static final long FATSPREAD = (ANG90 / 8);
     private static final int TRACEANGLE = 0xc000000;
     private static final int SKULLSPEED = (20 * MAPFRACUNIT);
@@ -75,16 +74,14 @@ public class ActionFunctions<T, V> implements actionf_t {
     private mobj_t[] braintargets = new mobj_t[NUMBRAINTARGETS];
     private int numbraintargets;
     private int braintargeton;
-    
+
     private int easy = 0;
 
     // plasma cells for a bfg attack
     // IDEA: make action functions partially parametrizable?
     private static final int BFGCELLS = 40;
 
-    ActionFunctions(DoomMain<T, V> DOOM, Actions actions, Enemies EN) {
-        final SlideDoor<T, V> SL = new SlideDoor<>(DOOM);
-        
+    public ActionFunctions(final DoomMain<T, V> DOOM) {
         /**
          * A_Chase
          * Actor has a melee attack,
@@ -93,11 +90,11 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_Chase, (mobj_t actor) -> {
             int delta;
             boolean nomissile = false; // for the fugly goto
-            
+
             if (actor.reactiontime != 0) {
                 actor.reactiontime--;
             }
-            
+
             // modify target threshold
             if (actor.threshold != 0) {
                 if (actor.target == null || actor.target.health <= 0) {
@@ -106,50 +103,50 @@ public class ActionFunctions<T, V> implements actionf_t {
                     actor.threshold--;
                 }
             }
-            
+
             // turn towards movement direction if not there yet
             if (actor.movedir < 8) {
                 actor.angle &= (7 << 29);
                 actor.angle &= BITS32;
                 // Nice problem, here!
                 delta = (int) (actor.angle - (actor.movedir << 29));
-                
+
                 if (delta > 0) {
                     actor.angle -= ANG45;
                 } else if (delta < 0) {
                     actor.angle += ANG45;
                 }
-                
+
                 actor.angle &= BITS32;
             }
-            
+
             if (actor.target == null || !eval(actor.target.flags & MF_SHOOTABLE)) {
                 // look for a new target
-                if (EN.LookForPlayers(actor, true)) {
+                if (DOOM.actions.EN.LookForPlayers(actor, true)) {
                     return;     // got a new target
                 }
                 actor.SetMobjState(actor.info.spawnstate);
                 return;
             }
-            
+
             // do not attack twice in a row
             if (eval(actor.flags & MF_JUSTATTACKED)) {
                 actor.flags &= ~MF_JUSTATTACKED;
                 if (DOOM.gameskill != skill_t.sk_nightmare && !DOOM.fastparm) {
-                    actions.NewChaseDir(actor);
+                    DOOM.actions.NewChaseDir(actor);
                 }
                 return;
             }
-            
+
             // check for melee attack
-            if (actor.info.meleestate != statenum_t.S_NULL && EN.CheckMeleeRange(actor)) {
+            if (actor.info.meleestate != statenum_t.S_NULL && DOOM.actions.EN.CheckMeleeRange(actor)) {
                 if (actor.info.attacksound != null) {
                     DOOM.doomSound.StartSound(actor, actor.info.attacksound);
                 }
                 actor.SetMobjState(actor.info.meleestate);
                 return;
             }
-            
+
             // check for missile attack
             if (actor.info.missilestate != statenum_t.S_NULL) { //_D_: this caused a bug where Demon for example were disappearing
                 // Assume that a missile attack is possible
@@ -157,7 +154,7 @@ public class ActionFunctions<T, V> implements actionf_t {
                     && !DOOM.fastparm && actor.movecount != 0) {
                     // Uhm....no.
                     nomissile = true;
-                } else if (!EN.CheckMissileRange(actor)) {
+                } else if (!DOOM.actions.EN.CheckMissileRange(actor)) {
                     nomissile = true; // Out of range
                 }
                 if (!nomissile) {
@@ -167,20 +164,20 @@ public class ActionFunctions<T, V> implements actionf_t {
                     return;
                 }
             }
-            
+
             // This should be executed always, if not averted by returns.
             // possibly choose another target
-            if (DOOM.netgame && actor.threshold == 0 && !EN.CheckSight(actor, actor.target)) {
-                if (EN.LookForPlayers(actor, true)) {
+            if (DOOM.netgame && actor.threshold == 0 && !DOOM.actions.EN.CheckSight(actor, actor.target)) {
+                if (DOOM.actions.EN.LookForPlayers(actor, true)) {
                     return; // got a new target
                 }
             }
-            
+
             // chase towards player
-            if (--actor.movecount < 0 || !actions.Move(actor)) {
-                actions.NewChaseDir(actor);
+            if (--actor.movecount < 0 || !DOOM.actions.Move(actor)) {
+                DOOM.actions.NewChaseDir(actor);
             }
-            
+
             // make active sound
             if (actor.info.activesound != null && DOOM.random.P_Random() < 3) {
                 DOOM.doomSound.StartSound(actor, actor.info.activesound);
@@ -190,19 +187,19 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_Fire, (mobj_t actor) -> {
             mobj_t dest;
             //long    an;
-            
+
             dest = actor.tracer;
             if (dest == null) {
                 return;
             }
-            
+
             // don't move it if the vile lost sight
-            if (!EN.CheckSight(actor.target, dest)) {
+            if (!DOOM.actions.EN.CheckSight(actor.target, dest)) {
                 return;
             }
-            
+
             // an = dest.angle >>> ANGLETOFINESHIFT;
-            actions.UnsetThingPosition(actor);
+            DOOM.actions.UnsetThingPosition(actor);
             actor.x = dest.x + FixedMul(24 * FRACUNIT, finecosine(dest.angle));
             actor.y = dest.y + FixedMul(24 * FRACUNIT, finesine(dest.angle));
             actor.z = dest.z;
@@ -212,13 +209,13 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_Fall, (mobj_t actor) -> {
             // actor is on ground, it can be walked over
             actor.flags &= ~MF_SOLID;
-            
+
             // So change this if corpse objects
             // are meant to be obstacles.
         });
 
         /**
-         * Causes object to move and perform actions.
+         * Causes object to move and perform DOOM.actions.
          * Can only be called through the Actions dispatcher.
          *
          * @param mobj
@@ -230,27 +227,27 @@ public class ActionFunctions<T, V> implements actionf_t {
             // momentum movement
             if (mobj.momx != 0 || mobj.momy != 0
                 || (eval(mobj.flags & MF_SKULLFLY))) {
-                actions.XYMovement(mobj);
-                
+                DOOM.actions.XYMovement(mobj);
+
                 // FIXME: decent NOP/NULL/Nil function pointer please.
-                if (mobj.thinkerFunction == think_t.NOP) {
+                if (mobj.thinkerFunction == ActionFunction.NOP) {
                     return; // mobj was removed
                 }
             }
             if ((mobj.z != mobj.floorz) || mobj.momz != 0) {
                 mobj.ZMovement();
-                
+
                 // FIXME: decent NOP/NULL/Nil function pointer please.
-                if (mobj.thinkerFunction == think_t.NOP) {
+                if (mobj.thinkerFunction == ActionFunction.NOP) {
                     return; // mobj was removed
                 }
             }
-            
+
             // cycle through states,
             // calling action functions at transitions
             if (mobj.mobj_tics != -1) {
                 mobj.mobj_tics--;
-                
+
                 // you can cycle through multiple states in a tic
                 if (!eval(mobj.mobj_tics)) {
                     if (!mobj.SetMobjState(mobj.mobj_state.nextstate)) {
@@ -262,36 +259,36 @@ public class ActionFunctions<T, V> implements actionf_t {
                 if (!eval(mobj.flags & MF_COUNTKILL)) {
                     return;
                 }
-                
+
                 if (!DOOM.respawnmonsters) {
                     return;
                 }
-                
+
                 mobj.movecount++;
-                
+
                 if (mobj.movecount < 12 * 35) {
                     return;
                 }
-                
+
                 if (eval(DOOM.leveltime & 31)) {
                     return;
                 }
-                
+
                 if (DOOM.random.P_Random() > 4) {
                     return;
                 }
-                
-                actions.NightmareRespawn(mobj);
+
+                DOOM.actions.NightmareRespawn(mobj);
             }
         });
-        
+
         actionf_v.put(T_FireFlicker, (TypedAction<fireflicker_t>) fireflicker_t::FireFlicker);
         actionf_v.put(T_LightFlash, (TypedAction<lightflash_t>) lightflash_t::LightFlash);
         actionf_v.put(T_StrobeFlash, (TypedAction<strobe_t>) strobe_t::StrobeFlash);
         actionf_v.put(T_Glow, (TypedAction<glow_t>) glow_t::Glow);
-        actionf_v.put(T_MoveCeiling, (TypedAction<ceiling_t>) actions::MoveCeiling);
-        actionf_v.put(T_MoveFloor, (TypedAction<floormove_t>) actions::MoveFloor);
-        actionf_v.put(T_VerticalDoor, (TypedAction<vldoor_t>) actions::VerticalDoor);
+        actionf_v.put(T_MoveCeiling, (TypedAction<ceiling_t>) DOOM.actions::MoveCeiling);
+        actionf_v.put(T_MoveFloor, (TypedAction<floormove_t>) DOOM.actions::MoveFloor);
+        actionf_v.put(T_VerticalDoor, (TypedAction<vldoor_t>) DOOM.actions::VerticalDoor);
         actionf_v.put(T_SlidingDoor, (slidedoor_t door) -> {
             switch (door.status) {
                 case sd_opening:
@@ -301,25 +298,25 @@ public class ActionFunctions<T, V> implements actionf_t {
                             DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = 0;
                             DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = 0;
                             door.line.flags &= ML_BLOCKING ^ 0xff;
-                            
+
                             if (door.type == sdt_e.sdt_openOnly) {
                                 door.frontsector.specialdata = null;
-                                actions.RemoveThinker(door);
+                                DOOM.actions.RemoveThinker(door);
                                 break;
                             }
-                            
+
                             door.timer = SlideDoor.SDOORWAIT;
                             door.status = sd_e.sd_waiting;
                         } else {
                             // IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
                             door.timer = SlideDoor.SWAITTICS;
-                            
-                            DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
-                            DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
+
+                            DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = (short) DOOM.actions.SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
+                            DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = (short) DOOM.actions.SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
                         }
                     }
                     break;
-                    
+
                 case sd_waiting:
                     // IF DOOR IS DONE WAITING...
                     if (door.timer-- == 0) {
@@ -329,34 +326,34 @@ public class ActionFunctions<T, V> implements actionf_t {
                             door.timer = SlideDoor.SDOORWAIT;
                             break;
                         }
-                        
+
                         // door.frame = SNUMFRAMES-1;
                         door.status = sd_e.sd_closing;
                         door.timer = SlideDoor.SWAITTICS;
                     }
                     break;
-                    
+
                 case sd_closing:
                     if (door.timer-- == 0) {
                         if (--door.frame < 0) {
                             // IF DOOR IS DONE CLOSING...
                             door.line.flags |= ML_BLOCKING;
                             door.frontsector.specialdata = null;
-                            actions.RemoveThinker(door);
+                            DOOM.actions.RemoveThinker(door);
                             break;
                         } else {
                             // IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
                             door.timer = SlideDoor.SWAITTICS;
-                            
-                            DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
-                            DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
+
+                            DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = (short) DOOM.actions.SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
+                            DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = (short) DOOM.actions.SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
                         }
                     }
                     break;
             }
         });
 
-        actionf_v.put(T_PlatRaise, (TypedAction<plat_t>) actions::PlatRaise);
+        actionf_v.put(T_PlatRaise, (TypedAction<plat_t>) DOOM.actions::PlatRaise);
 
         //
         // A_FaceTarget
@@ -365,14 +362,14 @@ public class ActionFunctions<T, V> implements actionf_t {
             if (actor.target == null) {
                 return;
             }
-            
+
             actor.flags &= ~MF_AMBUSH;
-            
+
             actor.angle = DOOM.sceneRenderer.PointToAngle2(actor.x,
                 actor.y,
                 actor.target.x,
                 actor.target.y) & BITS32;
-            
+
             if (eval(actor.target.flags & MF_SHADOW)) {
                 actor.angle += (DOOM.random.P_Random() - DOOM.random.P_Random()) << 21;
             }
@@ -386,18 +383,18 @@ public class ActionFunctions<T, V> implements actionf_t {
             int angle;
             int damage;
             int slope;
-            
+
             if (actor.target == null) {
                 return;
             }
             actionf_p1.get(A_FaceTarget).accept(actor);
             angle = (int) actor.angle;
-            slope = actions.AimLineAttack(actor, angle, MISSILERANGE);
-            
+            slope = DOOM.actions.AimLineAttack(actor, angle, MISSILERANGE);
+
             DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_pistol);
             angle += (DOOM.random.P_Random() - DOOM.random.P_Random()) << 20;
             damage = ((DOOM.random.P_Random() % 5) + 1) * 3;
-            actions.LineAttack(actor, angle, MISSILERANGE, slope, damage);
+            DOOM.actions.LineAttack(actor, angle, MISSILERANGE, slope, damage);
         });
 
         actionf_p1.put(A_SPosAttack, (mobj_t actor) -> {
@@ -406,20 +403,20 @@ public class ActionFunctions<T, V> implements actionf_t {
             long bangle;
             int damage;
             int slope;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_shotgn);
             actionf_p1.get(A_FaceTarget).accept(actor);
             bangle = actor.angle;
-            slope = actions.AimLineAttack(actor, bangle, MISSILERANGE);
-            
+            slope = DOOM.actions.AimLineAttack(actor, bangle, MISSILERANGE);
+
             for (i = 0; i < 3; i++) {
                 angle = bangle + ((DOOM.random.P_Random() - DOOM.random.P_Random()) << 20);
                 damage = ((DOOM.random.P_Random() % 5) + 1) * 3;
-                actions.LineAttack(actor, angle, MISSILERANGE, slope, damage);
+                DOOM.actions.LineAttack(actor, angle, MISSILERANGE, slope, damage);
             }
         });
 
@@ -428,32 +425,32 @@ public class ActionFunctions<T, V> implements actionf_t {
             long bangle;
             int damage;
             int slope;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_shotgn);
             actionf_p1.get(A_FaceTarget).accept(actor);
             bangle = actor.angle;
-            slope = actions.AimLineAttack(actor, bangle, MISSILERANGE);
-            
+            slope = DOOM.actions.AimLineAttack(actor, bangle, MISSILERANGE);
+
             angle = bangle + ((DOOM.random.P_Random() - DOOM.random.P_Random()) << 20);
             damage = ((DOOM.random.P_Random() % 5) + 1) * 3;
-            actions.LineAttack(actor, angle, MISSILERANGE, slope, damage);
+            DOOM.actions.LineAttack(actor, angle, MISSILERANGE, slope, damage);
         });
 
         actionf_p1.put(A_CPosRefire, (mobj_t actor) -> {
             // keep firing unless target got out of sight
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
+
             if (DOOM.random.P_Random() < 40) {
                 return;
             }
-            
+
             if (actor.target == null
                 || actor.target.health <= 0
-                || !EN.CheckSight(actor, actor.target)) {
+                || !DOOM.actions.EN.CheckSight(actor, actor.target)) {
                 actor.SetMobjState(actor.info.seestate);
             }
         });
@@ -461,14 +458,14 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_SpidRefire, (mobj_t actor) -> {
             // keep firing unless target got out of sight
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
+
             if (DOOM.random.P_Random() < 10) {
                 return;
             }
-            
+
             if (actor.target == null
                 || actor.target.health <= 0
-                || !EN.CheckSight(actor, actor.target)) {
+                || !DOOM.actions.EN.CheckSight(actor, actor.target)) {
                 actor.SetMobjState(actor.info.seestate);
             }
         });
@@ -477,11 +474,11 @@ public class ActionFunctions<T, V> implements actionf_t {
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
+
             // launch a missile
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_ARACHPLAZ);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_ARACHPLAZ);
         });
 
         //
@@ -489,80 +486,80 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p1.put(A_TroopAttack, (mobj_t actor) -> {
             int damage;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            if (actions.EN.CheckMeleeRange(actor)) {
+            if (DOOM.actions.EN.CheckMeleeRange(actor)) {
                 DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_claw);
                 damage = (DOOM.random.P_Random() % 8 + 1) * 3;
-                actions.DamageMobj(actor.target, actor, actor, damage);
+                DOOM.actions.DamageMobj(actor.target, actor, actor, damage);
                 return;
             }
-            
+
             // launch a missile
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_TROOPSHOT);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_TROOPSHOT);
         });
 
         actionf_p1.put(A_SargAttack, (mobj_t actor) -> {
             int damage;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            if (EN.CheckMeleeRange(actor)) {
+            if (DOOM.actions.EN.CheckMeleeRange(actor)) {
                 damage = ((DOOM.random.P_Random() % 10) + 1) * 4;
-                actions.DamageMobj(actor.target, actor, actor, damage);
+                DOOM.actions.DamageMobj(actor.target, actor, actor, damage);
             }
         });
 
         actionf_p1.put(A_HeadAttack, (mobj_t actor) -> {
             int damage;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            if (EN.CheckMeleeRange(actor)) {
+            if (DOOM.actions.EN.CheckMeleeRange(actor)) {
                 damage = (DOOM.random.P_Random() % 6 + 1) * 10;
-                actions.DamageMobj(actor.target, actor, actor, damage);
+                DOOM.actions.DamageMobj(actor.target, actor, actor, damage);
                 return;
             }
-            
+
             // launch a missile
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_HEADSHOT);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_HEADSHOT);
         });
 
         actionf_p1.put(A_CyberAttack, (mobj_t actor) -> {
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_ROCKET);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_ROCKET);
         });
 
         actionf_p1.put(A_BruisAttack, (mobj_t actor) -> {
             int damage;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
-            if (EN.CheckMeleeRange(actor)) {
+
+            if (DOOM.actions.EN.CheckMeleeRange(actor)) {
                 DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_claw);
                 damage = (DOOM.random.P_Random() % 8 + 1) * 10;
-                actions.DamageMobj(actor.target, actor, actor, damage);
+                DOOM.actions.DamageMobj(actor.target, actor, actor, damage);
                 return;
             }
-            
+
             // launch a missile
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_BRUISERSHOT);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_BRUISERSHOT);
         });
 
         //
@@ -570,16 +567,16 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p1.put(A_SkelMissile, (mobj_t actor) -> {
             mobj_t mo;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
             actor.z += 16 * FRACUNIT;    // so missile spawns higher
-            mo = actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_TRACER);
+            mo = DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_TRACER);
             actor.z -= 16 * FRACUNIT;    // back to normal
-            
+
             mo.x += mo.momx;
             mo.y += mo.momy;
             mo.tracer = actor.target;
@@ -594,8 +591,8 @@ public class ActionFunctions<T, V> implements actionf_t {
                 return;
             }
             // spawn a puff of smoke behind the rocket
-            actions.SpawnPuff(actor.x, actor.y, actor.z);
-            th = actions.SpawnMobj(actor.x - actor.momx,
+            DOOM.actions.SpawnPuff(actor.x, actor.y, actor.z);
+            th = DOOM.actions.SpawnMobj(actor.x - actor.momx,
                 actor.y - actor.momy,
                 actor.z, mobjtype_t.MT_SMOKE);
             th.momz = MAPFRACUNIT;
@@ -660,17 +657,17 @@ public class ActionFunctions<T, V> implements actionf_t {
 
         actionf_p1.put(A_SkelFist, (mobj_t actor) -> {
             int damage;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
-            if (EN.CheckMeleeRange(actor)) {
+
+            if (DOOM.actions.EN.CheckMeleeRange(actor)) {
                 damage = ((DOOM.random.P_Random() % 10) + 1) * 6;
                 DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_skepch);
-                actions.DamageMobj(actor.target, actor, actor, damage);
+                DOOM.actions.DamageMobj(actor.target, actor, actor, damage);
             }
         });
 
@@ -683,54 +680,54 @@ public class ActionFunctions<T, V> implements actionf_t {
             int xh;
             int yl;
             int yh;
-            
+
             int bx;
             int by;
-            
+
             mobjinfo_t info;
             mobj_t temp;
-            
+
             if (actor.movedir != DI_NODIR) {
                 // check for corpses to raise
-                actions.vileTryX
-                   = actor.x + actor.info.speed * xspeed[actor.movedir];
-                actions.vileTryY
-                   = actor.y + actor.info.speed * yspeed[actor.movedir];
-                
-                xl = DOOM.levelLoader.getSafeBlockX(actions.vileTryX - DOOM.levelLoader.bmaporgx - MAXRADIUS * 2);
-                xh = DOOM.levelLoader.getSafeBlockX(actions.vileTryX - DOOM.levelLoader.bmaporgx + MAXRADIUS * 2);
-                yl = DOOM.levelLoader.getSafeBlockY(actions.vileTryY - DOOM.levelLoader.bmaporgy - MAXRADIUS * 2);
-                yh = DOOM.levelLoader.getSafeBlockY(actions.vileTryY - DOOM.levelLoader.bmaporgy + MAXRADIUS * 2);
-                
-                actions.vileObj = actor;
+                DOOM.actions.vileTryX
+                    = actor.x + actor.info.speed * xspeed[actor.movedir];
+                DOOM.actions.vileTryY
+                    = actor.y + actor.info.speed * yspeed[actor.movedir];
+
+                xl = DOOM.levelLoader.getSafeBlockX(DOOM.actions.vileTryX - DOOM.levelLoader.bmaporgx - MAXRADIUS * 2);
+                xh = DOOM.levelLoader.getSafeBlockX(DOOM.actions.vileTryX - DOOM.levelLoader.bmaporgx + MAXRADIUS * 2);
+                yl = DOOM.levelLoader.getSafeBlockY(DOOM.actions.vileTryY - DOOM.levelLoader.bmaporgy - MAXRADIUS * 2);
+                yh = DOOM.levelLoader.getSafeBlockY(DOOM.actions.vileTryY - DOOM.levelLoader.bmaporgy + MAXRADIUS * 2);
+
+                DOOM.actions.vileObj = actor;
                 for (bx = xl; bx <= xh; bx++) {
                     for (by = yl; by <= yh; by++) {
                         // Call PIT_VileCheck to check
                         // whether object is a corpse
                         // that can be raised.
-                        if (!actions.BlockThingsIterator(bx, by, actions.VileCheck)) {
+                        if (!DOOM.actions.BlockThingsIterator(bx, by, DOOM.actions::VileCheck)) {
                             // got one!
                             temp = actor.target;
-                            actor.target = actions.vileCorpseHit;
+                            actor.target = DOOM.actions.vileCorpseHit;
                             actionf_p1.get(A_FaceTarget).accept(actor);
                             actor.target = temp;
-                            
+
                             actor.SetMobjState(statenum_t.S_VILE_HEAL1);
-                            DOOM.doomSound.StartSound(actions.vileCorpseHit, sfxenum_t.sfx_slop);
-                            info = actions.vileCorpseHit.info;
-                            
-                            actions.vileCorpseHit.SetMobjState(info.raisestate);
-                            actions.vileCorpseHit.height <<= 2;
-                            actions.vileCorpseHit.flags = info.flags;
-                            actions.vileCorpseHit.health = info.spawnhealth;
-                            actions.vileCorpseHit.target = null;
-                            
+                            DOOM.doomSound.StartSound(DOOM.actions.vileCorpseHit, sfxenum_t.sfx_slop);
+                            info = DOOM.actions.vileCorpseHit.info;
+
+                            DOOM.actions.vileCorpseHit.SetMobjState(info.raisestate);
+                            DOOM.actions.vileCorpseHit.height <<= 2;
+                            DOOM.actions.vileCorpseHit.flags = info.flags;
+                            DOOM.actions.vileCorpseHit.health = info.spawnhealth;
+                            DOOM.actions.vileCorpseHit.target = null;
+
                             return;
                         }
                     }
                 }
             }
-            
+
             // Return to normal attack.
             actionf_p1.get(A_Chase).accept(actor);
         });
@@ -761,16 +758,16 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_FirePistol, (player_t player, pspdef_t psp) -> {
             DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_pistol);
-            
+
             player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
             player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
-            
+
             player.SetPsprite(
                 ps_flash,
                 weaponinfo[player.readyweapon.ordinal()].flashstate);
-            
-            actions.P_BulletSlope(player.mo);
-            actions.P_GunShot(player.mo, !eval(player.refire));
+
+            DOOM.actions.P_BulletSlope(player.mo);
+            DOOM.actions.P_GunShot(player.mo, !eval(player.refire));
         });
 
         //
@@ -778,20 +775,20 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_FireShotgun, (player_t player, pspdef_t psp) -> {
             int i;
-            
+
             DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_shotgn);
             player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
-            
+
             player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
-            
+
             player.SetPsprite(
                 ps_flash,
                 weaponinfo[player.readyweapon.ordinal()].flashstate);
-            
-            actions.P_BulletSlope(player.mo);
-            
+
+            DOOM.actions.P_BulletSlope(player.mo);
+
             for (i = 0; i < 7; i++) {
-                actions.P_GunShot(player.mo, false);
+                DOOM.actions.P_GunShot(player.mo, false);
             }
         });
 
@@ -802,26 +799,26 @@ public class ActionFunctions<T, V> implements actionf_t {
             int i;
             long angle;
             int damage;
-            
+
             DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_dshtgn);
             player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
-            
+
             player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= 2;
-            
+
             player.SetPsprite(
                 ps_flash,
                 weaponinfo[player.readyweapon.ordinal()].flashstate);
-            
-            actions.P_BulletSlope(player.mo);
-            
+
+            DOOM.actions.P_BulletSlope(player.mo);
+
             for (i = 0; i < 20; i++) {
                 damage = 5 * (DOOM.random.P_Random() % 3 + 1);
                 angle = player.mo.angle;
                 angle += (DOOM.random.P_Random() - DOOM.random.P_Random()) << 19;
-                actions.LineAttack(player.mo,
+                DOOM.actions.LineAttack(player.mo,
                     angle,
                     MISSILERANGE,
-                    actions.bulletslope + ((DOOM.random.P_Random() - DOOM.random.P_Random()) << 5), damage);
+                    DOOM.actions.bulletslope + ((DOOM.random.P_Random() - DOOM.random.P_Random()) << 5), damage);
             }
         });
 
@@ -831,17 +828,17 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p1.put(A_VileTarget, (mobj_t actor) -> {
             mobj_t fog;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
-            fog = actions.SpawnMobj(actor.target.x,
+
+            fog = DOOM.actions.SpawnMobj(actor.target.x,
                 actor.target.y,
                 actor.target.z, mobjtype_t.MT_FIRE);
-            
+
             actor.tracer = fog;
             fog.target = actor;
             fog.tracer = actor.target;
@@ -854,32 +851,32 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_VileAttack, (mobj_t actor) -> {
             mobj_t fire;
             //int     an;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
-            if (!EN.CheckSight(actor, actor.target)) {
+
+            if (!DOOM.actions.EN.CheckSight(actor, actor.target)) {
                 return;
             }
-            
+
             DOOM.doomSound.StartSound(actor, sfxenum_t.sfx_barexp);
-            actions.DamageMobj(actor.target, actor, actor, 20);
+            DOOM.actions.DamageMobj(actor.target, actor, actor, 20);
             actor.target.momz = 1000 * MAPFRACUNIT / actor.target.info.mass;
-            
+
             // an = actor.angle >> ANGLETOFINESHIFT;
             fire = actor.tracer;
-            
+
             if (fire == null) {
                 return;
             }
-            
+
             // move the fire between the vile and the player
             fire.x = actor.target.x - FixedMul(24 * FRACUNIT, finecosine(actor.angle));
             fire.y = actor.target.y - FixedMul(24 * FRACUNIT, finesine(actor.angle));
-            actions.RadiusAttack(fire, actor, 70);
+            DOOM.actions.RadiusAttack(fire, actor, 70);
         });
 
         //
@@ -896,13 +893,13 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_FatAttack1, (mobj_t actor) -> {
             mobj_t mo;
             int an;
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
             // Change direction  to ...
             actor.angle += FATSPREAD;
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
-            
-            mo = actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
+
+            mo = DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
             mo.angle += FATSPREAD;
             an = Tables.toBAMIndex(mo.angle);
             mo.momx = FixedMul(mo.info.speed, finecosine[an]);
@@ -912,13 +909,13 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_FatAttack2, (mobj_t actor) -> {
             mobj_t mo;
             int an;
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
             // Now here choose opposite deviation.
             actor.angle -= FATSPREAD;
-            actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
-            
-            mo = actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
+            DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
+
+            mo = DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
             mo.angle -= FATSPREAD * 2;
             an = Tables.toBAMIndex(mo.angle);
             mo.momx = FixedMul(mo.info.speed, finecosine[an]);
@@ -928,16 +925,16 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_FatAttack3, (mobj_t actor) -> {
             mobj_t mo;
             int an;
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
-            
-            mo = actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
+
+            mo = DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
             mo.angle -= FATSPREAD / 2;
             an = Tables.toBAMIndex(mo.angle);
             mo.momx = FixedMul(mo.info.speed, finecosine[an]);
             mo.momy = FixedMul(mo.info.speed, finesine[an]);
-            
-            mo = actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
+
+            mo = DOOM.actions.SpawnMissile(actor, actor.target, mobjtype_t.MT_FATSHOT);
             mo.angle += FATSPREAD / 2;
             an = Tables.toBAMIndex(mo.angle);
             mo.momx = FixedMul(mo.info.speed, finecosine[an]);
@@ -952,14 +949,14 @@ public class ActionFunctions<T, V> implements actionf_t {
             mobj_t dest;
             int an;
             int dist;
-            
+
             if (actor.target == null) {
                 return;
             }
-            
+
             dest = actor.target;
             actor.flags |= MF_SKULLFLY;
-            
+
             DOOM.doomSound.StartSound(actor, actor.info.attacksound);
             actionf_p1.get(A_FaceTarget).accept(actor);
             an = Tables.toBAMIndex(actor.angle);
@@ -967,7 +964,7 @@ public class ActionFunctions<T, V> implements actionf_t {
             actor.momy = FixedMul(SKULLSPEED, finesine[an]);
             dist = AproxDistance(dest.x - actor.x, dest.y - actor.y);
             dist /= SKULLSPEED;
-            
+
             if (dist < 1) {
                 dist = 1;
             }
@@ -994,9 +991,9 @@ public class ActionFunctions<T, V> implements actionf_t {
             // count total number of skull currently on the level
             count = 0;
 
-            currentthinker = actions.thinkercap.next;
-            while (currentthinker != actions.thinkercap) {
-                if ((currentthinker.thinkerFunction == think_t.P_MobjThinker)
+            currentthinker = DOOM.actions.thinkercap.next;
+            while (currentthinker != DOOM.actions.thinkercap) {
+                if ((currentthinker.thinkerFunction == ActionFunction.P_MobjThinker)
                     && ((mobj_t) currentthinker).type == mobjtype_t.MT_SKULL) {
                     count++;
                 }
@@ -1013,19 +1010,19 @@ public class ActionFunctions<T, V> implements actionf_t {
             an = Tables.toBAMIndex(angle);
 
             prestep
-               = 4 * FRACUNIT
+                = 4 * FRACUNIT
                 + 3 * (actor.info.radius + mobjinfo[mobjtype_t.MT_SKULL.ordinal()].radius) / 2;
 
             x = actor.x + FixedMul(prestep, finecosine[an]);
             y = actor.y + FixedMul(prestep, finesine[an]);
             z = actor.z + 8 * FRACUNIT;
 
-            newmobj = actions.SpawnMobj(x, y, z, mobjtype_t.MT_SKULL);
+            newmobj = DOOM.actions.SpawnMobj(x, y, z, mobjtype_t.MT_SKULL);
 
             // Check for movements.
-            if (!actions.TryMove(newmobj, newmobj.x, newmobj.y)) {
+            if (!DOOM.actions.TryMove(newmobj, newmobj.x, newmobj.y)) {
                 // kill it immediately
-                actions.DamageMobj(newmobj, actor, actor, 10000);
+                DOOM.actions.DamageMobj(newmobj, actor, actor, 10000);
                 return;
             }
 
@@ -1037,12 +1034,11 @@ public class ActionFunctions<T, V> implements actionf_t {
         // A_PainAttack
         // Spawn a lost soul and launch it at the target
         // 
-
         actionf_p1.put(A_PainAttack, (mobj_t actor) -> {
             if (actor.target == null) {
                 return;
             }
-            
+
             actionf_p1.get(A_FaceTarget).accept(actor);
             A_PainShootSkull.accept(actor, actor.angle);
         });
@@ -1056,27 +1052,27 @@ public class ActionFunctions<T, V> implements actionf_t {
 
         actionf_p1.put(A_Scream, (mobj_t actor) -> {
             int sound;
-            
+
             switch (actor.info.deathsound) {
                 case sfx_None:
                     return;
-                    
+
                 case sfx_podth1:
                 case sfx_podth2:
                 case sfx_podth3:
                     sound = sfxenum_t.sfx_podth1.ordinal() + DOOM.random.P_Random() % 3;
                     break;
-                    
+
                 case sfx_bgdth1:
                 case sfx_bgdth2:
                     sound = sfxenum_t.sfx_bgdth1.ordinal() + DOOM.random.P_Random() % 2;
                     break;
-                    
+
                 default:
                     sound = actor.info.deathsound.ordinal();
                     break;
             }
-            
+
             // Check for bosses.
             if (actor.type == mobjtype_t.MT_SPIDER
                 || actor.type == mobjtype_t.MT_CYBORG) {
@@ -1097,18 +1093,18 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p2.put(A_WeaponReady, (player_t player, pspdef_t psp) -> {
             statenum_t newstate;
             int angle;
-            
+
             // get out of attack state
             if (player.mo.mobj_state == states[statenum_t.S_PLAY_ATK1.ordinal()]
                 || player.mo.mobj_state == states[statenum_t.S_PLAY_ATK2.ordinal()]) {
                 player.mo.SetMobjState(statenum_t.S_PLAY);
             }
-            
+
             if (player.readyweapon == weapontype_t.wp_chainsaw
                 && psp.state == states[statenum_t.S_SAW.ordinal()]) {
                 DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_sawidl);
             }
-            
+
             // check for change
             //  if player is dead, put the weapon away
             if (player.pendingweapon != weapontype_t.wp_nochange || !eval(player.health[0])) {
@@ -1118,7 +1114,7 @@ public class ActionFunctions<T, V> implements actionf_t {
                 player.SetPsprite(player_t.ps_weapon, newstate);
                 return;
             }
-            
+
             // check for fire
             //  the missile launcher and bfg do not auto fire
             if (eval(player.cmd.buttons & BT_ATTACK)) {
@@ -1126,13 +1122,13 @@ public class ActionFunctions<T, V> implements actionf_t {
                     || (player.readyweapon != weapontype_t.wp_missile
                     && player.readyweapon != weapontype_t.wp_bfg)) {
                     player.attackdown = true;
-                    EN.FireWeapon(player);
+                    DOOM.actions.EN.FireWeapon(player);
                     return;
                 }
             } else {
                 player.attackdown = false;
             }
-            
+
             // bob the weapon based on movement speed
             angle = (128 * DOOM.leveltime) & FINEMASK;
             psp.sx = FRACUNIT + FixedMul(player.bob, finecosine[angle]);
@@ -1145,23 +1141,23 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_Raise, (player_t player, pspdef_t psp) -> {
             statenum_t newstate;
-            
+
             //System.out.println("Trying to raise weapon");
             //System.out.println(player.readyweapon + " height: "+psp.sy);
             psp.sy -= RAISESPEED;
-            
+
             if (psp.sy > WEAPONTOP) {
                 //System.out.println("Not on top yet, exit and repeat.");
                 return;
             }
-            
+
             psp.sy = WEAPONTOP;
-            
+
             // The weapon has been raised all the way,
             //  so change to the ready state.
             newstate = weaponinfo[player.readyweapon.ordinal()].readystate;
             //System.out.println("Weapon raised, setting new state.");
-            
+
             player.SetPsprite(ps_weapon, newstate);
         });
 
@@ -1177,7 +1173,7 @@ public class ActionFunctions<T, V> implements actionf_t {
                 && player.pendingweapon == weapontype_t.wp_nochange
                 && eval(player.health[0])) {
                 player.refire++;
-                EN.FireWeapon(player);
+                DOOM.actions.EN.FireWeapon(player);
             } else {
                 player.refire = 0;
                 player.CheckAmmo();
@@ -1199,28 +1195,28 @@ public class ActionFunctions<T, V> implements actionf_t {
             long angle; //angle_t
             int damage;
             int slope;
-            
+
             damage = (DOOM.random.P_Random() % 10 + 1) << 1;
-            
+
             if (eval(player.powers[pw_strength])) {
                 damage *= 10;
             }
-            
+
             angle = player.mo.angle;
             //angle = (angle+(RND.P_Random()-RND.P_Random())<<18)/*&BITS32*/;
             // _D_: for some reason, punch didnt work until I change this
             // I think it's because of "+" VS "<<" prioritys...
             angle += (DOOM.random.P_Random() - DOOM.random.P_Random()) << 18;
-            slope = actions.AimLineAttack(player.mo, angle, MELEERANGE);
-            actions.LineAttack(player.mo, angle, MELEERANGE, slope, damage);
-            
+            slope = DOOM.actions.AimLineAttack(player.mo, angle, MELEERANGE);
+            DOOM.actions.LineAttack(player.mo, angle, MELEERANGE, slope, damage);
+
             // turn to face target
-            if (eval(actions.linetarget)) {
+            if (eval(DOOM.actions.linetarget)) {
                 DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_punch);
                 player.mo.angle = DOOM.sceneRenderer.PointToAngle2(player.mo.x,
                     player.mo.y,
-                    actions.linetarget.x,
-                    actions.linetarget.y) & BITS32;
+                    DOOM.actions.linetarget.x,
+                    DOOM.actions.linetarget.y) & BITS32;
             }
         });
 
@@ -1231,25 +1227,25 @@ public class ActionFunctions<T, V> implements actionf_t {
             long angle; // angle_t
             int damage;
             int slope;
-            
+
             damage = 2 * (DOOM.random.P_Random() % 10 + 1);
             angle = player.mo.angle;
             angle += (DOOM.random.P_Random() - DOOM.random.P_Random()) << 18;
             angle &= BITS32;
-            
+
             // use meleerange + 1 se the puff doesn't skip the flash
-            slope = actions.AimLineAttack(player.mo, angle, MELEERANGE + 1);
-            actions.LineAttack(player.mo, angle, MELEERANGE + 1, slope, damage);
-            
-            if (!eval(actions.linetarget)) {
+            slope = DOOM.actions.AimLineAttack(player.mo, angle, MELEERANGE + 1);
+            DOOM.actions.LineAttack(player.mo, angle, MELEERANGE + 1, slope, damage);
+
+            if (!eval(DOOM.actions.linetarget)) {
                 DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_sawful);
                 return;
             }
             DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_sawhit);
-            
+
             // turn to face target
             angle = DOOM.sceneRenderer.PointToAngle2(player.mo.x, player.mo.y,
-                actions.linetarget.x, actions.linetarget.y) & BITS32;
+                DOOM.actions.linetarget.x, DOOM.actions.linetarget.y) & BITS32;
             /* FIXME: this comparison is going to fail.... or not?
             If e.g. angle = 359 degrees (which will be mapped to a small negative number),
             and player.mo.angle = 160 degrees (a large, positive value), the result will be a
@@ -1258,8 +1254,8 @@ public class ActionFunctions<T, V> implements actionf_t {
             It seems that *differences* between angles will always compare correctly, but
             not direct inequalities.
             
-            */
-            
+             */
+
             // Yet another screwy place where unsigned BAM angles are used as SIGNED comparisons.
             long dangle = (angle - player.mo.angle);
             dangle &= BITS32;
@@ -1285,7 +1281,7 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_FireMissile, (player_t player, pspdef_t psp) -> {
             player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
-            actions.SpawnPlayerMissile(player.mo, mobjtype_t.MT_ROCKET);
+            DOOM.actions.SpawnPlayerMissile(player.mo, mobjtype_t.MT_ROCKET);
         });
 
         //
@@ -1293,7 +1289,7 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_FireBFG, (player_t player, pspdef_t psp) -> {
             player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= BFGCELLS;
-            actions.SpawnPlayerMissile(player.mo, mobjtype_t.MT_BFG);
+            DOOM.actions.SpawnPlayerMissile(player.mo, mobjtype_t.MT_BFG);
         });
 
         //
@@ -1304,25 +1300,25 @@ public class ActionFunctions<T, V> implements actionf_t {
             int readyweap = player.readyweapon.ordinal();
             int flashstate = weaponinfo[readyweap].flashstate.ordinal();
             int current_state = psp.state.id;
-            
+
             DOOM.doomSound.StartSound(player.mo, sfxenum_t.sfx_pistol);
             if (!eval(player.ammo[weaponinfo[readyweap].ammo.ordinal()])) {
                 return;
             }
-            
+
             player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
             player.ammo[weaponinfo[readyweap].ammo.ordinal()]--;
-            
+
             // MAES: Code to alternate between two different gun flashes
             // needed a clear rewrite, as it was way too messy.
             // We know that the flash states are a certain amount away from
             // the firing states. This amount is two frames.
             player.SetPsprite(ps_flash, statenum_t.values()[flashstate + current_state - statenum_t.S_CHAIN1.ordinal()]
             );
-            
-            actions.P_BulletSlope(player.mo);
-            
-            actions.P_GunShot(player.mo, !eval(player.refire));
+
+            DOOM.actions.P_BulletSlope(player.mo);
+
+            DOOM.actions.P_GunShot(player.mo, !eval(player.refire));
         });
 
         //
@@ -1330,12 +1326,12 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_FirePlasma, (player_t player, pspdef_t psp) -> {
             player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
-            
+
             player.SetPsprite(
                 ps_flash,
                 weaponinfo[player.readyweapon.ordinal()].flashstate);
-            
-            actions.SpawnPlayerMissile(player.mo, mobjtype_t.MT_PLASMA);
+
+            DOOM.actions.SpawnPlayerMissile(player.mo, mobjtype_t.MT_PLASMA);
         });
 
         actionf_p1.put(A_XScream, (mobj_t actor) -> {
@@ -1352,7 +1348,7 @@ public class ActionFunctions<T, V> implements actionf_t {
         // A_Explode
         //
         actionf_p1.put(A_Explode, (mobj_t thingy) -> {
-            actions.RadiusAttack(thingy, thingy.target, 128);
+            DOOM.actions.RadiusAttack(thingy, thingy.target, 128);
         });
 
         /**
@@ -1369,12 +1365,12 @@ public class ActionFunctions<T, V> implements actionf_t {
             mobj_t mo2;
             line_t junk = new line_t();
             int i;
-            
+
             if (DOOM.isCommercial()) {
                 if (DOOM.gamemap != 7) {
                     return;
                 }
-                
+
                 if ((mo.type != mobjtype_t.MT_FATSO)
                     && (mo.type != mobjtype_t.MT_BABY)) {
                     return;
@@ -1385,33 +1381,33 @@ public class ActionFunctions<T, V> implements actionf_t {
                         if (DOOM.gamemap != 8) {
                             return;
                         }
-                        
+
                         if (mo.type != mobjtype_t.MT_BRUISER) {
                             return;
                         }
                         break;
-                        
+
                     case 2:
                         if (DOOM.gamemap != 8) {
                             return;
                         }
-                        
+
                         if (mo.type != mobjtype_t.MT_CYBORG) {
                             return;
                         }
                         break;
-                        
+
                     case 3:
                         if (DOOM.gamemap != 8) {
                             return;
                         }
-                        
+
                         if (mo.type != mobjtype_t.MT_SPIDER) {
                             return;
                         }
-                        
+
                         break;
-                        
+
                     case 4:
                         switch (DOOM.gamemap) {
                             case 6:
@@ -1419,44 +1415,44 @@ public class ActionFunctions<T, V> implements actionf_t {
                                     return;
                                 }
                                 break;
-                                
+
                             case 8:
                                 if (mo.type != mobjtype_t.MT_SPIDER) {
                                     return;
                                 }
                                 break;
-                                
+
                             default:
                                 return;
                         }
                         break;
-                        
+
                     default:
                         if (DOOM.gamemap != 8) {
                             return;
                         }
                         break;
                 }
-                
+
             }
-            
+
             // make sure there is a player alive for victory
             for (i = 0; i < MAXPLAYERS; i++) {
                 if (DOOM.playeringame[i] && DOOM.players[i].health[0] > 0) {
                     break;
                 }
             }
-            
+
             if (i == MAXPLAYERS) {
                 return; // no one left alive, so do not end game
             }
             // scan the remaining thinkers to see
             // if all bosses are dead
-            for (th = actions.thinkercap.next; th != actions.thinkercap; th = th.next) {
-                if (th.thinkerFunction != think_t.P_MobjThinker) {
+            for (th = DOOM.actions.thinkercap.next; th != DOOM.actions.thinkercap; th = th.next) {
+                if (th.thinkerFunction != ActionFunction.P_MobjThinker) {
                     continue;
                 }
-                
+
                 mo2 = (mobj_t) th;
                 if (mo2 != mo
                     && mo2.type == mo.type
@@ -1465,19 +1461,19 @@ public class ActionFunctions<T, V> implements actionf_t {
                     return;
                 }
             }
-            
+
             // victory!
             if (DOOM.isCommercial()) {
                 if (DOOM.gamemap == 7) {
                     if (mo.type == mobjtype_t.MT_FATSO) {
                         junk.tag = 666;
-                        actions.DoFloor(junk, floor_e.lowerFloorToLowest);
+                        DOOM.actions.DoFloor(junk, floor_e.lowerFloorToLowest);
                         return;
                     }
-                    
+
                     if (mo.type == mobjtype_t.MT_BABY) {
                         junk.tag = 667;
-                        actions.DoFloor(junk, floor_e.raiseToTexture);
+                        DOOM.actions.DoFloor(junk, floor_e.raiseToTexture);
                         return;
                     }
                 }
@@ -1485,25 +1481,25 @@ public class ActionFunctions<T, V> implements actionf_t {
                 switch (DOOM.gameepisode) {
                     case 1:
                         junk.tag = 666;
-                        actions.DoFloor(junk, floor_e.lowerFloorToLowest);
+                        DOOM.actions.DoFloor(junk, floor_e.lowerFloorToLowest);
                         return;
-                        
+
                     case 4:
                         switch (DOOM.gamemap) {
                             case 6:
                                 junk.tag = 666;
-                                actions.DoDoor(junk, vldoor_e.blazeOpen);
+                                DOOM.actions.DoDoor(junk, vldoor_e.blazeOpen);
                                 return;
-                                
+
                             case 8:
                                 junk.tag = 666;
-                                actions.DoFloor(junk, floor_e.lowerFloorToLowest);
+                                DOOM.actions.DoFloor(junk, floor_e.lowerFloorToLowest);
                                 return;
                         }
                 }
             }
-            
-            actions.DOOM.ExitLevel();
+
+            DOOM.ExitLevel();
         });
 
         actionf_p1.put(A_Hoof, (mobj_t mo) -> {
@@ -1515,16 +1511,16 @@ public class ActionFunctions<T, V> implements actionf_t {
             thinker_t th;
             mobj_t mo2;
             line_t junk = new line_t(); // MAES: fixed null 21/5/2011
-            
+
             actionf_p1.get(A_Fall).accept(mo);
-            
+
             // scan the remaining thinkers
             // to see if all Keens are dead
-            for (th = actions.thinkercap.next; th != actions.thinkercap; th = th.next) {
-                if (th.thinkerFunction != think_t.P_MobjThinker) {
+            for (th = DOOM.actions.thinkercap.next; th != DOOM.actions.thinkercap; th = th.next) {
+                if (th.thinkerFunction != ActionFunction.P_MobjThinker) {
                     continue;
                 }
-                
+
                 mo2 = (mobj_t) th;
                 if (mo2 != mo
                     && mo2.type == mo.type
@@ -1533,9 +1529,9 @@ public class ActionFunctions<T, V> implements actionf_t {
                     return;
                 }
             }
-            
+
             junk.tag = 666;
-            actions.DoDoor(junk, vldoor_e.open);
+            DOOM.actions.DoDoor(junk, vldoor_e.open);
         });
 
         actionf_p1.put(A_Metal, (mobj_t mo) -> {
@@ -1564,30 +1560,30 @@ public class ActionFunctions<T, V> implements actionf_t {
             int j;
             int damage;
             long an; // angle_t
-            
+
             // offset angles from its attack angle
             for (i = 0; i < 40; i++) {
                 an = (mo.angle - ANG90 / 2 + ANG90 / 40 * i) & BITS32;
-                
+
                 // mo.target is the originator (player)
                 //  of the missile
-                actions.AimLineAttack(mo.target, an, 16 * 64 * FRACUNIT);
-                
-                if (!eval(actions.linetarget)) {
+                DOOM.actions.AimLineAttack(mo.target, an, 16 * 64 * FRACUNIT);
+
+                if (!eval(DOOM.actions.linetarget)) {
                     continue;
                 }
-                
-                actions.SpawnMobj(actions.linetarget.x,
-                    actions.linetarget.y,
-                    actions.linetarget.z + (actions.linetarget.height >> 2),
+
+                DOOM.actions.SpawnMobj(DOOM.actions.linetarget.x,
+                    DOOM.actions.linetarget.y,
+                    DOOM.actions.linetarget.z + (DOOM.actions.linetarget.height >> 2),
                     mobjtype_t.MT_EXTRABFG);
-                
+
                 damage = 0;
                 for (j = 0; j < 15; j++) {
                     damage += (DOOM.random.P_Random() & 7) + 1;
                 }
-                
-                actions.DamageMobj(actions.linetarget, mo.target, mo.target, damage);
+
+                DOOM.actions.DamageMobj(DOOM.actions.linetarget, mo.target, mo.target, damage);
             }
         });
 
@@ -1606,48 +1602,48 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_Look, (mobj_t actor) -> {
             mobj_t targ;
             boolean seeyou = false; // to avoid the fugly goto
-            
+
             actor.threshold = 0;   // any shot will wake up
             targ = actor.subsector.sector.soundtarget;
-            
+
             if (targ != null
                 && eval(targ.flags & MF_SHOOTABLE)) {
                 actor.target = targ;
-                
+
                 if (eval(actor.flags & MF_AMBUSH)) {
-                    seeyou = (EN.CheckSight(actor, actor.target));
+                    seeyou = (DOOM.actions.EN.CheckSight(actor, actor.target));
                 } else {
                     seeyou = true;
                 }
             }
             if (!seeyou) {
-                if (!EN.LookForPlayers(actor, false)) {
+                if (!DOOM.actions.EN.LookForPlayers(actor, false)) {
                     return;
                 }
             }
-            
+
             // go into chase state
             seeyou:
             if (actor.info.seesound != null && actor.info.seesound != sfxenum_t.sfx_None) {
                 int sound;
-                
+
                 switch (actor.info.seesound) {
                     case sfx_posit1:
                     case sfx_posit2:
                     case sfx_posit3:
                         sound = sfxenum_t.sfx_posit1.ordinal() + DOOM.random.P_Random() % 3;
                         break;
-                        
+
                     case sfx_bgsit1:
                     case sfx_bgsit2:
                         sound = sfxenum_t.sfx_bgsit1.ordinal() + DOOM.random.P_Random() % 2;
                         break;
-                        
+
                     default:
                         sound = actor.info.seesound.ordinal();
                         break;
                 }
-                
+
                 if (actor.type == mobjtype_t.MT_SPIDER
                     || actor.type == mobjtype_t.MT_CYBORG) {
                     // full volume
@@ -1656,7 +1652,7 @@ public class ActionFunctions<T, V> implements actionf_t {
                     DOOM.doomSound.StartSound(actor, sound);
                 }
             }
-            
+
             actor.SetMobjState(actor.info.seestate);
         });
 
@@ -1687,20 +1683,20 @@ public class ActionFunctions<T, V> implements actionf_t {
         //
         actionf_p2.put(A_Lower, (player_t player, pspdef_t psp) -> {
             psp.sy += LOWERSPEED;
-            
+
             // Is already down.
             if (psp.sy < WEAPONBOTTOM) {
                 return;
             }
-            
+
             // Player is dead.
             if (player.playerstate == PST_DEAD) {
                 psp.sy = WEAPONBOTTOM;
-                
+
                 // don't bring weapon back up
                 return;
             }
-            
+
             // The old weapon has been lowered off the screen,
             // so change the weapon and start raising it
             if (!eval(player.health[0])) {
@@ -1708,9 +1704,9 @@ public class ActionFunctions<T, V> implements actionf_t {
                 player.SetPsprite(ps_weapon, statenum_t.S_NULL);
                 return;
             }
-            
+
             player.readyweapon = player.pendingweapon;
-            
+
             player.BringUpWeapon();
         });
 
@@ -1719,32 +1715,32 @@ public class ActionFunctions<T, V> implements actionf_t {
             /*
             if (player.ammo[am_shell]<2)
             P_SetPsprite (player, ps_weapon, S_DSNR1);
-            */
+             */
         });
 
         actionf_p1.put(A_BrainAwake, (mobj_t mo) -> {
             thinker_t thinker;
             mobj_t m;
-            
+
             // find all the target spots
             numbraintargets = 0;
             braintargeton = 0;
-            
-            //thinker = actions.thinkercap.next;
-            for (thinker = actions.thinkercap.next;
-                thinker != actions.thinkercap;
+
+            //thinker = DOOM.actions.thinkercap.next;
+            for (thinker = DOOM.actions.thinkercap.next;
+                thinker != DOOM.actions.thinkercap;
                 thinker = thinker.next) {
-                if (thinker.thinkerFunction != think_t.P_MobjThinker) {
+                if (thinker.thinkerFunction != ActionFunction.P_MobjThinker) {
                     continue;   // not a mobj
                 }
                 m = (mobj_t) thinker;
-                
+
                 if (m.type == mobjtype_t.MT_BOSSTARGET) {
                     braintargets[numbraintargets] = m;
                     numbraintargets++;
                 }
             }
-            
+
             DOOM.doomSound.StartSound(null, sfxenum_t.sfx_bossit);
         });
 
@@ -1757,21 +1753,21 @@ public class ActionFunctions<T, V> implements actionf_t {
             int y;
             int z;
             mobj_t th;
-            
+
             for (x = mo.x - 196 * FRACUNIT; x < mo.x + 320 * FRACUNIT; x += FRACUNIT * 8) {
                 y = mo.y - 320 * FRACUNIT;
                 z = 128 + DOOM.random.P_Random() * 2 * FRACUNIT;
-                th = actions.SpawnMobj(x, y, z, mobjtype_t.MT_ROCKET);
+                th = DOOM.actions.SpawnMobj(x, y, z, mobjtype_t.MT_ROCKET);
                 th.momz = DOOM.random.P_Random() * 512;
-                
+
                 th.SetMobjState(statenum_t.S_BRAINEXPLODE1);
-                
+
                 th.mobj_tics -= DOOM.random.P_Random() & 7;
                 if (th.mobj_tics < 1) {
                     th.mobj_tics = 1;
                 }
             }
-            
+
             DOOM.doomSound.StartSound(null, sfxenum_t.sfx_bosdth);
         });
 
@@ -1780,15 +1776,15 @@ public class ActionFunctions<T, V> implements actionf_t {
             int y;
             int z;
             mobj_t th;
-            
+
             x = mo.x + (DOOM.random.P_Random() - DOOM.random.P_Random()) * 2048;
             y = mo.y;
             z = 128 + DOOM.random.P_Random() * 2 * FRACUNIT;
-            th = actions.SpawnMobj(x, y, z, mobjtype_t.MT_ROCKET);
+            th = DOOM.actions.SpawnMobj(x, y, z, mobjtype_t.MT_ROCKET);
             th.momz = DOOM.random.P_Random() * 512;
-            
+
             th.SetMobjState(statenum_t.S_BRAINEXPLODE1);
-            
+
             th.mobj_tics -= DOOM.random.P_Random() & 7;
             if (th.mobj_tics < 1) {
                 th.mobj_tics = 1;
@@ -1802,27 +1798,27 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_BrainSpit, (mobj_t mo) -> {
             mobj_t targ;
             mobj_t newmobj;
-            
+
             easy ^= 1;
             if (DOOM.gameskill.ordinal() <= skill_t.sk_easy.ordinal() && (easy == 0)) {
                 return;
             }
-            
+
             // shoot a cube at current target
             targ = braintargets[braintargeton];
-            
+
             // Load-time fix: awake on zero numbrain targets, if A_BrainSpit is called.
             if (numbraintargets == 0) {
                 actionf_p1.get(A_BrainAwake).accept(mo);
                 return;
             }
             braintargeton = (braintargeton + 1) % numbraintargets;
-            
+
             // spawn brain missile
-            newmobj = actions.SpawnMissile(mo, targ, mobjtype_t.MT_SPAWNSHOT);
+            newmobj = DOOM.actions.SpawnMissile(mo, targ, mobjtype_t.MT_SPAWNSHOT);
             newmobj.target = targ;
             newmobj.reactiontime = ((targ.y - mo.y) / newmobj.momy) / newmobj.mobj_state.tics;
-            
+
             DOOM.doomSound.StartSound(null, sfxenum_t.sfx_bospit);
         });
 
@@ -1832,19 +1828,19 @@ public class ActionFunctions<T, V> implements actionf_t {
             mobj_t targ;
             int r;
             mobjtype_t type;
-            
+
             if (--mo.reactiontime != 0) {
                 return; // still flying
             }
             targ = mo.target;
-            
+
             // First spawn teleport fog.
-            fog = actions.SpawnMobj(targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
+            fog = DOOM.actions.SpawnMobj(targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
             DOOM.doomSound.StartSound(fog, sfxenum_t.sfx_telept);
-            
+
             // Randomly select monster to spawn.
             r = DOOM.random.P_Random();
-            
+
             // Probability distribution (kind of :),
             // decreasing likelihood.
             if (r < 50) {
@@ -1870,17 +1866,17 @@ public class ActionFunctions<T, V> implements actionf_t {
             } else {
                 type = mobjtype_t.MT_BRUISER;
             }
-            
-            newmobj = actions.SpawnMobj(targ.x, targ.y, targ.z, type);
-            if (EN.LookForPlayers(newmobj, true)) {
+
+            newmobj = DOOM.actions.SpawnMobj(targ.x, targ.y, targ.z, type);
+            if (DOOM.actions.EN.LookForPlayers(newmobj, true)) {
                 newmobj.SetMobjState(newmobj.info.seestate);
             }
-            
+
             // telefrag anything in this spot
-            actions.TeleportMove(newmobj, newmobj.x, newmobj.y);
-            
+            DOOM.actions.TeleportMove(newmobj, newmobj.x, newmobj.y);
+
             // remove self (i.e., cube).
-            actions.RemoveMobj(mo);
+            DOOM.actions.RemoveMobj(mo);
         });
 
         // travelling cube sound
@@ -1892,30 +1888,30 @@ public class ActionFunctions<T, V> implements actionf_t {
         actionf_p1.put(A_PlayerScream, (mobj_t actor) -> {
             // Default death sound.
             sfxenum_t sound = sfxenum_t.sfx_pldeth;
-            
+
             if (DOOM.isCommercial()
                 && (actor.health < -50)) {
                 // IF THE PLAYER DIES
                 // LESS THAN -50% WITHOUT GIBBING
                 sound = sfxenum_t.sfx_pdiehi;
             }
-            
+
             DOOM.doomSound.StartSound(actor, sound);
         });
     }
 
     @Override
-    public void acp1(think_t think_t, mobj_t mobj) {
+    public void callMobjFun(ActionFunction think_t, mobj_t mobj) {
         this.actionf_p1.get(think_t).accept(mobj);
     }
 
     @Override
-    public void acp2(think_t think_t, player_t player, pspdef_t pspdef) {
+    public void callPlayerSpriteFun(ActionFunction think_t, player_t player, pspdef_t pspdef) {
         this.actionf_p2.get(think_t).accept(player, pspdef);
     }
 
     @Override
-    public void acv(think_t think_t, thinker_t thinker) {
+    public void callThinkerFun(ActionFunction think_t, thinker_t thinker) {
         this.actionf_v.get(think_t).acceptThinker(thinker);
     }
 

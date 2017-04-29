@@ -809,7 +809,7 @@ public LevelLoader(DoomMain<?,?> DM) {
       DOOM.actions.iquehead = DOOM.actions.iquetail = 0;        
       
       // set up world state
-      DOOM.actions.SpawnSpecials ();
+      DOOM.actions.SpawnSpecials();
       
       // build subsector connect matrix
       //  UNUSED P_ConnectSubsectors ();

@@ -1,7 +1,7 @@
 package m;
 
 import data.mobjtype_t;
-import p.ActionFunction.think_t;
+import p.ActionFunction;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class DoomRandom implements IRandom{
     }
 
     @Override
-    public int P_Random(think_t caller, int sequence) {
+    public int P_Random(ActionFunction caller, int sequence) {
         int value = P_Random();
         /*
 	SLY.sync("PR #%d %s_%d [%d]=%d\n", caller.ordinal(),caller,sequence,
@@ -145,7 +145,7 @@ class DoomRandom implements IRandom{
     }
 
     @Override
-    public int P_Random(think_t caller, mobjtype_t type, int sequence) {
+    public int P_Random(ActionFunction caller, mobjtype_t type, int sequence) {
         int value = P_Random();
         /*
     SLY.sync("PR #%d %s_%d %s [%d]=%d\n", caller.ordinal(),caller,sequence,

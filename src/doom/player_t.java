@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import static m.fixed_t.*;
+import static p.ActionFunction.ParamType.PlayerSprite;
 import p.mobj_t;
 import static p.mobj_t.*;
 import p.pspdef_t;
@@ -29,7 +30,6 @@ import w.DoomBuffer;
 import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
-import static p.ActionFunction.Param.PlayerSprite;
 
 /**
  * Extended player object info: player_t The player data structure depends on a
@@ -876,20 +876,19 @@ SetPsprite
     
     state = states[newstate.ordinal()];
     psp.state = state;
-    psp.tics = (int) state.tics;    // could be 0
+    psp.tics = state.tics;    // could be 0
 
     if (state.misc1!=0)
     {
         // coordinate set
-        psp.sx = (int) (state.misc1 << FRACBITS);
-        psp.sy = (int) (state.misc2 << FRACBITS);
+        psp.sx = state.misc1 << FRACBITS;
+        psp.sy = state.misc2 << FRACBITS;
     }
     
     // Call action routine.
     // Modified handling.
-    if (state.action.ac(PlayerSprite))
-    {
-        state.action.acp2(DOOM.actions.FUNS, this, psp);
+    if (state.action.isParamType(PlayerSprite)) {
+        state.action.callPlayerSpriteFun(DOOM.actionFunctions, this, psp);
         if (psp.state==null)
         break;
     }

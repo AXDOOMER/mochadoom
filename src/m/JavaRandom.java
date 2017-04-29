@@ -2,7 +2,7 @@ package m;
 
 import data.mobjtype_t;
 import java.util.Random;
-import p.ActionFunction.think_t;
+import p.ActionFunction;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -91,13 +91,13 @@ class JavaRandom implements IRandom {
     }
 
     @Override
-    public int P_Random(think_t caller, int sequence) {
+    public int P_Random(ActionFunction caller, int sequence) {
         // DUMMY
         return P_Random();
     }
 
     @Override
-    public int P_Random(think_t caller, mobjtype_t type, int sequence) {
+    public int P_Random(ActionFunction caller, mobjtype_t type, int sequence) {
         // DUMMY
         return P_Random();
     }

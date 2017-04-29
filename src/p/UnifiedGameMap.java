@@ -15,7 +15,6 @@ import data.Limits;
 import static data.Limits.BUTTONTIME;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
-import static data.Limits.MAXINT;
 import static data.Limits.MAXINTERCEPTS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.MAXSWITCHES;
@@ -82,7 +81,6 @@ import doom.th_class;
 import doom.thinker_t;
 import doom.weapontype_t;
 import java.util.Arrays;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import m.Settings;
@@ -91,12 +89,11 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.MAPFRACUNIT;
 import mochadoom.Engine;
 import mochadoom.Loggers;
-import static p.ActionFunction.think_t.NOP;
-import static p.ActionFunction.think_t.P_MobjThinker;
-import static p.ActionFunction.think_t.T_PlatRaise;
+import static p.ActionFunction.NOP;
+import static p.ActionFunction.P_MobjThinker;
+import static p.ActionFunction.T_PlatRaise;
 import static p.DoorDefines.SLOWDARK;
 import static p.MapUtils.AproxDistance;
-import static p.MapUtils.InterceptVector;
 import static p.MobjFlags.*;
 import rr.ISpriteManager;
 import rr.line_t;
@@ -115,6 +112,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
     private static final Logger LOGGER = Loggers.getLogger(UnifiedGameMap.class.getName());
     
     public UnifiedGameMap(DoomMain<T, V> DOOM){
+        this.SL = new SlideDoor<>(DOOM);
         this.SW = new Switches();
         this.LEV = new Lights();
         this.SPECS = new Specials();
@@ -122,8 +120,9 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         this.See = new Sight(); // Didn't initialize that.
         this.EN = new Enemies();
         this.thinkercap = new thinker_t();
-        for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
+        for (int i=0; i<th_class.NUMTHCLASS; i++) { // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i]=new thinker_t();
+        }
         
         this.RemoveThinkerDelayed=new P_RemoveThinkerDelayed();
         
@@ -162,16 +161,13 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
 
     Enemies EN;
     
-    protected SlideDoor SL;
+    SlideDoor SL;
 
     // ////////////////////////////////////////////
 
     public int topslope;
 
     public int bottomslope; // slopes to top and bottom of target
-
-    int attackrange;
-    
     
 
     //
@@ -335,51 +331,6 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
 
     int ptflags;
     
-    //
-    //P_TraverseIntercepts
-    //Returns true if the traverser function returns true
-    //for all lines.
-    //
-    boolean TraverseIntercepts(Predicate<intercept_t> func, int maxfrac) {
-        int count;
-        @fixed_t int dist;
-        intercept_t in = null;  // shut up compiler warning
-
-        count = intercept_p;
-
-        while (count-- > 0) {
-            dist = MAXINT;
-            for (int scan = 0; scan < intercept_p; scan++) {
-                if (intercepts[scan].frac < dist) {
-                    dist = intercepts[scan].frac;
-                    in = intercepts[scan];
-                }
-            }
-
-            if (dist > maxfrac) {
-                return true;    // checked everything in range      
-            }
-            /*  // UNUSED
-            {
-            // don't check these yet, there may be others inserted
-            in = scan = intercepts;
-            for ( scan = intercepts ; scan<intercept_p ; scan++)
-                if (scan.frac > maxfrac)
-                *in++ = *scan;
-            intercept_p = in;
-            return false;
-            }
-             */
-
-            if (!func.test(in)) {
-                return false;   // don't bother going farther
-            }
-            in.frac = MAXINT;
-        }
-
-        return true;        // everything was traversed
-    }
-
     protected void UpdateThinker(thinker_t thinker) {
         thinker_t th;
         // find the class the thinker belongs to
@@ -1568,112 +1519,12 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
 
     divline_t addLineDivLine = new divline_t();
 
-    Predicate<line_t> AddLineIntercepts = (line_t ld) -> { PIT_AddLineIntercepts: {
-        boolean s1;
-        boolean s2;
-        @fixed_t int frac;
-        
-        // avoid precision problems with two routines
-        if (trace.dx > FRACUNIT * 16 || trace.dy > FRACUNIT * 16
-            || trace.dx < -FRACUNIT * 16 || trace.dy < -FRACUNIT * 16) {
-            s1 = trace.PointOnDivlineSide(ld.v1x, ld.v1y);
-            s2 = trace.PointOnDivlineSide(ld.v2x, ld.v2y);
-            //s1 = trace.DivlineSide(ld.v1x, ld.v1.y);
-            //s2 = trace.DivlineSide(ld.v2x, ld.v2y);
-        } else {
-            s1 = ld.PointOnLineSide(trace.x, trace.y);
-            s2 = ld.PointOnLineSide(trace.x + trace.dx, trace.y + trace.dy);
-            //s1 = new divline_t(ld).DivlineSide(trace.x, trace.y);
-            //s2 = new divline_t(ld).DivlineSide(trace.x + trace.dx, trace.y + trace.dy);
-        }
-
-        if (s1 == s2) {
-            return true; // line isn't crossed
-        }
-        // hit the line
-        addLineDivLine.MakeDivline(ld);
-        frac = InterceptVector(trace, addLineDivLine);
-
-        if (frac < 0) {
-            return true; // behind source
-        }
-        // try to early out the check
-        if (earlyout && frac < FRACUNIT && ld.backsector == null) {
-            return false; // stop checking
-        }
-
-        // "create" a new intercept in the static intercept pool.
-        if (intercept_p >= intercepts.length) {
-            ResizeIntercepts();
-        }
-
-        intercepts[intercept_p].frac = frac;
-        intercepts[intercept_p].isaline = true;
-        intercepts[intercept_p].line = ld;
-        intercept_p++;
-
-        return true; // continue
-    }};
-
 
     //
     // PIT_AddThingIntercepts
     //
     // maybe make this a shared instance variable?
-    private divline_t thingInterceptDivLine = new divline_t();
-    Predicate<mobj_t> AddThingIntercepts = (mobj_t thing) -> {
-        @fixed_t int x1, y1, x2, y2;
-        boolean s1, s2;
-        boolean tracepositive;
-        @fixed_t int frac;
-
-        tracepositive = (trace.dx ^ trace.dy) > 0;
-
-        // check a corner to corner crossection for hit
-        if (tracepositive) {
-            x1 = thing.x - thing.radius;
-            y1 = thing.y + thing.radius;
-
-            x2 = thing.x + thing.radius;
-            y2 = thing.y - thing.radius;
-        } else {
-            x1 = thing.x - thing.radius;
-            y1 = thing.y - thing.radius;
-
-            x2 = thing.x + thing.radius;
-            y2 = thing.y + thing.radius;
-        }
-
-        s1 = trace.PointOnDivlineSide(x1, y1);
-        s2 = trace.PointOnDivlineSide(x2, y2);
-
-        if (s1 == s2) {
-            return true; // line isn't crossed
-        }
-        
-        thingInterceptDivLine.x = x1;
-        thingInterceptDivLine.y = y1;
-        thingInterceptDivLine.dx = x2 - x1;
-        thingInterceptDivLine.dy = y2 - y1;
-
-        frac = InterceptVector(trace, thingInterceptDivLine);
-
-        if (frac < 0) {
-            return true; // behind source
-        }
-        
-        // "create" a new intercept in the static intercept pool.
-        if (intercept_p >= intercepts.length) {
-            ResizeIntercepts();
-        }
-        
-        intercepts[intercept_p].frac = frac;
-        intercepts[intercept_p].isaline = false;
-        intercepts[intercept_p].thing = thing;
-        intercept_p++;
-
-        return true; // keep going
-    };
+    divline_t thingInterceptDivLine = new divline_t();
  
     /////////// BEGIN MAP OBJECT CODE, USE AS BASIC
 

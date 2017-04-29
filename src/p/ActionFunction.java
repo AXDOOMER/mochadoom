@@ -18,9 +18,15 @@
 
 package p;
 
+import doom.SourceCode.D_Think;
+import doom.SourceCode.D_Think.actionf_t;
+import doom.SourceCode.actionf_p1;
+import doom.SourceCode.actionf_p2;
+import doom.SourceCode.actionf_v;
+import doom.SourceCode.think_t;
 import doom.player_t;
 import doom.thinker_t;
-import static p.ActionFunction.Param.*;
+import static p.ActionFunction.ParamType.*;
 
 /**
  * In vanilla doom there is union called actionf_t that can hold
@@ -78,126 +84,130 @@ import static p.ActionFunction.Param.*;
  * Or otherwise be sector specials, flickering lights etc.
  * Those are atypical and need special handling.
  */
-public interface ActionFunction {
-    enum Param {
-        Mobj,
-        Thinker,
-        PlayerSprite
-    }
-    
-    enum think_t {
-        NOP(Thinker),
-        A_Light0(PlayerSprite),
-        A_WeaponReady(PlayerSprite),
-        A_Lower(PlayerSprite),
-        A_Raise(PlayerSprite),
-        A_Punch(PlayerSprite),
-        A_ReFire(PlayerSprite),
-        A_FirePistol(PlayerSprite),
-        A_Light1(PlayerSprite),
-        A_FireShotgun(PlayerSprite),
-        A_Light2(PlayerSprite),
-        A_FireShotgun2(PlayerSprite),
-        A_CheckReload(PlayerSprite),
-        A_OpenShotgun2(PlayerSprite),
-        A_LoadShotgun2(PlayerSprite),
-        A_CloseShotgun2(PlayerSprite),
-        A_FireCGun(PlayerSprite),
-        A_GunFlash(PlayerSprite),
-        A_FireMissile(PlayerSprite),
-        A_Saw(PlayerSprite),
-        A_FirePlasma(PlayerSprite),
-        A_BFGsound(PlayerSprite),
-        A_FireBFG(PlayerSprite),
-        A_BFGSpray(Mobj),
-        A_Explode(Mobj),
-        A_Pain(Mobj),
-        A_PlayerScream(Mobj),
-        A_Fall(Mobj),
-        A_XScream(Mobj),
-        A_Look(Mobj),
-        A_Chase(Mobj),
-        A_FaceTarget(Mobj),
-        A_PosAttack(Mobj),
-        A_Scream(Mobj),
-        A_SPosAttack(Mobj),
-        A_VileChase(Mobj),
-        A_VileStart(Mobj),
-        A_VileTarget(Mobj),
-        A_VileAttack(Mobj),
-        A_StartFire(Mobj),
-        A_Fire(Mobj),
-        A_FireCrackle(Mobj),
-        A_Tracer(Mobj),
-        A_SkelWhoosh(Mobj),
-        A_SkelFist(Mobj),
-        A_SkelMissile(Mobj),
-        A_FatRaise(Mobj),
-        A_FatAttack1(Mobj),
-        A_FatAttack2(Mobj),
-        A_FatAttack3(Mobj),
-        A_BossDeath(Mobj),
-        A_CPosAttack(Mobj),
-        A_CPosRefire(Mobj),
-        A_TroopAttack(Mobj),
-        A_SargAttack(Mobj),
-        A_HeadAttack(Mobj),
-        A_BruisAttack(Mobj),
-        A_SkullAttack(Mobj),
-        A_Metal(Mobj),
-        A_SpidRefire(Mobj),
-        A_BabyMetal(Mobj),
-        A_BspiAttack(Mobj),
-        A_Hoof(Mobj),
-        A_CyberAttack(Mobj),
-        A_PainAttack(Mobj),
-        A_PainDie(Mobj),
-        A_KeenDie(Mobj),
-        A_BrainPain(Mobj),
-        A_BrainScream(Mobj),
-        A_BrainDie(Mobj),
-        A_BrainAwake(Mobj),
-        A_BrainSpit(Mobj),
-        A_SpawnSound(Mobj),
-        A_SpawnFly(Mobj),
-        A_BrainExplode(Mobj),
-        P_MobjThinker(Mobj),
-        T_FireFlicker(Thinker),
-        T_LightFlash(Thinker),
-        T_StrobeFlash(Thinker),
-        T_Glow(Thinker),
-        T_MoveCeiling(Thinker),
-        T_MoveFloor(Thinker),
-        T_VerticalDoor(Thinker),
-        T_PlatRaise(Thinker),
-        T_SlidingDoor(Thinker);
-        
-        private final Param actionf_t;
+public enum ActionFunction {
+    NOP(Thinker),
+    A_Light0(PlayerSprite),
+    A_WeaponReady(PlayerSprite),
+    A_Lower(PlayerSprite),
+    A_Raise(PlayerSprite),
+    A_Punch(PlayerSprite),
+    A_ReFire(PlayerSprite),
+    A_FirePistol(PlayerSprite),
+    A_Light1(PlayerSprite),
+    A_FireShotgun(PlayerSprite),
+    A_Light2(PlayerSprite),
+    A_FireShotgun2(PlayerSprite),
+    A_CheckReload(PlayerSprite),
+    A_OpenShotgun2(PlayerSprite),
+    A_LoadShotgun2(PlayerSprite),
+    A_CloseShotgun2(PlayerSprite),
+    A_FireCGun(PlayerSprite),
+    A_GunFlash(PlayerSprite),
+    A_FireMissile(PlayerSprite),
+    A_Saw(PlayerSprite),
+    A_FirePlasma(PlayerSprite),
+    A_BFGsound(PlayerSprite),
+    A_FireBFG(PlayerSprite),
+    A_BFGSpray(Mobj),
+    A_Explode(Mobj),
+    A_Pain(Mobj),
+    A_PlayerScream(Mobj),
+    A_Fall(Mobj),
+    A_XScream(Mobj),
+    A_Look(Mobj),
+    A_Chase(Mobj),
+    A_FaceTarget(Mobj),
+    A_PosAttack(Mobj),
+    A_Scream(Mobj),
+    A_SPosAttack(Mobj),
+    A_VileChase(Mobj),
+    A_VileStart(Mobj),
+    A_VileTarget(Mobj),
+    A_VileAttack(Mobj),
+    A_StartFire(Mobj),
+    A_Fire(Mobj),
+    A_FireCrackle(Mobj),
+    A_Tracer(Mobj),
+    A_SkelWhoosh(Mobj),
+    A_SkelFist(Mobj),
+    A_SkelMissile(Mobj),
+    A_FatRaise(Mobj),
+    A_FatAttack1(Mobj),
+    A_FatAttack2(Mobj),
+    A_FatAttack3(Mobj),
+    A_BossDeath(Mobj),
+    A_CPosAttack(Mobj),
+    A_CPosRefire(Mobj),
+    A_TroopAttack(Mobj),
+    A_SargAttack(Mobj),
+    A_HeadAttack(Mobj),
+    A_BruisAttack(Mobj),
+    A_SkullAttack(Mobj),
+    A_Metal(Mobj),
+    A_SpidRefire(Mobj),
+    A_BabyMetal(Mobj),
+    A_BspiAttack(Mobj),
+    A_Hoof(Mobj),
+    A_CyberAttack(Mobj),
+    A_PainAttack(Mobj),
+    A_PainDie(Mobj),
+    A_KeenDie(Mobj),
+    A_BrainPain(Mobj),
+    A_BrainScream(Mobj),
+    A_BrainDie(Mobj),
+    A_BrainAwake(Mobj),
+    A_BrainSpit(Mobj),
+    A_SpawnSound(Mobj),
+    A_SpawnFly(Mobj),
+    A_BrainExplode(Mobj),
+    P_MobjThinker(Mobj),
+    T_FireFlicker(Thinker),
+    T_LightFlash(Thinker),
+    T_StrobeFlash(Thinker),
+    T_Glow(Thinker),
+    T_MoveCeiling(Thinker),
+    T_MoveFloor(Thinker),
+    T_VerticalDoor(Thinker),
+    T_PlatRaise(Thinker),
+    T_SlidingDoor(Thinker);
 
-        private think_t(Param actionf_t) {
-            this.actionf_t = actionf_t;
-        }
-        
-        public boolean ac(Param a) {
-            return actionf_t == a;
-        }
-        
-        public void acp1(actionf_t f, mobj_t mobj) {
-            f.acp1(this, mobj);
-        }
-        
-        public void acp2(actionf_t f, player_t player, pspdef_t pspdef) {
-            f.acp2(this, player, pspdef);
-        }
-        
-        public void acv(actionf_t f, thinker_t thinker) {
-            f.acv(this, thinker);
-        }
+    public enum ParamType {
+        @actionf_p1
+            Mobj,
+        @actionf_v
+            Thinker,
+        @actionf_p2
+            PlayerSprite
+    }
+
+    private final @think_t ParamType paramType;
+
+    private ActionFunction(final ParamType type) {
+        this.paramType = type;
+    }
+
+    public boolean isParamType(final ParamType a) {
+        return paramType == a;
+    }
+
+    @D_Think.C(actionf_t.acp1)
+    public void callMobjFun(Observer f, mobj_t mobj) {
+        f.callMobjFun(this, mobj);
+    }
+
+    @D_Think.C(actionf_t.acv)
+    public void callThinkerFun(Observer f, thinker_t thinker) {
+        f.callThinkerFun(this, thinker);
     }
     
-    interface actionf_t {
-        void acp1(think_t think_t, mobj_t mobj);        
-        void acp2(think_t think_t, player_t player, pspdef_t pspdef);
-        void acv(think_t think_t, thinker_t thinker);
+    @D_Think.C(actionf_t.acp2)
+    public void callPlayerSpriteFun(Observer f, player_t player, pspdef_t pspdef) {
+        f.callPlayerSpriteFun(this, player, pspdef);
+    }
+
+    public interface Observer {
+        void callMobjFun(ActionFunction think_t, mobj_t mobj);        
+        void callThinkerFun(ActionFunction think_t, thinker_t thinker);
+        void callPlayerSpriteFun(ActionFunction think_t, player_t player, pspdef_t pspdef);
     }
 }

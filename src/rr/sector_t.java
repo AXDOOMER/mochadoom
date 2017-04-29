@@ -11,7 +11,7 @@ import m.IRandom;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import mochadoom.Loggers;
-import static p.ActionFunction.think_t.*;
+import static p.ActionFunction.*;
 import static p.DoorDefines.*;
 import p.Resettable;
 import p.ThinkerList;

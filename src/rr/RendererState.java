@@ -47,7 +47,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import mochadoom.Engine;
-import p.ActionFunction;
+import static p.ActionFunction.P_MobjThinker;
 import p.mobj_t;
 import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
@@ -74,7 +74,7 @@ import w.IWadLoader;
  * @author velktron
  */
 
-public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimitResettable, ActionFunction {
+public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimitResettable {
 
     protected static final boolean DEBUG = false;
 
@@ -2824,7 +2824,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         spritepresent = new boolean[numsprites];
 
         for (th = DOOM.actions.getThinkerCap().next; th != DOOM.actions.getThinkerCap(); th = th.next) {
-            if (th.thinkerFunction == think_t.P_MobjThinker) {
+            if (th.thinkerFunction == P_MobjThinker) {
                 spritepresent[((mobj_t) th).mobj_sprite.ordinal()] = true;
             }
         }

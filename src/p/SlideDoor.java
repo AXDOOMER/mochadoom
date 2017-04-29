@@ -4,7 +4,7 @@ import doom.DoomMain;
 import java.util.Arrays;
 import java.util.logging.Level;
 import mochadoom.Loggers;
-import static p.ActionFunction.think_t.T_SlidingDoor;
+import static p.ActionFunction.T_SlidingDoor;
 import rr.line_t;
 import rr.sector_t;
 
