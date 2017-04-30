@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Limits.MAXRADIUS;
@@ -17,12 +34,12 @@ import rr.line_t;
 import rr.sector_t;
 import rr.subsector_t;
 
-public interface ActionsTeleportation<T, V> extends ActionsThings<T, V>, ActionsUtility<T, V> {
+interface ActionsTeleportation extends ActionsThings, ActionsUtility {
     //
     // TELEPORTATION
     //
     default int Teleport(line_t line, int side, mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int i;
         int tag;
         mobj_t m;
@@ -49,7 +66,7 @@ public interface ActionsTeleportation<T, V> extends ActionsThings<T, V>, Actions
                 //thinker = thinkercap.next;
                 for (thinker = obs.thinkercap.next; thinker != obs.thinkercap; thinker = thinker.next) {
                     // not a mobj
-                    if (thinker.thinkerFunction != ActionFunction.P_MobjThinker) {
+                    if (thinker.thinkerFunction != ActiveStates.P_MobjThinker) {
                         continue;
                     }
 
@@ -111,7 +128,7 @@ public interface ActionsTeleportation<T, V> extends ActionsThings<T, V>, Actions
     // P_TeleportMove
     //
     default boolean TeleportMove(mobj_t thing, int x, /*fixed*/ int y) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int xl;
         int xh;
         int yl;

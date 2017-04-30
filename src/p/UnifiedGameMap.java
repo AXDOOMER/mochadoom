@@ -89,9 +89,9 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.MAPFRACUNIT;
 import mochadoom.Engine;
 import mochadoom.Loggers;
-import static p.ActionFunction.NOP;
-import static p.ActionFunction.P_MobjThinker;
-import static p.ActionFunction.T_PlatRaise;
+import static p.ActiveStates.NOP;
+import static p.ActiveStates.P_MobjThinker;
+import static p.ActiveStates.T_PlatRaise;
 import static p.DoorDefines.SLOWDARK;
 import static p.MapUtils.AproxDistance;
 import static p.MobjFlags.*;
@@ -108,11 +108,11 @@ import static utils.C2JUtils.flags;
 
 // // FROM SIGHT
 
-public abstract class UnifiedGameMap<T, V> implements ThinkerList {
+public abstract class UnifiedGameMap implements ThinkerList {
     private static final Logger LOGGER = Loggers.getLogger(UnifiedGameMap.class.getName());
     
-    public UnifiedGameMap(DoomMain<T, V> DOOM){
-        this.SL = new SlideDoor<>(DOOM);
+    public UnifiedGameMap(DoomMain DOOM){
+        this.SL = new SlideDoor(DOOM);
         this.SW = new Switches();
         this.LEV = new Lights();
         this.SPECS = new Specials();
@@ -123,8 +123,6 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         for (int i=0; i<th_class.NUMTHCLASS; i++) { // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i]=new thinker_t();
         }
-        
-        this.RemoveThinkerDelayed=new P_RemoveThinkerDelayed();
         
         intercepts = new intercept_t[MAXINTERCEPTS];
         Arrays.setAll(intercepts, i -> new intercept_t());
@@ -142,7 +140,7 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
     
     /////////////////// STATUS ///////////////////
 
-    final DoomMain<T, V> DOOM;
+    final DoomMain DOOM;
 
     
     // //////////// Internal singletons //////////////
@@ -2154,12 +2152,12 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
 
     protected thinker_t currentthinker;
     
-    protected final P_RemoveThinkerDelayed RemoveThinkerDelayed; 
+    //protected final P_RemoveThinkerDelayed RemoveThinkerDelayed; 
     
-    public class P_RemoveThinkerDelayed implements p.ActionFunctions.TypedAction <thinker_t>{
+    //public class P_RemoveThinkerDelayed implements p.ActionFunctions.TypedAction <thinker_t>{
         
-    @Override
-    public void accept(thinker_t thinker) {
+    //@Override
+    //public void accept(thinker_t thinker) {
         
     	/*
         try {
@@ -2174,30 +2172,30 @@ public abstract class UnifiedGameMap<T, V> implements ThinkerList {
         // Unlike Boom, if we reach here it gets zapped anyway
         //if (!thinker->references)
         //{
-          { /* Remove from main thinker list */
-            thinker_t next = thinker.next;
+          //{ /* Remove from main thinker list */
+            //thinker_t next = thinker.next;
             /* Note that currentthinker is guaranteed to point to us,
              * and since we're freeing our memory, we had better change that. So
              * point it to thinker->prev, so the iterator will correctly move on to
              * thinker->prev->next = thinker->next */
-            (next.prev = currentthinker = thinker.prev).next = next;
+            //(next.prev = currentthinker = thinker.prev).next = next;
             //thinker.next=thinker.prev=null;
-            try {
+            //try {
            // System.err.printf("Delete: %s %d <==> %s %d\n",
            //     ((mobj_t)currentthinker.prev).type,((mobj_t)currentthinker.prev).thingnum,
            //     ((mobj_t)currentthinker.next).type,((mobj_t)currentthinker.next).thingnum);
-            } catch (ClassCastException e){
+            //} catch (ClassCastException e){
                 
-            }
+            //}
             
-          }
-          {
+          //}
+          //{
             /* Remove from current thinker class list */
-            thinker_t th = thinker.cnext;
-            (th.cprev = thinker.cprev).cnext = th;
+            //thinker_t th = thinker.cnext;
+            //(th.cprev = thinker.cprev).cnext = th;
             //thinker.cnext=thinker.cprev=null;
-          }
-        }
-    }
+          //}
+        //}
+    //}
     
 } // End unified map

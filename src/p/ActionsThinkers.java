@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.ITEMQUESIZE;
@@ -13,8 +30,8 @@ import data.sounds;
 import doom.CommandVariable;
 import doom.thinker_t;
 import static m.fixed_t.FRACBITS;
-import static p.ActionFunction.ParamType.Mobj;
-import static p.ActionFunction.ParamType.Thinker;
+import p.ActiveStates.MobjConsumer;
+import p.ActiveStates.ThinkerConsumer;
 import static p.DoorDefines.FASTDARK;
 import static p.DoorDefines.SLOWDARK;
 import static p.mobj_t.MF_AMBUSH;
@@ -23,12 +40,12 @@ import rr.sector_t;
 import rr.subsector_t;
 import static utils.C2JUtils.eval;
 
-public interface ActionsThinkers<T, V> extends ActionsCeilings<T, V> {
+interface ActionsThinkers extends ActionsCeilings {
     /**
      * P_SpawnSpecials After the map has been loaded, scan for specials that spawn thinkers
      */
     default void SpawnSpecials() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         sector_t sector;
 
         /*int     episode;
@@ -153,7 +170,7 @@ public interface ActionsThinkers<T, V> extends ActionsCeilings<T, V> {
      * P_RespawnSpecials
      */
     default void RespawnSpecials() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int x, y, z; // fixed
 
         subsector_t ss;
@@ -212,7 +229,7 @@ public interface ActionsThinkers<T, V> extends ActionsCeilings<T, V> {
      * P_NightmareRespawn
      */
     default void NightmareRespawn(mobj_t mobj) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int x, y, z; // fixed 
         subsector_t ss;
         mobj_t mo;
@@ -269,21 +286,21 @@ public interface ActionsThinkers<T, V> extends ActionsCeilings<T, V> {
     // P_RunThinkers
     //
     default void RunThinkers() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         thinker_t thinker;
 
         thinker = obs.thinkercap.next;
         while (thinker != obs.thinkercap) {
-            if (thinker.thinkerFunction == ActionFunction.NOP) {
+            if (thinker.thinkerFunction == ActiveStates.NOP) {
                 // time to remove it
                 thinker.next.prev = thinker.prev;
                 thinker.prev.next = thinker.next;
                 // Z_Free (currentthinker);
             } else {
-                if (thinker.thinkerFunction.isParamType(Mobj)) {
-                    thinker.thinkerFunction.callMobjFun(obs.DOOM.actionFunctions, (mobj_t) thinker);
-                } else if (thinker.thinkerFunction.isParamType(Thinker)) {
-                    thinker.thinkerFunction.callThinkerFun(obs.DOOM.actionFunctions, thinker);
+                if (thinker.thinkerFunction.isParamType(MobjConsumer.class)) {
+                    thinker.thinkerFunction.fun(MobjConsumer.class).accept(obs, (mobj_t) thinker);
+                } else if (thinker.thinkerFunction.isParamType(ThinkerConsumer.class)) {
+                    thinker.thinkerFunction.fun(ThinkerConsumer.class).accept(obs, thinker);
                 }
             }
             thinker = thinker.next;
@@ -294,7 +311,7 @@ public interface ActionsThinkers<T, V> extends ActionsCeilings<T, V> {
     //P_Ticker
     //
     default void Ticker() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int i;
 
         // run the tic

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.MAPBLOCKSHIFT;
@@ -18,13 +35,13 @@ import static p.MapUtils.InterceptVector;
 import rr.line_t;
 import static utils.C2JUtils.eval;
 
-public interface ActionsPathTraverse<T, V> extends ActionsUtility<T, V> {
+interface ActionsPathTraverse extends ActionsUtility {
     /**
      * P_PathTraverse Traces a line from x1,y1 to x2,y2, calling the traverser function for each. Returns true if the
      * traverser function returns true for all lines.
      */
     @SourceCode.P_MapUtl.C(P_PathTraverse) default boolean PathTraverse(int x1, int y1, int x2, int y2, int flags, Predicate<intercept_t> trav) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         // System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , "
         // +y2);
         final int xt1, yt1;
@@ -154,7 +171,7 @@ public interface ActionsPathTraverse<T, V> extends ActionsUtility<T, V> {
     } // end method
 
     default boolean AddLineIntercepts(line_t ld) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
 
         boolean s1;
         boolean s2;
@@ -203,7 +220,7 @@ public interface ActionsPathTraverse<T, V> extends ActionsUtility<T, V> {
     };
 
     default boolean AddThingIntercepts(mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         @SourceCode.fixed_t int x1, y1, x2, y2;
         boolean s1, s2;
         boolean tracepositive;
@@ -263,7 +280,7 @@ public interface ActionsPathTraverse<T, V> extends ActionsUtility<T, V> {
     //for all lines.
     //
     default boolean TraverseIntercept(Predicate<intercept_t> func, int maxfrac) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int count;
         @SourceCode.fixed_t int dist;
         intercept_t in = null;  // shut up compiler warning

@@ -57,7 +57,6 @@ import mochadoom.Engine;
 import n.DoomSystemNetworking;
 import n.DummyNetworkDriver;
 import p.AbstractLevelLoader;
-import p.ActionFunctions;
 import p.Actions;
 import p.BoomLevelLoader;
 import p.mobj_t;
@@ -2355,8 +2354,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     public final IDoomGameNetworking gameNetworking;
     public final AbstractLevelLoader levelLoader;
     public final IDoomMenu menu;
-    public final Actions<T, V> actions;
-    public final ActionFunctions<T, V> actionFunctions;
+    public final Actions actions;
     public final SceneRenderer<T, V> sceneRenderer;
     public final HU handsUp;
     public final IAutoMap<T, V> autoMap;
@@ -2438,8 +2436,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         
         // Renderer, Actions, StatusBar, AutoMap
         this.sceneRenderer = bppMode.sceneRenderer(this);
-        this.actions = new Actions<>(this);
-        this.actionFunctions = new ActionFunctions<>(this);
+        this.actions = new Actions(this);
         this.statusBar = new StatusBar(this);
 
         // Let the renderer pick its own. It makes linking easier.

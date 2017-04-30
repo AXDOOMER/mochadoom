@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import doom.SourceCode;
@@ -6,7 +23,7 @@ import static rr.line_t.ML_TWOSIDED;
 import rr.sector_t;
 import static utils.C2JUtils.eval;
 
-public interface ActionsPlanes<T, V> extends ActionsSectors<T, V>, ActionsUtility<T, V> {
+interface ActionsPlanes extends ActionsSectors, ActionsUtility {
     /**
      * Move a plane (floor or ceiling) and check for crushing
      *
@@ -18,7 +35,7 @@ public interface ActionsPlanes<T, V> extends ActionsSectors<T, V>, ActionsUtilit
      * @param direction
      */
     default result_e MovePlane(sector_t sector, int speed, int dest, boolean crush, int floorOrCeiling, int direction) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         boolean flag;
         @SourceCode.fixed_t int lastpos;
 
@@ -156,7 +173,7 @@ public interface ActionsPlanes<T, V> extends ActionsSectors<T, V>, ActionsUtilit
      *
      */
     default boolean DoDonut(line_t line) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         sector_t s1;
         sector_t s2;
         sector_t s3;
@@ -187,13 +204,13 @@ public interface ActionsPlanes<T, V> extends ActionsSectors<T, V>, ActionsUtilit
                 //  Spawn rising slime
                 floor = new floormove_t();
                 s2.specialdata = floor;
-                floor.thinkerFunction = ActionFunction.T_MoveFloor;
+                floor.thinkerFunction = ActiveStates.T_MoveFloor;
                 obs.AddThinker(floor);
                 floor.type = floor_e.donutRaise;
                 floor.crush = false;
                 floor.direction = 1;
                 floor.sector = s2;
-                floor.speed = ActionsRegistry.FLOORSPEED / 2;
+                floor.speed = Actions.Registry.FLOORSPEED / 2;
                 floor.texture = s3.floorpic;
                 floor.newspecial = 0;
                 floor.floordestheight = s3.floorheight;
@@ -201,13 +218,13 @@ public interface ActionsPlanes<T, V> extends ActionsSectors<T, V>, ActionsUtilit
                 //  Spawn lowering donut-hole
                 floor = new floormove_t();
                 s1.specialdata = floor;
-                floor.thinkerFunction = ActionFunction.T_MoveFloor;
+                floor.thinkerFunction = ActiveStates.T_MoveFloor;
                 obs.AddThinker(floor);
                 floor.type = floor_e.lowerFloor;
                 floor.crush = false;
                 floor.direction = -1;
                 floor.sector = s1;
-                floor.speed = ActionsRegistry.FLOORSPEED / 2;
+                floor.speed = Actions.Registry.FLOORSPEED / 2;
                 floor.floordestheight = s3.floorheight;
                 break;
             }

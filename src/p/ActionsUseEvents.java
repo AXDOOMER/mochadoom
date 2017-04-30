@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.PT_ADDLINES;
@@ -14,12 +31,12 @@ import rr.line_t;
 import static rr.line_t.ML_SECRET;
 import static utils.C2JUtils.eval;
 
-public interface ActionsUseEvents<T, V> extends ActionsPathTraverse<T, V>, ActionsCeilings<T, V>, ActionsFloors<T, V>, ActionsDoors<T, V>, ActionsTeleportation<T, V> {
+interface ActionsUseEvents extends ActionsPathTraverse, ActionsCeilings, ActionsFloors, ActionsDoors, ActionsTeleportation {
     /**
      * P_UseSpecialLine Called when a thing uses a special line. Only the front sides of lines are usable.
      */
     default boolean UseSpecialLine(mobj_t thing, line_t line, boolean side) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
 
         // Err...
         // Use the back sides of VERY SPECIAL lines...
@@ -439,12 +456,12 @@ public interface ActionsUseEvents<T, V> extends ActionsPathTraverse<T, V>, Actio
      * P_UseLines Looks for special lines in front of the player to activate.
      */
     default void UseLines(player_t player) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         int angle;
         int x1, y1, x2, y2;
         //System.out.println("Uselines");
         obs.usething = player.mo;
-
+    
         // Normally this shouldn't cause problems?
         angle = Tables.toBAMIndex(player.mo.angle);
 
@@ -460,7 +477,7 @@ public interface ActionsUseEvents<T, V> extends ActionsPathTraverse<T, V>, Actio
     // USE LINES
     //
     @SourceCode.P_Map.C(PTR_UseTraverse) default boolean UseTraverse(intercept_t in) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         boolean side;
         // FIXME: some sanity check here?
         line_t line = (line_t) in.d();

@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import m.Settings;
 import mochadoom.Engine;
 import mochadoom.Loggers;
-import static p.ActionFunction.*;
+import static p.ActiveStates.*;
 import p.ThinkerList;
 import p.ceiling_t;
 import p.floormove_t;
@@ -374,7 +374,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
         tc_mobj;
     }
 
-    List<mobj_t> TL = new ArrayList<mobj_t>();
+    List<mobj_t> TL = new ArrayList<>();
 
     //
     //P_ArchiveThinkers
@@ -452,7 +452,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
 
                 case tc_mobj:
                     PADSAVEP(f, maxsize);
-                    mobj = new mobj_t(DOOM.actions);
+                    mobj = mobj_t.createOn(DOOM);
                     mobj.read(f);
                     mobj.id = ++id;
                     TL.add(mobj);

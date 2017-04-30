@@ -4,7 +4,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import p.ActionFunction;
+import p.ActiveStates;
 import static utils.C2JUtils.pointer;
 import w.CacheableDoomObject;
 import w.IPackableDoomObject;
@@ -14,7 +14,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
 
     public thinker_t prev;
     public thinker_t next;
-    public ActionFunction thinkerFunction;
+    public ActiveStates thinkerFunction;
 
     /* killough 8/29/98: we maintain thinkers in several equivalence classes,
     * according to various criteria, so as to allow quicker searches.

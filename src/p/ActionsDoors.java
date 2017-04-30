@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import data.sounds;
@@ -16,7 +33,7 @@ import rr.line_t;
 import rr.sector_t;
 import static utils.C2JUtils.eval;
 
-public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
+interface ActionsDoors extends ActionsPlanes {
     //
     // VERTICAL DOORS
     //
@@ -24,7 +41,7 @@ public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
      * T_VerticalDoor
      */
     default void VerticalDoor(vldoor_t door) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         switch (door.direction) {
             case 0:
                 // WAITING
@@ -119,7 +136,7 @@ public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
      * EV_DoLockedDoor Move a locked door up/down
      */
     default boolean DoLockedDoor(line_t line, vldoor_e type, mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         player_t p;
 
         p = thing.player;
@@ -168,7 +185,7 @@ public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
     }
 
     default boolean DoDoor(line_t line, vldoor_e type) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int secnum;
         boolean rtn = false;
         sector_t sec;
@@ -186,7 +203,7 @@ public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
             rtn = true;
             door = new vldoor_t();
             sec.specialdata = door;
-            door.thinkerFunction = ActionFunction.T_VerticalDoor;
+            door.thinkerFunction = ActiveStates.T_VerticalDoor;
             obs.AddThinker(door);
             door.sector = sec;
             door.type = type;
@@ -240,7 +257,7 @@ public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
      * EV_VerticalDoor : open a door manually, no tag value
      */
     default void VerticalDoor(line_t line, mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         player_t player;
         //int      secnum;
         sector_t sec;
@@ -345,7 +362,7 @@ public interface ActionsDoors<T, V> extends ActionsPlanes<T, V> {
         // new door thinker
         door = new vldoor_t();
         sec.specialdata = door;
-        door.thinkerFunction = ActionFunction.T_VerticalDoor;
+        door.thinkerFunction = ActiveStates.T_VerticalDoor;
         obs.AddThinker(door);
         door.sector = sec;
         door.direction = 1;

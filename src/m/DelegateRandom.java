@@ -20,7 +20,7 @@ import data.Defines;
 import data.mobjtype_t;
 import doom.SourceCode.M_Random;
 import static doom.SourceCode.M_Random.*;
-import p.ActionFunction;
+import p.ActiveStates;
 import utils.C2JUtils;
 
 /**
@@ -103,12 +103,12 @@ public class DelegateRandom implements IRandom {
     }
 
     @Override
-    public int P_Random(ActionFunction caller, int sequence) {
+    public int P_Random(ActiveStates caller, int sequence) {
         return random.P_Random(caller, sequence);
     }
 
     @Override
-    public int P_Random(ActionFunction caller, mobjtype_t type, int sequence) {
+    public int P_Random(ActiveStates caller, mobjtype_t type, int sequence) {
         return random.P_Random(caller, type, sequence);
     }
     

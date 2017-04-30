@@ -4,7 +4,7 @@ import doom.DoomMain;
 import java.util.Arrays;
 import java.util.logging.Level;
 import mochadoom.Loggers;
-import static p.ActionFunction.T_SlidingDoor;
+import static p.ActiveStates.T_SlidingDoor;
 import rr.line_t;
 import rr.sector_t;
 
@@ -33,9 +33,9 @@ public class SlideDoor<T, V> {
 
     final slideframe_t[] slideFrames;
 
-    private final DoomMain<T, V> DOOM;
+    private final DoomMain DOOM;
 
-    public SlideDoor(DoomMain<T, V> DOOM) {
+    public SlideDoor(DoomMain DOOM) {
         slideFrames = new slideframe_t[MAXSLIDEDOORS];
         Arrays.setAll(slideFrames, i -> new slideframe_t());
         this.DOOM = DOOM;

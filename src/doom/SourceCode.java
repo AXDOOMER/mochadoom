@@ -252,17 +252,14 @@ public @interface SourceCode {
     
     @Documented
     @Retention(SOURCE)
-    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface actionf_p1 {}
     
     @Documented
     @Retention(SOURCE)
-    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface actionf_v {}
     
     @Documented
     @Retention(SOURCE)
-    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface actionf_p2 {}
     
     @Documented

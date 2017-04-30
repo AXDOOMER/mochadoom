@@ -327,7 +327,7 @@ public LevelLoader(DoomMain<?,?> DM) {
       
       //System.out.printf("Spawning %d %s\n",i,mt.type);
       
-      DOOM.actions.SpawnMapThing (mt);
+      DOOM.actions.SpawnMapThing(mt);
       }
       
       // Status may have changed. It's better to release the resources anyway
@@ -806,7 +806,7 @@ public LevelLoader(DoomMain<?,?> DM) {
       }
 
       // clear special respawning que
-      DOOM.actions.iquehead = DOOM.actions.iquetail = 0;        
+      DOOM.actions.ClearRespawnQueue();        
       
       // set up world state
       DOOM.actions.SpawnSpecials();

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Limits.MAXINT;
@@ -9,13 +26,13 @@ import rr.sector_t;
 import rr.side_t;
 import static utils.C2JUtils.eval;
 
-public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
+interface ActionsFloors extends ActionsPlanes {
     /**
      * MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
      *
      */
     default void MoveFloor(floormove_t floor) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         final result_e res = this.MovePlane(floor.sector, floor.speed, floor.floordestheight, floor.crush, 0, floor.direction);
 
         if (!eval(obs.DOOM.leveltime & 7)) {
@@ -53,7 +70,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
     // HANDLE FLOOR TYPES
     //
     default boolean DoFloor(line_t line, floor_e floortype) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int secnum = -1;
         boolean rtn = false;
         sector_t sec;
@@ -71,7 +88,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
             rtn = true;
             floor = new floormove_t();
             sec.specialdata = floor;
-            floor.thinkerFunction = ActionFunction.T_MoveFloor;
+            floor.thinkerFunction = ActiveStates.T_MoveFloor;
             obs.AddThinker(floor);
             floor.type = floortype;
             floor.crush = false;
@@ -80,21 +97,21 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
                 case lowerFloor:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = sec.FindHighestFloorSurrounding();
                     break;
 
                 case lowerFloorToLowest:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = sec.FindLowestFloorSurrounding();
                     break;
 
                 case turboLower:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED * 4;
+                    floor.speed = Actions.Registry.FLOORSPEED * 4;
                     floor.floordestheight = sec.FindHighestFloorSurrounding();
                     if (floor.floordestheight != sec.floorheight) {
                         floor.floordestheight += 8 * FRACUNIT;
@@ -106,7 +123,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
                 case raiseFloor:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = sec.FindLowestCeilingSurrounding();
                     if (floor.floordestheight > sec.ceilingheight) {
                         floor.floordestheight = sec.ceilingheight;
@@ -118,34 +135,34 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
                 case raiseFloorTurbo:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED * 4;
+                    floor.speed = Actions.Registry.FLOORSPEED * 4;
                     floor.floordestheight = sec.FindNextHighestFloor(sec.floorheight);
                     break;
 
                 case raiseFloorToNearest:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = sec.FindNextHighestFloor(sec.floorheight);
                     break;
 
                 case raiseFloor24:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = floor.sector.floorheight + 24 * FRACUNIT;
                     break;
                 case raiseFloor512:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = floor.sector.floorheight + 512 * FRACUNIT;
                     break;
 
                 case raiseFloor24AndChange:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = floor.sector.floorheight + 24 * FRACUNIT;
                     sec.floorpic = line.frontsector.floorpic;
                     sec.special = line.frontsector.special;
@@ -157,7 +174,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
 
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     for (int i = 0; i < sec.linecount; ++i) {
                         if (obs.twoSided(secnum, i)) {
                             for (int s = 0; s < 2; ++s) {
@@ -177,7 +194,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
                 case lowerAndChange:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = ActionsRegistry.FLOORSPEED;
+                    floor.speed = Actions.Registry.FLOORSPEED;
                     floor.floordestheight = sec.FindLowestFloorSurrounding();
                     floor.texture = sec.floorpic;
 
@@ -209,7 +226,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
      * BUILD A STAIRCASE!
      */
     default boolean BuildStairs(line_t line, stair_e type) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int secnum;
         int height;
         int i;
@@ -240,17 +257,17 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
             rtn = true;
             floor = new floormove_t();
             sec.specialdata = floor;
-            floor.thinkerFunction = ActionFunction.T_MoveFloor;
+            floor.thinkerFunction = ActiveStates.T_MoveFloor;
             obs.AddThinker(floor);
             floor.direction = 1;
             floor.sector = sec;
             switch (type) {
                 case build8:
-                    speed = ActionsRegistry.FLOORSPEED / 4;
+                    speed = Actions.Registry.FLOORSPEED / 4;
                     stairsize = 8 * FRACUNIT;
                     break;
                 case turbo16:
-                    speed = ActionsRegistry.FLOORSPEED * 4;
+                    speed = Actions.Registry.FLOORSPEED * 4;
                     stairsize = 16 * FRACUNIT;
                     break;
             }
@@ -294,7 +311,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
                     secnum = newsecnum;
                     floor = new floormove_t();
                     sec.specialdata = floor;
-                    floor.thinkerFunction = ActionFunction.T_MoveFloor;
+                    floor.thinkerFunction = ActiveStates.T_MoveFloor;
                     obs.AddThinker(floor);
                     floor.direction = 1;
                     floor.sector = sec;
@@ -312,7 +329,7 @@ public interface ActionsFloors<T, V> extends ActionsPlanes<T, V> {
      * Move a plat up and down
      */
     default void PlatRaise(plat_t plat) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         result_e res;
 
         switch (plat.status) {

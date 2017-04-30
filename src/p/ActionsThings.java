@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.BASETHRESHOLD;
@@ -36,12 +53,12 @@ import static p.mobj_t.MF_SOLID;
 import static p.mobj_t.MF_SPECIAL;
 import static utils.C2JUtils.eval;
 
-public interface ActionsThings<T, V> extends ActionsSpawn<T, V> {
+interface ActionsThings extends ActionsSpawn {
     /**
      * PIT_CheckThing
      */
     @SourceCode.P_Map.C(PIT_CheckThing) default boolean CheckThing(mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         @SourceCode.fixed_t int blockdist;
         boolean solid;
         int damage;
@@ -139,7 +156,7 @@ public interface ActionsThings<T, V> extends ActionsSpawn<T, V> {
     // and other environmental stuff.
     //
     default void DamageMobj(mobj_t target, mobj_t inflictor, mobj_t source, int damage) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         long ang; // unsigned
         int saved;
         player_t player;
@@ -275,7 +292,7 @@ public interface ActionsThings<T, V> extends ActionsSpawn<T, V> {
     // KillMobj
     //
     default void KillMobj(mobj_t source, mobj_t target) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         mobjtype_t item;
         mobj_t mo;
 
@@ -372,7 +389,7 @@ public interface ActionsThings<T, V> extends ActionsSpawn<T, V> {
      * PIT_StompThing
      */
     @SourceCode.P_Map.C(PIT_StompThing) default boolean StompThing(mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int blockdist;
         fixed_t: {
             blockdist:;

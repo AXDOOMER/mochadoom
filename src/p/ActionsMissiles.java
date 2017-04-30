@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Tables.BITS32;
@@ -12,13 +29,13 @@ import static p.MapUtils.AproxDistance;
 import static p.mobj_t.MF_SHADOW;
 import static utils.C2JUtils.eval;
 
-public interface ActionsMissiles<T, V> extends ActionsAim<T, V> {
+interface ActionsMissiles extends ActionsAim {
 
     /**
      * P_SpawnMissile
      */
     default mobj_t SpawnMissile(mobj_t source, mobj_t dest, mobjtype_t type) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         mobj_t th;
         @SourceCode.angle_t long an;
         int dist;
@@ -61,7 +78,7 @@ public interface ActionsMissiles<T, V> extends ActionsAim<T, V> {
      * P_SpawnPlayerMissile Tries to aim at a nearby monster
      */
     default void SpawnPlayerMissile(mobj_t source, mobjtype_t type) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         mobj_t th;
         @SourceCode.angle_t long an;
         int x, y, z, slope; // ActionFunction

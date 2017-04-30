@@ -47,7 +47,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import mochadoom.Engine;
-import static p.ActionFunction.P_MobjThinker;
+import static p.ActiveStates.P_MobjThinker;
 import p.mobj_t;
 import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;

@@ -1,6 +1,6 @@
 package p;
 
-import static p.ActionFunction.T_SlidingDoor;
+import static p.ActiveStates.T_SlidingDoor;
 import rr.SectorAction;
 import rr.line_t;
 import rr.sector_t;

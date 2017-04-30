@@ -1278,7 +1278,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         mobj_t mobj;
         int mobjcount = 0;
         mobj_t[] mobjlist = new mobj_t[numthings];
-        Arrays.setAll(mobjlist, j -> new mobj_t(DOOM.actions));
+        Arrays.setAll(mobjlist, j -> mobj_t.createOn(DOOM));
 
         if ((data == null) || (numthings == 0))
             DOOM.doomSystem.Error("P_LoadThings: no things in level");
@@ -2288,7 +2288,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         }
 
         // clear special respawning que
-        DOOM.actions.iquehead = DOOM.actions.iquetail = 0;
+        DOOM.actions.ClearRespawnQueue();
 
         // set up world state
         DOOM.actions.SpawnSpecials();

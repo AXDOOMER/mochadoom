@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.PT_ADDLINES;
@@ -16,14 +33,14 @@ import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
 
-public interface ActionsAim<T, V> extends ActionsMovement<T, V> {
+interface ActionsAim extends ActionsMovement {
     /**
      * P_CheckMissileSpawn Moves the missile forward a bit and possibly explodes it right there.
      *
      * @param th
      */
     default void CheckMissileSpawn(mobj_t th) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         th.mobj_tics -= obs.DOOM.random.P_Random() & 3;
         if (th.mobj_tics < 1) {
             th.mobj_tics = 1;
@@ -48,7 +65,7 @@ public interface ActionsAim<T, V> extends ActionsMovement<T, V> {
      * @param distance int
      */
     default int AimLineAttack(mobj_t t1, long angle, int distance) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int x2, y2;
         obs.shootthing = t1;
 
@@ -72,13 +89,14 @@ public interface ActionsAim<T, V> extends ActionsMovement<T, V> {
         return 0;
     }
 
+
     //
     // P_BulletSlope
     // Sets a slope so a near miss is at aproximately
     // the height of the intended target
     //
     default void P_BulletSlope(mobj_t mo) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         long an;
 
         // see which target is to be aimed at
@@ -111,7 +129,7 @@ public interface ActionsAim<T, V> extends ActionsMovement<T, V> {
     // ???: use slope for monsters?
 
     @SourceCode.P_Map.C(PTR_AimTraverse) default boolean AimTraverse(intercept_t in) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         line_t li;
         mobj_t th;
         int slope;

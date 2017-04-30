@@ -12,6 +12,7 @@ import data.sounds.sfxenum_t;
 import data.spritenum_t;
 import data.state_t;
 import defines.*;
+import doom.DoomMain;
 import doom.SourceCode.fixed_t;
 import doom.player_t;
 import doom.thinker_t;
@@ -20,7 +21,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import static p.ActionFunction.ParamType.Mobj;
+import p.ActiveStates.MobjConsumer;
 import static p.MapUtils.AproxDistance;
 import rr.subsector_t;
 import s.ISoundOrigin;
@@ -87,9 +88,22 @@ import w.IWritableDoomObject;
 public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		IWritableDoomObject, IPackableDoomObject, IReadableDoomObject {
 
-	public final Actions A;
+	public final Actions.Registry A;
+    
+    public static mobj_t createOn(final DoomMain context) {
+        if (eval(context.actions)) {
+            return new mobj_t(context.actions.obs());
+        }
+        
+        return new mobj_t();
+    }
+    
+    private mobj_t() {
+		this.spawnpoint = new mapthing_t();
+		this.A = null;
+    }
 
-	public mobj_t(Actions A) {
+	private mobj_t(final Actions.Registry A) {
 		this.spawnpoint = new mapthing_t();
 		this.A = A;
 		// A mobj_t is ALSO a thinker, as it always contains the struct.
@@ -301,8 +315,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 			// Modified handling.
 			// Call action functions when the state is set
             // TODO: try find a bug
-            if (st.action.isParamType(Mobj)) {
-                st.action.callMobjFun(A.DOOM.actionFunctions, this);
+            if (st.action.isParamType(MobjConsumer.class)) {
+                st.action.fun(MobjConsumer.class).accept(A, this);
             }
 
 			state = st.nextstate;

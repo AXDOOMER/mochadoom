@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.MISSILERANGE;
@@ -12,18 +29,19 @@ import defines.statenum_t;
 import doom.SourceCode;
 import static doom.SourceCode.P_Enemy.PIT_VileCheck;
 import static doom.SourceCode.P_Map.PIT_RadiusAttack;
+import doom.SourceCode.fixed_t;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static p.mobj_t.MF_CORPSE;
 import static p.mobj_t.MF_SHOOTABLE;
 import static utils.C2JUtils.eval;
 
-public interface ActionsAttacks<T, V> extends ActionsShootEvents<T, V>, ActionsPathTraverse<T, V> {
+interface ActionsAttacks extends ActionsShootEvents, ActionsPathTraverse {
     //
     // P_GunShot
     //
     default void P_GunShot(mobj_t mo, boolean accurate) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         long angle;
         int damage;
 
@@ -54,10 +72,10 @@ public interface ActionsAttacks<T, V> extends ActionsShootEvents<T, V>, ActionsP
      * @param slope fixed_t
      * @param damage
      */
-    default void LineAttack(mobj_t t1, @SourceCode.angle_t long angle, @SourceCode.fixed_t int distance, @SourceCode.fixed_t int slope, int damage) {
-        final ActionsRegistry<T, V> obs = obs();
+    default void LineAttack(mobj_t t1, @SourceCode.angle_t long angle, @fixed_t int distance, @fixed_t int slope, int damage) {
+        final Actions.Registry obs = obs();
         int x2, y2;
-
+        
         obs.shootthing = t1;
         obs.la_damage = damage;
         x2 = t1.x + (distance >> FRACBITS) * finecosine(angle);
@@ -78,7 +96,7 @@ public interface ActionsAttacks<T, V> extends ActionsShootEvents<T, V>, ActionsP
      * P_RadiusAttack Source is the creature that caused the explosion at spot.
      */
     default void RadiusAttack(mobj_t spot, mobj_t source, int damage) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int x;
         int y;
 
@@ -110,7 +128,7 @@ public interface ActionsAttacks<T, V> extends ActionsShootEvents<T, V>, ActionsP
      */
     
     @SourceCode.P_Enemy.C(PIT_VileCheck) default boolean VileCheck(mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int maxdist;
         boolean check;
 
@@ -143,7 +161,7 @@ public interface ActionsAttacks<T, V> extends ActionsShootEvents<T, V>, ActionsP
      * PIT_RadiusAttack "bombsource" is the creature that caused the explosion at "bombspot".
      */
     @SourceCode.P_Map.C(PIT_RadiusAttack) default boolean RadiusAttack(mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int dx, dy, dist;
         fixed_t: {
             dx: dy: dist:;

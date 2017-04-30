@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import static m.fixed_t.*;
-import static p.ActionFunction.ParamType.PlayerSprite;
+import p.ActiveStates.PlayerSpriteConsumer;
 import p.mobj_t;
 import static p.mobj_t.*;
 import p.pspdef_t;
@@ -75,7 +75,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         weaponowned = new boolean[NUMWEAPONS];
         psprites = new pspdef_t[NUMPSPRITES];
         Arrays.setAll(psprites, i -> new pspdef_t());
-        this.mo=new mobj_t(DOOM.actions);
+        this.mo=mobj_t.createOn(DOOM);
         // If a player doesn't reference himself through his object, he will have an existential crisis.
         this.mo.player=this;
         readyweapon=weapontype_t.wp_fist;
@@ -887,8 +887,8 @@ SetPsprite
     
     // Call action routine.
     // Modified handling.
-    if (state.action.isParamType(PlayerSprite)) {
-        state.action.callPlayerSpriteFun(DOOM.actionFunctions, this, psp);
+    if (state.action.isParamType(PlayerSpriteConsumer.class)) {
+        state.action.fun(PlayerSpriteConsumer.class).accept(DOOM.actions.obs(), this, psp);
         if (psp.state==null)
         break;
     }

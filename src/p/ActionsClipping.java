@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Limits.MAXRADIUS;
@@ -12,7 +29,7 @@ import rr.line_t;
 import rr.subsector_t;
 import static utils.C2JUtils.eval;
 
-public interface ActionsClipping<T, V> extends ActionsThings<T, V>, ActionsUtility<T, V> {
+interface ActionsClipping extends ActionsThings, ActionsUtility {
     //
     // MOVEMENT CLIPPING
     //
@@ -32,7 +49,7 @@ public interface ActionsClipping<T, V> extends ActionsThings<T, V>, ActionsUtili
      */
     @SourceCode.P_Map.C(P_CheckPosition)
     default boolean CheckPosition(mobj_t thing, @SourceCode.fixed_t int x, @SourceCode.fixed_t int y) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int xl;
         int xh;
         int yl;
@@ -136,7 +153,7 @@ public interface ActionsClipping<T, V> extends ActionsThings<T, V>, ActionsUtili
     // and false will be returned.
     //
     default boolean ThingHeightClip(mobj_t thing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         boolean onfloor;
 
         onfloor = (thing.z == thing.floorz);
@@ -161,7 +178,7 @@ public interface ActionsClipping<T, V> extends ActionsThings<T, V>, ActionsUtili
     }
     
     default boolean isblocking(intercept_t in, line_t li) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         // the line does block movement,
         // see if it is closer than best so far
 

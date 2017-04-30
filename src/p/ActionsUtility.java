@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import doom.SourceCode;
@@ -9,6 +26,7 @@ import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
+import p.ActionSystem.Observer;
 import static p.mobj_t.MF_MISSILE;
 import rr.line_t;
 import static rr.line_t.ML_BLOCKING;
@@ -16,12 +34,12 @@ import static rr.line_t.ML_BLOCKMONSTERS;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
 
-public interface ActionsUtility<T, V> extends ActionsRegistry.Observer<T, V> {
+interface ActionsUtility extends Observer<Actions.Registry> {
     //
     //P_BlockThingsIterator
     //
     @SourceCode.P_MapUtl.C(P_BlockThingsIterator) default boolean BlockThingsIterator(int x, int y, Predicate<mobj_t> func) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         mobj_t mobj;
 
         if (x < 0 || y < 0 || x >= obs.DOOM.levelLoader.bmapwidth || y >= obs.DOOM.levelLoader.bmapheight) {
@@ -56,7 +74,7 @@ public interface ActionsUtility<T, V> extends ActionsRegistry.Observer<T, V> {
      * so increment validcount before the first call to P_BlockLinesIterator, then make one or more calls to it.
      */
     @SourceCode.P_MapUtl.C(P_BlockLinesIterator) default boolean BlockLinesIterator(int x, int y, Predicate<line_t> func) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int offset;
         int lineinblock;
         line_t ld;
@@ -96,7 +114,7 @@ public interface ActionsUtility<T, V> extends ActionsRegistry.Observer<T, V> {
     // so missiles don't explode against sky hack walls
 
     default void ResizeSpechits() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         obs.spechit = C2JUtils.resize(obs.spechit[0], obs.spechit, obs.spechit.length * 2);
     }
     
@@ -105,7 +123,7 @@ public interface ActionsUtility<T, V> extends ActionsRegistry.Observer<T, V> {
      *
      */
     @SourceCode.P_Map.C(PIT_CheckLine) default boolean CheckLine(line_t ld) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         if (obs.tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
                 || obs.tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
                 || obs.tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]

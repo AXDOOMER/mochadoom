@@ -2,8 +2,8 @@ package data;
 
 import static data.Defines.TIC_MUL;
 import defines.statenum_t;
-import p.ActionFunction;
-import static p.ActionFunction.NOP;
+import p.ActiveStates;
+import static p.ActiveStates.NOP;
 
 public class state_t {
 
@@ -11,7 +11,7 @@ public class state_t {
 
     }
 
-    public state_t(spritenum_t sprite, int frame, int tics, ActionFunction action, statenum_t nextstate, int misc1, int misc2) {
+    public state_t(spritenum_t sprite, int frame, int tics, ActiveStates action, statenum_t nextstate, int misc1, int misc2) {
         this.sprite = sprite;
         this.frame = frame;
         this.tics = tics * TIC_MUL;
@@ -42,7 +42,7 @@ public class state_t {
      * This a
      *
      */
-    public ActionFunction action;
+    public ActiveStates action;
 
     public statenum_t nextstate;
     public int misc1, misc2;

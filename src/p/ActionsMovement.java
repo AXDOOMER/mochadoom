@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.FLOATSPEED;
@@ -37,14 +54,14 @@ import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
 
-public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, ActionsClipping<T, V>, ActionsMoveEvents<T, V>, ActionsUseEvents<T, V> {
+interface ActionsMovement extends ActionsPathTraverse, ActionsClipping, ActionsMoveEvents, ActionsUseEvents {
     ///////////////// MOVEMENT'S ACTIONS ////////////////////////
     /**
      * If "floatok" true, move would be ok if within "tmfloorz - tmceilingz".
      */
 
     default boolean Move(mobj_t actor) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         @SourceCode.fixed_t int tryx, tryy;
 
         line_t ld;
@@ -115,7 +132,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
      *
      */
     default boolean TryMove(mobj_t thing, @SourceCode.fixed_t int x, @SourceCode.fixed_t int y) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         @SourceCode.fixed_t int oldx, oldy;
         boolean side, oldside; // both were int
         line_t ld;
@@ -176,7 +193,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
     }
 
     default void NewChaseDir(mobj_t actor) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         @SourceCode.fixed_t int deltax, deltay;
 
         int tdir;
@@ -303,7 +320,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
      * the way, an OpenDoor call is made to start it opening.
      */
     default boolean TryWalk(mobj_t actor) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         if (!this.Move(actor)) {
             return false;
         }
@@ -318,7 +335,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
     // so that the next move will slide along the wall.
     //
     default void HitSlideLine(line_t ld) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         boolean side;
 
         // all angles
@@ -373,7 +390,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
     // This is a kludgy mess.
     //
     default void SlideMove(mobj_t mo) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         @SourceCode.fixed_t int leadx, leady, trailx, traily, newx, newy;
         int hitcount;
 
@@ -418,7 +435,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
             }     // don't loop forever
 
             // fudge a bit to make sure it doesn't hit
-            obs.bestslidefrac -= ActionsRegistry.FUDGE;
+            obs.bestslidefrac -= Actions.Registry.FUDGE;
             if (obs.bestslidefrac > 0) {
                 newx = FixedMul(mo.momx, obs.bestslidefrac);
                 newy = FixedMul(mo.momy, obs.bestslidefrac);
@@ -432,7 +449,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
 
             // Now continue along the wall.
             // First calculate remainder.
-            obs.bestslidefrac = FRACUNIT - (obs.bestslidefrac + ActionsRegistry.FUDGE);
+            obs.bestslidefrac = FRACUNIT - (obs.bestslidefrac + Actions.Registry.FUDGE);
 
             if (obs.bestslidefrac > FRACUNIT) {
                 obs.bestslidefrac = FRACUNIT;
@@ -460,7 +477,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
      * @param mo
      */
     default void stairstep(mobj_t mo) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         if (!this.TryMove(mo, mo.x, mo.y + mo.momy)) {
             this.TryMove(mo, mo.x + mo.momx, mo.y);
         }
@@ -471,7 +488,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
 
 
     default void XYMovement(mobj_t mo) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         //System.out.println("XYMovement");
         @SourceCode.fixed_t int ptryx, ptryy; // pointers to fixed_t ???
         player_t player;
@@ -565,10 +582,10 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
             }
         }
 
-        if (mo.momx > -ActionsRegistry.STOPSPEED
-                && mo.momx < ActionsRegistry.STOPSPEED
-                && mo.momy > -ActionsRegistry.STOPSPEED
-                && mo.momy < ActionsRegistry.STOPSPEED
+        if (mo.momx > -Actions.Registry.STOPSPEED
+                && mo.momx < Actions.Registry.STOPSPEED
+                && mo.momy > -Actions.Registry.STOPSPEED
+                && mo.momy < Actions.Registry.STOPSPEED
                 && (player == null
                 || (player.cmd.forwardmove == 0
                 && player.cmd.sidemove == 0))) {
@@ -582,8 +599,8 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
             mo.momx = 0;
             mo.momy = 0;
         } else {
-            mo.momx = FixedMul(mo.momx, ActionsRegistry.FRICTION);
-            mo.momy = FixedMul(mo.momy, ActionsRegistry.FRICTION);
+            mo.momx = FixedMul(mo.momx, Actions.Registry.FRICTION);
+            mo.momy = FixedMul(mo.momy, Actions.Registry.FRICTION);
         }
     }
     
@@ -596,7 +613,7 @@ public interface ActionsMovement<T, V> extends ActionsPathTraverse<T, V>, Action
     // PTR_SlideTraverse
     //   
     @SourceCode.P_Map.C(PTR_SlideTraverse) default boolean SlideTraverse(intercept_t in) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         line_t li;
 
         if (!in.isaline) {

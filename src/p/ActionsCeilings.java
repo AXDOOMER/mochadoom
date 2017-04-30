@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Limits.CEILSPEED;
@@ -11,7 +28,7 @@ import rr.sector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
 
-public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
+interface ActionsCeilings extends ActionsPlanes {
     /**
      * This needs to be called before loading, otherwise crushers won't be able to be restarted.
      */
@@ -23,7 +40,7 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
      * T_MoveCeiling
      */
     default void MoveCeiling(ceiling_t ceiling) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         result_e res;
 
         switch (ceiling.direction) {
@@ -108,7 +125,7 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
     //
     @SourceCode.P_Ceiling.C(EV_DoCeiling)
     default boolean DoCeiling(line_t line, ceiling_e type) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int secnum = -1;
         boolean rtn = false;
         sector_t sec;
@@ -134,7 +151,7 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
             rtn = true;
             ceiling = new ceiling_t();
             sec.specialdata = ceiling;
-            ceiling.thinkerFunction = ActionFunction.T_MoveCeiling;
+            ceiling.thinkerFunction = ActiveStates.T_MoveCeiling;
             obs.AddThinker(ceiling);
             ceiling.sector = sec;
             ceiling.crush = false;
@@ -180,7 +197,7 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
     // Add an active ceiling
     //
     default void AddActiveCeiling(ceiling_t c) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         for (int i = 0; i < this.getMaxCeilings(); ++i) {
             if (this.getActiveCeilings()[i] == null) {
                 this.getActiveCeilings()[i] = c;
@@ -195,7 +212,7 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
     // Remove a ceiling's thinker
     //
     default void RemoveActiveCeiling(ceiling_t c) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         for (int i = 0; i < this.getMaxCeilings(); ++i) {
             if (this.getActiveCeilings()[i] == c) {
                 this.getActiveCeilings()[i].sector.specialdata = null;
@@ -210,14 +227,14 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
     // Restart a ceiling that's in-stasis
     //
     default void ActivateInStasisCeiling(line_t line) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         for (int i = 0; i < this.getMaxCeilings(); ++ i) {
             if (this.getActiveCeilings()[i] != null
             && (this.getActiveCeilings()[i].tag == line.tag)
             && (this.getActiveCeilings()[i].direction == 0))
             {
                 this.getActiveCeilings()[i].direction = this.getActiveCeilings()[i].olddirection;
-                this.getActiveCeilings()[i].thinkerFunction = ActionFunction.T_MoveCeiling;
+                this.getActiveCeilings()[i].thinkerFunction = ActiveStates.T_MoveCeiling;
             }
         }
     }
@@ -227,7 +244,7 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
     // Stop a ceiling from crushing!
     //
     default int CeilingCrushStop(line_t line) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         int i;
         int rtn;
 
@@ -250,17 +267,17 @@ public interface ActionsCeilings<T, V> extends ActionsPlanes<T, V> {
     }
 
     default void setActiveceilings(ceiling_t[] activeceilings) {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         obs.activeceilings = activeceilings;
     }
 
     default ceiling_t[] getActiveCeilings() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         return obs.activeceilings;
     }
 
     default int getMaxCeilings() {
-        final ActionsRegistry<T, V> obs = obs();
+        final Actions.Registry obs = obs();
         return obs.activeceilings.length;
     }
     

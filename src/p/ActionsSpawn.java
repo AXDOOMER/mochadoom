@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 1993-1996 by id Software, Inc.
+ * Copyright (C) 2017 Good Sign
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package p;
 
 import static data.Defines.MELEERANGE;
@@ -25,6 +42,7 @@ import static doom.SourceCode.P_Mobj.P_SpawnPlayer;
 import doom.player_t;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import p.ActionSystem.Observer;
 import static p.mobj_t.MF_AMBUSH;
 import static p.mobj_t.MF_COUNTITEM;
 import static p.mobj_t.MF_COUNTKILL;
@@ -34,9 +52,7 @@ import static p.mobj_t.MF_TRANSSHIFT;
 import static utils.C2JUtils.eval;
 import v.graphics.Palettes;
 
-public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
-    mobj_t CreateMobj();
-    
+interface ActionsSpawn extends Observer<Actions.Registry> {
     /**
      * P_SpawnMobj
      *
@@ -48,13 +64,13 @@ public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
      */
     @SourceCode.P_Mobj.C(P_SpawnMobj)
     default mobj_t SpawnMobj(@SourceCode.fixed_t int x, @SourceCode.fixed_t int y, @SourceCode.fixed_t int z, mobjtype_t type) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         mobj_t mobj;
         state_t st;
         mobjinfo_t info;
 
         Z_Malloc: {
-            mobj = CreateMobj();
+            mobj = mobj_t.createOn(obs.DOOM);
         }
         info = mobjinfo[type.ordinal()];
 
@@ -99,7 +115,7 @@ public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
             mobj.z = z;
         }
 
-        mobj.thinkerFunction = ActionFunction.P_MobjThinker;
+        mobj.thinkerFunction = ActiveStates.P_MobjThinker;
         P_AddThinker: {
             obs.AddThinker(mobj);
         }
@@ -113,7 +129,7 @@ public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
      */
     @SourceCode.P_Mobj.C(P_SpawnPlayer)
     default void SpawnPlayer(mapthing_t mthing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         player_t p;
         @SourceCode.fixed_t int x, y, z;
         mobj_t mobj;
@@ -186,7 +202,7 @@ public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
      * P_SpawnMapThing The fields of the mapthing should already be in host byte order.
      */
     default mobj_t SpawnMapThing(mapthing_t mthing) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         int i;
         int bit;
         mobj_t mobj;
@@ -310,7 +326,7 @@ public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
      * @param damage
      */
     default void SpawnBlood(int x, int y, int z, int damage) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         mobj_t th;
 
         z += ((obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 10);
@@ -338,7 +354,7 @@ public interface ActionsSpawn<T, V> extends ActionsRegistry.Observer<T, V> {
      *
      */
     default void SpawnPuff(int x, int y, int z) {
-        final ActionsRegistry<T, V> obs = obs();
+        final p.Actions.Registry obs = obs();
         mobj_t th;
 
         z += ((obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 10);

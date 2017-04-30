@@ -3,7 +3,7 @@ package data;
 import data.sounds.sfxenum_t;
 import defines.statenum_t;
 import static m.fixed_t.*;
-import static p.ActionFunction.*;
+import static p.ActiveStates.*;
 import static p.MobjFlags.*;
 
 // Emacs style mode select   -*- C++ -*- 
