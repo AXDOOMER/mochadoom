@@ -16,6 +16,8 @@
  */
 package p;
 
+import p.Actions.Registry;
+
 /**
  * A tough task was to implement Actions using Observer pattern
  * (observing a Registry - an instance shared state between Actions)
@@ -35,7 +37,14 @@ package p;
  *  - Good Sign 2017/04/30
  */
 class ActionSystem {
-    interface Governor extends Command, Observer<Actions.Registry> {}
+    
+    interface Governor<R extends Registry & Observer<Registry>> extends Command, Observer<Registry> {
+
+        @Override
+        public default Registry obs() {
+            return (Registry) this;
+        }
+    }
     
     private interface Command extends
         ActionsAim,

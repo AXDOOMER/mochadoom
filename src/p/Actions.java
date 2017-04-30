@@ -136,7 +136,7 @@ public class Actions implements Observer<Actions.Registry>, ThinkerList {
         gov.Init();
     }
 
-    public static final class Registry extends UnifiedGameMap implements Governor {
+    public static class Registry extends UnifiedGameMap implements Governor<Registry> {
 
         static final long FATSPREAD = Tables.ANG90 / 8;
         static final int TRACEANGLE = 201326592;
@@ -263,11 +263,6 @@ public class Actions implements Observer<Actions.Registry>, ThinkerList {
 
         public Registry(DoomMain DOOM) {
             super(DOOM);
-        }
-
-        @Override
-        public Registry obs() {
-            return this;
         }
     }
 }
