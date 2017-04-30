@@ -239,6 +239,33 @@ public @interface SourceCode {
         @Retention(SOURCE) public
         @interface C { Z_Zone value(); }
     }
+    
+    @Documented
+    @Retention(SOURCE)
+    public @interface Exact {
+        String description() default
+            "Indicates that the method behaves exactly in vanilla way\n" +
+            " and can be skipped when traversing for compatibility";
+    }
+
+    @Documented
+    @Retention(SOURCE)
+    public @interface Compatible {
+        String value() default "";
+        String description() default
+            "Indicates that the method can behave differently from vanilla way,\n" +
+            " but this behavior is reviewed and can be turned back to vanilla as an option." +
+            "A value might be specivied with the equivalent vanilla code";
+    }
+
+    @Documented
+    @Retention(SOURCE)
+    public @interface Suspicious  {
+        String description() default
+            "Indicates that the method contains behavior totally different\n" +
+            "from vanilla, and by so should be considered suspicious\n" +
+            "in terms of compatibility";
+    }
 
     @Documented
     @Retention(SOURCE)

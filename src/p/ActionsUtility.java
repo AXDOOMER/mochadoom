@@ -19,6 +19,7 @@ package p;
 
 import doom.SourceCode;
 import static doom.SourceCode.P_Map.PIT_CheckLine;
+import doom.SourceCode.P_MapUtl;
 import static doom.SourceCode.P_MapUtl.P_BlockLinesIterator;
 import static doom.SourceCode.P_MapUtl.P_BlockThingsIterator;
 import java.util.function.Predicate;
@@ -28,6 +29,7 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import p.ActionSystem.Observer;
 import static p.mobj_t.MF_MISSILE;
+import rr.SceneRenderer;
 import rr.line_t;
 import static rr.line_t.ML_BLOCKING;
 import static rr.line_t.ML_BLOCKMONSTERS;
@@ -38,16 +40,17 @@ interface ActionsUtility extends Observer<Actions.Registry> {
     //
     //P_BlockThingsIterator
     //
-    @SourceCode.P_MapUtl.C(P_BlockThingsIterator) default boolean BlockThingsIterator(int x, int y, Predicate<mobj_t> func) {
-        final Actions.Registry obs = obs();
+    @SourceCode.Exact
+    @P_MapUtl.C(P_BlockThingsIterator)
+    default boolean BlockThingsIterator(int x, int y, Predicate<mobj_t> func) {
+        final AbstractLevelLoader ll = obs().DOOM.levelLoader;
         mobj_t mobj;
 
-        if (x < 0 || y < 0 || x >= obs.DOOM.levelLoader.bmapwidth || y >= obs.DOOM.levelLoader.bmapheight) {
+        if (x < 0 || y < 0 || x >= ll.bmapwidth || y >= ll.bmapheight) {
             return true;
         }
 
-        for (mobj = obs.DOOM.levelLoader.blocklinks[y * obs.DOOM.levelLoader.bmapwidth + x]; mobj != null;
-                mobj = (mobj_t) mobj.bnext) {
+        for (mobj = ll.blocklinks[y * ll.bmapwidth + x]; mobj != null; mobj = (mobj_t) mobj.bnext) {
             if (!func.test(mobj)) {
                 return false;
             }
@@ -73,31 +76,34 @@ interface ActionsUtility extends Observer<Actions.Registry> {
      * P_BlockLinesIterator The validcount flags are used to avoid checking lines that are marked in multiple mapblocks,
      * so increment validcount before the first call to P_BlockLinesIterator, then make one or more calls to it.
      */
-    @SourceCode.P_MapUtl.C(P_BlockLinesIterator) default boolean BlockLinesIterator(int x, int y, Predicate<line_t> func) {
-        final Actions.Registry obs = obs();
+    @P_MapUtl.C(P_BlockLinesIterator)
+    default boolean BlockLinesIterator(int x, int y, Predicate<line_t> func) {
+        final AbstractLevelLoader ll = obs().DOOM.levelLoader;
+        final SceneRenderer sr = obs().DOOM.sceneRenderer;
         int offset;
         int lineinblock;
         line_t ld;
 
-        if (x < 0
-                || y < 0
-                || x >= obs.DOOM.levelLoader.bmapwidth
-                || y >= obs.DOOM.levelLoader.bmapheight) {
+        if (x < 0 || y < 0 || x >= ll.bmapwidth || y >= ll.bmapheight) {
             return true;
         }
 
         // This gives us the index to look up (in blockmap)
-        offset = y * obs.DOOM.levelLoader.bmapwidth + x;
+        offset = y * ll.bmapwidth + x;
 
         // The index contains yet another offset, but this time 
-        offset = obs.DOOM.levelLoader.blockmap[offset];
+        offset = ll.blockmap[offset];
 
         // MAES: blockmap terminating marker is always -1
-        final int validcount = obs.DOOM.sceneRenderer.getValidCount();
+        @SourceCode.Compatible("validcount")
+        final int validcount = sr.getValidCount();
 
         // [SYNC ISSUE]: don't skip offset+1 :-/
-        for (int list = offset; (lineinblock = obs.DOOM.levelLoader.blockmap[list]) != -1; list++) {
-            ld = obs.DOOM.levelLoader.lines[lineinblock];
+        for (
+            @SourceCode.Compatible("list = blockmaplump+offset ; *list != -1 ; list++")
+            int list = offset; (lineinblock = ll.blockmap[list]) != -1; list++
+        ) {
+            ld = ll.lines[lineinblock];
             //System.out.println(ld);
             if (ld.validcount == validcount) {
                 continue;   // line has already been checked

@@ -36,9 +36,10 @@ import data.mobjtype_t;
 import data.state_t;
 import defines.skill_t;
 import defines.statenum_t;
-import doom.SourceCode;
+import doom.SourceCode.P_Mobj;
 import static doom.SourceCode.P_Mobj.P_SpawnMobj;
 import static doom.SourceCode.P_Mobj.P_SpawnPlayer;
+import doom.SourceCode.fixed_t;
 import doom.player_t;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
@@ -62,8 +63,8 @@ interface ActionsSpawn extends Observer<Actions.Registry> {
      * @param type
      * @return
      */
-    @SourceCode.P_Mobj.C(P_SpawnMobj)
-    default mobj_t SpawnMobj(@SourceCode.fixed_t int x, @SourceCode.fixed_t int y, @SourceCode.fixed_t int z, mobjtype_t type) {
+    @P_Mobj.C(P_SpawnMobj)
+    default mobj_t SpawnMobj(@fixed_t int x, @fixed_t int y, @fixed_t int z, mobjtype_t type) {
         final p.Actions.Registry obs = obs();
         mobj_t mobj;
         state_t st;
@@ -127,11 +128,11 @@ interface ActionsSpawn extends Observer<Actions.Registry> {
      * P_SpawnPlayer Called when a player is spawned on the level. Most of the player structure stays unchanged between
      * levels.
      */
-    @SourceCode.P_Mobj.C(P_SpawnPlayer)
+    @P_Mobj.C(P_SpawnPlayer)
     default void SpawnPlayer(mapthing_t mthing) {
         final p.Actions.Registry obs = obs();
         player_t p;
-        @SourceCode.fixed_t int x, y, z;
+        @fixed_t int x, y, z;
         mobj_t mobj;
 
         // not playing?

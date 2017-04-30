@@ -16,13 +16,19 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
     public thinker_t next;
     public ActiveStates thinkerFunction;
 
-    /* killough 8/29/98: we maintain thinkers in several equivalence classes,
-    * according to various criteria, so as to allow quicker searches.
+    /**
+     * killough's code for thinkers seems to be totally broken in M.D,
+     * so commented it out and will not probably restore, but may invent
+     * something new in future
+     * - Good Sign 2017/05/1
+     * 
+     * killough 8/29/98: we maintain thinkers in several equivalence classes,
+     * according to various criteria, so as to allow quicker searches.
      */
     /**
      * Next, previous thinkers in same class
      */
-    public thinker_t cnext, cprev;
+    //public thinker_t cnext, cprev;
 
     /**
      * extra fields, to use when archiving/unarchiving for

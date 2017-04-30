@@ -8,6 +8,7 @@ import static data.Defines.PU_LEVEL;
 import data.Limits;
 import data.mapthing_t;
 import doom.DoomMain;
+import doom.SourceCode;
 import doom.SourceCode.P_MapUtl;
 import static doom.SourceCode.P_MapUtl.P_SetThingPosition;
 import doom.SourceCode.R_Main;
@@ -123,6 +124,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      */
 
     @Override
+    @SourceCode.Exact
     @P_MapUtl.C(P_SetThingPosition)
     public void SetThingPosition(mobj_t thing) {
         final subsector_t ss;
@@ -185,6 +187,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     }
 
     @Override
+    @SourceCode.Exact
     @R_Main.C(R_PointInSubsector)
     public subsector_t PointInSubsector(@fixed_t int x, @fixed_t int y) {
         node_t node;
@@ -738,7 +741,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     // A 511x511 blockmap would still have a valid negative number
     // e.g. -1..510, so they would be set to -2
     
-    private static final boolean FIX_BLOCKMAP_512 = Engine.getConfig().equals(Settings.fix_blockmap, Boolean.TRUE);
+    public static final boolean FIX_BLOCKMAP_512 = Engine.getConfig().equals(Settings.fix_blockmap, Boolean.TRUE);
     public int blockmapxneg = -257;
     public int blockmapyneg = -257;
 
@@ -852,11 +855,13 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * @param blockx
      * @return
      */
+    @SourceCode.Compatible("blockx >> MAPBLOCKSHIFT")
     public final int getSafeBlockX(int blockx){
         blockx >>= MAPBLOCKSHIFT;
         return (FIX_BLOCKMAP_512 && blockx <= this.blockmapxneg) ? blockx & 0x1FF : blockx;
     }
     
+    @SourceCode.Compatible("blockx >> MAPBLOCKSHIFT")
     public final int getSafeBlockX(long blockx) {
         blockx >>= MAPBLOCKSHIFT;
         return (int) ((FIX_BLOCKMAP_512 && blockx <= this.blockmapxneg) ? blockx & 0x1FF : blockx);
@@ -869,14 +874,16 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * @return     */
 
     
-    public final int getSafeBlockY(int blocky){
-        blocky>>=MAPBLOCKSHIFT;
-        return (blocky<=this.blockmapyneg)?blocky&0x1FF:blocky;
+    @SourceCode.Compatible("blocky >> MAPBLOCKSHIFT")
+    public final int getSafeBlockY(int blocky) {
+        blocky >>= MAPBLOCKSHIFT;
+        return (FIX_BLOCKMAP_512 && blocky <= this.blockmapyneg) ? blocky & 0x1FF : blocky;
     }
-    
-    public final int getSafeBlockY(long blocky){
-        blocky>>=MAPBLOCKSHIFT;
-        return (int) ((blocky<=this.blockmapyneg)?blocky&0x1FF:blocky);
+
+    @SourceCode.Compatible("blocky >> MAPBLOCKSHIFT")
+    public final int getSafeBlockY(long blocky) {
+        blocky >>= MAPBLOCKSHIFT;
+        return (int) ((FIX_BLOCKMAP_512 && blocky <= this.blockmapyneg) ? blocky & 0x1FF : blocky);
     }
 
     /// Sector tag stuff, lifted off Boom

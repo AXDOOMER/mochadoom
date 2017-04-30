@@ -19,11 +19,13 @@ package p;
 
 import static data.Limits.MAXRADIUS;
 import doom.SourceCode;
+import doom.SourceCode.P_Map;
 import static doom.SourceCode.P_Map.P_CheckPosition;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
+import static p.AbstractLevelLoader.FIX_BLOCKMAP_512;
 import static p.mobj_t.MF_NOCLIP;
 import rr.line_t;
 import rr.subsector_t;
@@ -47,7 +49,8 @@ interface ActionsClipping extends ActionsThings, ActionsUtility {
      * @param x fixed_t
      * @param y fixed_t
      */
-    @SourceCode.P_Map.C(P_CheckPosition)
+    @SourceCode.Compatible
+    @P_Map.C(P_CheckPosition)
     default boolean CheckPosition(mobj_t thing, @SourceCode.fixed_t int x, @SourceCode.fixed_t int y) {
         final Actions.Registry obs = obs();
         int xl;
@@ -114,20 +117,22 @@ interface ActionsClipping extends ActionsThings, ActionsUtility {
         yl = obs.DOOM.levelLoader.getSafeBlockY(obs.tmbbox[BOXBOTTOM] - obs.DOOM.levelLoader.bmaporgy);
         yh = obs.DOOM.levelLoader.getSafeBlockY(obs.tmbbox[BOXTOP] - obs.DOOM.levelLoader.bmaporgy);
 
-        // Maes's quick and dirty blockmap extension hack
-        // E.g. for an extension of 511 blocks, max negative is -1.
-        // A full 512x512 blockmap doesn't have negative indexes.
-        if (xl <= obs.DOOM.levelLoader.blockmapxneg) {
-            xl = 0x1FF & xl;         // Broke width boundary
-        }
-        if (xh <= obs.DOOM.levelLoader.blockmapxneg) {
-            xh = 0x1FF & xh;    // Broke width boundary
-        }
-        if (yl <= obs.DOOM.levelLoader.blockmapyneg) {
-            yl = 0x1FF & yl;        // Broke height boundary
-        }
-        if (yh <= obs.DOOM.levelLoader.blockmapyneg) {
-            yh = 0x1FF & yh;   // Broke height boundary     
+        if (FIX_BLOCKMAP_512) {
+            // Maes's quick and dirty blockmap extension hack
+            // E.g. for an extension of 511 blocks, max negative is -1.
+            // A full 512x512 blockmap doesn't have negative indexes.
+            if (xl <= obs.DOOM.levelLoader.blockmapxneg) {
+                xl = 0x1FF & xl;         // Broke width boundary
+            }
+            if (xh <= obs.DOOM.levelLoader.blockmapxneg) {
+                xh = 0x1FF & xh;    // Broke width boundary
+            }
+            if (yl <= obs.DOOM.levelLoader.blockmapyneg) {
+                yl = 0x1FF & yl;        // Broke height boundary
+            }
+            if (yh <= obs.DOOM.levelLoader.blockmapyneg) {
+                yh = 0x1FF & yh;   // Broke height boundary     
+            }
         }
         for (bx = xl; bx <= xh; bx++) {
             for (by = yl; by <= yh; by++) {

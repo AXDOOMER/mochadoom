@@ -1,5 +1,6 @@
 package rr;
 
+import doom.SourceCode;
 import doom.SourceCode.R_Main;
 import static doom.SourceCode.R_Main.*;
 import doom.SourceCode.fixed_t;
@@ -115,6 +116,7 @@ public class node_t implements Resettable {
      * @param y fixed
      * @return
      */
+    @SourceCode.Exact
     @R_Main.C(R_PointOnSide)
     public int PointOnSide(@fixed_t int x, @fixed_t int y) {
         // MAES: These are used mainly as ints, no need to use fixed_t internally.

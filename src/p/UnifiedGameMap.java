@@ -31,6 +31,7 @@ import defines.ammotype_t;
 import defines.card_t;
 import defines.statenum_t;
 import doom.DoomMain;
+import doom.SourceCode;
 import doom.SourceCode.P_MapUtl;
 import static doom.SourceCode.P_MapUtl.*;
 import doom.SourceCode.P_Mobj;
@@ -77,7 +78,6 @@ import static doom.englsh.GOTYELWCARD;
 import static doom.englsh.GOTYELWSKUL;
 import static doom.items.weaponinfo;
 import doom.player_t;
-import doom.th_class;
 import doom.thinker_t;
 import doom.weapontype_t;
 import java.util.Arrays;
@@ -90,7 +90,6 @@ import static m.fixed_t.MAPFRACUNIT;
 import mochadoom.Engine;
 import mochadoom.Loggers;
 import static p.ActiveStates.NOP;
-import static p.ActiveStates.P_MobjThinker;
 import static p.ActiveStates.T_PlatRaise;
 import static p.DoorDefines.SLOWDARK;
 import static p.MapUtils.AproxDistance;
@@ -111,6 +110,12 @@ import static utils.C2JUtils.flags;
 public abstract class UnifiedGameMap implements ThinkerList {
     private static final Logger LOGGER = Loggers.getLogger(UnifiedGameMap.class.getName());
     
+    /**
+     * killough's code for thinkers seems to be totally broken in M.D,
+     * so commented it out and will not probably restore, but may invent
+     * something new in future
+     * - Good Sign 2017/05/1
+     */
     public UnifiedGameMap(DoomMain DOOM){
         this.SL = new SlideDoor(DOOM);
         this.SW = new Switches();
@@ -120,9 +125,9 @@ public abstract class UnifiedGameMap implements ThinkerList {
         this.See = new Sight(); // Didn't initialize that.
         this.EN = new Enemies();
         this.thinkercap = new thinker_t();
-        for (int i=0; i<th_class.NUMTHCLASS; i++) { // killough 8/29/98: initialize threaded lists
+        /*for (int i=0; i<th_class.NUMTHCLASS; i++) { // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i]=new thinker_t();
-        }
+        }*/
         
         intercepts = new intercept_t[MAXINTERCEPTS];
         Arrays.setAll(intercepts, i -> new intercept_t());
@@ -267,8 +272,10 @@ public abstract class UnifiedGameMap implements ThinkerList {
      * inside these structures need to be updated.
      */
 
+    @SourceCode.Exact
     @P_MapUtl.C(P_UnsetThingPosition)
     public void UnsetThingPosition(mobj_t thing) {
+        final AbstractLevelLoader ll = DOOM.levelLoader;
         final int blockx;
         final int blocky;
 
@@ -296,13 +303,13 @@ public abstract class UnifiedGameMap implements ThinkerList {
             if (thing.bprev != null) {
                 ((mobj_t) thing.bprev).bnext = thing.bnext;
             } else {
-                blockx = DOOM.levelLoader.getSafeBlockX(thing.x - DOOM.levelLoader.bmaporgx);
-                blocky = DOOM.levelLoader.getSafeBlockY(thing.y - DOOM.levelLoader.bmaporgy);
+                blockx = ll.getSafeBlockX(thing.x - ll.bmaporgx);
+                blocky = ll.getSafeBlockY(thing.y - ll.bmaporgy);
                 
-                if (blockx >= 0 && blockx < DOOM.levelLoader.bmapwidth
-                 && blocky >= 0 && blocky < DOOM.levelLoader.bmapheight)
+                if (blockx >= 0 && blockx < ll.bmapwidth
+                 && blocky >= 0 && blocky < ll.bmapheight)
                 {
-                    DOOM.levelLoader.blocklinks[blocky * DOOM.levelLoader.bmapwidth + blockx] = (mobj_t) thing.bnext;
+                    ll.blocklinks[blocky * ll.bmapwidth + blockx] = (mobj_t) thing.bnext;
                 }
             }
         }
@@ -329,20 +336,30 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
     int ptflags;
     
-    protected void UpdateThinker(thinker_t thinker) {
+    /**
+     * killough's code for thinkers seems to be totally broken in M.D,
+     * this method is unused
+     */
+    /*protected void UpdateThinker(thinker_t thinker) {
         thinker_t th;
         // find the class the thinker belongs to
 
-        th_class cls
-            = thinker.thinkerFunction == NOP ? th_class.th_delete : thinker.thinkerFunction == P_MobjThinker
+        th_class cls = thinker.thinkerFunction == NOP
+            ? th_class.th_delete
+            : (thinker.thinkerFunction == P_MobjThinker
                 && ((mobj_t) thinker).health > 0
                 && (eval((((mobj_t) thinker).flags) & MF_COUNTKILL)
-                || ((mobj_t) thinker).type == mobjtype_t.MT_SKULL) ? eval((((mobj_t) thinker).flags) & MF_FRIEND)
-                    ? th_class.th_friends : th_class.th_enemies : th_class.th_misc;
+                || ((mobj_t) thinker).type == mobjtype_t.MT_SKULL)
+                    ? (
+                        eval((((mobj_t) thinker).flags) & MF_FRIEND)
+                            ? th_class.th_friends
+                            : th_class.th_enemies
+                    ) : th_class.th_misc
+            );
 
         {
             /* Remove from current thread, if in one */
-            if ((th = thinker.cnext) != null) {
+            /*if ((th = thinker.cnext) != null) {
                 (th.cprev = thinker.cprev).cnext = th;
             }
         }
@@ -355,7 +372,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
         th.cprev = thinker;
     }
 
-    protected final thinker_t[] thinkerclasscap=new thinker_t[th_class.NUMTHCLASS];
+    protected final thinker_t[] thinkerclasscap=new thinker_t[th_class.NUMTHCLASS];*/
 
     public boolean sight_debug;
     
@@ -1557,6 +1574,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
     int iquetail;
 
+    @SourceCode.Exact
     @P_Mobj.C(P_RemoveMobj)
     public void RemoveMobj(mobj_t mobj) {
         if (eval(mobj.flags& MF_SPECIAL)
@@ -1604,16 +1622,21 @@ public abstract class UnifiedGameMap implements ThinkerList {
     /** Both the head and the tail of the thinkers list */
     public thinker_t thinkercap;
 
-    //
-    // P_InitThinkers
-    //
+    /**
+     * killough's code for thinkers seems to be totally broken in M.D,
+     * so commented it out and will not probably restore, but may invent
+     * something new in future
+     * - Good Sign 2017/05/1
+     * 
+     * P_InitThinkers
+     */
     @Override
     public void InitThinkers() {
     	
         // mobjpool.drain();
         
-        for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
-            thinkerclasscap[i].cprev = thinkerclasscap[i].cnext = thinkerclasscap[i];
+        /*for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
+            thinkerclasscap[i].cprev = thinkerclasscap[i].cnext = thinkerclasscap[i];*/
         
     	thinker_t next=thinkercap.next;
     	thinker_t prev=thinkercap.prev;
@@ -1636,39 +1659,44 @@ public abstract class UnifiedGameMap implements ThinkerList {
     }
 
     /**
+     * killough's code for thinkers seems to be totally broken in M.D,
+     * so commented it out and will not probably restore, but may invent
+     * something new in future
+     * - Good Sign 2017/05/1
+     * 
      * cph 2002/01/13 - iterator for thinker list
      * WARNING: Do not modify thinkers between calls to this functin
      */
-    thinker_t NextThinker(thinker_t th, th_class cl) {
+    /*thinker_t NextThinker(thinker_t th, th_class cl) {
         thinker_t top = thinkerclasscap[cl.ordinal()];
         if (th == null) {
             th = top;
         }
         th = cl == th_class.th_all ? th.next : th.cnext;
         return th == top ? null : th;
-    }
+    }*/
     
     /**
-     * P_AddThinker Adds a new thinker at the end of the list.
+     * killough's code for thinkers seems to be totally broken in M.D,
+     * so commented it out and will not probably restore, but may invent
+     * something new in future
+     * - Good Sign 2017/05/1
+     * 
+     * P_AddThinker
+     * Adds a new thinker at the end of the list.
      */
     @Override
+    @SourceCode.Exact
     @P_Tick.C(P_AddThinker)
     public void AddThinker(thinker_t thinker) {
-    	// If something was too weird to be wired before, it will
-    	// be wired here for sure, so don't worry about searching 
-    	// all of the code.
-        /*if (thinker.function != null && (thinker.acp1 == null && thinker.acp2 == null)) {
-            FUNS.doWireThinker(thinker);
-        }*/
-	
         thinkercap.prev.next = thinker;
         thinker.next = thinkercap;
         thinker.prev = thinkercap.prev;
         thinkercap.prev = thinker;
         
         // killough 8/29/98: set sentinel pointers, and then add to appropriate list
-        thinker.cnext = thinker.cprev = null;
-        UpdateThinker(thinker);
+        /*thinker.cnext = thinker.cprev = null;
+        UpdateThinker(thinker);*/
         
         // [Maes] seems only used for interpolations
         //newthinkerpresent = true;
@@ -1720,6 +1748,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
     //
     
     @Override
+    @SourceCode.Compatible("thinker->function.acv = (actionf_v)(-1)")
     @P_Tick.C(P_RemoveThinker)
     public void RemoveThinker(thinker_t thinker) {
         thinker.thinkerFunction = NOP;
