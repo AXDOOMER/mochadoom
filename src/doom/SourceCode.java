@@ -57,6 +57,46 @@ public @interface SourceCode {
         @Retention(SOURCE) public
         @interface C { G_Game value(); }
     }
+
+    public enum HU_Lib {
+        HUlib_init,
+        HUlib_clearTextLine,
+        HUlib_initTextLine,
+        HUlib_addCharToTextLine,
+        HUlib_delCharFromTextLine,
+        HUlib_drawTextLine,
+        HUlib_eraseTextLine,
+        HUlib_initSText,
+        HUlib_addLineToSText,
+        HUlib_addMessageToSText,
+        HUlib_drawSText,
+        HUlib_eraseSText,
+        HUlib_initIText,
+        HUlib_delCharFromIText,
+        HUlib_eraseLineFromIText,
+        HUlib_resetIText,
+        HUlib_addPrefixToIText,
+        HUlib_keyInIText,
+        HUlib_drawIText,
+        HUlib_eraseIText;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { HU_Lib value(); }
+    }    
+    
+    public enum HU_Stuff {
+        HU_Init,
+        HU_Start,
+        HU_Responder,
+        HU_Ticker,
+        HU_Drawer,
+        HU_queueChatChar,
+        HU_dequeueChatChar,
+        HU_Erase;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { HU_Stuff value(); }
+    }
     
     public enum I_IBM {
         I_GetTime,
@@ -190,6 +230,42 @@ public @interface SourceCode {
         @interface C { P_Tick value(); }
     }
     
+    public enum P_Pspr {
+        P_SetPsprite,
+        P_CalcSwing,
+        P_BringUpWeapon,
+        P_CheckAmmo,
+        P_FireWeapon,
+        P_DropWeapon,
+        A_WeaponReady,
+        A_ReFire,
+        A_CheckReload,
+        A_Lower,
+        A_Raise,
+        A_GunFlash,
+        A_Punch,
+        A_Saw,
+        A_FireMissile,
+        A_FireBFG,
+        A_FirePlasma,
+        P_BulletSlope,
+        P_GunShot,
+        A_FirePistol,
+        A_FireShotgun,
+        A_FireShotgun2,
+        A_FireCGun,
+        A_Light0,
+        A_Light1,
+        A_Light2,
+        A_BFGSpray,
+        A_BFGsound,
+        P_SetupPsprites,
+        P_MovePsprites;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Pspr value(); }
+    }
+    
     public enum R_Main {
         R_PointOnSide,
         R_PointOnSegSide,
@@ -251,16 +327,23 @@ public @interface SourceCode {
     @Documented
     @Retention(SOURCE)
     public @interface Compatible {
-        String value() default "";
+        String[] value() default "";
         String description() default
             "Indicates that the method can behave differently from vanilla way,\n" +
             " but this behavior is reviewed and can be turned back to vanilla as an option." +
             "A value might be specivied with the equivalent vanilla code";
     }
+    
+    public enum CauseOfDesyncProbability {
+        LOW,
+        MEDIUM,
+        HIGH
+    }
 
     @Documented
     @Retention(SOURCE)
     public @interface Suspicious  {
+        CauseOfDesyncProbability value() default CauseOfDesyncProbability.HIGH;
         String description() default
             "Indicates that the method contains behavior totally different\n" +
             "from vanilla, and by so should be considered suspicious\n" +

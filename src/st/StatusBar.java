@@ -30,6 +30,8 @@ import static data.Tables.*;
 import data.sounds.musicenum_t;
 import defines.*;
 import doom.DoomMain;
+import doom.SourceCode;
+import doom.SourceCode.CauseOfDesyncProbability;
 import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
@@ -699,15 +701,17 @@ public class StatusBar extends AbstractStatusBar {
 
     protected boolean st_stopped = true;
 
+    @Override
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
     public void Start() {
 
-        if (!st_stopped)
+        if (!st_stopped) {
             Stop();
+        }
 
         initData();
         createWidgets();
         st_stopped = false;
-
     }
 
     public void Stop() {

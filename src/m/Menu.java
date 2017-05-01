@@ -11,6 +11,10 @@ import data.sounds.sfxenum_t;
 import defines.*;
 import doom.CommandVariable;
 import doom.DoomMain;
+import doom.SourceCode;
+import doom.SourceCode.M_Menu;
+import static doom.SourceCode.M_Menu.M_Responder;
+import static doom.SourceCode.M_Menu.M_StartControlPanel;
 import doom.englsh;
 import static doom.englsh.DOSY;
 import static doom.englsh.EMPTYSTRING;
@@ -904,6 +908,8 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     private int lastx = 0;
 
     @Override
+    @SourceCode.Compatible
+    @M_Menu.C(M_Responder)
     public boolean Responder(event_t ev) {
         final ScanCode sc;
         
@@ -1235,6 +1241,8 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
      * M_StartControlPanel
      */
     @Override
+    @SourceCode.Exact
+    @M_Menu.C(M_StartControlPanel)
     public void StartControlPanel() {
         // intro might call this repeatedly
         if (DOOM.menuactive) {
@@ -1242,7 +1250,6 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
         }
 
         DOOM.menuactive = true;
-        //Engine.getEngine().window.setMouseLoose();
         currentMenu = MainDef; // JDC
         itemOn = (short) currentMenu.lastOn; // JDC
     }

@@ -1243,15 +1243,20 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 return true;
             }
 
-            //automapactive=true;
-            if (handsUp.Responder(ev)) {
-                return true;    // chat ate the event 
+            HU_Responder: {
+                if (handsUp.Responder(ev)) {
+                    return true;    // chat ate the event 
+                }
             }
-            if (statusBar.Responder(ev)) {
-                return true;    // status window ate it
+            ST_Responder: {
+                if (statusBar.Responder(ev)) {
+                    return true;    // status window ate it
+                }
             }
-            if (autoMap.Responder(ev)) {
-                return true;    // automap ate it 
+            AM_Responder: {
+                if (autoMap.Responder(ev)) {
+                    return true;    // automap ate it 
+                }
             }
         }
 
@@ -1492,6 +1497,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     // because something is occupying it 
     //
     //void P_SpawnPlayer (mapthing_t* mthing); 
+    @SourceCode.Exact
     @G_Game.C(G_CheckSpot)
     private boolean CheckSpot(int playernum, mapthing_t mthing) {
         if (players[playernum].mo == null) {
@@ -1550,6 +1556,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     // called at level load and each death 
     //
     @Override
+    @SourceCode.Exact
     @G_Game.C(G_DeathMatchSpawnPlayer)
     public void DeathMatchSpawnPlayer(int playernum) {
         final int selections = deathmatch_p; 

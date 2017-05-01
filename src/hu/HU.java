@@ -26,6 +26,13 @@ import static data.Limits.*;
 import data.sounds.sfxenum_t;
 import defines.*;
 import doom.DoomMain;
+import doom.SourceCode;
+import doom.SourceCode.CauseOfDesyncProbability;
+import doom.SourceCode.HU_Lib;
+import static doom.SourceCode.HU_Lib.*;
+import doom.SourceCode.HU_Stuff;
+import static doom.SourceCode.HU_Stuff.HU_Responder;
+import static doom.SourceCode.HU_Stuff.HU_queueChatChar;
 import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
@@ -415,6 +422,7 @@ public class HU implements IHeadsUp{
     }
 
     @Override
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
     public void Start() {
 
         int i;
@@ -589,6 +597,8 @@ public class HU implements IHeadsUp{
 
     protected int tail = 0;
 
+    @SourceCode.Exact
+    @HU_Stuff.C(HU_queueChatChar)
     protected void queueChatChar(char c) {
         if (((head + 1) & (QUEUESIZE - 1)) == tail) {
             plr.message = HUSTR_MSGU;
@@ -626,6 +636,8 @@ public class HU implements IHeadsUp{
     protected int num_nobrainers = 0;
 
     @Override
+    @SourceCode.Compatible
+    @HU_Stuff.C(HU_Responder)
     public boolean Responder(event_t ev) {
 
     	//System.out.println("Player "+DM.players[0].mo.x);
@@ -654,8 +666,12 @@ public class HU implements IHeadsUp{
                 eatkey = true;
             } else if (DOOM.netgame && ev.isKey(HU_INPUTTOGGLE)) {
                 eatkey = chat_on[0] = true;
-                w_chat.resetIText();
-                this.queueChatChar(HU_BROADCAST);
+                HUlib_resetIText: {
+                    w_chat.resetIText();
+                }
+                HU_queueChatChar: {
+                    this.queueChatChar(HU_BROADCAST);
+                }
             } else if (DOOM.netgame && numplayers > 2) {
                 eatkey = ev.ifKey(sc -> {
                     boolean r = false;
@@ -663,8 +679,12 @@ public class HU implements IHeadsUp{
                         if (sc.c == destination_keys[i]) {
                             if (DOOM.playeringame[i] && i != DOOM.consoleplayer) {
                                 r = chat_on[0] = true;
-                                w_chat.resetIText();
-                                this.queueChatChar((char) (i + 1));
+                                HUlib_resetIText: {
+                                    w_chat.resetIText();
+                                }
+                                HU_queueChatChar: {
+                                    this.queueChatChar((char) (i + 1));
+                                }
                                 break;
                             } else if (i == DOOM.consoleplayer) {
                                 num_nobrainers++;
@@ -697,14 +717,20 @@ public class HU implements IHeadsUp{
                 char[] macromessage = chat_macros[c].toCharArray();
 
                 // kill last message with a '\n'
-                this.queueChatChar(ScanCode.SC_ENTER.c); // DEBUG!!!
+                HU_queueChatChar: {
+                    this.queueChatChar(ScanCode.SC_ENTER.c);
+                } // DEBUG!!!
 
                 // send the macro message
                 int index = 0;
                 while (macromessage[index] != 0) {
-                    this.queueChatChar(macromessage[index]);
+                    HU_queueChatChar: {
+                        this.queueChatChar(macromessage[index]);
+                    }
                 }
-                this.queueChatChar(ScanCode.SC_ENTER.c);
+                HU_queueChatChar: {
+                    this.queueChatChar(ScanCode.SC_ENTER.c);
+                }
 
                 // leave chat mode and notify that it was sent
                 chat_on[0] = false;
@@ -713,14 +739,20 @@ public class HU implements IHeadsUp{
                 plr.message = lastmessage.toString();
                 ret = true;
             } else {
-                if (DOOM.language == Language_t.french)
+                if (DOOM.language == Language_t.french) {
                     c = ForeignTranslation(c);
-                if (shiftdown || (c >= 'a' && c <= 'z'))
+                }
+                if (shiftdown || (c >= 'a' && c <= 'z')) {
                     c = shiftxform[c];
-                ret = w_chat.keyInIText(c);
+                }
+                HUlib_keyInIText: {
+                    ret = w_chat.keyInIText(c);
+                }
                 if (ret) {
                     // static unsigned char buf[20]; // DEBUG
-                    this.queueChatChar(c);
+                    HU_queueChatChar: {
+                        this.queueChatChar(c);
+                    }
 
                     // sprintf(buf, "KEY: %d => %d", ev->data1, c);
                     // plr->message = buf;
@@ -776,9 +808,14 @@ public class HU implements IHeadsUp{
         }
 
         // The following deletion routines adhere to the left margin restriction
+        @SourceCode.Exact
+        @HU_Lib.C(HUlib_delCharFromIText)
         public void delCharFromIText() {
-            if (this.l.len != this.lm)
-                this.l.delCharFromTextLine();
+            if (this.l.len != this.lm) {
+                HUlib_delCharFromTextLine: {
+                    this.l.delCharFromTextLine();
+                }
+            }
         }
 
         public void eraseLineFromIText() {
@@ -787,6 +824,8 @@ public class HU implements IHeadsUp{
         }
 
         // Resets left margin as well
+        @SourceCode.Exact
+        @HU_Lib.C(HUlib_resetIText)
         public void resetIText() {
             this.lm = 0;
             this.l.clearTextLine();
@@ -811,15 +850,21 @@ public class HU implements IHeadsUp{
 
         // wrapper function for handling general keyed input.
         // returns true if it ate the key
+        @SourceCode.Exact
+        @HU_Lib.C(HUlib_keyInIText)
         public boolean keyInIText(char ch) {
 
-            if (ch >= ' ' && ch <= '_')
-                this.l.addCharToTextLine((char) ch);
-            else if (ch == ScanCode.SC_BACKSPACE.c)
-                this.delCharFromIText();
-            else if (ch != ScanCode.SC_ENTER.c)
+            if (ch >= ' ' && ch <= '_') {
+                HUlib_addCharToTextLine: {
+                    this.l.addCharToTextLine(ch);
+                }
+            } else if (ch == ScanCode.SC_BACKSPACE.c) {
+                HUlib_delCharFromIText: {
+                    this.delCharFromIText();
+                }
+            } else if (ch != ScanCode.SC_ENTER.c) {
                 return false; // did not eat key
-
+            }
             return true; // ate the key
 
         }
@@ -1024,6 +1069,8 @@ public class HU implements IHeadsUp{
         	
         }
         
+        @SourceCode.Compatible
+        @HU_Lib.C(HUlib_clearTextLine)
         public void clearTextLine() {
             this.len = 0;
             C2JUtils.memset(this.text, (char)0,this.text.length);
@@ -1049,6 +1096,8 @@ public class HU implements IHeadsUp{
             this.clearTextLine();
         }
 
+        @SourceCode.Exact
+        @HU_Lib.C(HUlib_addCharToTextLine)
         public boolean addCharToTextLine(char ch) {
 
             if (len == HU_MAXLINELENGTH)
@@ -1092,6 +1141,8 @@ public class HU implements IHeadsUp{
             return true;
         } */
 
+        @SourceCode.Exact
+        @HU_Lib.C(HUlib_delCharFromTextLine)
         boolean delCharFromTextLine() {
 
             if (this.len == 0)

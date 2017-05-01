@@ -23,6 +23,10 @@ import data.mapthing_t;
 import data.mobjtype_t;
 import doom.DoomMain;
 import doom.SourceCode;
+import doom.SourceCode.P_Map;
+import static doom.SourceCode.P_Map.P_CheckPosition;
+import doom.SourceCode.P_Mobj;
+import static doom.SourceCode.P_Mobj.P_SpawnMobj;
 import doom.player_t;
 import doom.thinker_t;
 import m.fixed_t;
@@ -112,10 +116,14 @@ public class Actions implements Observer<Actions.Registry>, ThinkerList {
         gov.Ticker();
     }
 
+    @SourceCode.Compatible
+    @P_Map.C(P_CheckPosition)
     public boolean CheckPosition(mobj_t mo, int x, int y) {
         return gov.CheckPosition(mo, x, y);
     }
 
+    @SourceCode.Exact
+    @P_Mobj.C(P_SpawnMobj)
     public mobj_t SpawnMobj(int i, int i0, int floorheight, mobjtype_t mobjtype_t) {
         return gov.SpawnMobj(i, i0, floorheight, mobjtype_t);
     }
