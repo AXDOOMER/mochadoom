@@ -18,6 +18,8 @@
 package p;
 
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.SourceCode.P_Map.PTR_ShootTraverse;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
@@ -28,7 +30,7 @@ import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
 
-interface ActionsShootEvents extends ActionsFloors, ActionsDoors {
+interface ActionsShootEvents<R extends Actions.Registry & AbstractCommand<R>> extends ActionsFloors<R>, ActionsDoors<R> {
     /**
      * PTR_ShootTraverse
      *

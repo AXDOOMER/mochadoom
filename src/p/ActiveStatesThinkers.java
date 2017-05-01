@@ -18,6 +18,8 @@
 package p;
 
 import doom.thinker_t;
+import p.ActionSystem.AbstractCommand;
+
 import static rr.line_t.ML_BLOCKING;
 
 /**
@@ -26,7 +28,7 @@ import static rr.line_t.ML_BLOCKING;
  * rethink necessity and objectness of these...
  * - Good Sign 2017/04/30
  */
-interface ActiveStatesThinkers extends ActionsCeilings, ActionsFloors, ActionsDoors {
+interface ActiveStatesThinkers<R extends Actions.Registry & AbstractCommand<R>> extends ActionsCeilings<R>, ActionsFloors<R>, ActionsDoors<R> {
     default void T_FireFlicker(thinker_t f) {
         ((fireflicker_t) f).FireFlicker();
     }

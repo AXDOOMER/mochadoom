@@ -57,7 +57,7 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
      * NOTE: this relies on the ability to "tap" into a BufferedImage's backing array, in order to have fast writes
      * without setpixel/getpixel. If that is not possible, then we'll need to use a special renderer.
      */
-    BufferedRenderer16(RendererFactory.WithWadLoader rf) {
+    BufferedRenderer16(RendererFactory.WithWadLoader<byte[], short[]> rf) {
         super(rf, short[].class);
         /**
          * There is only sense to create and use VolatileImage if it can use native acceleration

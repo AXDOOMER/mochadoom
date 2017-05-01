@@ -35,7 +35,7 @@ abstract class SoftwareIndexedVideoRenderer extends SoftwareGraphicsSystem<byte[
     protected final IndexColorModel[][] cmaps = new IndexColorModel[GammaTables.LUT.length][Palettes.NUM_PALETTES];
     protected final BlurryTable blurryTable;
 
-    SoftwareIndexedVideoRenderer(RendererFactory.WithWadLoader rf) {
+    SoftwareIndexedVideoRenderer(RendererFactory.WithWadLoader<byte[], byte[]> rf) {
         super(rf, byte[].class);
         
         /**

@@ -61,9 +61,8 @@ public class RendererFactory {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public DoomGraphicSystem<T, V> build() {
-            return bppMode.renderGen.apply(this);
+            return bppMode.graphics(this);
         }
 
         @Override

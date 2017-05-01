@@ -12,7 +12,7 @@ import doom.DoomMain;
 
 public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
 
-    public SpeakerDoomSoundDriver(DoomMain DM, int numChannels) {
+    public SpeakerDoomSoundDriver(DoomMain<?, ?> DM, int numChannels) {
         super(DM, numChannels);
         // TODO Auto-generated constructor stub
     }

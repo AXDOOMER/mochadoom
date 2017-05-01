@@ -27,8 +27,8 @@ public interface Lines {
      * @param x2
      * @param y2 
      */
-    default void drawLine(Plotter plotter, int x1, int x2) { drawLine(plotter, x1, x2, 1, 1); }
-    default void drawLine(Plotter plotter, int x2, int y2, int dupX, int dupY) {
+    default void drawLine(Plotter<?> plotter, int x1, int x2) { drawLine(plotter, x1, x2, 1, 1); }
+    default void drawLine(Plotter<?> plotter, int x2, int y2, int dupX, int dupY) {
         // delta of exact value and rounded value of the dependant variable
         int d = 0, dy, dx, ix, iy;
         

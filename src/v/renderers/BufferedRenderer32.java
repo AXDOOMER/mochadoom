@@ -60,7 +60,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
      * NOTE: this relies on the ability to "tap" into a BufferedImage's backing array, in order to have fast writes
      * without setPixel/getPixel. If that is not possible, then we'll need to use a special renderer.
      */
-    BufferedRenderer32(RendererFactory.WithWadLoader rf) {
+    BufferedRenderer32(RendererFactory.WithWadLoader<byte[], int[]> rf) {
         super(rf, int[].class);
         
         /**

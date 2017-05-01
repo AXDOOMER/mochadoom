@@ -114,7 +114,7 @@ public interface IWadLoader {
 
 	@Deprecated
 	public abstract void CacheLumpNumIntoArray(int lump, int tag,
-			Object[] array, Class what) throws IOException;
+			Object[] array, Class<?> what) throws IOException;
 
 	/**
 	 * Return a cached lump based on its name, as raw bytes, no matter what.

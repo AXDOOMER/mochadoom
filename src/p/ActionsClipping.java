@@ -20,6 +20,8 @@ package p;
 import static data.Limits.MAXRADIUS;
 import doom.SourceCode;
 import doom.SourceCode.P_Map;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.SourceCode.P_Map.P_CheckPosition;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
@@ -31,7 +33,7 @@ import rr.line_t;
 import rr.subsector_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsClipping extends ActionsThings, ActionsUtility {
+interface ActionsClipping<R extends Actions.Registry & AbstractCommand<R>> extends ActionsThings<R>, ActionsUtility<R> {
     //
     // MOVEMENT CLIPPING
     //

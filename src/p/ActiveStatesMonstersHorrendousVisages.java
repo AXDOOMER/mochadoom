@@ -22,9 +22,11 @@ import data.sounds;
 import defines.skill_t;
 import defines.statenum_t;
 import doom.thinker_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 
-interface ActiveStatesMonstersHorrendousVisages extends ActionsSpawn, ActionsMissiles {
+interface ActiveStatesMonstersHorrendousVisages<R extends Actions.Registry & AbstractCommand<R>> extends ActionsSpawn<R>, ActionsMissiles<R> {
     default void A_BrainAwake(mobj_t mo) {
         final Actions.Registry obs = obs();
         thinker_t thinker;

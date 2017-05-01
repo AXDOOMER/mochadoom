@@ -66,7 +66,7 @@ public interface Melt extends ColorTransform {
      *  - Good Sign 2017/04/10
      */
     @SuppressWarnings("MismatchedReadAndWriteOfArray")
-    default void toScreen(Class bufType, Object src, Object dest, int width, int dy, int ps, int pd) {
+    default void toScreen(Class<?> bufType, Object src, Object dest, int width, int dy, int ps, int pd) {
         if (bufType == int[].class) {
             final int[] to = (int[]) src, from = (int[]) dest;
             for (int i = 0; i < dy; ++i) {

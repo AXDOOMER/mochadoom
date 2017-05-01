@@ -18,8 +18,9 @@
 package p;
 
 import data.mobjtype_t;
+import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesMonstersSpiders extends ActiveStatesAi, ActionsMissiles {
+interface ActiveStatesMonstersSpiders<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsMissiles<R> {
     default void A_SpidRefire(mobj_t actor) {
         final Actions.Registry obs = obs();
         // keep firing unless target got out of sight

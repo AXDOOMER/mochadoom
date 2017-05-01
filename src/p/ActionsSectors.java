@@ -20,6 +20,8 @@ package p;
 import data.mobjtype_t;
 import defines.statenum_t;
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.SourceCode.P_Map.PIT_ChangeSector;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
@@ -31,7 +33,7 @@ import static p.mobj_t.MF_SOLID;
 import rr.sector_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsSectors extends ActionsClipping {
+interface ActionsSectors<R extends Actions.Registry & AbstractCommand<R>> extends ActionsClipping<R> {
     //
     // P_ChangeSector
     //

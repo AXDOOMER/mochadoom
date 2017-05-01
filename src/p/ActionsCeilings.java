@@ -21,6 +21,8 @@ import static data.Limits.CEILSPEED;
 import static data.Limits.MAXCEILINGS;
 import data.sounds;
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.SourceCode.P_Ceiling.EV_DoCeiling;
 import static m.fixed_t.FRACUNIT;
 import rr.line_t;
@@ -28,7 +30,7 @@ import rr.sector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
 
-interface ActionsCeilings extends ActionsPlanes {
+interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPlanes<R> {
     /**
      * This needs to be called before loading, otherwise crushers won't be able to be restarted.
      */

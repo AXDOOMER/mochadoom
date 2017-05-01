@@ -25,6 +25,8 @@ import data.mobjtype_t;
 import data.sounds;
 import doom.SourceCode;
 import doom.thinker_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
@@ -34,7 +36,7 @@ import rr.line_t;
 import rr.sector_t;
 import rr.subsector_t;
 
-interface ActionsTeleportation extends ActionsThings, ActionsUtility {
+interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> extends ActionsThings<R>, ActionsUtility<R> {
     //
     // TELEPORTATION
     //

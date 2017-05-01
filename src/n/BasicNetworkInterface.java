@@ -63,9 +63,9 @@ import w.DoomBuffer;
 //-----------------------------------------------------------------------------
 public class BasicNetworkInterface implements DoomSystemNetworking {
 
-    protected DoomMain DOOM;
+    protected DoomMain<?, ?> DOOM;
 
-    public BasicNetworkInterface(DoomMain DOOM) {
+    public BasicNetworkInterface(DoomMain<?, ?> DOOM) {
         this.DOOM = DOOM;
         //this.myargv=DM.myargv;
         //this.myargc=DM.myargc;

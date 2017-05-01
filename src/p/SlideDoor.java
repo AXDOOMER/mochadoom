@@ -33,9 +33,9 @@ public class SlideDoor<T, V> {
 
     final slideframe_t[] slideFrames;
 
-    private final DoomMain DOOM;
+    private final DoomMain<?, ?> DOOM;
 
-    public SlideDoor(DoomMain DOOM) {
+    public SlideDoor(DoomMain<?, ?> DOOM) {
         slideFrames = new slideframe_t[MAXSLIDEDOORS];
         Arrays.setAll(slideFrames, i -> new slideframe_t());
         this.DOOM = DOOM;

@@ -26,12 +26,14 @@ import data.sounds;
 import doom.SourceCode;
 import static doom.SourceCode.P_Map.PTR_UseTraverse;
 import doom.player_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACBITS;
 import rr.line_t;
 import static rr.line_t.ML_SECRET;
 import static utils.C2JUtils.eval;
 
-interface ActionsUseEvents extends ActionsPathTraverse, ActionsCeilings, ActionsFloors, ActionsDoors, ActionsTeleportation {
+interface ActionsUseEvents<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPathTraverse<R>, ActionsCeilings<R>, ActionsFloors<R>, ActionsDoors<R>, ActionsTeleportation<R> {
     /**
      * P_UseSpecialLine Called when a thing uses a special line. Only the front sides of lines are usable.
      */

@@ -25,6 +25,8 @@ import static data.Defines.PT_ADDTHINGS;
 import static data.Defines.PT_EARLYOUT;
 import static data.Limits.MAXINT;
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.SourceCode.P_MapUtl.P_PathTraverse;
 import java.util.function.Predicate;
 import static m.fixed_t.FRACBITS;
@@ -35,7 +37,7 @@ import static p.MapUtils.InterceptVector;
 import rr.line_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsPathTraverse extends ActionsUtility {
+interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> extends ActionsUtility<R> {
     /**
      * P_PathTraverse Traces a line from x1,y1 to x2,y2, calling the traverser function for each. Returns true if the
      * traverser function returns true for all lines.

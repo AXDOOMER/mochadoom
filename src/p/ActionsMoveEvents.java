@@ -17,9 +17,10 @@
  */
 package p;
 
+import p.ActionSystem.AbstractCommand;
 import rr.line_t;
 
-interface ActionsMoveEvents extends ActionsCeilings, ActionsFloors, ActionsDoors, ActionsTeleportation {
+interface ActionsMoveEvents<R extends Actions.Registry & AbstractCommand<R>> extends ActionsCeilings<R>, ActionsFloors<R>, ActionsDoors<R>, ActionsTeleportation<R> {
     //
     //EVENTS
     //Events are operations triggered by using, crossing,

@@ -20,8 +20,9 @@ package p;
 import data.mobjtype_t;
 import data.sounds;
 import doom.player_t;
+import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesSounds extends ActiveStatesAi, ActiveStatesMonstersHorrendousVisages, ActiveStatesWeapons {
+interface ActiveStatesSounds<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActiveStatesMonstersHorrendousVisages<R>, ActiveStatesWeapons<R> {
     default void A_Scream(mobj_t actor) {
         final Actions.Registry obs = obs();
         int sound;

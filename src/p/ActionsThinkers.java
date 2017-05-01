@@ -30,6 +30,8 @@ import data.sounds;
 import doom.CommandVariable;
 import doom.thinker_t;
 import static m.fixed_t.FRACBITS;
+
+import p.ActionSystem.AbstractCommand;
 import p.ActiveStates.MobjConsumer;
 import p.ActiveStates.ThinkerConsumer;
 import static p.DoorDefines.FASTDARK;
@@ -40,7 +42,7 @@ import rr.sector_t;
 import rr.subsector_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsThinkers extends ActionsCeilings {
+interface ActionsThinkers<R extends Actions.Registry & AbstractCommand<R>> extends ActionsCeilings<R> {
     /**
      * P_SpawnSpecials After the map has been loaded, scan for specials that spawn thinkers
      */
@@ -286,7 +288,7 @@ interface ActionsThinkers extends ActionsCeilings {
     // P_RunThinkers
     //
     default void RunThinkers() {
-        final Actions.Registry obs = obs();
+        final R obs = obs();
         thinker_t thinker;
 
         thinker = obs.thinkercap.next;

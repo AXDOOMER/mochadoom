@@ -19,8 +19,9 @@ package p;
 
 import data.mobjtype_t;
 import data.sounds;
+import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesMonstersDemonspawns extends ActiveStatesAi, ActionsMissiles {
+interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsMissiles<R> {
     //
     // A_TroopAttack
     //

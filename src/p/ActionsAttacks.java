@@ -30,13 +30,15 @@ import doom.SourceCode;
 import static doom.SourceCode.P_Enemy.PIT_VileCheck;
 import static doom.SourceCode.P_Map.PIT_RadiusAttack;
 import doom.SourceCode.fixed_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static p.mobj_t.MF_CORPSE;
 import static p.mobj_t.MF_SHOOTABLE;
 import static utils.C2JUtils.eval;
 
-interface ActionsAttacks extends ActionsShootEvents, ActionsPathTraverse {
+interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extends ActionsShootEvents<R>, ActionsPathTraverse<R> {
     //
     // P_GunShot
     //

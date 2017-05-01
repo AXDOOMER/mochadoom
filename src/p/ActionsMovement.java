@@ -29,6 +29,8 @@ import defines.statenum_t;
 import doom.SourceCode;
 import static doom.SourceCode.P_Map.PTR_SlideTraverse;
 import doom.player_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static p.ChaseDirections.DI_EAST;
@@ -54,7 +56,7 @@ import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
 
-interface ActionsMovement extends ActionsPathTraverse, ActionsClipping, ActionsMoveEvents, ActionsUseEvents {
+interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPathTraverse<R>, ActionsClipping<R>, ActionsMoveEvents<R>, ActionsUseEvents<R> {
     ///////////////// MOVEMENT'S ACTIONS ////////////////////////
     /**
      * If "floatok" true, move would be ok if within "tmfloorz - tmceilingz".

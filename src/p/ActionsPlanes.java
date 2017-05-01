@@ -18,12 +18,13 @@
 package p;
 
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
 import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import rr.sector_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsPlanes extends ActionsSectors, ActionsUtility {
+interface ActionsPlanes<R extends Actions.Registry & AbstractCommand<R>> extends ActionsSectors<R>, ActionsUtility<R> {
     /**
      * Move a plane (floor or ceiling) and check for crushing
      *

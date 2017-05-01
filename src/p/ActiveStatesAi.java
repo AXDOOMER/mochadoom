@@ -23,6 +23,8 @@ import data.mobjtype_t;
 import data.sounds;
 import defines.skill_t;
 import defines.statenum_t;
+import p.ActionSystem.AbstractCommand;
+
 import static p.mobj_t.MF_AMBUSH;
 import static p.mobj_t.MF_COUNTKILL;
 import static p.mobj_t.MF_JUSTATTACKED;
@@ -32,7 +34,7 @@ import static p.mobj_t.MF_SKULLFLY;
 import static p.mobj_t.MF_SOLID;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesAi extends ActionsMovement, ActionsThinkers {
+interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extends ActionsMovement<R>, ActionsThinkers<R> {
     //
     // A_Look
     // Stay in state until a player is sighted.

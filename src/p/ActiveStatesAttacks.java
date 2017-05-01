@@ -28,13 +28,15 @@ import data.sounds;
 import defines.statenum_t;
 import static doom.items.weaponinfo;
 import doom.player_t;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.player_t.ps_flash;
 import static m.fixed_t.FRACUNIT;
 import static p.Actions.Registry.BFGCELLS;
 import static p.mobj_t.MF_JUSTATTACKED;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesAttacks extends ActionsAttacks, ActionsMissiles {
+interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> extends ActionsAttacks<R>, ActionsMissiles<R> {
     //
     // A_FirePistol
     //

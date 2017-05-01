@@ -41,7 +41,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 	private SoundWorker[] channels;
 	private Thread[] soundThread;
 	
-	public DavidSFXModule(DoomMain DM,int numChannels) {
+	public DavidSFXModule(DoomMain<?, ?> DM,int numChannels) {
 		super(DM,numChannels);
 		linear2db=computeLinear2DB();
 		

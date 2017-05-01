@@ -76,7 +76,7 @@ public interface ISoundDriver {
 	public static final int AUDIOLINE_BUFFER=2*BUFFER_CHUNKS*MIXBUFFERSIZE;
 	public static final int SOUND_PERIOD = 1000/SND_FRAME_RATE; // in ms
 
-    public static ISoundDriver chooseModule(DoomMain DM, CVarManager CVM) {
+    public static ISoundDriver chooseModule(DoomMain<?, ?> DM, CVarManager CVM) {
         final ISoundDriver driver;
         if (CVM.bool(CommandVariable.NOSFX) || CVM.bool(CommandVariable.NOSOUND)) {
             driver = new DummySFX();

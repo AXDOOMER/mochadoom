@@ -67,7 +67,7 @@ public class Loggers {
         return ret;
     }
     
-    private static EventBase lastHandler = null;
+    private static EventBase<?> lastHandler = null;
     
     public static <EventHandler extends Enum<EventHandler> & EventBase<EventHandler>> void LogEvent(
         final Logger logger,

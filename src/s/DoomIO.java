@@ -178,11 +178,11 @@ public class DoomIO {
 			return bytes;
 		}
 
-		 private static Field getField(Class clazz, String fieldName) throws NoSuchFieldException {     
+		 private static Field getField(Class<?> clazz, String fieldName) throws NoSuchFieldException {     
 			 try {       
 				 return clazz.getDeclaredField(fieldName);     
 			 } catch (NoSuchFieldException e) {
-				 Class superClass = clazz.getSuperclass();
+				 Class<?> superClass = clazz.getSuperclass();
 				 if (superClass == null) {
 					 throw e;    
 				 } else {  
@@ -198,7 +198,7 @@ public class DoomIO {
 		    			if (fieldName instanceof String) {
 		    				val = getField(obj.getClass(), (String)fieldName).get(obj);
 			    			if (val instanceof Enum) {
-			    				val = ((Enum)val).ordinal();
+			    				val = ((Enum<?>)val).ordinal();
 			    			}
 		    			}
 		    			if (fieldName instanceof Integer) {
@@ -237,7 +237,7 @@ public class DoomIO {
 		    }
 		 public static void assigner(Object obj, Field field, InputStream is, int size) throws IOException, IllegalArgumentException, IllegalAccessException {
 
-				Class c = field.getType();
+				Class<?> c = field.getType();
 				if (c.isArray()) {
 					Object a = field.get(obj);
 					int len = Array.getLength(a);
@@ -264,7 +264,7 @@ public class DoomIO {
 				}*/
 		 }
 		 
-		 public static Object assignValue(int val, Object objToReplace, Class classe) {
+		 public static Object assignValue(int val, Object objToReplace, Class<?> classe) {
 			 if (classe.isAssignableFrom(Boolean.class) || classe.isAssignableFrom(boolean.class)) {
 				 return (val == 0 ? false : true);
 			 }

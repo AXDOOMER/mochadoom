@@ -82,15 +82,15 @@ public enum CommandVariable {
     GREYPAL;
     
     public final char prefix;
-    public final Class[] arguments;
+    public final Class<?>[] arguments;
     public final static int MIN_CVAR_LENGTH = 4;
     
-    CommandVariable(final char prefix, final Class... arguments) {
+    CommandVariable(final char prefix, final Class<?>... arguments) {
         this.prefix = prefix;
         this.arguments = arguments;
     }
     
-    CommandVariable(final Class... arguments) {
+    CommandVariable(final Class<?>... arguments) {
         this('-', arguments);
     }
     

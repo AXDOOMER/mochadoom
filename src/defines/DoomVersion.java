@@ -48,7 +48,7 @@ public enum DoomVersion {
      * 
      * @return full path to the wad of success
 	 */
-    public static String tryAllWads(final DoomMain DOOM, final String doomwaddir) {
+    public static String tryAllWads(final DoomMain<?, ?> DOOM, final String doomwaddir) {
         for (DoomVersion v: values()) {
             final String vFullPath = doomwaddir + '/' + v.wadFileName;
             if (testReadAccess(vFullPath)) {

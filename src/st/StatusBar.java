@@ -530,7 +530,7 @@ public class StatusBar extends AbstractStatusBar {
     // STATUS BAR CODE
     //
 
-    public StatusBar(DoomMain DOOM) {
+    public StatusBar(DoomMain<?, ?> DOOM) {
     	super(DOOM);
 	    ST_HEIGHT =32*DOOM.vs.getSafeScaling();
 	    ST_WIDTH  =DOOM.vs.getScreenWidth();

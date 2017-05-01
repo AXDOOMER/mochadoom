@@ -37,10 +37,12 @@ import static doom.player_t.ps_weapon;
 import doom.weapontype_t;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
+
+import p.ActionSystem.AbstractCommand;
 import p.ActionSystem.Observer;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesWeapons extends Observer<Actions.Registry> {
+interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> extends Observer<R> {
     /**
      * A_WeaponReady
      * The player can fire the weapon

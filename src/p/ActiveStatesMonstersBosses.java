@@ -20,9 +20,10 @@ package p;
 import static data.Limits.MAXPLAYERS;
 import data.mobjtype_t;
 import doom.thinker_t;
+import p.ActionSystem.AbstractCommand;
 import rr.line_t;
 
-interface ActiveStatesMonstersBosses extends ActiveStatesAi {
+interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R> {
     /**
      * A_BossDeath
      * Possibly trigger special effects

@@ -22,6 +22,8 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import data.mobjtype_t;
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
@@ -29,7 +31,7 @@ import static p.MapUtils.AproxDistance;
 import static p.mobj_t.MF_SHADOW;
 import static utils.C2JUtils.eval;
 
-interface ActionsMissiles extends ActionsAim {
+interface ActionsMissiles<R extends Actions.Registry & AbstractCommand<R>> extends ActionsAim<R> {
 
     /**
      * P_SpawnMissile

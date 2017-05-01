@@ -64,7 +64,7 @@ public class ConfigManager {
             }
         } else if (setting.valueType.getSuperclass() == Enum.class) {
             // Enum search by name
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings({ "unchecked", "rawtypes" })
             final Object enumerated = Enum.valueOf((Class<? extends Enum>) setting.valueType, value);
             return setting.hasChange(!Objects.equals(configMap.put(setting, enumerated), enumerated));
         }
@@ -180,7 +180,7 @@ public class ConfigManager {
                 }
             }
         } else if (valueType == Integer.class && setting.valueType.getSuperclass() == Enum.class) {
-            return (T) ((Integer) ((Enum) configMap.get(setting)).ordinal());
+            return (T) ((Integer) ((Enum<?>) configMap.get(setting)).ordinal());
         }
         
         throw new IllegalArgumentException("Unsupported cast: " + setting.valueType + " to " + valueType);

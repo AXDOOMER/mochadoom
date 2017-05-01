@@ -27,13 +27,15 @@ import static data.Tables.finesine;
 import static data.info.mobjinfo;
 import data.mobjtype_t;
 import doom.thinker_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static p.Actions.Registry.SKULLSPEED;
 import static p.MapUtils.AproxDistance;
 import static p.mobj_t.MF_SKULLFLY;
 
-interface ActiveStatesMonstersPainsSouls extends ActiveStatesAi {
+interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R> {
     /**
      * SkullAttack
      * Fly at the player like a missile.

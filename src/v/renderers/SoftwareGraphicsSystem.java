@@ -92,7 +92,7 @@ abstract class SoftwareGraphicsSystem<T, V>
      * @param vs video scale info
      * @param playpal palette
      */
-    SoftwareGraphicsSystem(RendererFactory.WithWadLoader rf, final Class<V> bufferType) {
+    SoftwareGraphicsSystem(RendererFactory.WithWadLoader<T, V> rf, final Class<V> bufferType) {
         // Defaults
         this.vs = rf.getVideoScale();
         this.width = vs.getScreenWidth();
@@ -105,7 +105,7 @@ abstract class SoftwareGraphicsSystem<T, V>
     }
     
     @SuppressWarnings("unchecked")
-    private V palette(RendererFactory.WithWadLoader rf) {
+    private V palette(RendererFactory.WithWadLoader<T, V> rf) {
         /*final byte[] */playpal = 
             Engine.getCVM().bool(CommandVariable.GREYPAL)
                 ? Playpal.greypal()
@@ -130,7 +130,7 @@ abstract class SoftwareGraphicsSystem<T, V>
     private byte[] playpal;
     
     @SuppressWarnings("unchecked")
-    private V[] colormap(RendererFactory.WithWadLoader rf) {
+    private V[] colormap(RendererFactory.WithWadLoader<T, V> rf) {
         final boolean colormapEnabled = !Engine.getCVM().bool(CommandVariable.NOCOLORMAP)
             && Engine.getConfig().equals(Settings.enable_colormap_lump, Boolean.TRUE);
         
@@ -180,7 +180,7 @@ abstract class SoftwareGraphicsSystem<T, V>
     {return Rectangles.super.point(x, y);}
     @Override public int point(int x, int y, int width)
     {return Rectangles.super.point(x, y, width);}
-    @Override public void drawLine(Plotter plotter, int x1, int x2)
+    @Override public void drawLine(Plotter<?> plotter, int x1, int x2)
     {Lines.super.drawLine(plotter, x1, x2);}
     @Override public void DrawPatch(DoomScreen screen, patch_t patch, int x, int y, int... flags)
     {Patches.super.DrawPatch(screen, patch, x, y, flags);}

@@ -19,8 +19,9 @@ package p;
 
 import static data.Defines.MISSILERANGE;
 import data.sounds;
+import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesMonstersZombies extends ActiveStatesAi, ActionsAttacks, ActionsAim {
+interface ActiveStatesMonstersZombies<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsAttacks<R>, ActionsAim<R> {
     //
     // A_PosAttack
     //

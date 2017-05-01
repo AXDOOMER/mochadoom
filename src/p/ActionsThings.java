@@ -34,6 +34,8 @@ import static doom.SourceCode.P_Map.PIT_CheckThing;
 import static doom.SourceCode.P_Map.PIT_StompThing;
 import doom.player_t;
 import doom.weapontype_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
@@ -53,7 +55,7 @@ import static p.mobj_t.MF_SOLID;
 import static p.mobj_t.MF_SPECIAL;
 import static utils.C2JUtils.eval;
 
-interface ActionsThings extends ActionsSpawn {
+interface ActionsThings<R extends Actions.Registry & AbstractCommand<R>> extends ActionsSpawn<R> {
     /**
      * PIT_CheckThing
      */

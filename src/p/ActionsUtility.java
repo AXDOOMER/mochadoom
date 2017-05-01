@@ -27,6 +27,8 @@ import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
+
+import p.ActionSystem.AbstractCommand;
 import p.ActionSystem.Observer;
 import static p.mobj_t.MF_MISSILE;
 import rr.SceneRenderer;
@@ -36,7 +38,7 @@ import static rr.line_t.ML_BLOCKMONSTERS;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
 
-interface ActionsUtility extends Observer<Actions.Registry> {
+interface ActionsUtility<R extends Actions.Registry & AbstractCommand<R>> extends Observer<R> {
     //
     //P_BlockThingsIterator
     //
@@ -79,7 +81,7 @@ interface ActionsUtility extends Observer<Actions.Registry> {
     @P_MapUtl.C(P_BlockLinesIterator)
     default boolean BlockLinesIterator(int x, int y, Predicate<line_t> func) {
         final AbstractLevelLoader ll = obs().DOOM.levelLoader;
-        final SceneRenderer sr = obs().DOOM.sceneRenderer;
+        final SceneRenderer<?, ?> sr = obs().DOOM.sceneRenderer;
         int offset;
         int lineinblock;
         line_t ld;

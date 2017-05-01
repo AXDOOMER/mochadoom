@@ -57,7 +57,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver {
 
     protected final Timer MIXTIMER;
         
-    public SuperDoomSoundDriver(DoomMain DM, int numChannels) {
+    public SuperDoomSoundDriver(DoomMain<?, ?> DM, int numChannels) {
     	super(DM,numChannels);
         channels = new boolean[numChannels];
         produce = new Semaphore(1);

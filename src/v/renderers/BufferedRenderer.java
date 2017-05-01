@@ -30,7 +30,7 @@ class BufferedRenderer extends SoftwareIndexedVideoRenderer {
      * This actually creates a raster with a fixed underlying array, but NOT the images themselves. So it's possible to
      * have "imageless" rasters (unless you specifically request to make them visible, of course).
      */
-    BufferedRenderer(RendererFactory.WithWadLoader rf) {
+    BufferedRenderer(RendererFactory.WithWadLoader<byte[], byte[]> rf) {
         super(rf);
         for (DoomScreen s: DoomScreen.values()) {
             final int index = s.ordinal();

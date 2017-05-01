@@ -135,7 +135,7 @@ public interface DoomGraphicSystem<T, V> {
     int point(int x, int y, int width);
     
     /* LINES */
-    void drawLine(Plotter plotter, int x1, int x2);
+    void drawLine(Plotter<?> plotter, int x1, int x2);
     
     /* PATCHES */
     void DrawPatch(DoomScreen screen, patch_t patch, int x, int y, int... flags);

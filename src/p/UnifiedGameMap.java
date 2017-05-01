@@ -116,8 +116,8 @@ public abstract class UnifiedGameMap implements ThinkerList {
      * something new in future
      * - Good Sign 2017/05/1
      */
-    public UnifiedGameMap(DoomMain DOOM){
-        this.SL = new SlideDoor(DOOM);
+    public UnifiedGameMap(DoomMain<?, ?> DOOM){
+        this.SL = new SlideDoor<Object, Object>(DOOM);
         this.SW = new Switches();
         this.LEV = new Lights();
         this.SPECS = new Specials();
@@ -145,7 +145,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
     
     /////////////////// STATUS ///////////////////
 
-    final DoomMain DOOM;
+    final DoomMain<?, ?> DOOM;
 
     
     // //////////// Internal singletons //////////////
@@ -164,7 +164,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
     Enemies EN;
     
-    SlideDoor SL;
+    SlideDoor<?, ?> SL;
 
     // ////////////////////////////////////////////
 

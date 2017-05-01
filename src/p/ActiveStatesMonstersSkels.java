@@ -24,6 +24,8 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import data.mobjtype_t;
 import data.sounds;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
@@ -31,7 +33,7 @@ import static p.Actions.Registry.TRACEANGLE;
 import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesMonstersSkels extends ActiveStatesAi, ActionsMissiles {
+interface ActiveStatesMonstersSkels<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsMissiles<R> {
 
     //
     // A_SkelMissile

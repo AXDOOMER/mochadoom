@@ -19,6 +19,8 @@ package p;
 
 import static data.Limits.MAXINT;
 import data.sounds;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
@@ -26,7 +28,7 @@ import rr.sector_t;
 import rr.side_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsFloors extends ActionsPlanes {
+interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPlanes<R> {
     /**
      * MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
      *

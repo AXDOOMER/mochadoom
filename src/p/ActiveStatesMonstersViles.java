@@ -24,6 +24,8 @@ import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.sounds;
 import defines.statenum_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
@@ -31,7 +33,7 @@ import static p.ChaseDirections.DI_NODIR;
 import static p.ChaseDirections.xspeed;
 import static p.ChaseDirections.yspeed;
 
-interface ActiveStatesMonstersViles extends ActiveStatesAi, ActionsAttacks {
+interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsAttacks<R> {
     //
     // A_VileChase
     // Check for ressurecting a body

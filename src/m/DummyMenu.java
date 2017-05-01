@@ -10,8 +10,8 @@ import doom.event_t;
  *
  */
 
-public class DummyMenu extends AbstractDoomMenu {
-    public DummyMenu(DoomMain DOOM) {
+public class DummyMenu<T, V> extends AbstractDoomMenu<T, V> {
+    public DummyMenu(DoomMain<T, V> DOOM) {
         super(DOOM);
     }
     

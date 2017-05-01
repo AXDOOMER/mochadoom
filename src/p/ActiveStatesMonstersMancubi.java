@@ -22,10 +22,12 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import data.mobjtype_t;
 import data.sounds;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FixedMul;
 import static p.Actions.Registry.FATSPREAD;
 
-public interface ActiveStatesMonstersMancubi extends ActiveStatesAi, ActiveStatesAttacks, ActionsMissiles {
+public interface ActiveStatesMonstersMancubi<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActiveStatesAttacks<R>, ActionsMissiles<R> {
     //
     // Mancubus attack,
     // firing three missiles (bruisers)

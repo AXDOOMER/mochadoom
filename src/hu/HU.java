@@ -48,7 +48,7 @@ import static v.renderers.DoomScreen.*;
 
 public class HU implements IHeadsUp{
     // MAES: Status and wad data.
-    final DoomMain DOOM;
+    final DoomMain<?, ?> DOOM;
 
     //
     // Locally used constants, shortcuts.
@@ -368,7 +368,7 @@ public class HU implements IHeadsUp{
         return ch < 128 ? frenchKeyMap[ch] : ch;
     }
 
-    public HU(final DoomMain DOOM) {
+    public HU(final DoomMain<?, ?> DOOM) {
         this.DOOM = DOOM;
         this.w_message = new hu_stext_t();
 

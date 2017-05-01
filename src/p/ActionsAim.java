@@ -23,6 +23,8 @@ import static data.Tables.BITS32;
 import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import doom.SourceCode;
+import p.ActionSystem.AbstractCommand;
+
 import static doom.SourceCode.P_Map.PTR_AimTraverse;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
@@ -33,7 +35,7 @@ import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
 
-interface ActionsAim extends ActionsMovement {
+interface ActionsAim<R extends Actions.Registry & AbstractCommand<R>> extends ActionsMovement<R> {
     /**
      * P_CheckMissileSpawn Moves the missile forward a bit and possibly explodes it right there.
      *

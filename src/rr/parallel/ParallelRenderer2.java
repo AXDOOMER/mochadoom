@@ -207,7 +207,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             }
 
             for (int i = 0; i < NUMFLOORTHREADS; i++) {
-                final VisplaneWorker2 w = new VisplaneWorker2.Indexed(
+                final VisplaneWorker2<?, ?> w = new VisplaneWorker2.Indexed(
                         DOOM, this, i, columnofs, ylookup, screen, visplanebarrier, NUMFLOORTHREADS
                 );
                 vpw[i] = w;
@@ -307,7 +307,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             }
 
             for (int i = 0; i < NUMFLOORTHREADS; i++) {
-                final VisplaneWorker2 w = new VisplaneWorker2.HiColor(
+                final VisplaneWorker2<?, ?> w = new VisplaneWorker2.HiColor(
                         DOOM, this, i, columnofs, ylookup, screen, visplanebarrier, NUMFLOORTHREADS
                 );
                 vpw[i] = w;
@@ -408,7 +408,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             }
 
             for (int i = 0; i < NUMFLOORTHREADS; i++) {
-                final VisplaneWorker2 w = new VisplaneWorker2.TrueColor(
+                final VisplaneWorker2<?, ?> w = new VisplaneWorker2.TrueColor(
                         DOOM, this, i, columnofs, ylookup, screen, visplanebarrier, NUMFLOORTHREADS
                 );
                 vpw[i] = w;

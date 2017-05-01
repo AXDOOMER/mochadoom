@@ -813,7 +813,7 @@ public class WadLoader implements IWadLoader {
 	
 	@Deprecated
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
-			Class what) throws IOException {
+			Class<?> what) throws IOException {
 
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);

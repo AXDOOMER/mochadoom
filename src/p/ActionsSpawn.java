@@ -44,6 +44,8 @@ import doom.SourceCode.fixed_t;
 import doom.player_t;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+
+import p.ActionSystem.AbstractCommand;
 import p.ActionSystem.Observer;
 import static p.mobj_t.MF_AMBUSH;
 import static p.mobj_t.MF_COUNTITEM;
@@ -54,7 +56,7 @@ import static p.mobj_t.MF_TRANSSHIFT;
 import static utils.C2JUtils.eval;
 import v.graphics.Palettes;
 
-interface ActionsSpawn extends Observer<Actions.Registry> {
+interface ActionsSpawn<R extends Actions.Registry & AbstractCommand<R>> extends Observer<R> {
     /**
      * P_SpawnMobj
      *

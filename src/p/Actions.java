@@ -30,19 +30,21 @@ import static doom.SourceCode.P_Mobj.P_SpawnMobj;
 import doom.player_t;
 import doom.thinker_t;
 import m.fixed_t;
+import p.ActionSystem.GoverningRegistry;
+import p.ActionSystem.AbstractCommand;
 import p.ActionSystem.Governor;
 import p.ActionSystem.Observer;
 import rr.line_t;
 
 public class Actions implements Observer<Actions.Registry>, ThinkerList {
-    private final Registry gov;
+    private final GoverningRegistry gov;
     
-    public Actions(DoomMain DOOM) {
-        this.gov = new Registry(DOOM);
+    public Actions(DoomMain<?, ?> DOOM) {
+        this.gov = new GoverningRegistry(DOOM);
     }
 
     @Override
-    public Registry obs() {
+    public GoverningRegistry obs() {
         return gov;
     }
 
@@ -143,8 +145,8 @@ public class Actions implements Observer<Actions.Registry>, ThinkerList {
     public void Init() {
         gov.Init();
     }
-
-    public static class Registry extends UnifiedGameMap implements Governor<Registry> {
+    
+    public static abstract class Registry extends UnifiedGameMap {
 
         static final long FATSPREAD = Tables.ANG90 / 8;
         static final int TRACEANGLE = 201326592;
@@ -269,7 +271,7 @@ public class Actions implements Observer<Actions.Registry>, ThinkerList {
         int braintargeton;
         int easy = 0;
 
-        public Registry(DoomMain DOOM) {
+        Registry(DoomMain<?, ?> DOOM) {
             super(DOOM);
         }
     }

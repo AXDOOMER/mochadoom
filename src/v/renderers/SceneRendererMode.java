@@ -30,7 +30,7 @@ import rr.parallel.ParallelRenderer2;
  * This class helps to choose between scene renderers
  */
 public enum SceneRendererMode {
-    Serial(SceneRendererMode::Serial_8, SceneRendererMode::Serial_16, SceneRendererMode::Serial_32),
+    Serial(UnifiedRenderer.Indexed::new, UnifiedRenderer.HiColor::new, UnifiedRenderer.TrueColor::new),
     Parallel(SceneRendererMode::Parallel_8, SceneRendererMode::Parallel_16, SceneRendererMode::Parallel_32),
     Parallel2(SceneRendererMode::Parallel2_8, SceneRendererMode::Parallel2_16, SceneRendererMode::Parallel2_32);
     
@@ -43,9 +43,11 @@ public enum SceneRendererMode {
             ? parseSwitchConfig(CommandVariable.PARALLELRENDERER2)
             : new int[]{2, 2, 2};
             
-    final SG indexedGen, hicolorGen, truecolorGen;
+    final SG<byte[], byte[]> indexedGen;
+    final SG<byte[], short[]> hicolorGen;
+    final SG<byte[], int[]> truecolorGen;
 
-    private SceneRendererMode(SG indexed, SG hi, SG truecolor) {
+    private SceneRendererMode(SG<byte[], byte[]> indexed, SG<byte[], short[]> hi, SG<byte[], int[]> truecolor) {
         this.indexedGen = indexed;
         this.hicolorGen = hi;
         this.truecolorGen = truecolor;
@@ -87,50 +89,29 @@ public enum SceneRendererMode {
         return Engine.getConfig().getValue(Settings.scene_renderer_mode, SceneRendererMode.class);
     }
     
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Serial_8(DoomMain DOOM) {
-        return new UnifiedRenderer.Indexed(DOOM);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Serial_16(DoomMain DOOM) {
-        return new UnifiedRenderer.HiColor(DOOM);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Serial_32(DoomMain DOOM) {
-        return new UnifiedRenderer.TrueColor(DOOM);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Parallel_8(DoomMain DOOM) {
+    private static SceneRenderer<byte[], byte[]> Parallel_8(DoomMain<byte[], byte[]> DOOM) {
         return new ParallelRenderer.Indexed(DOOM, threads[0], threads[1], threads[2]);
     }
     
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Parallel_16(DoomMain DOOM) {
+    private static SceneRenderer<byte[], short[]> Parallel_16(DoomMain<byte[], short[]> DOOM) {
         return new ParallelRenderer.HiColor(DOOM, threads[0], threads[1], threads[2]);
     }
     
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Parallel_32(DoomMain DOOM) {
+    private static SceneRenderer<byte[], int[]> Parallel_32(DoomMain<byte[], int[]> DOOM) {
         return new ParallelRenderer.TrueColor(DOOM, threads[0], threads[1], threads[2]);
     }
     
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Parallel2_8(DoomMain DOOM) {
+    private static SceneRenderer<byte[], byte[]> Parallel2_8(DoomMain<byte[], byte[]> DOOM) {
         return new ParallelRenderer2.Indexed(DOOM, threads[0], threads[1], threads[2]);
     }
     
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Parallel2_16(DoomMain DOOM) {
+    private static SceneRenderer<byte[], short[]> Parallel2_16(DoomMain<byte[], short[]> DOOM) {
         return new ParallelRenderer2.HiColor(DOOM, threads[0], threads[1], threads[2]);
     }
     
-    @SuppressWarnings("unchecked")
-    private static SceneRenderer Parallel2_32(DoomMain DOOM) {
+    private static SceneRenderer<byte[], int[]> Parallel2_32(DoomMain<byte[], int[]> DOOM) {
         return new ParallelRenderer2.TrueColor(DOOM, threads[0], threads[1], threads[2]);
     }
     
-    interface SG extends Function<DoomMain, SceneRenderer> {}
+    interface SG<T, V> extends Function<DoomMain<T, V>, SceneRenderer<T, V>> {}
 }

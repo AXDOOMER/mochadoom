@@ -37,7 +37,7 @@ import p.mobj_t;
 
 public interface IDoomSound {
 
-    static IDoomSound chooseSoundIsPresent(DoomMain DM, CVarManager CVM, ISoundDriver ISND) {
+    static IDoomSound chooseSoundIsPresent(DoomMain<?, ?> DM, CVarManager CVM, ISoundDriver ISND) {
         if (!CVM.bool(CommandVariable.NOSOUND) || (ISND instanceof DummySFX && DM.music instanceof DummyMusic)) {
             return new AbstractDoomAudio(DM, DM.numChannels);
         } else {

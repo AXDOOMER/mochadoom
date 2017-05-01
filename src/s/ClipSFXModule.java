@@ -43,7 +43,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 	
 	public final float[] linear2db;
 	
-	public ClipSFXModule(DoomMain DM, int numChannels) {
+	public ClipSFXModule(DoomMain<?, ?> DM, int numChannels) {
 		super(DM,numChannels);
 		linear2db=computeLinear2DB();		
 		}

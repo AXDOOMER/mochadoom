@@ -16,6 +16,7 @@
  */
 package p;
 
+import doom.DoomMain;
 import p.Actions.Registry;
 
 /**
@@ -37,49 +38,55 @@ import p.Actions.Registry;
  *  - Good Sign 2017/04/30
  */
 class ActionSystem {
-    
-    interface Governor<R extends Registry & Observer<Registry>> extends Command, Observer<Registry> {
-
-        @Override
-        public default Registry obs() {
-            return (Registry) this;
-        }
-    }
-    
-    private interface Command extends
-        ActionsAim,
-        ActionsAttacks,
-        ActionsCeilings,
-        ActionsClipping,
-        ActionsDoors,
-        ActionsFloors,
-        ActionsMissiles,
-        ActionsMoveEvents,
-        ActionsMovement,
-        ActionsPathTraverse,
-        ActionsPlanes,
-        ActionsSectors,
-        ActionsShootEvents,
-        ActionsSpawn,
-        ActiveStatesAi,
-        ActiveStatesAttacks,
-        ActiveStatesMonstersBosses,
-        ActiveStatesMonstersDemonspawns,
-        ActiveStatesMonstersHorrendousVisages,
-        ActiveStatesMonstersMancubi,
-        ActiveStatesMonstersPainsSouls,
-        ActiveStatesMonstersSkels,
-        ActiveStatesMonstersSpiders,
-        ActiveStatesMonstersViles,
-        ActiveStatesMonstersZombies,
-        ActiveStatesSounds,
-        ActiveStatesThinkers,
-        ActiveStatesWeapons,
-        ActionsTeleportation,
-        ActionsThings,
-        ActionsThinkers,
-        ActionsUseEvents,
-        ActionsUtility
+	static class GoverningRegistry extends Registry implements Governor<GoverningRegistry> {
+		GoverningRegistry(DoomMain<?, ?> DOOM) {
+			super(DOOM);
+		}
+	}
+	
+	interface Governor<R extends GoverningRegistry> extends Command {
+		@Override
+		default GoverningRegistry obs() {
+			return (GoverningRegistry) this;
+		}
+	}
+	
+	interface Command extends AbstractCommand<GoverningRegistry> {}
+	
+    interface AbstractCommand<R extends Registry & AbstractCommand<R>> extends
+        ActionsAim<R>,
+        ActionsAttacks<R>,
+        ActionsCeilings<R>,
+        ActionsClipping<R>,
+        ActionsDoors<R>,
+        ActionsFloors<R>,
+        ActionsMissiles<R>,
+        ActionsMoveEvents<R>,
+        ActionsMovement<R>,
+        ActionsPathTraverse<R>,
+        ActionsPlanes<R>,
+        ActionsSectors<R>,
+        ActionsShootEvents<R>,
+        ActionsSpawn<R>,
+        ActiveStatesAi<R>,
+        ActiveStatesAttacks<R>,
+        ActiveStatesMonstersBosses<R>,
+        ActiveStatesMonstersDemonspawns<R>,
+        ActiveStatesMonstersHorrendousVisages<R>,
+        ActiveStatesMonstersMancubi<R>,
+        ActiveStatesMonstersPainsSouls<R>,
+        ActiveStatesMonstersSkels<R>,
+        ActiveStatesMonstersSpiders<R>,
+        ActiveStatesMonstersViles<R>,
+        ActiveStatesMonstersZombies<R>,
+        ActiveStatesSounds<R>,
+        ActiveStatesThinkers<R>,
+        ActiveStatesWeapons<R>,
+        ActionsTeleportation<R>,
+        ActionsThings<R>,
+        ActionsThinkers<R>,
+        ActionsUseEvents<R>,
+        ActionsUtility<R>
     {}
     
     interface Observer<R> {

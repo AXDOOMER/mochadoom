@@ -24,6 +24,7 @@ import f.Wiper;
 import java.lang.reflect.Array;
 import m.IRandom;
 import utils.GenericCopy;
+import v.graphics.Wipers.WipeFunc.WF;
 
 /**
  * SCREEN WIPE PACKAGE
@@ -53,10 +54,10 @@ public class Wipers implements ColorTransform, Melt {
         doMelt(instance::doMelt),
         exitMelt(instance::exitMelt);
         
-        private final Class supportFor;
-        private final WF func;
+        private final Class<?> supportFor;
+        private final WF<?> func;
         
-        WipeFunc(WF func) {
+        WipeFunc(WF<?> func) {
             this.supportFor = null;
             this.func = func;
         }
@@ -66,19 +67,23 @@ public class Wipers implements ColorTransform, Melt {
             this.func = func;
         }
         
-        @SuppressWarnings("unchecked")
         WipeFunc(final WipeFunc... wf) {
             this.supportFor = null;
-            this.func = w -> {
-
-                for (int i = 0; i < wf.length; ++i) {
-                    if (w.bufferType == wf[i].supportFor) {
-                        return wf[i].func.invoke(w);
-                    }
-                }
-
-                throw new UnsupportedOperationException("Do not have support for: " + w.bufferType);
-            };
+            this.func = wipeChoice(wf);
+        }
+        
+        private static <V> WF<V> wipeChoice(final WipeFunc[] wf) {
+        	return (WiperImpl<V, ?> wiper) -> {
+        		for (int i = 0; i < wf.length; ++i) {
+        			if (wiper.bufferType == wf[i].supportFor) {
+        				@SuppressWarnings("unchecked") // checked
+						final WF<V> supported = (WF<V>) wf[i].func;
+        				return supported.invoke(wiper);
+        			}
+        		}
+        		
+        		throw new UnsupportedOperationException("Do not have support for: " + wiper.bufferType);
+        	};
         }
         
         interface WF<V> { public boolean invoke(WiperImpl<V, ?> wiper); }
@@ -92,7 +97,7 @@ public class Wipers implements ColorTransform, Melt {
         private final Relocation relocation = new Relocation(0, 0, 1);
         final IRandom random;
         final Screens<V, E> screens;
-        final Class bufferType;
+        final Class<?> bufferType;
         final V wipeStartScr;
         final V wipeEndScr;
         final V wipeScr;
@@ -151,9 +156,13 @@ public class Wipers implements ColorTransform, Melt {
             GenericCopy.memcpy(wipeStartScr, 0, wipeScr, 0, Array.getLength(wipeScr));
             return false;
         }
+        
+        @SuppressWarnings("unchecked")
+		private boolean invokeCheckedFunc(WipeFunc f) {
+        	return ((WF<V>) f.func).invoke(this);
+        }
 
         @Override
-        @SuppressWarnings("unchecked")
         public boolean ScreenWipe(WipeType type, int x, int y, int width, int height, int ticks) {
             boolean rc;
 
@@ -165,17 +174,17 @@ public class Wipers implements ColorTransform, Melt {
                 go = true;
                 //wipe_scr = new byte[width*height]; // DEBUG
                 // HOW'S THAT FOR A FUNCTION POINTER, BIATCH?!
-                type.getInitFunc().func.invoke(this);
+                invokeCheckedFunc(type.getInitFunc());
             }
 
             // do a piece of wipe-in
-            rc = type.getDoFunc().func.invoke(this);
+            rc = invokeCheckedFunc(type.getDoFunc());
             // V.DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
 
             // final stuff
             if (rc) {
                 go = false;
-                type.getExitFunc().func.invoke(this);
+                invokeCheckedFunc(type.getExitFunc());
             }
 
             return !go;

@@ -151,7 +151,7 @@ public class DoomSaveGame implements CacheableDoomObject, IReadableDoomObject, I
         
     } 
 
-     public void toStat(DoomStatus DS){
+     public void toStat(DoomStatus<?, ?> DS){
          System.arraycopy(this.playeringame, 0, DS.playeringame, 0, this.playeringame.length);
          DS.gameskill=skill_t.values()[this.gameskill];
          DS.gameepisode=this.gameepisode;
@@ -160,7 +160,7 @@ public class DoomSaveGame implements CacheableDoomObject, IReadableDoomObject, I
          
      }
      
-     public void fromStat(DoomStatus DS){
+     public void fromStat(DoomStatus<?, ?> DS){
          System.arraycopy(DS.playeringame, 0, this.playeringame, 0, DS.playeringame.length);
          this.gameskill=DS.gameskill.ordinal();
          this.gameepisode=DS.gameepisode;

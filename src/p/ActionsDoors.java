@@ -26,6 +26,8 @@ import static doom.englsh.PD_REDO;
 import static doom.englsh.PD_YELLOWK;
 import static doom.englsh.PD_YELLOWO;
 import doom.player_t;
+import p.ActionSystem.AbstractCommand;
+
 import static m.fixed_t.FRACUNIT;
 import static p.DoorDefines.VDOORSPEED;
 import static p.DoorDefines.VDOORWAIT;
@@ -33,7 +35,7 @@ import rr.line_t;
 import rr.sector_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsDoors extends ActionsPlanes {
+interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPlanes<R> {
     //
     // VERTICAL DOORS
     //

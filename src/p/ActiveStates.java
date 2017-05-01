@@ -28,6 +28,8 @@ import doom.thinker_t;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mochadoom.Loggers;
+import p.ActionSystem.AbstractCommand;
+import p.Actions.Registry;
 
 /**
  * In vanilla doom there is union called actionf_t that can hold
@@ -87,97 +89,97 @@ import mochadoom.Loggers;
  */
 public enum ActiveStates {
     NOP(ActiveStates::nop, ThinkerConsumer.class),
-    A_Light0(Actions.Registry::A_Light0, PlayerSpriteConsumer.class),
-    A_WeaponReady(Actions.Registry::A_WeaponReady, PlayerSpriteConsumer.class),
-    A_Lower(Actions.Registry::A_Lower, PlayerSpriteConsumer.class),
-    A_Raise(Actions.Registry::A_Raise, PlayerSpriteConsumer.class),
-    A_Punch(Actions.Registry::A_Punch, PlayerSpriteConsumer.class),
-    A_ReFire(Actions.Registry::A_ReFire, PlayerSpriteConsumer.class),
-    A_FirePistol(Actions.Registry::A_FirePistol, PlayerSpriteConsumer.class),
-    A_Light1(Actions.Registry::A_Light1, PlayerSpriteConsumer.class),
-    A_FireShotgun(Actions.Registry::A_FireShotgun, PlayerSpriteConsumer.class),
-    A_Light2(Actions.Registry::A_Light2, PlayerSpriteConsumer.class),
-    A_FireShotgun2(Actions.Registry::A_FireShotgun2, PlayerSpriteConsumer.class),
-    A_CheckReload(Actions.Registry::A_CheckReload, PlayerSpriteConsumer.class),
-    A_OpenShotgun2(Actions.Registry::A_OpenShotgun2, PlayerSpriteConsumer.class),
-    A_LoadShotgun2(Actions.Registry::A_LoadShotgun2, PlayerSpriteConsumer.class),
-    A_CloseShotgun2(Actions.Registry::A_CloseShotgun2, PlayerSpriteConsumer.class),
-    A_FireCGun(Actions.Registry::A_FireCGun, PlayerSpriteConsumer.class),
-    A_GunFlash(Actions.Registry::A_GunFlash, PlayerSpriteConsumer.class),
-    A_FireMissile(Actions.Registry::A_FireMissile, PlayerSpriteConsumer.class),
-    A_Saw(Actions.Registry::A_Saw, PlayerSpriteConsumer.class),
-    A_FirePlasma(Actions.Registry::A_FirePlasma, PlayerSpriteConsumer.class),
-    A_BFGsound(Actions.Registry::A_BFGsound, PlayerSpriteConsumer.class),
-    A_FireBFG(Actions.Registry::A_FireBFG, PlayerSpriteConsumer.class),
-    A_BFGSpray(Actions.Registry::A_BFGSpray, MobjConsumer.class),
-    A_Explode(Actions.Registry::A_Explode, MobjConsumer.class),
-    A_Pain(Actions.Registry::A_Pain, MobjConsumer.class),
-    A_PlayerScream(Actions.Registry::A_PlayerScream, MobjConsumer.class),
-    A_Fall(Actions.Registry::A_Fall, MobjConsumer.class),
-    A_XScream(Actions.Registry::A_XScream, MobjConsumer.class),
-    A_Look(Actions.Registry::A_Look, MobjConsumer.class),
-    A_Chase(Actions.Registry::A_Chase, MobjConsumer.class),
-    A_FaceTarget(Actions.Registry::A_FaceTarget, MobjConsumer.class),
-    A_PosAttack(Actions.Registry::A_PosAttack, MobjConsumer.class),
-    A_Scream(Actions.Registry::A_Scream, MobjConsumer.class),
-    A_SPosAttack(Actions.Registry::A_SPosAttack, MobjConsumer.class),
-    A_VileChase(Actions.Registry::A_VileChase, MobjConsumer.class),
-    A_VileStart(Actions.Registry::A_VileStart, MobjConsumer.class),
-    A_VileTarget(Actions.Registry::A_VileTarget, MobjConsumer.class),
-    A_VileAttack(Actions.Registry::A_VileAttack, MobjConsumer.class),
-    A_StartFire(Actions.Registry::A_StartFire, MobjConsumer.class),
-    A_Fire(Actions.Registry::A_Fire, MobjConsumer.class),
-    A_FireCrackle(Actions.Registry::A_FireCrackle, MobjConsumer.class),
-    A_Tracer(Actions.Registry::A_Tracer, MobjConsumer.class),
-    A_SkelWhoosh(Actions.Registry::A_SkelWhoosh, MobjConsumer.class),
-    A_SkelFist(Actions.Registry::A_SkelFist, MobjConsumer.class),
-    A_SkelMissile(Actions.Registry::A_SkelMissile, MobjConsumer.class),
-    A_FatRaise(Actions.Registry::A_FatRaise, MobjConsumer.class),
-    A_FatAttack1(Actions.Registry::A_FatAttack1, MobjConsumer.class),
-    A_FatAttack2(Actions.Registry::A_FatAttack2, MobjConsumer.class),
-    A_FatAttack3(Actions.Registry::A_FatAttack3, MobjConsumer.class),
-    A_BossDeath(Actions.Registry::A_BossDeath, MobjConsumer.class),
-    A_CPosAttack(Actions.Registry::A_CPosAttack, MobjConsumer.class),
-    A_CPosRefire(Actions.Registry::A_CPosRefire, MobjConsumer.class),
-    A_TroopAttack(Actions.Registry::A_TroopAttack, MobjConsumer.class),
-    A_SargAttack(Actions.Registry::A_SargAttack, MobjConsumer.class),
-    A_HeadAttack(Actions.Registry::A_HeadAttack, MobjConsumer.class),
-    A_BruisAttack(Actions.Registry::A_BruisAttack, MobjConsumer.class),
-    A_SkullAttack(Actions.Registry::A_SkullAttack, MobjConsumer.class),
-    A_Metal(Actions.Registry::A_Metal, MobjConsumer.class),
-    A_SpidRefire(Actions.Registry::A_SpidRefire, MobjConsumer.class),
-    A_BabyMetal(Actions.Registry::A_BabyMetal, MobjConsumer.class),
-    A_BspiAttack(Actions.Registry::A_BspiAttack, MobjConsumer.class),
-    A_Hoof(Actions.Registry::A_Hoof, MobjConsumer.class),
-    A_CyberAttack(Actions.Registry::A_CyberAttack, MobjConsumer.class),
-    A_PainAttack(Actions.Registry::A_PainAttack, MobjConsumer.class),
-    A_PainDie(Actions.Registry::A_PainDie, MobjConsumer.class),
-    A_KeenDie(Actions.Registry::A_KeenDie, MobjConsumer.class),
-    A_BrainPain(Actions.Registry::A_BrainPain, MobjConsumer.class),
-    A_BrainScream(Actions.Registry::A_BrainScream, MobjConsumer.class),
-    A_BrainDie(Actions.Registry::A_BrainDie, MobjConsumer.class),
-    A_BrainAwake(Actions.Registry::A_BrainAwake, MobjConsumer.class),
-    A_BrainSpit(Actions.Registry::A_BrainSpit, MobjConsumer.class),
-    A_SpawnSound(Actions.Registry::A_SpawnSound, MobjConsumer.class),
-    A_SpawnFly(Actions.Registry::A_SpawnFly, MobjConsumer.class),
-    A_BrainExplode(Actions.Registry::A_BrainExplode, MobjConsumer.class),
-    P_MobjThinker(Actions.Registry::P_MobjThinker, MobjConsumer.class),
-    T_FireFlicker(Actions.Registry::T_FireFlicker, ThinkerConsumer.class),
-    T_LightFlash(Actions.Registry::T_LightFlash, ThinkerConsumer.class),
-    T_StrobeFlash(Actions.Registry::T_StrobeFlash, ThinkerConsumer.class),
-    T_Glow(Actions.Registry::T_Glow, ThinkerConsumer.class),
-    T_MoveCeiling(Actions.Registry::T_MoveCeiling, ThinkerConsumer.class),
-    T_MoveFloor(Actions.Registry::T_MoveFloor, ThinkerConsumer.class),
-    T_VerticalDoor(Actions.Registry::T_VerticalDoor, ThinkerConsumer.class),
-    T_PlatRaise(Actions.Registry::T_PlatRaise, ThinkerConsumer.class),
-    T_SlidingDoor(Actions.Registry::T_SlidingDoor, ThinkerConsumer.class);
+    A_Light0(AbstractCommand::A_Light0, PlayerSpriteConsumer.class),
+    A_WeaponReady(AbstractCommand::A_WeaponReady, PlayerSpriteConsumer.class),
+    A_Lower(AbstractCommand::A_Lower, PlayerSpriteConsumer.class),
+    A_Raise(AbstractCommand::A_Raise, PlayerSpriteConsumer.class),
+    A_Punch(AbstractCommand::A_Punch, PlayerSpriteConsumer.class),
+    A_ReFire(AbstractCommand::A_ReFire, PlayerSpriteConsumer.class),
+    A_FirePistol(AbstractCommand::A_FirePistol, PlayerSpriteConsumer.class),
+    A_Light1(AbstractCommand::A_Light1, PlayerSpriteConsumer.class),
+    A_FireShotgun(AbstractCommand::A_FireShotgun, PlayerSpriteConsumer.class),
+    A_Light2(AbstractCommand::A_Light2, PlayerSpriteConsumer.class),
+    A_FireShotgun2(AbstractCommand::A_FireShotgun2, PlayerSpriteConsumer.class),
+    A_CheckReload(AbstractCommand::A_CheckReload, PlayerSpriteConsumer.class),
+    A_OpenShotgun2(AbstractCommand::A_OpenShotgun2, PlayerSpriteConsumer.class),
+    A_LoadShotgun2(AbstractCommand::A_LoadShotgun2, PlayerSpriteConsumer.class),
+    A_CloseShotgun2(AbstractCommand::A_CloseShotgun2, PlayerSpriteConsumer.class),
+    A_FireCGun(AbstractCommand::A_FireCGun, PlayerSpriteConsumer.class),
+    A_GunFlash(AbstractCommand::A_GunFlash, PlayerSpriteConsumer.class),
+    A_FireMissile(AbstractCommand::A_FireMissile, PlayerSpriteConsumer.class),
+    A_Saw(AbstractCommand::A_Saw, PlayerSpriteConsumer.class),
+    A_FirePlasma(AbstractCommand::A_FirePlasma, PlayerSpriteConsumer.class),
+    A_BFGsound(AbstractCommand::A_BFGsound, PlayerSpriteConsumer.class),
+    A_FireBFG(AbstractCommand::A_FireBFG, PlayerSpriteConsumer.class),
+    A_BFGSpray(AbstractCommand::A_BFGSpray, MobjConsumer.class),
+    A_Explode(AbstractCommand::A_Explode, MobjConsumer.class),
+    A_Pain(AbstractCommand::A_Pain, MobjConsumer.class),
+    A_PlayerScream(AbstractCommand::A_PlayerScream, MobjConsumer.class),
+    A_Fall(AbstractCommand::A_Fall, MobjConsumer.class),
+    A_XScream(AbstractCommand::A_XScream, MobjConsumer.class),
+    A_Look(AbstractCommand::A_Look, MobjConsumer.class),
+    A_Chase(AbstractCommand::A_Chase, MobjConsumer.class),
+    A_FaceTarget(AbstractCommand::A_FaceTarget, MobjConsumer.class),
+    A_PosAttack(AbstractCommand::A_PosAttack, MobjConsumer.class),
+    A_Scream(AbstractCommand::A_Scream, MobjConsumer.class),
+    A_SPosAttack(AbstractCommand::A_SPosAttack, MobjConsumer.class),
+    A_VileChase(AbstractCommand::A_VileChase, MobjConsumer.class),
+    A_VileStart(AbstractCommand::A_VileStart, MobjConsumer.class),
+    A_VileTarget(AbstractCommand::A_VileTarget, MobjConsumer.class),
+    A_VileAttack(AbstractCommand::A_VileAttack, MobjConsumer.class),
+    A_StartFire(AbstractCommand::A_StartFire, MobjConsumer.class),
+    A_Fire(AbstractCommand::A_Fire, MobjConsumer.class),
+    A_FireCrackle(AbstractCommand::A_FireCrackle, MobjConsumer.class),
+    A_Tracer(AbstractCommand::A_Tracer, MobjConsumer.class),
+    A_SkelWhoosh(AbstractCommand::A_SkelWhoosh, MobjConsumer.class),
+    A_SkelFist(AbstractCommand::A_SkelFist, MobjConsumer.class),
+    A_SkelMissile(AbstractCommand::A_SkelMissile, MobjConsumer.class),
+    A_FatRaise(AbstractCommand::A_FatRaise, MobjConsumer.class),
+    A_FatAttack1(AbstractCommand::A_FatAttack1, MobjConsumer.class),
+    A_FatAttack2(AbstractCommand::A_FatAttack2, MobjConsumer.class),
+    A_FatAttack3(AbstractCommand::A_FatAttack3, MobjConsumer.class),
+    A_BossDeath(AbstractCommand::A_BossDeath, MobjConsumer.class),
+    A_CPosAttack(AbstractCommand::A_CPosAttack, MobjConsumer.class),
+    A_CPosRefire(AbstractCommand::A_CPosRefire, MobjConsumer.class),
+    A_TroopAttack(AbstractCommand::A_TroopAttack, MobjConsumer.class),
+    A_SargAttack(AbstractCommand::A_SargAttack, MobjConsumer.class),
+    A_HeadAttack(AbstractCommand::A_HeadAttack, MobjConsumer.class),
+    A_BruisAttack(AbstractCommand::A_BruisAttack, MobjConsumer.class),
+    A_SkullAttack(AbstractCommand::A_SkullAttack, MobjConsumer.class),
+    A_Metal(AbstractCommand::A_Metal, MobjConsumer.class),
+    A_SpidRefire(AbstractCommand::A_SpidRefire, MobjConsumer.class),
+    A_BabyMetal(AbstractCommand::A_BabyMetal, MobjConsumer.class),
+    A_BspiAttack(AbstractCommand::A_BspiAttack, MobjConsumer.class),
+    A_Hoof(AbstractCommand::A_Hoof, MobjConsumer.class),
+    A_CyberAttack(AbstractCommand::A_CyberAttack, MobjConsumer.class),
+    A_PainAttack(AbstractCommand::A_PainAttack, MobjConsumer.class),
+    A_PainDie(AbstractCommand::A_PainDie, MobjConsumer.class),
+    A_KeenDie(AbstractCommand::A_KeenDie, MobjConsumer.class),
+    A_BrainPain(AbstractCommand::A_BrainPain, MobjConsumer.class),
+    A_BrainScream(AbstractCommand::A_BrainScream, MobjConsumer.class),
+    A_BrainDie(AbstractCommand::A_BrainDie, MobjConsumer.class),
+    A_BrainAwake(AbstractCommand::A_BrainAwake, MobjConsumer.class),
+    A_BrainSpit(AbstractCommand::A_BrainSpit, MobjConsumer.class),
+    A_SpawnSound(AbstractCommand::A_SpawnSound, MobjConsumer.class),
+    A_SpawnFly(AbstractCommand::A_SpawnFly, MobjConsumer.class),
+    A_BrainExplode(AbstractCommand::A_BrainExplode, MobjConsumer.class),
+    P_MobjThinker(AbstractCommand::P_MobjThinker, MobjConsumer.class),
+    T_FireFlicker(AbstractCommand::T_FireFlicker, ThinkerConsumer.class),
+    T_LightFlash(AbstractCommand::T_LightFlash, ThinkerConsumer.class),
+    T_StrobeFlash(AbstractCommand::T_StrobeFlash, ThinkerConsumer.class),
+    T_Glow(AbstractCommand::T_Glow, ThinkerConsumer.class),
+    T_MoveCeiling(AbstractCommand::T_MoveCeiling, ThinkerConsumer.class),
+    T_MoveFloor(AbstractCommand::T_MoveFloor, ThinkerConsumer.class),
+    T_VerticalDoor(AbstractCommand::T_VerticalDoor, ThinkerConsumer.class),
+    T_PlatRaise(AbstractCommand::T_PlatRaise, ThinkerConsumer.class),
+    T_SlidingDoor(AbstractCommand::T_SlidingDoor, ThinkerConsumer.class);
     
     private final static Logger LOGGER = Loggers.getLogger(ActiveStates.class.getName());
     
-    private final ParamClass actionFunction;
-    private final Class<? extends ParamClass> paramType;
+    private final ParamClass<?> actionFunction;
+    private final Class<? extends ParamClass<?>> paramType;
 
-    private <T extends ParamClass> ActiveStates(final T actionFunction, final Class<T> paramType) {
+    private <T extends ParamClass<?>> ActiveStates(final T actionFunction, final Class<T> paramType) {
         this.actionFunction = actionFunction;
         this.paramType = paramType;
     }
@@ -186,20 +188,20 @@ public enum ActiveStates {
 
     @actionf_p1
     @D_Think.C(actionf_t.acp1)
-    public interface MobjConsumer extends ParamClass<MobjConsumer> {
-        void accept(Actions.Registry a, mobj_t m);
+    public interface MobjConsumer<R extends Registry & AbstractCommand<R>> extends ParamClass<MobjConsumer<R>> {
+    	void accept(AbstractCommand<R> a, mobj_t m);
     }
     
     @actionf_v
     @D_Think.C(actionf_t.acv)
-    public interface ThinkerConsumer extends ParamClass<ThinkerConsumer> {
-        void accept(Actions.Registry a, thinker_t t);
+    public interface ThinkerConsumer<R extends Registry & AbstractCommand<R>> extends ParamClass<ThinkerConsumer<R>> {
+    	void accept(AbstractCommand<R> a, thinker_t t);
     }
     
     @actionf_p2
     @D_Think.C(actionf_t.acp2)
-    public interface PlayerSpriteConsumer extends ParamClass<PlayerSpriteConsumer> {
-        void accept(Actions.Registry a, player_t p, pspdef_t s);
+    public interface PlayerSpriteConsumer<R extends Registry & AbstractCommand<R>> extends ParamClass<PlayerSpriteConsumer<R>> {
+    	void accept(AbstractCommand<R> a, player_t p, pspdef_t s);
     }
     
     private interface ParamClass<T extends ParamClass<T>> {}
