@@ -16,9 +16,6 @@
  */
 package p;
 
-import doom.DoomMain;
-import p.Actions.Registry;
-
 /**
  * A tough task was to implement Actions using Observer pattern
  * (observing a Registry - an instance shared state between Actions)
@@ -38,60 +35,5 @@ import p.Actions.Registry;
  *  - Good Sign 2017/04/30
  */
 class ActionSystem {
-	static class GoverningRegistry extends Registry implements Governor<GoverningRegistry> {
-		GoverningRegistry(DoomMain<?, ?> DOOM) {
-			super(DOOM);
-		}
-	}
-	
-	interface Governor<R extends GoverningRegistry> extends Command {
-		@Override
-		default GoverningRegistry obs() {
-			return (GoverningRegistry) this;
-		}
-	}
-	
-	interface Command extends AbstractCommand<GoverningRegistry> {}
-	
-    interface AbstractCommand<R extends Registry & AbstractCommand<R>> extends
-        ActionsAim<R>,
-        ActionsAttacks<R>,
-        ActionsCeilings<R>,
-        ActionsClipping<R>,
-        ActionsDoors<R>,
-        ActionsFloors<R>,
-        ActionsMissiles<R>,
-        ActionsMoveEvents<R>,
-        ActionsMovement<R>,
-        ActionsPathTraverse<R>,
-        ActionsPlanes<R>,
-        ActionsSectors<R>,
-        ActionsShootEvents<R>,
-        ActionsSpawn<R>,
-        ActiveStatesAi<R>,
-        ActiveStatesAttacks<R>,
-        ActiveStatesMonstersBosses<R>,
-        ActiveStatesMonstersDemonspawns<R>,
-        ActiveStatesMonstersHorrendousVisages<R>,
-        ActiveStatesMonstersMancubi<R>,
-        ActiveStatesMonstersPainsSouls<R>,
-        ActiveStatesMonstersSkels<R>,
-        ActiveStatesMonstersSpiders<R>,
-        ActiveStatesMonstersViles<R>,
-        ActiveStatesMonstersZombies<R>,
-        ActiveStatesSounds<R>,
-        ActiveStatesThinkers<R>,
-        ActiveStatesWeapons<R>,
-        ActionsTeleportation<R>,
-        ActionsThings<R>,
-        ActionsThinkers<R>,
-        ActionsUseEvents<R>,
-        ActionsUtility<R>
-    {}
     
-    interface Observer<R> {
-        R obs();
-    }
-    
-    private ActionSystem() {}
 }

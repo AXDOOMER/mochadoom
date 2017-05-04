@@ -24,8 +24,6 @@ import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.sounds;
 import defines.statenum_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
@@ -33,13 +31,20 @@ import static p.ChaseDirections.DI_NODIR;
 import static p.ChaseDirections.xspeed;
 import static p.ChaseDirections.yspeed;
 
-interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsAttacks<R> {
+interface ActiveStatesMonstersViles extends ActionsAttacks {
+
+    void A_FaceTarget(mobj_t actor);
+    void A_Chase(mobj_t actor);
+    void UnsetThingPosition(mobj_t actor);
+
     //
     // A_VileChase
     // Check for ressurecting a body
     //
     default void A_VileChase(mobj_t actor) {
-        final Actions.Registry obs = obs();
+        final AbstractLevelLoader ll = levelLoader();
+        final Attacks att = contextRequire(KEY_ATTACKS);
+        
         int xl;
         int xh;
         int yl;
@@ -53,17 +58,15 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
 
         if (actor.movedir != DI_NODIR) {
             // check for corpses to raise
-            obs.vileTryX
-                = actor.x + actor.info.speed * xspeed[actor.movedir];
-            obs.vileTryY
-                = actor.y + actor.info.speed * yspeed[actor.movedir];
+            att.vileTryX = actor.x + actor.info.speed * xspeed[actor.movedir];
+            att.vileTryY = actor.y + actor.info.speed * yspeed[actor.movedir];
 
-            xl = obs.DOOM.levelLoader.getSafeBlockX(obs.vileTryX - obs.DOOM.levelLoader.bmaporgx - MAXRADIUS * 2);
-            xh = obs.DOOM.levelLoader.getSafeBlockX(obs.vileTryX - obs.DOOM.levelLoader.bmaporgx + MAXRADIUS * 2);
-            yl = obs.DOOM.levelLoader.getSafeBlockY(obs.vileTryY - obs.DOOM.levelLoader.bmaporgy - MAXRADIUS * 2);
-            yh = obs.DOOM.levelLoader.getSafeBlockY(obs.vileTryY - obs.DOOM.levelLoader.bmaporgy + MAXRADIUS * 2);
+            xl = ll.getSafeBlockX(att.vileTryX - ll.bmaporgx - MAXRADIUS * 2);
+            xh = ll.getSafeBlockX(att.vileTryX - ll.bmaporgx + MAXRADIUS * 2);
+            yl = ll.getSafeBlockY(att.vileTryY - ll.bmaporgy - MAXRADIUS * 2);
+            yh = ll.getSafeBlockY(att.vileTryY - ll.bmaporgy + MAXRADIUS * 2);
 
-            obs.vileObj = actor;
+            att.vileObj = actor;
             for (bx = xl; bx <= xh; bx++) {
                 for (by = yl; by <= yh; by++) {
                     // Call PIT_VileCheck to check
@@ -72,19 +75,19 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
                     if (!BlockThingsIterator(bx, by, this::VileCheck)) {
                         // got one!
                         temp = actor.target;
-                        actor.target = obs.vileCorpseHit;
+                        actor.target = att.vileCorpseHit;
                         A_FaceTarget(actor);
                         actor.target = temp;
 
                         actor.SetMobjState(statenum_t.S_VILE_HEAL1);
-                        obs.DOOM.doomSound.StartSound(obs.vileCorpseHit, sounds.sfxenum_t.sfx_slop);
-                        info = obs.vileCorpseHit.info;
+                        StartSound(att.vileCorpseHit, sounds.sfxenum_t.sfx_slop);
+                        info = att.vileCorpseHit.info;
 
-                        obs.vileCorpseHit.SetMobjState(info.raisestate);
-                        obs.vileCorpseHit.height <<= 2;
-                        obs.vileCorpseHit.flags = info.flags;
-                        obs.vileCorpseHit.health = info.spawnhealth;
-                        obs.vileCorpseHit.target = null;
+                        att.vileCorpseHit.SetMobjState(info.raisestate);
+                        att.vileCorpseHit.height <<= 2;
+                        att.vileCorpseHit.flags = info.flags;
+                        att.vileCorpseHit.health = info.spawnhealth;
+                        att.vileCorpseHit.target = null;
 
                         return;
                     }
@@ -100,8 +103,7 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
     // A_VileStart
     //
     default void A_VileStart(mobj_t actor) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_vilatk);
+        StartSound(actor, sounds.sfxenum_t.sfx_vilatk);
     }
     
     //
@@ -109,19 +111,16 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
     // Keep fire in front of player unless out of sight
     //
     default void A_StartFire(mobj_t actor) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_flamst);
+        StartSound(actor, sounds.sfxenum_t.sfx_flamst);
         A_Fire(actor);
     }
 
     default void A_FireCrackle(mobj_t actor) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_flame);
+        StartSound(actor, sounds.sfxenum_t.sfx_flame);
         A_Fire(actor);
     }
 
     default void A_Fire(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t dest;
         //long    an;
 
@@ -131,16 +130,16 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
         }
 
         // don't move it if the vile lost sight
-        if (!obs.EN.CheckSight(actor.target, dest)) {
+        if (!CheckSight(actor.target, dest)) {
             return;
         }
 
         // an = dest.angle >>> ANGLETOFINESHIFT;
-        obs.UnsetThingPosition(actor);
+        UnsetThingPosition(actor);
         actor.x = dest.x + FixedMul(24 * FRACUNIT, finecosine(dest.angle));
         actor.y = dest.y + FixedMul(24 * FRACUNIT, finesine(dest.angle));
         actor.z = dest.z;
-        obs.DOOM.levelLoader.SetThingPosition(actor);
+        SetThingPosition(actor);
     }
     
     //
@@ -148,7 +147,6 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
     // Spawn the hellfire
     //
     default void A_VileTarget(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t fog;
 
         if (actor.target == null) {
@@ -157,9 +155,7 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
 
         A_FaceTarget(actor);
 
-        fog = SpawnMobj(actor.target.x,
-            actor.target.y,
-            actor.target.z, mobjtype_t.MT_FIRE);
+        fog = SpawnMobj(actor.target.x, actor.target.y, actor.target.z, mobjtype_t.MT_FIRE);
 
         actor.tracer = fog;
         fog.target = actor;
@@ -171,7 +167,6 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
     // A_VileAttack
     //
     default void A_VileAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t fire;
         //int     an;
 
@@ -181,11 +176,11 @@ interface ActiveStatesMonstersViles<R extends Actions.Registry & AbstractCommand
 
         A_FaceTarget(actor);
 
-        if (!obs.EN.CheckSight(actor, actor.target)) {
+        if (!CheckSight(actor, actor.target)) {
             return;
         }
 
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_barexp);
+        StartSound(actor, sounds.sfxenum_t.sfx_barexp);
         DamageMobj(actor.target, actor, actor, 20);
         actor.target.momz = 1000 * MAPFRACUNIT / actor.target.info.mass;
 

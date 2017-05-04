@@ -24,10 +24,12 @@ import static data.Defines.PT_ADDLINES;
 import static data.Defines.PT_ADDTHINGS;
 import static data.Defines.PT_EARLYOUT;
 import static data.Limits.MAXINT;
+import static data.Limits.MAXINTERCEPTS;
 import doom.SourceCode;
-import p.ActionSystem.AbstractCommand;
-
+import doom.SourceCode.P_MapUtl;
 import static doom.SourceCode.P_MapUtl.P_PathTraverse;
+import doom.SourceCode.fixed_t;
+import java.util.Arrays;
 import java.util.function.Predicate;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
@@ -35,15 +37,63 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.MapUtils.InterceptVector;
 import rr.line_t;
+import utils.C2JUtils;
 import static utils.C2JUtils.eval;
+import utils.TraitFactory.ContextKey;
 
-interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> extends ActionsUtility<R> {
+interface ActionsPathTraverse extends ActionsSpawn {
+    final ContextKey<Traverse> KEY_TRAVERSE = KEY_CHAIN.newKey(ActionsPathTraverse.class, Traverse.class);
+    
+    final class Traverse {
+        //////////////// PIT FUNCTION OBJECTS ///////////////////
+
+        //
+        // PIT_AddLineIntercepts.
+        // Looks for lines in the given block
+        // that intercept the given trace
+        // to add to the intercepts list.
+        //
+        // A line is crossed if its endpoints
+        // are on opposite sides of the trace.
+        // Returns true if earlyout and a solid line hit.
+        //
+
+        divline_t addLineDivLine = new divline_t();
+
+        
+        //
+        // PIT_AddThingIntercepts
+        //
+        // maybe make this a shared instance variable?
+        divline_t thingInterceptDivLine = new divline_t();
+
+        boolean earlyout;
+
+        int intercept_p;
+
+        //
+        // INTERCEPT ROUTINES
+        //
+
+        intercept_t[] intercepts = new intercept_t[MAXINTERCEPTS];
+        { Arrays.setAll(intercepts, i -> new intercept_t()); }
+        
+        void ResizeIntercepts() {
+            intercepts = C2JUtils.resize(intercepts[0], intercepts, intercepts.length * 2);
+        }
+    }
+    
     /**
      * P_PathTraverse Traces a line from x1,y1 to x2,y2, calling the traverser function for each. Returns true if the
      * traverser function returns true for all lines.
      */
-    @SourceCode.P_MapUtl.C(P_PathTraverse) default boolean PathTraverse(int x1, int y1, int x2, int y2, int flags, Predicate<intercept_t> trav) {
-        final Actions.Registry obs = obs();
+    @P_MapUtl.C(P_PathTraverse)
+    default boolean PathTraverse(int x1, int y1, int x2, int y2, int flags, Predicate<intercept_t> trav) {
+        final AbstractLevelLoader ll = levelLoader();
+        final Spawn sp = contextRequire(KEY_SPAWN);
+        final Traverse tr = contextRequire(KEY_TRAVERSE);
+        
+        
         // System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , "
         // +y2);
         final int xt1, yt1;
@@ -64,41 +114,41 @@ interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> e
 
         int count;
 
-        obs.earlyout = eval(flags & PT_EARLYOUT);
+        tr.earlyout = eval(flags & PT_EARLYOUT);
 
-        obs.DOOM.sceneRenderer.increaseValidCount(1);
-        obs.intercept_p = 0;
+        sceneRenderer().increaseValidCount(1);
+        tr.intercept_p = 0;
 
-        if (((x1 - obs.DOOM.levelLoader.bmaporgx) & (MAPBLOCKSIZE - 1)) == 0) {
+        if (((x1 - ll.bmaporgx) & (MAPBLOCKSIZE - 1)) == 0) {
             x1 += FRACUNIT; // don't side exactly on a line
         }
-        if (((y1 - obs.DOOM.levelLoader.bmaporgy) & (MAPBLOCKSIZE - 1)) == 0) {
+        if (((y1 - ll.bmaporgy) & (MAPBLOCKSIZE - 1)) == 0) {
             y1 += FRACUNIT; // don't side exactly on a line
         }
-        obs.trace.x = x1;
-        obs.trace.y = y1;
-        obs.trace.dx = x2 - x1;
-        obs.trace.dy = y2 - y1;
+        sp.trace.x = x1;
+        sp.trace.y = y1;
+        sp.trace.dx = x2 - x1;
+        sp.trace.dy = y2 - y1;
 
         // Code developed in common with entryway
         // for prBoom+
-        _x1 = (long) x1 - obs.DOOM.levelLoader.bmaporgx;
-        _y1 = (long) y1 - obs.DOOM.levelLoader.bmaporgy;
+        _x1 = (long) x1 - ll.bmaporgx;
+        _y1 = (long) y1 - ll.bmaporgy;
         xt1 = (int) (_x1 >> MAPBLOCKSHIFT);
         yt1 = (int) (_y1 >> MAPBLOCKSHIFT);
 
         mapx1 = (int) (_x1 >> MAPBTOFRAC);
         mapy1 = (int) (_y1 >> MAPBTOFRAC);
 
-        _x2 = (long) x2 - obs.DOOM.levelLoader.bmaporgx;
-        _y2 = (long) y2 - obs.DOOM.levelLoader.bmaporgy;
+        _x2 = (long) x2 - ll.bmaporgx;
+        _y2 = (long) y2 - ll.bmaporgy;
         xt2 = (int) (_x2 >> MAPBLOCKSHIFT);
         yt2 = (int) (_y2 >> MAPBLOCKSHIFT);
 
-        x1 -= obs.DOOM.levelLoader.bmaporgx;
-        y1 -= obs.DOOM.levelLoader.bmaporgy;
-        x2 -= obs.DOOM.levelLoader.bmaporgx;
-        y2 -= obs.DOOM.levelLoader.bmaporgy;
+        x1 -= ll.bmaporgx;
+        y1 -= ll.bmaporgy;
+        x2 -= ll.bmaporgx;
+        y2 -= ll.bmaporgy;
 
         if (xt2 > xt1) {
             mapxstep = 1;
@@ -173,22 +223,23 @@ interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> e
     } // end method
 
     default boolean AddLineIntercepts(line_t ld) {
-        final Actions.Registry obs = obs();
-
+        final Spawn sp = contextRequire(KEY_SPAWN);
+        final Traverse tr = contextRequire(KEY_TRAVERSE);
+                
         boolean s1;
         boolean s2;
         @SourceCode.fixed_t int frac;
         
         // avoid precision problems with two routines
-        if (obs.trace.dx > FRACUNIT * 16 || obs.trace.dy > FRACUNIT * 16
-            || obs.trace.dx < -FRACUNIT * 16 || obs.trace.dy < -FRACUNIT * 16) {
-            s1 = obs.trace.PointOnDivlineSide(ld.v1x, ld.v1y);
-            s2 = obs.trace.PointOnDivlineSide(ld.v2x, ld.v2y);
+        if (sp.trace.dx > FRACUNIT * 16 || sp.trace.dy > FRACUNIT * 16
+            || sp.trace.dx < -FRACUNIT * 16 || sp.trace.dy < -FRACUNIT * 16) {
+            s1 = sp.trace.PointOnDivlineSide(ld.v1x, ld.v1y);
+            s2 = sp.trace.PointOnDivlineSide(ld.v2x, ld.v2y);
             //s1 = obs.trace.DivlineSide(ld.v1x, ld.v1.y);
             //s2 = obs.trace.DivlineSide(ld.v2x, ld.v2y);
         } else {
-            s1 = ld.PointOnLineSide(obs.trace.x, obs.trace.y);
-            s2 = ld.PointOnLineSide(obs.trace.x + obs.trace.dx, obs.trace.y + obs.trace.dy);
+            s1 = ld.PointOnLineSide(sp.trace.x, sp.trace.y);
+            s2 = ld.PointOnLineSide(sp.trace.x + sp.trace.dx, sp.trace.y + sp.trace.dy);
             //s1 = new divline_t(ld).DivlineSide(obs.trace.x, obs.trace.y);
             //s2 = new divline_t(ld).DivlineSide(obs.trace.x + obs.trace.dx, obs.trace.y + obs.trace.dy);
         }
@@ -197,38 +248,40 @@ interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> e
             return true; // line isn't crossed
         }
         // hit the line
-        obs.addLineDivLine.MakeDivline(ld);
-        frac = InterceptVector(obs.trace, obs.addLineDivLine);
+        tr.addLineDivLine.MakeDivline(ld);
+        frac = InterceptVector(sp.trace, tr.addLineDivLine);
 
         if (frac < 0) {
             return true; // behind source
         }
         // try to early out the check
-        if (obs.earlyout && frac < FRACUNIT && ld.backsector == null) {
+        if (tr.earlyout && frac < FRACUNIT && ld.backsector == null) {
             return false; // stop checking
         }
 
         // "create" a new intercept in the static intercept pool.
-        if (obs.intercept_p >= obs.intercepts.length) {
-            obs.ResizeIntercepts();
+        if (tr.intercept_p >= tr.intercepts.length) {
+            tr.ResizeIntercepts();
         }
 
-        obs.intercepts[obs.intercept_p].frac = frac;
-        obs.intercepts[obs.intercept_p].isaline = true;
-        obs.intercepts[obs.intercept_p].line = ld;
-        obs.intercept_p++;
+        tr.intercepts[tr.intercept_p].frac = frac;
+        tr.intercepts[tr.intercept_p].isaline = true;
+        tr.intercepts[tr.intercept_p].line = ld;
+        tr.intercept_p++;
 
         return true; // continue
     };
 
     default boolean AddThingIntercepts(mobj_t thing) {
-        final Actions.Registry obs = obs();
-        @SourceCode.fixed_t int x1, y1, x2, y2;
+        final Spawn sp = contextRequire(KEY_SPAWN);
+        final Traverse tr = contextRequire(KEY_TRAVERSE);
+                
+        @fixed_t int x1, y1, x2, y2;
         boolean s1, s2;
         boolean tracepositive;
-        @SourceCode.fixed_t int frac;
+        @fixed_t int frac;
 
-        tracepositive = (obs.trace.dx ^ obs.trace.dy) > 0;
+        tracepositive = (sp.trace.dx ^ sp.trace.dy) > 0;
 
         // check a corner to corner crossection for hit
         if (tracepositive) {
@@ -245,33 +298,33 @@ interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> e
             y2 = thing.y + thing.radius;
         }
 
-        s1 = obs.trace.PointOnDivlineSide(x1, y1);
-        s2 = obs.trace.PointOnDivlineSide(x2, y2);
+        s1 = sp.trace.PointOnDivlineSide(x1, y1);
+        s2 = sp.trace.PointOnDivlineSide(x2, y2);
 
         if (s1 == s2) {
             return true; // line isn't crossed
         }
         
-        obs.thingInterceptDivLine.x = x1;
-        obs.thingInterceptDivLine.y = y1;
-        obs.thingInterceptDivLine.dx = x2 - x1;
-        obs.thingInterceptDivLine.dy = y2 - y1;
+        tr.thingInterceptDivLine.x = x1;
+        tr.thingInterceptDivLine.y = y1;
+        tr.thingInterceptDivLine.dx = x2 - x1;
+        tr.thingInterceptDivLine.dy = y2 - y1;
 
-        frac = InterceptVector(obs.trace, obs.thingInterceptDivLine);
+        frac = InterceptVector(sp.trace, tr.thingInterceptDivLine);
 
         if (frac < 0) {
             return true; // behind source
         }
         
         // "create" a new intercept in the static intercept pool.
-        if (obs.intercept_p >= obs.intercepts.length) {
-            obs.ResizeIntercepts();
+        if (tr.intercept_p >= tr.intercepts.length) {
+            tr.ResizeIntercepts();
         }
         
-        obs.intercepts[obs.intercept_p].frac = frac;
-        obs.intercepts[obs.intercept_p].isaline = false;
-        obs.intercepts[obs.intercept_p].thing = thing;
-        obs.intercept_p++;
+        tr.intercepts[tr.intercept_p].frac = frac;
+        tr.intercepts[tr.intercept_p].isaline = false;
+        tr.intercepts[tr.intercept_p].thing = thing;
+        tr.intercept_p++;
 
         return true; // keep going
     };
@@ -282,19 +335,20 @@ interface ActionsPathTraverse<R extends Actions.Registry & AbstractCommand<R>> e
     //for all lines.
     //
     default boolean TraverseIntercept(Predicate<intercept_t> func, int maxfrac) {
-        final Actions.Registry obs = obs();
+        final Traverse tr = contextRequire(KEY_TRAVERSE);
+                
         int count;
-        @SourceCode.fixed_t int dist;
+        @fixed_t int dist;
         intercept_t in = null;  // shut up compiler warning
 
-        count = obs.intercept_p;
+        count = tr.intercept_p;
 
         while (count-- > 0) {
             dist = MAXINT;
-            for (int scan = 0; scan < obs.intercept_p; scan++) {
-                if (obs.intercepts[scan].frac < dist) {
-                    dist = obs.intercepts[scan].frac;
-                    in = obs.intercepts[scan];
+            for (int scan = 0; scan < tr.intercept_p; scan++) {
+                if (tr.intercepts[scan].frac < dist) {
+                    dist = tr.intercepts[scan].frac;
+                    in = tr.intercepts[scan];
                 }
             }
 

@@ -28,9 +28,8 @@ import defines.slopetype_t;
 import defines.statenum_t;
 import doom.SourceCode;
 import static doom.SourceCode.P_Map.PTR_SlideTraverse;
+import doom.SourceCode.fixed_t;
 import doom.player_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static p.ChaseDirections.DI_EAST;
@@ -52,20 +51,50 @@ import static p.mobj_t.MF_MISSILE;
 import static p.mobj_t.MF_NOCLIP;
 import static p.mobj_t.MF_SKULLFLY;
 import static p.mobj_t.MF_TELEPORT;
+import rr.SceneRenderer;
 import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
+import utils.TraitFactory.ContextKey;
 
-interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPathTraverse<R>, ActionsClipping<R>, ActionsMoveEvents<R>, ActionsUseEvents<R> {
+interface ActionsMovement extends ActionsPathTraverse {
+    ContextKey<DirType> KEY_DIRTYPE = KEY_CHAIN.newKey(ActionsMovement.class, DirType.class);
+    
+    //
+    // P_XYMovement
+    //
+    int STOPSPEED = 4096;
+    int FRICTION = 59392;
+    int FUDGE = 2048; ///(FRACUNIT/MAPFRACUNIT);
+
+    public void UnsetThingPosition(mobj_t thing);
+    public void CrossSpecialLine(line_t ld, int i, mobj_t thing);
+    public void ExplodeMissile(mobj_t mo);
+    
+    final class DirType {
+        //dirtype
+        int d1;
+        int d2;
+    }
+
     ///////////////// MOVEMENT'S ACTIONS ////////////////////////
+
+    boolean UseSpecialLine(mobj_t actor, line_t ld, boolean b);
+
     /**
      * If "floatok" true, move would be ok if within "tmfloorz - tmceilingz".
      */
 
+    //
+    // P_Move
+    // Move in the current direction,
+    // returns false if the move is blocked.
+    //
     default boolean Move(mobj_t actor) {
-        final Actions.Registry obs = obs();
-        @SourceCode.fixed_t int tryx, tryy;
+        final Movement mov = contextRequire(KEY_MOVEMENT);
+        final Spechits sp = contextRequire(KEY_SPECHITS);
 
+        @fixed_t int tryx, tryy;
         line_t ld;
 
         // warning: 'catch', 'throw', and 'try'
@@ -78,7 +107,7 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
         }
 
         if (actor.movedir >= 8) {
-            obs.DOOM.doomSystem.Error("Weird actor.movedir!");
+            getDoomSystem().Error("Weird actor.movedir!");
         }
 
         tryx = actor.x + actor.info.speed * xspeed[actor.movedir];
@@ -88,9 +117,9 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
 
         if (!try_ok) {
             // open any specials
-            if (eval(actor.flags & MF_FLOAT) && obs.floatok) {
+            if (eval(actor.flags & MF_FLOAT) && mov.floatok) {
                 // must adjust height
-                if (actor.z < obs.tmfloorz) {
+                if (actor.z < mov.tmfloorz) {
                     actor.z += FLOATSPEED;
                 } else {
                     actor.z -= FLOATSPEED;
@@ -100,18 +129,18 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
                 return true;
             }
 
-            if (obs.numspechit == 0) {
+            if (sp.numspechit == 0) {
                 return false;
             }
 
             actor.movedir = DI_NODIR;
             good = false;
-            while ((obs.numspechit--) > 0) {
-                ld = obs.spechit[obs.numspechit];
+            while ((sp.numspechit--) > 0) {
+                ld = sp.spechit[sp.numspechit];
                 // if the special is not a door
                 // that can be opened,
                 // return false
-                if (this.UseSpecialLine(actor, ld, false)) {
+                if (UseSpecialLine(actor, ld, false)) {
                     good = true;
                 }
             }
@@ -133,59 +162,58 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
      * @param y fixed_t
      *
      */
-    default boolean TryMove(mobj_t thing, @SourceCode.fixed_t int x, @SourceCode.fixed_t int y) {
-        final Actions.Registry obs = obs();
-        @SourceCode.fixed_t int oldx, oldy;
+    default boolean TryMove(mobj_t thing, @fixed_t int x, @fixed_t int y) {
+        final Movement mov = contextRequire(KEY_MOVEMENT);
+        final Spechits sp = contextRequire(KEY_SPECHITS);
+
+        @fixed_t int oldx, oldy;
         boolean side, oldside; // both were int
         line_t ld;
 
-        obs.floatok = false;
+        mov.floatok = false;
         if (!this.CheckPosition(thing, x, y)) {
             return false;       // solid wall or thing
         }
         if (!eval(thing.flags & MF_NOCLIP)) {
-            if (obs.tmceilingz - obs.tmfloorz < thing.height) {
+            if (mov.tmceilingz - mov.tmfloorz < thing.height) {
                 return false;   // doesn't fit
             }
-            obs.floatok = true;
+            mov.floatok = true;
 
-            if (!eval(thing.flags & MF_TELEPORT)
-                    && obs.tmceilingz - thing.z < thing.height) {
+            if (!eval(thing.flags & MF_TELEPORT) && mov.tmceilingz - thing.z < thing.height) {
                 return false;   // mobj must lower itself to fit
             }
-            if (!eval(thing.flags & MF_TELEPORT)
-                    && obs.tmfloorz - thing.z > 24 * FRACUNIT) {
+            if (!eval(thing.flags & MF_TELEPORT) && mov.tmfloorz - thing.z > 24 * FRACUNIT) {
                 return false;   // too big a step up
             }
-            if (!eval(thing.flags & (MF_DROPOFF | MF_FLOAT))
-                    && obs.tmfloorz - obs.tmdropoffz > 24 * FRACUNIT) {
+            if (!eval(thing.flags & (MF_DROPOFF | MF_FLOAT)) && mov.tmfloorz - mov.tmdropoffz > 24 * FRACUNIT) {
                 return false;   // don't stand over a dropoff
             }
         }
 
         // the move is ok,
         // so link the thing into its new position
-        obs.UnsetThingPosition(thing);
+        UnsetThingPosition(thing);
 
         oldx = thing.x;
         oldy = thing.y;
-        thing.floorz = obs.tmfloorz;
-        thing.ceilingz = obs.tmceilingz;
+        thing.floorz = mov.tmfloorz;
+        thing.ceilingz = mov.tmceilingz;
         thing.x = x;
         thing.y = y;
 
-        obs.DOOM.levelLoader.SetThingPosition(thing);
+        levelLoader().SetThingPosition(thing);
 
         // if any special lines were hit, do the effect
         if (!eval(thing.flags & (MF_TELEPORT | MF_NOCLIP))) {
-            while (obs.numspechit-- > 0) {
+            while (sp.numspechit-- > 0) {
                 // see if the line was crossed
-                ld = obs.spechit[obs.numspechit];
+                ld = sp.spechit[sp.numspechit];
                 side = ld.PointOnLineSide(thing.x, thing.y);
                 oldside = ld.PointOnLineSide(oldx, oldy);
                 if (side != oldside) {
                     if (ld.special != 0) {
-                        this.CrossSpecialLine(ld, oldside ? 1 : 0, thing);
+                        CrossSpecialLine(ld, oldside ? 1 : 0, thing);
                     }
                 }
             }
@@ -193,10 +221,11 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
 
         return true;
     }
-
+    
     default void NewChaseDir(mobj_t actor) {
-        final Actions.Registry obs = obs();
-        @SourceCode.fixed_t int deltax, deltay;
+        final DirType dirtype = contextRequire(KEY_DIRTYPE);
+
+        @fixed_t int deltax, deltay;
 
         int tdir;
         int olddir;
@@ -204,7 +233,7 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
         int turnaround;
 
         if (actor.target == null) {
-            obs.DOOM.doomSystem.Error("P_NewChaseDir: called with no target");
+            getDoomSystem().Error("P_NewChaseDir: called with no target");
         }
 
         olddir = actor.movedir;
@@ -214,24 +243,23 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
         deltay = actor.target.y - actor.y;
 
         if (deltax > 10 * FRACUNIT) {
-            obs.d1 = DI_EAST;
+            dirtype.d1 = DI_EAST;
         } else if (deltax < -10 * FRACUNIT) {
-            obs.d1 = DI_WEST;
+            dirtype.d1 = DI_WEST;
         } else {
-            obs.d1 = DI_NODIR;
+            dirtype.d1 = DI_NODIR;
         }
 
         if (deltay < -10 * FRACUNIT) {
-            obs.d2 = DI_SOUTH;
+            dirtype.d2 = DI_SOUTH;
         } else if (deltay > 10 * FRACUNIT) {
-            obs.d2 = DI_NORTH;
+            dirtype.d2 = DI_NORTH;
         } else {
-            obs.d2 = DI_NODIR;
+            dirtype.d2 = DI_NODIR;
         }
 
         // try direct route
-        if (obs.d1 != DI_NODIR
-                && obs.d2 != DI_NODIR) {
+        if (dirtype.d1 != DI_NODIR && dirtype.d2 != DI_NODIR) {
             actor.movedir = diags[(eval(deltay < 0) << 1) + eval(deltax > 0)];
             if (actor.movedir != turnaround && this.TryWalk(actor)) {
                 return;
@@ -239,30 +267,30 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
         }
 
         // try other directions
-        if (obs.DOOM.random.P_Random() > 200
-                || Math.abs(deltay) > Math.abs(deltax)) {
-            tdir = obs.d1;
-            obs.d1 = obs.d2;
-            obs.d2 = tdir;
+        if (P_Random() > 200 || Math.abs(deltay) > Math.abs(deltax)) {
+            tdir = dirtype.d1;
+            dirtype.d1 = dirtype.d2;
+            dirtype.d2 = tdir;
         }
 
-        if (obs.d1 == turnaround) {
-            obs.d1 = DI_NODIR;
+        if (dirtype.d1 == turnaround) {
+            dirtype.d1 = DI_NODIR;
         }
-        if (obs.d2 == turnaround) {
-            obs.d2 = DI_NODIR;
+        
+        if (dirtype.d2 == turnaround) {
+            dirtype.d2 = DI_NODIR;
         }
 
-        if (obs.d1 != DI_NODIR) {
-            actor.movedir = obs.d1;
+        if (dirtype.d1 != DI_NODIR) {
+            actor.movedir = dirtype.d1;
             if (this.TryWalk(actor)) {
                 // either moved forward or attacked
                 return;
             }
         }
 
-        if (obs.d2 != DI_NODIR) {
-            actor.movedir = obs.d2;
+        if (dirtype.d2 != DI_NODIR) {
+            actor.movedir = dirtype.d2;
 
             if (this.TryWalk(actor)) {
                 return;
@@ -280,26 +308,22 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
         }
 
         // randomly determine direction of search
-        if (eval(obs.DOOM.random.P_Random() & 1)) {
-            for (tdir = DI_EAST;
-                    tdir <= DI_SOUTHEAST;
-                    tdir++) {
+        if (eval(P_Random() & 1)) {
+            for (tdir = DI_EAST; tdir <= DI_SOUTHEAST; tdir++) {
                 if (tdir != turnaround) {
                     actor.movedir = tdir;
 
-                    if (this.TryWalk(actor)) {
+                    if (TryWalk(actor)) {
                         return;
                     }
                 }
             }
         } else {
-            for (tdir = DI_SOUTHEAST;
-                    tdir != (DI_EAST - 1);
-                    tdir--) {
+            for (tdir = DI_SOUTHEAST; tdir != (DI_EAST - 1); tdir--) {
                 if (tdir != turnaround) {
                     actor.movedir = tdir;
 
-                    if (this.TryWalk(actor)) {
+                    if (TryWalk(actor)) {
                         return;
                     }
                 }
@@ -308,7 +332,7 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
 
         if (turnaround != DI_NODIR) {
             actor.movedir = turnaround;
-            if (this.TryWalk(actor)) {
+            if (TryWalk(actor)) {
                 return;
             }
         }
@@ -322,12 +346,11 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
      * the way, an OpenDoor call is made to start it opening.
      */
     default boolean TryWalk(mobj_t actor) {
-        final Actions.Registry obs = obs();
-        if (!this.Move(actor)) {
+        if (!Move(actor)) {
             return false;
         }
 
-        actor.movecount = obs.DOOM.random.P_Random() & 15;
+        actor.movecount = P_Random() & 15;
         return true;
     }
 
@@ -337,33 +360,34 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
     // so that the next move will slide along the wall.
     //
     default void HitSlideLine(line_t ld) {
-        final Actions.Registry obs = obs();
+        final SceneRenderer<?, ?> sr = sceneRenderer();
+        final SlideMove slideMove = contextRequire(KEY_SLIDEMOVE);
         boolean side;
 
         // all angles
         long lineangle, moveangle, deltaangle;
 
-        @SourceCode.fixed_t int movelen, newlen;
+        @fixed_t int movelen, newlen;
 
         if (ld.slopetype == slopetype_t.ST_HORIZONTAL) {
-            obs.tmymove = 0;
+            slideMove.tmymove = 0;
             return;
         }
 
         if (ld.slopetype == slopetype_t.ST_VERTICAL) {
-            obs.tmxmove = 0;
+            slideMove.tmxmove = 0;
             return;
         }
 
-        side = ld.PointOnLineSide(obs.slidemo.x, obs.slidemo.y);
+        side = ld.PointOnLineSide(slideMove.slidemo.x, slideMove.slidemo.y);
 
-        lineangle = obs.DOOM.sceneRenderer.PointToAngle2(0, 0, ld.dx, ld.dy);
+        lineangle = sr.PointToAngle2(0, 0, ld.dx, ld.dy);
 
         if (side == true) {
             lineangle += ANG180;
         }
 
-        moveangle = obs.DOOM.sceneRenderer.PointToAngle2(0, 0, obs.tmxmove, obs.tmymove);
+        moveangle = sr.PointToAngle2(0, 0, slideMove.tmxmove, slideMove.tmymove);
         deltaangle = (moveangle - lineangle) & BITS32;
 
         if (deltaangle > ANG180) {
@@ -373,12 +397,13 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
 
         //lineangle >>>= ANGLETOFINESHIFT;
         //deltaangle >>>= ANGLETOFINESHIFT;
-        movelen = AproxDistance(obs.tmxmove, obs.tmymove);
+        movelen = AproxDistance(slideMove.tmxmove, slideMove.tmymove);
         newlen = FixedMul(movelen, finecosine(deltaangle));
 
-        obs.tmxmove = FixedMul(newlen, finecosine(lineangle));
-        obs.tmymove = FixedMul(newlen, finesine(lineangle));
+        slideMove.tmxmove = FixedMul(newlen, finecosine(lineangle));
+        slideMove.tmymove = FixedMul(newlen, finesine(lineangle));
     }
+    
     ///(FRACUNIT/MAPFRACUNIT);
 
 
@@ -392,11 +417,11 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
     // This is a kludgy mess.
     //
     default void SlideMove(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        @SourceCode.fixed_t int leadx, leady, trailx, traily, newx, newy;
+        final SlideMove slideMove = contextRequire(KEY_SLIDEMOVE);
+        @fixed_t int leadx, leady, trailx, traily, newx, newy;
         int hitcount;
 
-        obs.slidemo = mo;
+        slideMove.slidemo = mo;
         hitcount = 0;
 
         do {
@@ -423,24 +448,24 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
                 traily = mo.y + mo.radius;
             }
 
-            obs.bestslidefrac = FRACUNIT + 1;
+            slideMove.bestslidefrac = FRACUNIT + 1;
 
-            this.PathTraverse(leadx, leady, leadx + mo.momx, leady + mo.momy, PT_ADDLINES, this::SlideTraverse);
-            this.PathTraverse(trailx, leady, trailx + mo.momx, leady + mo.momy, PT_ADDLINES, this::SlideTraverse);
-            this.PathTraverse(leadx, traily, leadx + mo.momx, traily + mo.momy, PT_ADDLINES, this::SlideTraverse);
+            PathTraverse(leadx, leady, leadx + mo.momx, leady + mo.momy, PT_ADDLINES, this::SlideTraverse);
+            PathTraverse(trailx, leady, trailx + mo.momx, leady + mo.momy, PT_ADDLINES, this::SlideTraverse);
+            PathTraverse(leadx, traily, leadx + mo.momx, traily + mo.momy, PT_ADDLINES, this::SlideTraverse);
 
             // move up to the wall
-            if (obs.bestslidefrac == FRACUNIT + 1) {
+            if (slideMove.bestslidefrac == FRACUNIT + 1) {
                 // the move most have hit the middle, so stairstep
                 this.stairstep(mo);
                 return;
             }     // don't loop forever
 
             // fudge a bit to make sure it doesn't hit
-            obs.bestslidefrac -= Actions.Registry.FUDGE;
-            if (obs.bestslidefrac > 0) {
-                newx = FixedMul(mo.momx, obs.bestslidefrac);
-                newy = FixedMul(mo.momy, obs.bestslidefrac);
+            slideMove.bestslidefrac -= FUDGE;
+            if (slideMove.bestslidefrac > 0) {
+                newx = FixedMul(mo.momx, slideMove.bestslidefrac);
+                newy = FixedMul(mo.momy, slideMove.bestslidefrac);
 
                 if (!this.TryMove(mo, mo.x + newx, mo.y + newy)) {
                     // goto stairstep
@@ -451,26 +476,26 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
 
             // Now continue along the wall.
             // First calculate remainder.
-            obs.bestslidefrac = FRACUNIT - (obs.bestslidefrac + Actions.Registry.FUDGE);
+            slideMove.bestslidefrac = FRACUNIT - (slideMove.bestslidefrac + FUDGE);
 
-            if (obs.bestslidefrac > FRACUNIT) {
-                obs.bestslidefrac = FRACUNIT;
+            if (slideMove.bestslidefrac > FRACUNIT) {
+                slideMove.bestslidefrac = FRACUNIT;
             }
 
-            if (obs.bestslidefrac <= 0) {
+            if (slideMove.bestslidefrac <= 0) {
                 return;
             }
 
-            obs.tmxmove = FixedMul(mo.momx, obs.bestslidefrac);
-            obs.tmymove = FixedMul(mo.momy, obs.bestslidefrac);
+            slideMove.tmxmove = FixedMul(mo.momx, slideMove.bestslidefrac);
+            slideMove.tmymove = FixedMul(mo.momy, slideMove.bestslidefrac);
 
-            this.HitSlideLine(obs.bestslideline); // clip the moves
+            HitSlideLine(slideMove.bestslideline); // clip the moves
 
-            mo.momx = obs.tmxmove;
-            mo.momy = obs.tmymove;
+            mo.momx = slideMove.tmxmove;
+            mo.momy = slideMove.tmymove;
 
         } // goto retry
-        while (!this.TryMove(mo, mo.x + obs.tmxmove, mo.y + obs.tmymove));
+        while (!TryMove(mo, mo.x + slideMove.tmxmove, mo.y + slideMove.tmymove));
     }
 
     /**
@@ -479,22 +504,20 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
      * @param mo
      */
     default void stairstep(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        if (!this.TryMove(mo, mo.x, mo.y + mo.momy)) {
-            this.TryMove(mo, mo.x + mo.momx, mo.y);
+        if (!TryMove(mo, mo.x, mo.y + mo.momy)) {
+            TryMove(mo, mo.x + mo.momx, mo.y);
         }
     }
+    
     //
     // P_XYMovement  
     //
-
-
     default void XYMovement(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        //System.out.println("XYMovement");
-        @SourceCode.fixed_t int ptryx, ptryy; // pointers to fixed_t ???
+        final Movement mv = contextRequire(KEY_MOVEMENT);
+        
+        @fixed_t int ptryx, ptryy; // pointers to fixed_t ???
+        @fixed_t int xmove, ymove;
         player_t player;
-        @SourceCode.fixed_t int xmove, ymove;
 
         if ((mo.momx == 0) && (mo.momy == 0)) {
             if ((mo.flags & MF_SKULLFLY) != 0) {
@@ -536,23 +559,23 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
                 xmove = ymove = 0;
             }
 
-            if (!this.TryMove(mo, ptryx, ptryy)) {
+            if (!TryMove(mo, ptryx, ptryy)) {
                 // blocked move
                 if (mo.player != null) {   // try to slide along it
-                    this.SlideMove(mo);
+                    SlideMove(mo);
                 } else if (eval(mo.flags & MF_MISSILE)) {
                     // explode a missile
-                    if (obs.ceilingline != null
-                            && obs.ceilingline.backsector != null
-                            && obs.ceilingline.backsector.ceilingpic == obs.DOOM.textureManager.getSkyFlatNum()) {
+                    if (mv.ceilingline != null&& mv.ceilingline.backsector != null
+                     && mv.ceilingline.backsector.ceilingpic == DOOM().textureManager.getSkyFlatNum())
+                    {
                         // Hack to prevent missiles exploding
                         // against the sky.
                         // Does not handle sky floors.
-                        obs.RemoveMobj(mo);
+                        RemoveMobj(mo);
                         return;
                     }
-                    obs.ExplodeMissile(mo);
-                } else {
+                    ExplodeMissile(mo);
+                } else {    
                     mo.momx = mo.momy = 0;
                 }
             }
@@ -584,13 +607,9 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
             }
         }
 
-        if (mo.momx > -Actions.Registry.STOPSPEED
-                && mo.momx < Actions.Registry.STOPSPEED
-                && mo.momy > -Actions.Registry.STOPSPEED
-                && mo.momy < Actions.Registry.STOPSPEED
-                && (player == null
-                || (player.cmd.forwardmove == 0
-                && player.cmd.sidemove == 0))) {
+        if (mo.momx > -STOPSPEED && mo.momx < STOPSPEED && mo.momy > -STOPSPEED && mo.momy < STOPSPEED
+         && (player == null || (player.cmd.forwardmove == 0 && player.cmd.sidemove == 0)))
+        {
             // if in a walking frame, stop moving
             // TODO: we need a way to get state indexed inside of states[], to sim pointer arithmetic.
             // FIX: added an "id" field.
@@ -601,8 +620,8 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
             mo.momx = 0;
             mo.momy = 0;
         } else {
-            mo.momx = FixedMul(mo.momx, Actions.Registry.FRICTION);
-            mo.momy = FixedMul(mo.momy, Actions.Registry.FRICTION);
+            mo.momx = FixedMul(mo.momx, FRICTION);
+            mo.momy = FixedMul(mo.momy, FRICTION);
         }
     }
     
@@ -615,17 +634,18 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
     // PTR_SlideTraverse
     //   
     @SourceCode.P_Map.C(PTR_SlideTraverse) default boolean SlideTraverse(intercept_t in) {
-        final Actions.Registry obs = obs();
+        final SlideMove slideMove = contextRequire(KEY_SLIDEMOVE);
+        final Movement ma = contextRequire(KEY_MOVEMENT);
         line_t li;
 
         if (!in.isaline) {
-            obs.DOOM.doomSystem.Error("PTR_SlideTraverse: not a line?");
+            getDoomSystem().Error("PTR_SlideTraverse: not a line?");
         }
 
         li = (line_t) in.d();
 
         if (!eval(li.flags & ML_TWOSIDED)) {
-            if (li.PointOnLineSide(obs.slidemo.x, obs.slidemo.y)) {
+            if (li.PointOnLineSide(slideMove.slidemo.x, slideMove.slidemo.y)) {
                 // don't hit the back side
                 return true;
             }
@@ -633,26 +653,24 @@ interface ActionsMovement<R extends Actions.Registry & AbstractCommand<R>> exten
         }
 
         // set openrange, opentop, openbottom
-        obs.LineOpening(li);
+        LineOpening(li);
 
-        if ((obs.openrange < obs.slidemo.height)
-                || // doesn't fit
-                (obs.opentop - obs.slidemo.z < obs.slidemo.height)
-                || // mobj is too high
-                (obs.openbottom - obs.slidemo.z > 24 * FRACUNIT)) // too big a step up
+        if ((ma.openrange < slideMove.slidemo.height)
+         || // doesn't fit
+         (ma.opentop - slideMove.slidemo.z < slideMove.slidemo.height)
+         || // mobj is too high
+         (ma.openbottom - slideMove.slidemo.z > 24 * FRACUNIT)) // too big a step up
         {
-            if (in.frac < obs.bestslidefrac) {
-                obs.secondslidefrac = obs.bestslidefrac;
-                obs.secondslideline = obs.bestslideline;
-                obs.bestslidefrac = in.frac;
-                obs.bestslideline = li;
+            if (in.frac < slideMove.bestslidefrac) {
+                slideMove.secondslidefrac = slideMove.bestslidefrac;
+                slideMove.secondslideline = slideMove.bestslideline;
+                slideMove.bestslidefrac = in.frac;
+                slideMove.bestslideline = li;
             }
 
             return false;   // stop
-        } else // this line doesn't block movement
-        {
+        } else { // this line doesn't block movement
             return true;
         }
-
     };
 }

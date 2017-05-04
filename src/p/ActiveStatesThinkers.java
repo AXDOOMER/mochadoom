@@ -18,9 +18,6 @@
 package p;
 
 import doom.thinker_t;
-import p.ActionSystem.AbstractCommand;
-
-import static rr.line_t.ML_BLOCKING;
 
 /**
  * TODO:
@@ -28,7 +25,14 @@ import static rr.line_t.ML_BLOCKING;
  * rethink necessity and objectness of these...
  * - Good Sign 2017/04/30
  */
-interface ActiveStatesThinkers<R extends Actions.Registry & AbstractCommand<R>> extends ActionsCeilings<R>, ActionsFloors<R>, ActionsDoors<R> {
+interface ActiveStatesThinkers extends ActionTrait {
+    void MoveCeiling(ceiling_t ceiling_t);
+    void MoveFloor(floormove_t floormove_t);
+    void VerticalDoor(vldoor_t vldoor_t);
+    void SlidingDoor(slidedoor_t slidedoor_t);
+    void RemoveThinker(slidedoor_t door);
+    void PlatRaise(plat_t plat_t);
+
     default void T_FireFlicker(thinker_t f) {
         ((fireflicker_t) f).FireFlicker();
     }
@@ -57,70 +61,8 @@ interface ActiveStatesThinkers<R extends Actions.Registry & AbstractCommand<R>> 
         VerticalDoor((vldoor_t) v);
     }
     
-    default void T_SlidingDoor(thinker_t doort) {
-        final slidedoor_t door = (slidedoor_t) doort;
-        final Actions.Registry obs = obs();
-        switch (door.status) {
-            case sd_opening:
-                if (door.timer-- == 0) {
-                    if (++door.frame == SlideDoor.SNUMFRAMES) {
-                        // IF DOOR IS DONE OPENING...
-                        obs.DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = 0;
-                        obs.DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = 0;
-                        door.line.flags &= ML_BLOCKING ^ 0xff;
-
-                        if (door.type == sdt_e.sdt_openOnly) {
-                            door.frontsector.specialdata = null;
-                            obs.RemoveThinker(door);
-                            break;
-                        }
-
-                        door.timer = SlideDoor.SDOORWAIT;
-                        door.status = sd_e.sd_waiting;
-                    } else {
-                        // IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
-                        door.timer = SlideDoor.SWAITTICS;
-
-                        obs.DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = (short) obs.SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
-                        obs.DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = (short) obs.SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
-                    }
-                }
-                break;
-
-            case sd_waiting:
-                // IF DOOR IS DONE WAITING...
-                if (door.timer-- == 0) {
-                    // CAN DOOR CLOSE?
-                    if (door.frontsector.thinglist != null
-                        || door.backsector.thinglist != null) {
-                        door.timer = SlideDoor.SDOORWAIT;
-                        break;
-                    }
-
-                    // door.frame = SNUMFRAMES-1;
-                    door.status = sd_e.sd_closing;
-                    door.timer = SlideDoor.SWAITTICS;
-                }
-                break;
-
-            case sd_closing:
-                if (door.timer-- == 0) {
-                    if (--door.frame < 0) {
-                        // IF DOOR IS DONE CLOSING...
-                        door.line.flags |= ML_BLOCKING;
-                        door.frontsector.specialdata = null;
-                        obs.RemoveThinker(door);
-                        break;
-                    } else {
-                        // IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
-                        door.timer = SlideDoor.SWAITTICS;
-
-                        obs.DOOM.levelLoader.sides[door.line.sidenum[0]].midtexture = (short) obs.SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
-                        obs.DOOM.levelLoader.sides[door.line.sidenum[1]].midtexture = (short) obs.SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
-                    }
-                }
-                break;
-        }
+    default void T_SlidingDoor(thinker_t door) {
+        SlidingDoor((slidedoor_t) door);
     }
     
     default void T_PlatRaise(thinker_t p) {

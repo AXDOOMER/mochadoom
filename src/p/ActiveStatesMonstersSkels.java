@@ -24,17 +24,22 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import data.mobjtype_t;
 import data.sounds;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static m.fixed_t.MAPFRACUNIT;
-import static p.Actions.Registry.TRACEANGLE;
 import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesMonstersSkels<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsMissiles<R> {
+interface ActiveStatesMonstersSkels extends ActionTrait {
+    void A_FaceTarget(mobj_t actor);
+    void DamageMobj(mobj_t target, mobj_t actor, mobj_t actor0, int damage);
+    void SpawnPuff(int x, int y, int z);
+    boolean CheckMeleeRange(mobj_t actor);
+    mobj_t SpawnMissile(mobj_t actor, mobj_t target, mobjtype_t mobjtype_t);
+    mobj_t SpawnMobj(int i, int i0, int z, mobjtype_t mobjtype_t);
 
+    int TRACEANGLE = 201326592;
+    
     //
     // A_SkelMissile
     //
@@ -56,16 +61,14 @@ interface ActiveStatesMonstersSkels<R extends Actions.Registry & AbstractCommand
     }
 
     default void A_SkelWhoosh(mobj_t actor) {
-        final Actions.Registry obs = obs();
         if (actor.target == null) {
             return;
         }
         A_FaceTarget(actor);
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_skeswg);
+        StartSound(actor, sounds.sfxenum_t.sfx_skeswg);
     }
 
     default void A_SkelFist(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int damage;
 
         if (actor.target == null) {
@@ -74,20 +77,19 @@ interface ActiveStatesMonstersSkels<R extends Actions.Registry & AbstractCommand
 
         A_FaceTarget(actor);
 
-        if (obs.EN.CheckMeleeRange(actor)) {
-            damage = ((obs.DOOM.random.P_Random() % 10) + 1) * 6;
-            obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_skepch);
+        if (CheckMeleeRange(actor)) {
+            damage = ((P_Random() % 10) + 1) * 6;
+            StartSound(actor, sounds.sfxenum_t.sfx_skepch);
             DamageMobj(actor.target, actor, actor, damage);
         }
     }
     
     default void A_Tracer(mobj_t actor) {
-        final Actions.Registry obs = obs();
         long exact; //angle_t
         int dist, slope; // fixed
         mobj_t dest;
         mobj_t th;
-        if (eval(obs.DOOM.gametic & 3)) {
+        if (eval(DOOM().gametic & 3)) {
             return;
         }
         // spawn a puff of smoke behind the rocket
@@ -96,24 +98,23 @@ interface ActiveStatesMonstersSkels<R extends Actions.Registry & AbstractCommand
             actor.y - actor.momy,
             actor.z, mobjtype_t.MT_SMOKE);
         th.momz = MAPFRACUNIT;
-        th.mobj_tics -= obs.DOOM.random.P_Random() & 3;
+        th.mobj_tics -= P_Random() & 3;
         if (th.mobj_tics < 1) {
             th.mobj_tics = 1;
         }
+        
         // adjust direction
         dest = actor.tracer;
         if (dest == null || dest.health <= 0) {
             return;
         }
+        
         // change angle
-        exact = obs.DOOM.sceneRenderer.PointToAngle2(actor.x,
-            actor.y,
-            dest.x,
-            dest.y) & BITS32;
+        exact = sceneRenderer().PointToAngle2(actor.x, actor.y, dest.x, dest.y) & BITS32;
+        
         // MAES: let's analyze the logic here...
         // So exact is the angle between the missile and its target.
-        if (exact != actor.angle) // missile is already headed there dead-on.
-        {
+        if (exact != actor.angle) { // missile is already headed there dead-on.
             if (exact - actor.angle > ANG180) {
                 actor.angle -= TRACEANGLE;
                 actor.angle &= BITS32;
@@ -133,8 +134,7 @@ interface ActiveStatesMonstersSkels<R extends Actions.Registry & AbstractCommand
         actor.momx = FixedMul(actor.info.speed, finecosine[exact2]);
         actor.momy = FixedMul(actor.info.speed, finesine[exact2]);
         // change slope
-        dist = AproxDistance(dest.x - actor.x,
-            dest.y - actor.y);
+        dist = AproxDistance(dest.x - actor.x, dest.y - actor.y);
         dist /= actor.info.speed;
         if (dist < 1) {
             dist = 1;

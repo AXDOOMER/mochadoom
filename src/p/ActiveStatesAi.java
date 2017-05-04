@@ -23,8 +23,6 @@ import data.mobjtype_t;
 import data.sounds;
 import defines.skill_t;
 import defines.statenum_t;
-import p.ActionSystem.AbstractCommand;
-
 import static p.mobj_t.MF_AMBUSH;
 import static p.mobj_t.MF_COUNTKILL;
 import static p.mobj_t.MF_JUSTATTACKED;
@@ -34,13 +32,21 @@ import static p.mobj_t.MF_SKULLFLY;
 import static p.mobj_t.MF_SOLID;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extends ActionsMovement<R>, ActionsThinkers<R> {
+interface ActiveStatesAi extends ActionTrait {
+    boolean CheckSight(mobj_t actor, mobj_t target);
+    boolean LookForPlayers(mobj_t actor, boolean b);
+    boolean CheckMeleeRange(mobj_t actor);
+    boolean CheckMissileRange(mobj_t actor);
+    boolean Move(mobj_t actor);
+    void NewChaseDir(mobj_t actor);
+    void XYMovement(mobj_t mobj);
+    void NightmareRespawn(mobj_t mobj);
+    
     //
     // A_Look
     // Stay in state until a player is sighted.
     //
     default void A_Look(mobj_t actor) {
-        final p.Actions.Registry obs = obs();
         mobj_t targ;
         boolean seeyou = false; // to avoid the fugly goto
 
@@ -52,13 +58,13 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
             actor.target = targ;
 
             if (eval(actor.flags & MF_AMBUSH)) {
-                seeyou = (obs.EN.CheckSight(actor, actor.target));
+                seeyou = CheckSight(actor, actor.target);
             } else {
                 seeyou = true;
             }
         }
         if (!seeyou) {
-            if (!obs.EN.LookForPlayers(actor, false)) {
+            if (!LookForPlayers(actor, false)) {
                 return;
             }
         }
@@ -72,12 +78,12 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
                 case sfx_posit1:
                 case sfx_posit2:
                 case sfx_posit3:
-                    sound = sounds.sfxenum_t.sfx_posit1.ordinal() + obs.DOOM.random.P_Random() % 3;
+                    sound = sounds.sfxenum_t.sfx_posit1.ordinal() + P_Random() % 3;
                     break;
 
                 case sfx_bgsit1:
                 case sfx_bgsit2:
-                    sound = sounds.sfxenum_t.sfx_bgsit1.ordinal() + obs.DOOM.random.P_Random() % 2;
+                    sound = sounds.sfxenum_t.sfx_bgsit1.ordinal() + P_Random() % 2;
                     break;
 
                 default:
@@ -85,12 +91,11 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
                     break;
             }
 
-            if (actor.type == mobjtype_t.MT_SPIDER
-                || actor.type == mobjtype_t.MT_CYBORG) {
+            if (actor.type == mobjtype_t.MT_SPIDER || actor.type == mobjtype_t.MT_CYBORG) {
                 // full volume
-                obs.DOOM.doomSound.StartSound(null, sound);
+                StartSound(null, sound);
             } else {
-                obs.DOOM.doomSound.StartSound(actor, sound);
+                StartSound(actor, sound);
             }
         }
 
@@ -103,7 +108,6 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
      * so it tries to close as fast as possible
      */
     default void A_Chase(mobj_t actor) {
-        final p.Actions.Registry obs = obs();
         int delta;
         boolean nomissile = false; // for the fugly goto
 
@@ -138,7 +142,7 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
 
         if (actor.target == null || !eval(actor.target.flags & MF_SHOOTABLE)) {
             // look for a new target
-            if (obs.EN.LookForPlayers(actor, true)) {
+            if (LookForPlayers(actor, true)) {
                 return;     // got a new target
             }
             actor.SetMobjState(actor.info.spawnstate);
@@ -148,16 +152,16 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
         // do not attack twice in a row
         if (eval(actor.flags & MF_JUSTATTACKED)) {
             actor.flags &= ~MF_JUSTATTACKED;
-            if (obs.DOOM.gameskill != skill_t.sk_nightmare && !obs.DOOM.fastparm) {
+            if (getGameSkill() != skill_t.sk_nightmare && !IsFastParm()) {
                 NewChaseDir(actor);
             }
             return;
         }
 
         // check for melee attack
-        if (actor.info.meleestate != statenum_t.S_NULL && obs.EN.CheckMeleeRange(actor)) {
+        if (actor.info.meleestate != statenum_t.S_NULL && CheckMeleeRange(actor)) {
             if (actor.info.attacksound != null) {
-                obs.DOOM.doomSound.StartSound(actor, actor.info.attacksound);
+                StartSound(actor, actor.info.attacksound);
             }
             actor.SetMobjState(actor.info.meleestate);
             return;
@@ -166,11 +170,10 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
         // check for missile attack
         if (actor.info.missilestate != statenum_t.S_NULL) { //_D_: this caused a bug where Demon for example were disappearing
             // Assume that a missile attack is possible
-            if (obs.DOOM.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
-                && !obs.DOOM.fastparm && actor.movecount != 0) {
+            if (getGameSkill().ordinal() < skill_t.sk_nightmare.ordinal() && !IsFastParm() && actor.movecount != 0) {
                 // Uhm....no.
                 nomissile = true;
-            } else if (!obs.EN.CheckMissileRange(actor)) {
+            } else if (!CheckMissileRange(actor)) {
                 nomissile = true; // Out of range
             }
             if (!nomissile) {
@@ -183,8 +186,8 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
 
         // This should be executed always, if not averted by returns.
         // possibly choose another target
-        if (obs.DOOM.netgame && actor.threshold == 0 && !obs.EN.CheckSight(actor, actor.target)) {
-            if (obs.EN.LookForPlayers(actor, true)) {
+        if (IsNetGame() && actor.threshold == 0 && !CheckSight(actor, actor.target)) {
+            if (LookForPlayers(actor, true)) {
                 return; // got a new target
             }
         }
@@ -195,8 +198,8 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
         }
 
         // make active sound
-        if (actor.info.activesound != null && obs.DOOM.random.P_Random() < 3) {
-            obs.DOOM.doomSound.StartSound(actor, actor.info.activesound);
+        if (actor.info.activesound != null && P_Random() < 3) {
+            StartSound(actor, actor.info.activesound);
         }
     }
 
@@ -218,7 +221,6 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
     //P_MobjThinker
     //
     default void P_MobjThinker(mobj_t mobj) {
-        final p.Actions.Registry obs = obs();
         // momentum movement
         if (mobj.momx != 0 || mobj.momy != 0 || (eval(mobj.flags & MF_SKULLFLY))) {
             XYMovement(mobj);
@@ -254,7 +256,7 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
                 return;
             }
 
-            if (!obs.DOOM.respawnmonsters) {
+            if (!DOOM().respawnmonsters) {
                 return;
             }
 
@@ -264,11 +266,11 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
                 return;
             }
 
-            if (eval(obs.DOOM.leveltime & 31)) {
+            if (eval(LevelTime() & 31)) {
                 return;
             }
 
-            if (obs.DOOM.random.P_Random() > 4) {
+            if (P_Random() > 4) {
                 return;
             }
 
@@ -280,20 +282,19 @@ interface ActiveStatesAi<R extends Actions.Registry & AbstractCommand<R>> extend
     // A_FaceTarget
     //
     default void A_FaceTarget(mobj_t actor) {
-        final p.Actions.Registry obs = obs();
         if (actor.target == null) {
             return;
         }
 
         actor.flags &= ~MF_AMBUSH;
 
-        actor.angle = obs.DOOM.sceneRenderer.PointToAngle2(actor.x,
+        actor.angle = sceneRenderer().PointToAngle2(actor.x,
             actor.y,
             actor.target.x,
             actor.target.y) & BITS32;
 
         if (eval(actor.target.flags & MF_SHADOW)) {
-            actor.angle += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 21;
+            actor.angle += (P_Random() - P_Random()) << 21;
         }
         actor.angle &= BITS32;
     }

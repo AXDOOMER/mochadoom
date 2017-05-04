@@ -37,12 +37,11 @@ import static doom.player_t.ps_weapon;
 import doom.weapontype_t;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
-
-import p.ActionSystem.AbstractCommand;
-import p.ActionSystem.Observer;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> extends Observer<R> {
+interface ActiveStatesWeapons extends ActionTrait {
+    void FireWeapon(player_t player);
+    
     /**
      * A_WeaponReady
      * The player can fire the weapon
@@ -51,7 +50,6 @@ interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> e
      * or after previous attack/fire sequence.
      */
     default void A_WeaponReady(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
         statenum_t newstate;
         int angle;
 
@@ -62,8 +60,9 @@ interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> e
         }
 
         if (player.readyweapon == weapontype_t.wp_chainsaw
-            && psp.state == states[statenum_t.S_SAW.ordinal()]) {
-            obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_sawidl);
+         && psp.state == states[statenum_t.S_SAW.ordinal()])
+        {
+            StartSound(player.mo, sounds.sfxenum_t.sfx_sawidl);
         }
 
         // check for change
@@ -80,10 +79,11 @@ interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> e
         //  the missile launcher and bfg do not auto fire
         if (eval(player.cmd.buttons & BT_ATTACK)) {
             if (!player.attackdown
-                || (player.readyweapon != weapontype_t.wp_missile
-                && player.readyweapon != weapontype_t.wp_bfg)) {
+             || (player.readyweapon != weapontype_t.wp_missile
+             && player.readyweapon != weapontype_t.wp_bfg))
+            {
                 player.attackdown = true;
-                obs.EN.FireWeapon(player);
+                FireWeapon(player);
                 return;
             }
         } else {
@@ -91,7 +91,7 @@ interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> e
         }
 
         // bob the weapon based on movement speed
-        angle = (128 * obs.DOOM.leveltime) & FINEMASK;
+        angle = (128 * LevelTime()) & FINEMASK;
         psp.sx = FRACUNIT + FixedMul(player.bob, finecosine[angle]);
         angle &= FINEANGLES / 2 - 1;
         psp.sy = player_t.WEAPONTOP + FixedMul(player.bob, finesine[angle]);
@@ -128,14 +128,13 @@ interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> e
     // without lowering it entirely.
     //
     default void A_ReFire(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
         // check for fire
         //  (if a weaponchange is pending, let it go through instead)
         if (eval(player.cmd.buttons & BT_ATTACK)
             && player.pendingweapon == weapontype_t.wp_nochange
             && eval(player.health[0])) {
             player.refire++;
-            obs.EN.FireWeapon(player);
+            FireWeapon(player);
         } else {
             player.refire = 0;
             player.CheckAmmo();
@@ -171,7 +170,6 @@ interface ActiveStatesWeapons<R extends Actions.Registry & AbstractCommand<R>> e
     //  and changes weapon at bottom.
     //
     default void A_Lower(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
         psp.sy += LOWERSPEED;
 
         // Is already down.

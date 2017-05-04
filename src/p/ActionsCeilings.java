@@ -17,32 +17,42 @@
  */
 package p;
 
+import data.Limits;
 import static data.Limits.CEILSPEED;
 import static data.Limits.MAXCEILINGS;
 import data.sounds;
-import doom.SourceCode;
-import p.ActionSystem.AbstractCommand;
-
+import doom.SourceCode.P_Ceiling;
 import static doom.SourceCode.P_Ceiling.EV_DoCeiling;
 import static m.fixed_t.FRACUNIT;
 import rr.line_t;
 import rr.sector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
+import utils.TraitFactory.ContextKey;
 
-interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPlanes<R> {
+interface ActionsCeilings extends ActionTrait {
+    ContextKey<Ceilings> KEY_CEILINGS = KEY_CHAIN.newKey(ActionsCeilings.class, Ceilings.class);
+
+    void RemoveThinker(ceiling_t activeCeiling);
+    result_e MovePlane(sector_t sector, int speed, int bottomheight, boolean crush, int i, int direction);
+
+    public int FindSectorFromLineTag(line_t line, int secnum);
+    
+    final class Ceilings {
+        ceiling_t[] activeceilings = new ceiling_t[Limits.MAXCEILINGS];
+    }
+
     /**
      * This needs to be called before loading, otherwise crushers won't be able to be restarted.
      */
     default void ClearCeilingsBeforeLoading() {
-        obs().activeceilings = new ceiling_t[MAXCEILINGS];
+        contextRequire(KEY_CEILINGS).activeceilings = new ceiling_t[MAXCEILINGS];
     }
 
     /**
      * T_MoveCeiling
      */
     default void MoveCeiling(ceiling_t ceiling) {
-        final Actions.Registry obs = obs();
         result_e res;
 
         switch (ceiling.direction) {
@@ -51,14 +61,14 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
                 break;
             case 1:
                 // UP
-                res = this.MovePlane(ceiling.sector, ceiling.speed, ceiling.topheight, false, 1, ceiling.direction);
+                res = MovePlane(ceiling.sector, ceiling.speed, ceiling.topheight, false, 1, ceiling.direction);
 
-                if (!eval(obs.DOOM.leveltime & 7)) {
+                if (!eval(LevelTime() & 7)) {
                     switch (ceiling.type) {
                         case silentCrushAndRaise:
                             break;
                         default:
-                            obs.DOOM.doomSound.StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
+                            StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
                     }
                 }
 
@@ -68,7 +78,7 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
                             this.RemoveActiveCeiling(ceiling);
                             break;
                         case silentCrushAndRaise:
-                            obs.DOOM.doomSound.StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
+                            StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
                         case fastCrushAndRaise:
                         case crushAndRaise:
                             ceiling.direction = -1;
@@ -78,21 +88,21 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
 
             case -1:
                 // DOWN
-                res = this.MovePlane(ceiling.sector, ceiling.speed, ceiling.bottomheight, ceiling.crush, 1, ceiling.direction);
+                res = MovePlane(ceiling.sector, ceiling.speed, ceiling.bottomheight, ceiling.crush, 1, ceiling.direction);
 
-                if (!eval(obs.DOOM.leveltime & 7)) {
+                if (!eval(LevelTime() & 7)) {
                     switch (ceiling.type) {
                         case silentCrushAndRaise:
                             break;
                         default:
-                            obs.DOOM.doomSound.StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
+                            StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
                     }
                 }
 
                 if (res == result_e.pastdest) {
                     switch (ceiling.type) {
                         case silentCrushAndRaise:
-                            obs.DOOM.doomSound.StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
+                            StartSound(ceiling.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
                         case crushAndRaise:
                             ceiling.speed = CEILSPEED;
                         case fastCrushAndRaise:
@@ -100,7 +110,7 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
                             break;
                         case lowerAndCrush:
                         case lowerToFloor:
-                            this.RemoveActiveCeiling(ceiling);
+                            RemoveActiveCeiling(ceiling);
                             break;
                         default:
                             break;
@@ -125,9 +135,8 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
     // EV.DoCeiling
     // Move a ceiling up/down and all around!
     //
-    @SourceCode.P_Ceiling.C(EV_DoCeiling)
+    @P_Ceiling.C(EV_DoCeiling)
     default boolean DoCeiling(line_t line, ceiling_e type) {
-        final Actions.Registry obs = obs();
         int secnum = -1;
         boolean rtn = false;
         sector_t sec;
@@ -138,13 +147,13 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
             case fastCrushAndRaise:
             case silentCrushAndRaise:
             case crushAndRaise:
-                this.ActivateInStasisCeiling(line);
+                ActivateInStasisCeiling(line);
             default:
                 break;
         }
 
-        while ((secnum = obs.FindSectorFromLineTag(line, secnum)) >= 0) {
-            sec = obs.DOOM.levelLoader.sectors[secnum];
+        while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
+            sec = levelLoader().sectors[secnum];
             if (sec.specialdata != null) {
                 continue;
             }
@@ -154,7 +163,7 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
             ceiling = new ceiling_t();
             sec.specialdata = ceiling;
             ceiling.thinkerFunction = ActiveStates.T_MoveCeiling;
-            obs.AddThinker(ceiling);
+            AddThinker(ceiling);
             ceiling.sector = sec;
             ceiling.crush = false;
 
@@ -190,7 +199,7 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
 
             ceiling.tag = sec.tag;
             ceiling.type = type;
-            this.AddActiveCeiling(ceiling);
+            AddActiveCeiling(ceiling);
         }
         return rtn;
     }
@@ -199,27 +208,27 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
     // Add an active ceiling
     //
     default void AddActiveCeiling(ceiling_t c) {
-        final Actions.Registry obs = obs();
-        for (int i = 0; i < this.getMaxCeilings(); ++i) {
-            if (this.getActiveCeilings()[i] == null) {
-                this.getActiveCeilings()[i] = c;
+        final ceiling_t[] activeCeilings = getActiveCeilings();
+        for (int i = 0; i < activeCeilings.length; ++i) {
+            if (activeCeilings[i] == null) {
+                activeCeilings[i] = c;
                 return;
             }
         }
         // Needs rezising
-        this.setActiveceilings(C2JUtils.resize(c, this.getActiveCeilings(), 2 * this.getActiveCeilings().length));
+        setActiveceilings(C2JUtils.resize(c, activeCeilings, 2 * activeCeilings.length));
     }
 
     //
     // Remove a ceiling's thinker
     //
     default void RemoveActiveCeiling(ceiling_t c) {
-        final Actions.Registry obs = obs();
-        for (int i = 0; i < this.getMaxCeilings(); ++i) {
-            if (this.getActiveCeilings()[i] == c) {
-                this.getActiveCeilings()[i].sector.specialdata = null;
-                obs.RemoveThinker(this.getActiveCeilings()[i]);
-                this.getActiveCeilings()[i] = null;
+        final ceiling_t[] activeCeilings = getActiveCeilings();
+        for (int i = 0; i < activeCeilings.length; ++i) {
+            if (activeCeilings[i] == c) {
+                activeCeilings[i].sector.specialdata = null;
+                RemoveThinker(activeCeilings[i]);
+                activeCeilings[i] = null;
                 break;
             }
         }
@@ -229,14 +238,14 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
     // Restart a ceiling that's in-stasis
     //
     default void ActivateInStasisCeiling(line_t line) {
-        final Actions.Registry obs = obs();
-        for (int i = 0; i < this.getMaxCeilings(); ++ i) {
-            if (this.getActiveCeilings()[i] != null
-            && (this.getActiveCeilings()[i].tag == line.tag)
-            && (this.getActiveCeilings()[i].direction == 0))
+        final ceiling_t[] activeCeilings = getActiveCeilings();
+        for (int i = 0; i < activeCeilings.length; ++i) {
+            if (activeCeilings[i] != null
+            && (activeCeilings[i].tag == line.tag)
+            && (activeCeilings[i].direction == 0))
             {
-                this.getActiveCeilings()[i].direction = this.getActiveCeilings()[i].olddirection;
-                this.getActiveCeilings()[i].thinkerFunction = ActiveStates.T_MoveCeiling;
+                activeCeilings[i].direction = activeCeilings[i].olddirection;
+                activeCeilings[i].thinkerFunction = ActiveStates.T_MoveCeiling;
             }
         }
     }
@@ -246,21 +255,21 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
     // Stop a ceiling from crushing!
     //
     default int CeilingCrushStop(line_t line) {
-        final Actions.Registry obs = obs();
         int i;
         int rtn;
 
         rtn = 0;
-        for (i = 0; i < this.getMaxCeilings(); i++) {
-            if (this.getActiveCeilings()[i] != null
-            && (this.getActiveCeilings()[i].tag == line.tag)
-            && (this.getActiveCeilings()[i].direction != 0))
+        final ceiling_t[] activeCeilings = getActiveCeilings();
+        for (i = 0; i < activeCeilings.length; ++i) {
+            if (activeCeilings[i] != null
+            && (activeCeilings[i].tag == line.tag)
+            && (activeCeilings[i].direction != 0))
             {
-                this.getActiveCeilings()[i].olddirection = this.getActiveCeilings()[i].direction;
+                activeCeilings[i].olddirection = activeCeilings[i].direction;
                 // MAES: don't set it to NOP here, otherwise its thinker will be
                 // removed and it won't be possible to restart it.
-                this.getActiveCeilings()[i].thinkerFunction = null;
-                this.getActiveCeilings()[i].direction = 0;       // in-stasis
+                activeCeilings[i].thinkerFunction = null;
+                activeCeilings[i].direction = 0;       // in-stasis
                 rtn = 1;
             }
         }
@@ -269,18 +278,14 @@ interface ActionsCeilings<R extends Actions.Registry & AbstractCommand<R>> exten
     }
 
     default void setActiveceilings(ceiling_t[] activeceilings) {
-        final Actions.Registry obs = obs();
-        obs.activeceilings = activeceilings;
+        contextRequire(KEY_CEILINGS).activeceilings = activeceilings;
     }
 
     default ceiling_t[] getActiveCeilings() {
-        final Actions.Registry obs = obs();
-        return obs.activeceilings;
+        return contextRequire(KEY_CEILINGS).activeceilings;
     }
 
     default int getMaxCeilings() {
-        final Actions.Registry obs = obs();
-        return obs.activeceilings.length;
+        return contextRequire(KEY_CEILINGS).activeceilings.length;
     }
-    
 }

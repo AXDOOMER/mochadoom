@@ -19,14 +19,17 @@ package p;
 
 import static data.Defines.MISSILERANGE;
 import data.sounds;
-import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesMonstersZombies<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsAttacks<R>, ActionsAim<R> {
+interface ActiveStatesMonstersZombies extends ActionTrait {
+    int AimLineAttack(mobj_t actor, long angle, int MISSILERANGE);
+    void LineAttack(mobj_t actor, long angle, int MISSILERANGE, int slope, int damage);
+    void A_FaceTarget(mobj_t actor);
+    boolean CheckSight(mobj_t target, mobj_t dest);
+
     //
     // A_PosAttack
     //
     default void A_PosAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int angle;
         int damage;
         int slope;
@@ -38,14 +41,13 @@ interface ActiveStatesMonstersZombies<R extends Actions.Registry & AbstractComma
         angle = (int) actor.angle;
         slope = AimLineAttack(actor, angle, MISSILERANGE);
 
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_pistol);
-        angle += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 20;
-        damage = ((obs.DOOM.random.P_Random() % 5) + 1) * 3;
+        StartSound(actor, sounds.sfxenum_t.sfx_pistol);
+        angle += (P_Random() - P_Random()) << 20;
+        damage = ((P_Random() % 5) + 1) * 3;
         LineAttack(actor, angle, MISSILERANGE, slope, damage);
     }
 
     default void A_SPosAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int i;
         long angle;
         long bangle;
@@ -56,20 +58,19 @@ interface ActiveStatesMonstersZombies<R extends Actions.Registry & AbstractComma
             return;
         }
 
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_shotgn);
+        StartSound(actor, sounds.sfxenum_t.sfx_shotgn);
         A_FaceTarget(actor);
         bangle = actor.angle;
         slope = AimLineAttack(actor, bangle, MISSILERANGE);
 
         for (i = 0; i < 3; i++) {
-            angle = bangle + ((obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 20);
-            damage = ((obs.DOOM.random.P_Random() % 5) + 1) * 3;
+            angle = bangle + ((P_Random() - P_Random()) << 20);
+            damage = ((P_Random() % 5) + 1) * 3;
             LineAttack(actor, angle, MISSILERANGE, slope, damage);
         }
     }
 
     default void A_CPosAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         long angle;
         long bangle;
         int damage;
@@ -79,29 +80,27 @@ interface ActiveStatesMonstersZombies<R extends Actions.Registry & AbstractComma
             return;
         }
 
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_shotgn);
+        StartSound(actor, sounds.sfxenum_t.sfx_shotgn);
         A_FaceTarget(actor);
         bangle = actor.angle;
         slope = AimLineAttack(actor, bangle, MISSILERANGE);
 
-        angle = bangle + ((obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 20);
-        damage = ((obs.DOOM.random.P_Random() % 5) + 1) * 3;
+        angle = bangle + ((P_Random() - P_Random()) << 20);
+        damage = ((P_Random() % 5) + 1) * 3;
         LineAttack(actor, angle, MISSILERANGE, slope, damage);
     }
 
     default void A_CPosRefire(mobj_t actor) {
-        final Actions.Registry obs = obs();
         // keep firing unless target got out of sight
         A_FaceTarget(actor);
 
-        if (obs.DOOM.random.P_Random() < 40) {
+        if (P_Random() < 40) {
             return;
         }
 
-        if (actor.target == null
-            || actor.target.health <= 0
-            || !obs.EN.CheckSight(actor, actor.target)) {
+        if (actor.target == null || actor.target.health <= 0 || !CheckSight(actor, actor.target)) {
             actor.SetMobjState(actor.info.seestate);
         }
     }
+
 }

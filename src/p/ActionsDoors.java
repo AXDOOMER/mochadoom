@@ -26,8 +26,6 @@ import static doom.englsh.PD_REDO;
 import static doom.englsh.PD_YELLOWK;
 import static doom.englsh.PD_YELLOWO;
 import doom.player_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACUNIT;
 import static p.DoorDefines.VDOORSPEED;
 import static p.DoorDefines.VDOORWAIT;
@@ -35,7 +33,11 @@ import rr.line_t;
 import rr.sector_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPlanes<R> {
+interface ActionsDoors extends ActionTrait {
+    result_e MovePlane(sector_t sector, int speed, int floorheight, boolean b, int i, int direction);
+    void RemoveThinker(vldoor_t door);
+    int FindSectorFromLineTag(line_t line, int secnum);
+
     //
     // VERTICAL DOORS
     //
@@ -43,7 +45,6 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
      * T_VerticalDoor
      */
     default void VerticalDoor(vldoor_t door) {
-        final Actions.Registry obs = obs();
         switch (door.direction) {
             case 0:
                 // WAITING
@@ -51,15 +52,15 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                     switch (door.type) {
                         case blazeRaise:
                             door.direction = -1; // time to go back down
-                            obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdcls);
+                            StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdcls);
                             break;
                         case normal:
                             door.direction = -1; // time to go back down
-                            obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_dorcls);
+                            StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_dorcls);
                             break;
                         case close30ThenOpen:
                             door.direction = 1;
-                            obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
+                            StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                             break;
                     }
                 }
@@ -72,7 +73,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                         case raiseIn5Mins:
                             door.direction = 1;
                             door.type = vldoor_e.normal;
-                            obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
+                            StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                             break;
                     }
                 }
@@ -80,19 +81,19 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
 
             case -1: {
                 // DOWN
-                final result_e res = this.MovePlane(door.sector, door.speed, door.sector.floorheight, false, 1, door.direction);
+                final result_e res = MovePlane(door.sector, door.speed, door.sector.floorheight, false, 1, door.direction);
                 if (res == result_e.pastdest) {
                     switch (door.type) {
                         case blazeRaise:
                         case blazeClose:
                             door.sector.specialdata = null;
-                            obs.RemoveThinker(door);  // unlink and free
-                            obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdcls);
+                            RemoveThinker(door);  // unlink and free
+                            StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdcls);
                             break;
                         case normal:
                         case close:
                             door.sector.specialdata = null;
-                            obs.RemoveThinker(door);  // unlink and free
+                            RemoveThinker(door);  // unlink and free
                             break;
                         case close30ThenOpen:
                             door.direction = 0;
@@ -106,7 +107,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                             break;
                         default:
                             door.direction = 1;
-                            obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
+                            StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                     }
                 }
                 break;
@@ -125,7 +126,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                         case blazeOpen:
                         case open:
                             door.sector.specialdata = null;
-                            obs.RemoveThinker(door);  // unlink and free
+                            RemoveThinker(door);  // unlink and free
                             break;
                     }
                 }
@@ -138,7 +139,6 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
      * EV_DoLockedDoor Move a locked door up/down
      */
     default boolean DoLockedDoor(line_t line, vldoor_e type, mobj_t thing) {
-        final Actions.Registry obs = obs();
         player_t p;
 
         p = thing.player;
@@ -154,7 +154,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
              return false; */
                 if (!p.cards[card_t.it_bluecard.ordinal()] && !p.cards[card_t.it_blueskull.ordinal()]) {
                     p.message = PD_BLUEO;
-                    obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_oof);
+                    StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return false;
                 }
                 break;
@@ -165,7 +165,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
              return false; */
                 if (!p.cards[card_t.it_redcard.ordinal()] && !p.cards[card_t.it_redskull.ordinal()]) {
                     p.message = PD_REDO;
-                    obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_oof);
+                    StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return false;
                 }
                 break;
@@ -177,7 +177,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                 if (!p.cards[card_t.it_yellowcard.ordinal()]
                         && !p.cards[card_t.it_yellowskull.ordinal()]) {
                     p.message = PD_YELLOWO;
-                    obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_oof);
+                    StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return false;
                 }
                 break;
@@ -187,7 +187,6 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
     }
 
     default boolean DoDoor(line_t line, vldoor_e type) {
-        final Actions.Registry obs = obs();
         int secnum;
         boolean rtn = false;
         sector_t sec;
@@ -195,8 +194,8 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
 
         secnum = -1;
 
-        while ((secnum = obs.FindSectorFromLineTag(line, secnum)) >= 0) {
-            sec = obs.DOOM.levelLoader.sectors[secnum];
+        while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
+            sec = levelLoader().sectors[secnum];
             if (sec.specialdata != null) {
                 continue;
             }
@@ -206,7 +205,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
             door = new vldoor_t();
             sec.specialdata = door;
             door.thinkerFunction = ActiveStates.T_VerticalDoor;
-            obs.AddThinker(door);
+            AddThinker(door);
             door.sector = sec;
             door.type = type;
             door.topwait = VDOORWAIT;
@@ -218,18 +217,18 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                     door.topheight -= 4 * FRACUNIT;
                     door.direction = -1;
                     door.speed = VDOORSPEED * 4;
-                    obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdcls);
+                    StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdcls);
                     break;
                 case close:
                     door.topheight = sec.FindLowestCeilingSurrounding();
                     door.topheight -= 4 * FRACUNIT;
                     door.direction = -1;
-                    obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_dorcls);
+                    StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_dorcls);
                     break;
                 case close30ThenOpen:
                     door.topheight = sec.ceilingheight;
                     door.direction = -1;
-                    obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_dorcls);
+                    StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_dorcls);
                     break;
                 case blazeRaise:
                 case blazeOpen:
@@ -238,7 +237,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                     door.topheight -= 4 * FRACUNIT;
                     door.speed = VDOORSPEED * 4;
                     if (door.topheight != sec.ceilingheight) {
-                        obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdopn);
+                        StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_bdopn);
                     }
                     break;
                 case normal:
@@ -247,7 +246,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                     door.topheight = sec.FindLowestCeilingSurrounding();
                     door.topheight -= 4 * FRACUNIT;
                     if (door.topheight != sec.ceilingheight) {
-                        obs.DOOM.doomSound.StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
+                        StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                     }
             }
 
@@ -259,7 +258,6 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
      * EV_VerticalDoor : open a door manually, no tag value
      */
     default void VerticalDoor(line_t line, mobj_t thing) {
-        final Actions.Registry obs = obs();
         player_t player;
         //int      secnum;
         sector_t sec;
@@ -280,7 +278,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
 
                 if (!player.cards[card_t.it_bluecard.ordinal()] && !player.cards[card_t.it_blueskull.ordinal()]) {
                     player.message = PD_BLUEK;
-                    obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_oof);
+                    StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return;
                 }
                 break;
@@ -293,7 +291,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
 
                 if (!player.cards[card_t.it_yellowcard.ordinal()] && !player.cards[card_t.it_yellowskull.ordinal()]) {
                     player.message = PD_YELLOWK;
-                    obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_oof);
+                    StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return;
                 }
                 break;
@@ -306,14 +304,14 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
 
                 if (!player.cards[card_t.it_redcard.ordinal()] && !player.cards[card_t.it_redskull.ordinal()]) {
                     player.message = PD_REDK;
-                    obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_oof);
+                    StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return;
                 }
                 break;
         }
 
         // if the sector has an active thinker, use it
-        sec = obs.DOOM.levelLoader.sides[line.sidenum[side ^ 1]].sector;
+        sec = levelLoader().sides[line.sidenum[side ^ 1]].sector;
         // secnum = sec.id;
 
         if (sec.specialdata != null) {
@@ -322,7 +320,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
                  * [MAES]: demo sync for e1nm0646: emulates active plat_t interpreted
                  * as door. TODO: add our own overflow handling class.
                  */
-                door = ((plat_t) sec.specialdata).asVlDoor(obs.DOOM.levelLoader.sectors);
+                door = ((plat_t) sec.specialdata).asVlDoor(levelLoader().sectors);
             } else {
                 door = (vldoor_t) sec.specialdata;
             }
@@ -348,16 +346,16 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
         switch (line.special) {
             case 117:    // BLAZING DOOR RAISE
             case 118:    // BLAZING DOOR OPEN
-                obs.DOOM.doomSound.StartSound(sec.soundorg, sounds.sfxenum_t.sfx_bdopn);
+                StartSound(sec.soundorg, sounds.sfxenum_t.sfx_bdopn);
                 break;
 
             case 1:  // NORMAL DOOR SOUND
             case 31:
-                obs.DOOM.doomSound.StartSound(sec.soundorg, sounds.sfxenum_t.sfx_doropn);
+                StartSound(sec.soundorg, sounds.sfxenum_t.sfx_doropn);
                 break;
 
             default: // LOCKED DOOR SOUND
-                obs.DOOM.doomSound.StartSound(sec.soundorg, sounds.sfxenum_t.sfx_doropn);
+                StartSound(sec.soundorg, sounds.sfxenum_t.sfx_doropn);
                 break;
         }
 
@@ -365,7 +363,7 @@ interface ActionsDoors<R extends Actions.Registry & AbstractCommand<R>> extends 
         door = new vldoor_t();
         sec.specialdata = door;
         door.thinkerFunction = ActiveStates.T_VerticalDoor;
-        obs.AddThinker(door);
+        AddThinker(door);
         door.sector = sec;
         door.direction = 1;
         door.speed = VDOORSPEED;

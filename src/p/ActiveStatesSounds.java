@@ -20,11 +20,13 @@ package p;
 import data.mobjtype_t;
 import data.sounds;
 import doom.player_t;
-import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesSounds<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActiveStatesMonstersHorrendousVisages<R>, ActiveStatesWeapons<R> {
+interface ActiveStatesSounds extends ActionTrait {
+    void A_Chase(mobj_t mo);
+    void A_ReFire(player_t player, pspdef_t psp);
+    void A_SpawnFly(mobj_t mo);
+
     default void A_Scream(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int sound;
 
         switch (actor.info.deathsound) {
@@ -34,12 +36,12 @@ interface ActiveStatesSounds<R extends Actions.Registry & AbstractCommand<R>> ex
             case sfx_podth1:
             case sfx_podth2:
             case sfx_podth3:
-                sound = sounds.sfxenum_t.sfx_podth1.ordinal() + obs.DOOM.random.P_Random() % 3;
+                sound = sounds.sfxenum_t.sfx_podth1.ordinal() + P_Random() % 3;
                 break;
 
             case sfx_bgdth1:
             case sfx_bgdth2:
-                sound = sounds.sfxenum_t.sfx_bgdth1.ordinal() + obs.DOOM.random.P_Random() % 2;
+                sound = sounds.sfxenum_t.sfx_bgdth1.ordinal() + P_Random() % 2;
                 break;
 
             default:
@@ -51,14 +53,13 @@ interface ActiveStatesSounds<R extends Actions.Registry & AbstractCommand<R>> ex
         if (actor.type == mobjtype_t.MT_SPIDER
             || actor.type == mobjtype_t.MT_CYBORG) {
             // full volume
-            obs.DOOM.doomSound.StartSound(null, sound);
+            StartSound(null, sound);
         } else {
-            obs.DOOM.doomSound.StartSound(actor, sound);
+            StartSound(actor, sound);
         }
     }
     default void A_Hoof(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(mo, sounds.sfxenum_t.sfx_hoof);
+        StartSound(mo, sounds.sfxenum_t.sfx_hoof);
         A_Chase(mo);
     }
 
@@ -66,62 +67,53 @@ interface ActiveStatesSounds<R extends Actions.Registry & AbstractCommand<R>> ex
     // A_BFGsound
     //
     default void A_BFGsound(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_bfg);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_bfg);
     }
 
     default void A_OpenShotgun2(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_dbopn);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_dbopn);
     }
 
     default void A_LoadShotgun2(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_dbload);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_dbload);
     }
 
     default void A_CloseShotgun2(player_t player, pspdef_t psp) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_dbcls);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_dbcls);
         A_ReFire(player, psp);
     }
 
     default void A_BrainPain(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_bospn);
+        StartSound(null, sounds.sfxenum_t.sfx_bospn);
     }
     
     default void A_Metal(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(mo, sounds.sfxenum_t.sfx_metal);
+        StartSound(mo, sounds.sfxenum_t.sfx_metal);
         A_Chase(mo);
     }
 
     default void A_BabyMetal(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(mo, sounds.sfxenum_t.sfx_bspwlk);
+        StartSound(mo, sounds.sfxenum_t.sfx_bspwlk);
         A_Chase(mo);
     }
     
     // travelling cube sound
     default void A_SpawnSound(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(mo, sounds.sfxenum_t.sfx_boscub);
+        StartSound(mo, sounds.sfxenum_t.sfx_boscub);
         A_SpawnFly(mo);
     }
     
     default void A_PlayerScream(mobj_t actor) {
-        final Actions.Registry obs = obs();
         // Default death sound.
         sounds.sfxenum_t sound = sounds.sfxenum_t.sfx_pldeth;
 
-        if (obs.DOOM.isCommercial() && (actor.health < -50)) {
+        if (DOOM().isCommercial() && (actor.health < -50)) {
             // IF THE PLAYER DIES
             // LESS THAN -50% WITHOUT GIBBING
             sound = sounds.sfxenum_t.sfx_pdiehi;
         }
 
-        obs.DOOM.doomSound.StartSound(actor, sound);
+        StartSound(actor, sound);
     }
 
 }

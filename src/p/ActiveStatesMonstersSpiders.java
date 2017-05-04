@@ -18,27 +18,26 @@
 package p;
 
 import data.mobjtype_t;
-import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesMonstersSpiders<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsMissiles<R> {
+interface ActiveStatesMonstersSpiders extends ActionTrait {
+    void A_FaceTarget(mobj_t actor);
+    void SpawnMissile(mobj_t actor, mobj_t target, mobjtype_t mobjtype_t);
+    boolean CheckSight(mobj_t actor, mobj_t target);
+
     default void A_SpidRefire(mobj_t actor) {
-        final Actions.Registry obs = obs();
         // keep firing unless target got out of sight
         A_FaceTarget(actor);
 
-        if (obs.DOOM.random.P_Random() < 10) {
+        if (P_Random() < 10) {
             return;
         }
 
-        if (actor.target == null
-            || actor.target.health <= 0
-            || !obs.EN.CheckSight(actor, actor.target)) {
+        if (actor.target == null || actor.target.health <= 0 || !CheckSight(actor, actor.target)) {
             actor.SetMobjState(actor.info.seestate);
         }
     }
 
     default void A_BspiAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         if (actor.target == null) {
             return;
         }

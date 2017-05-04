@@ -19,11 +19,15 @@ package p;
 
 import static data.Limits.MAXPLAYERS;
 import data.mobjtype_t;
+import doom.DoomMain;
 import doom.thinker_t;
-import p.ActionSystem.AbstractCommand;
 import rr.line_t;
 
-interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R> {
+interface ActiveStatesMonstersBosses extends ActionTrait {
+    void A_Fall(mobj_t mo);
+    void DoFloor(line_t junk, floor_e floor_e);
+    void DoDoor(line_t junk, vldoor_e vldoor_e);
+
     /**
      * A_BossDeath
      * Possibly trigger special effects
@@ -34,14 +38,14 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
      *
      */
     default void A_BossDeath(mobj_t mo) {
-        final Actions.Registry obs = obs();
+        final DoomMain<?, ?> D = DOOM();
         thinker_t th;
         mobj_t mo2;
         line_t junk = new line_t();
         int i;
 
-        if (obs.DOOM.isCommercial()) {
-            if (obs.DOOM.gamemap != 7) {
+        if (D.isCommercial()) {
+            if (D.gamemap != 7) {
                 return;
             }
 
@@ -50,9 +54,9 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
                 return;
             }
         } else {
-            switch (obs.DOOM.gameepisode) {
+            switch (D.gameepisode) {
                 case 1:
-                    if (obs.DOOM.gamemap != 8) {
+                    if (D.gamemap != 8) {
                         return;
                     }
 
@@ -62,7 +66,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
                     break;
 
                 case 2:
-                    if (obs.DOOM.gamemap != 8) {
+                    if (D.gamemap != 8) {
                         return;
                     }
 
@@ -72,7 +76,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
                     break;
 
                 case 3:
-                    if (obs.DOOM.gamemap != 8) {
+                    if (D.gamemap != 8) {
                         return;
                     }
 
@@ -83,7 +87,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
                     break;
 
                 case 4:
-                    switch (obs.DOOM.gamemap) {
+                    switch (D.gamemap) {
                         case 6:
                             if (mo.type != mobjtype_t.MT_CYBORG) {
                                 return;
@@ -102,7 +106,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
                     break;
 
                 default:
-                    if (obs.DOOM.gamemap != 8) {
+                    if (D.gamemap != 8) {
                         return;
                     }
                     break;
@@ -112,7 +116,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
 
         // make sure there is a player alive for victory
         for (i = 0; i < MAXPLAYERS; i++) {
-            if (obs.DOOM.playeringame[i] && obs.DOOM.players[i].health[0] > 0) {
+            if (D.playeringame[i] && D.players[i].health[0] > 0) {
                 break;
             }
         }
@@ -122,7 +126,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
         }
         // scan the remaining thinkers to see
         // if all bosses are dead
-        for (th = obs.thinkercap.next; th != obs.thinkercap; th = th.next) {
+        for (th = getThinkerCap().next; th != getThinkerCap(); th = th.next) {
             if (th.thinkerFunction != ActiveStates.P_MobjThinker) {
                 continue;
             }
@@ -137,8 +141,8 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
         }
 
         // victory!
-        if (obs.DOOM.isCommercial()) {
-            if (obs.DOOM.gamemap == 7) {
+        if (D.isCommercial()) {
+            if (D.gamemap == 7) {
                 if (mo.type == mobjtype_t.MT_FATSO) {
                     junk.tag = 666;
                     DoFloor(junk, floor_e.lowerFloorToLowest);
@@ -152,14 +156,14 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
                 }
             }
         } else {
-            switch (obs.DOOM.gameepisode) {
+            switch (D.gameepisode) {
                 case 1:
                     junk.tag = 666;
                     DoFloor(junk, floor_e.lowerFloorToLowest);
                     return;
 
                 case 4:
-                    switch (obs.DOOM.gamemap) {
+                    switch (D.gamemap) {
                         case 6:
                             junk.tag = 666;
                             DoDoor(junk, vldoor_e.blazeOpen);
@@ -173,11 +177,10 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
             }
         }
 
-        obs.DOOM.ExitLevel();
+        D.ExitLevel();
     }
     
     default void A_KeenDie(mobj_t mo) {
-        final Actions.Registry obs = obs();
         thinker_t th;
         mobj_t mo2;
         line_t junk = new line_t(); // MAES: fixed null 21/5/2011
@@ -186,7 +189,7 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
 
         // scan the remaining thinkers
         // to see if all Keens are dead
-        for (th = obs.thinkercap.next; th != obs.thinkercap; th = th.next) {
+        for (th = getThinkerCap().next; th != getThinkerCap(); th = th.next) {
             if (th.thinkerFunction != ActiveStates.P_MobjThinker) {
                 continue;
             }
@@ -203,4 +206,5 @@ interface ActiveStatesMonstersBosses<R extends Actions.Registry & AbstractComman
         junk.tag = 666;
         DoDoor(junk, vldoor_e.open);
     }
+
 }

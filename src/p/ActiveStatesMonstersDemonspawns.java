@@ -19,14 +19,18 @@ package p;
 
 import data.mobjtype_t;
 import data.sounds;
-import p.ActionSystem.AbstractCommand;
 
-interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActionsMissiles<R> {
+interface ActiveStatesMonstersDemonspawns extends ActionTrait {
+
+    void A_FaceTarget(mobj_t actor);
+    void DamageMobj(mobj_t target, mobj_t actor, mobj_t actor0, int damage);
+    void SpawnMissile(mobj_t actor, mobj_t target, mobjtype_t mobjtype_t);
+    boolean CheckMeleeRange(mobj_t actor);
+
     //
     // A_TroopAttack
     //
     default void A_TroopAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int damage;
 
         if (actor.target == null) {
@@ -34,9 +38,9 @@ interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractC
         }
 
         A_FaceTarget(actor);
-        if (obs.EN.CheckMeleeRange(actor)) {
-            obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_claw);
-            damage = (obs.DOOM.random.P_Random() % 8 + 1) * 3;
+        if (CheckMeleeRange(actor)) {
+            StartSound(actor, sounds.sfxenum_t.sfx_claw);
+            damage = (P_Random() % 8 + 1) * 3;
             DamageMobj(actor.target, actor, actor, damage);
             return;
         }
@@ -46,7 +50,6 @@ interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractC
     }
 
     default void A_SargAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int damage;
 
         if (actor.target == null) {
@@ -54,14 +57,13 @@ interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractC
         }
 
         A_FaceTarget(actor);
-        if (obs.EN.CheckMeleeRange(actor)) {
-            damage = ((obs.DOOM.random.P_Random() % 10) + 1) * 4;
+        if (CheckMeleeRange(actor)) {
+            damage = ((P_Random() % 10) + 1) * 4;
             DamageMobj(actor.target, actor, actor, damage);
         }
     }
 
     default void A_HeadAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int damage;
 
         if (actor.target == null) {
@@ -69,8 +71,8 @@ interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractC
         }
 
         A_FaceTarget(actor);
-        if (obs.EN.CheckMeleeRange(actor)) {
-            damage = (obs.DOOM.random.P_Random() % 6 + 1) * 10;
+        if (CheckMeleeRange(actor)) {
+            damage = (P_Random() % 6 + 1) * 10;
             DamageMobj(actor.target, actor, actor, damage);
             return;
         }
@@ -89,16 +91,15 @@ interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractC
     }
 
     default void A_BruisAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         int damage;
 
         if (actor.target == null) {
             return;
         }
 
-        if (obs.EN.CheckMeleeRange(actor)) {
-            obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_claw);
-            damage = (obs.DOOM.random.P_Random() % 8 + 1) * 10;
+        if (CheckMeleeRange(actor)) {
+            StartSound(actor, sounds.sfxenum_t.sfx_claw);
+            damage = (P_Random() % 8 + 1) * 10;
             DamageMobj(actor.target, actor, actor, damage);
             return;
         }
@@ -106,4 +107,5 @@ interface ActiveStatesMonstersDemonspawns<R extends Actions.Registry & AbstractC
         // launch a missile
         SpawnMissile(actor, actor.target, mobjtype_t.MT_BRUISERSHOT);
     }
+
 }

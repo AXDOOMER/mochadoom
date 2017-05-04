@@ -17,10 +17,21 @@
  */
 package p;
 
-import p.ActionSystem.AbstractCommand;
 import rr.line_t;
 
-interface ActionsMoveEvents<R extends Actions.Registry & AbstractCommand<R>> extends ActionsCeilings<R>, ActionsFloors<R>, ActionsDoors<R>, ActionsTeleportation<R> {
+interface ActionsMoveEvents extends ActionTrait {
+    void CeilingCrushStop(line_t line);
+    void DoDoor(line_t line, vldoor_e vldoor_e);
+    void DoFloor(line_t line, floor_e floor_e);
+    void DoPlat(line_t line, plattype_e plattype_e, int i);
+    void StopPlat(line_t line);
+    void BuildStairs(line_t line, stair_e stair_e);
+    void Teleport(line_t line, int side, mobj_t thing);
+    void DoCeiling(line_t line, ceiling_e ceiling_e);
+    void LightTurnOn(line_t line, int i);
+    void StartLightStrobing(line_t line);
+    void TurnTagLightsOff(line_t line);
+
     //
     //EVENTS
     //Events are operations triggered by using, crossing,
@@ -30,7 +41,6 @@ interface ActionsMoveEvents<R extends Actions.Registry & AbstractCommand<R>> ext
      * P_CrossSpecialLine - TRIGGER Called every time a thing origin is about to cross a line with a non 0 special.
      */
     default void CrossSpecialLine(line_t line, int side, mobj_t thing) {
-        final Actions.Registry obs = obs();
         //line_t line;
         boolean ok;
 
@@ -69,416 +79,418 @@ interface ActionsMoveEvents<R extends Actions.Registry & AbstractCommand<R>> ext
             }
         }
 
+        // TODO: enum!
         // Note: could use some const's here.
         switch (line.special) {
             // TRIGGERS.
             // All from here to RETRIGGERS.
             case 2:
                 // Open Door
-                this.DoDoor(line, vldoor_e.open);
+                DoDoor(line, vldoor_e.open);
                 line.special = 0;
                 break;
 
             case 3:
                 // Close Door
-                this.DoDoor(line, vldoor_e.close);
+                DoDoor(line, vldoor_e.close);
                 line.special = 0;
                 break;
 
             case 4:
                 // Raise Door
-                this.DoDoor(line, vldoor_e.normal);
+                DoDoor(line, vldoor_e.normal);
                 line.special = 0;
                 break;
 
             case 5:
                 // Raise Floor
-                this.DoFloor(line, floor_e.raiseFloor);
+                DoFloor(line, floor_e.raiseFloor);
                 line.special = 0;
                 break;
 
             case 6:
                 // Fast Ceiling Crush & Raise
-                this.DoCeiling(line, ceiling_e.fastCrushAndRaise);
+                DoCeiling(line, ceiling_e.fastCrushAndRaise);
                 line.special = 0;
                 break;
 
             case 8:
                 // Build Stairs
-                this.BuildStairs(line, stair_e.build8);
+                BuildStairs(line, stair_e.build8);
                 line.special = 0;
                 break;
 
             case 10:
                 // PlatDownWaitUp
-                obs.PEV.DoPlat(line, plattype_e.downWaitUpStay, 0);
+                DoPlat(line, plattype_e.downWaitUpStay, 0);
                 line.special = 0;
                 break;
 
             case 12:
                 // Light Turn On - brightest near
-                obs.LEV.LightTurnOn(line, 0);
+                LightTurnOn(line, 0);
                 line.special = 0;
                 break;
 
             case 13:
                 // Light Turn On 255
-                obs.LEV.LightTurnOn(line, 255);
+                LightTurnOn(line, 255);
                 line.special = 0;
                 break;
 
             case 16:
                 // Close Door 30
-                this.DoDoor(line, vldoor_e.close30ThenOpen);
+                DoDoor(line, vldoor_e.close30ThenOpen);
                 line.special = 0;
                 break;
 
             case 17:
                 // Start Light Strobing
-                obs.LEV.StartLightStrobing(line);
+                StartLightStrobing(line);
                 line.special = 0;
                 break;
 
             case 19:
                 // Lower Floor
-                this.DoFloor(line, floor_e.lowerFloor);
+                DoFloor(line, floor_e.lowerFloor);
                 line.special = 0;
                 break;
 
             case 22:
                 // Raise floor to nearest height and change texture
-                obs.PEV.DoPlat(line, plattype_e.raiseToNearestAndChange, 0);
+                DoPlat(line, plattype_e.raiseToNearestAndChange, 0);
                 line.special = 0;
                 break;
 
             case 25:
                 // Ceiling Crush and Raise
-                this.DoCeiling(line, ceiling_e.crushAndRaise);
+                DoCeiling(line, ceiling_e.crushAndRaise);
                 line.special = 0;
                 break;
 
             case 30:
                 // Raise floor to shortest texture height
                 //  on either side of lines.
-                this.DoFloor(line, floor_e.raiseToTexture);
+                DoFloor(line, floor_e.raiseToTexture);
                 line.special = 0;
                 break;
 
             case 35:
                 // Lights Very Dark
-                obs.LEV.LightTurnOn(line, 35);
+                LightTurnOn(line, 35);
                 line.special = 0;
                 break;
 
             case 36:
                 // Lower Floor (TURBO)
-                this.DoFloor(line, floor_e.turboLower);
+                DoFloor(line, floor_e.turboLower);
                 line.special = 0;
                 break;
 
             case 37:
                 // LowerAndChange
-                this.DoFloor(line, floor_e.lowerAndChange);
+                DoFloor(line, floor_e.lowerAndChange);
                 line.special = 0;
                 break;
 
             case 38:
                 // Lower Floor To Lowest
-                this.DoFloor(line, floor_e.lowerFloorToLowest);
+                DoFloor(line, floor_e.lowerFloorToLowest);
                 line.special = 0;
                 break;
 
             case 39:
                 // TELEPORT!
-                this.Teleport(line, side, thing);
+                Teleport(line, side, thing);
                 line.special = 0;
                 break;
 
             case 40:
                 // RaiseCeilingLowerFloor
-                this.DoCeiling(line, ceiling_e.raiseToHighest);
-                this.DoFloor(line, floor_e.lowerFloorToLowest);
+                DoCeiling(line, ceiling_e.raiseToHighest);
+                DoFloor(line, floor_e.lowerFloorToLowest);
                 line.special = 0;
                 break;
 
             case 44:
                 // Ceiling Crush
-                this.DoCeiling(line, ceiling_e.lowerAndCrush);
+                DoCeiling(line, ceiling_e.lowerAndCrush);
                 line.special = 0;
                 break;
 
             case 52:
                 // EXIT!
-                obs.DOOM.ExitLevel();
+                DOOM().ExitLevel();
                 break;
 
             case 53:
                 // Perpetual Platform Raise
-                obs.PEV.DoPlat(line, plattype_e.perpetualRaise, 0);
+                DoPlat(line, plattype_e.perpetualRaise, 0);
                 line.special = 0;
                 break;
 
             case 54:
                 // Platform Stop
-                obs.PEV.StopPlat(line);
+                StopPlat(line);
                 line.special = 0;
                 break;
 
             case 56:
                 // Raise Floor Crush
-                this.DoFloor(line, floor_e.raiseFloorCrush);
+                DoFloor(line, floor_e.raiseFloorCrush);
                 line.special = 0;
                 break;
 
             case 57:
                 // Ceiling Crush Stop
-                this.CeilingCrushStop(line);
+                CeilingCrushStop(line);
                 line.special = 0;
                 break;
 
             case 58:
                 // Raise Floor 24
-                this.DoFloor(line, floor_e.raiseFloor24);
+                DoFloor(line, floor_e.raiseFloor24);
                 line.special = 0;
                 break;
 
             case 59:
                 // Raise Floor 24 And Change
-                this.DoFloor(line, floor_e.raiseFloor24AndChange);
+                DoFloor(line, floor_e.raiseFloor24AndChange);
                 line.special = 0;
                 break;
 
             case 104:
                 // Turn lights off in sector(tag)
-                obs.LEV.TurnTagLightsOff(line);
+                TurnTagLightsOff(line);
                 line.special = 0;
                 break;
 
             case 108:
                 // Blazing Door Raise (faster than TURBO!)
-                this.DoDoor(line, vldoor_e.blazeRaise);
+                DoDoor(line, vldoor_e.blazeRaise);
                 line.special = 0;
                 break;
 
             case 109:
                 // Blazing Door Open (faster than TURBO!)
-                this.DoDoor(line, vldoor_e.blazeOpen);
+                DoDoor(line, vldoor_e.blazeOpen);
                 line.special = 0;
                 break;
 
             case 100:
                 // Build Stairs Turbo 16
-                this.BuildStairs(line, stair_e.turbo16);
+                BuildStairs(line, stair_e.turbo16);
                 line.special = 0;
                 break;
 
             case 110:
                 // Blazing Door Close (faster than TURBO!)
-                this.DoDoor(line, vldoor_e.blazeClose);
+                DoDoor(line, vldoor_e.blazeClose);
                 line.special = 0;
                 break;
 
             case 119:
                 // Raise floor to nearest surr. floor
-                this.DoFloor(line, floor_e.raiseFloorToNearest);
+                DoFloor(line, floor_e.raiseFloorToNearest);
                 line.special = 0;
                 break;
 
             case 121:
                 // Blazing PlatDownWaitUpStay
-                obs.PEV.DoPlat(line, plattype_e.blazeDWUS, 0);
+                DoPlat(line, plattype_e.blazeDWUS, 0);
                 line.special = 0;
                 break;
 
             case 124:
                 // Secret EXIT
-                obs.DOOM.SecretExitLevel();
+                DOOM().SecretExitLevel();
                 break;
 
             case 125:
                 // TELEPORT MonsterONLY
                 if (thing.player == null) {
-                    this.Teleport(line, side, thing);
+                    Teleport(line, side, thing);
                     line.special = 0;
                 }
                 break;
 
             case 130:
                 // Raise Floor Turbo
-                this.DoFloor(line, floor_e.raiseFloorTurbo);
+                DoFloor(line, floor_e.raiseFloorTurbo);
                 line.special = 0;
                 break;
 
             case 141:
                 // Silent Ceiling Crush & Raise
-                this.DoCeiling(line, ceiling_e.silentCrushAndRaise);
+                DoCeiling(line, ceiling_e.silentCrushAndRaise);
                 line.special = 0;
                 break;
 
             // RETRIGGERS.  All from here till end.
             case 72:
                 // Ceiling Crush
-                this.DoCeiling(line, ceiling_e.lowerAndCrush);
+                DoCeiling(line, ceiling_e.lowerAndCrush);
                 break;
 
             case 73:
                 // Ceiling Crush and Raise
-                this.DoCeiling(line, ceiling_e.crushAndRaise);
+                DoCeiling(line, ceiling_e.crushAndRaise);
                 break;
 
             case 74:
                 // Ceiling Crush Stop
-                this.CeilingCrushStop(line);
+                CeilingCrushStop(line);
                 break;
 
             case 75:
                 // Close Door
-                this.DoDoor(line, vldoor_e.close);
+                DoDoor(line, vldoor_e.close);
                 break;
 
             case 76:
                 // Close Door 30
-                this.DoDoor(line, vldoor_e.close30ThenOpen);
+                DoDoor(line, vldoor_e.close30ThenOpen);
                 break;
 
             case 77:
                 // Fast Ceiling Crush & Raise
-                this.DoCeiling(line, ceiling_e.fastCrushAndRaise);
+                DoCeiling(line, ceiling_e.fastCrushAndRaise);
                 break;
 
             case 79:
                 // Lights Very Dark
-                obs.LEV.LightTurnOn(line, 35);
+                LightTurnOn(line, 35);
                 break;
 
             case 80:
                 // Light Turn On - brightest near
-                obs.LEV.LightTurnOn(line, 0);
+                LightTurnOn(line, 0);
                 break;
 
             case 81:
                 // Light Turn On 255
-                obs.LEV.LightTurnOn(line, 255);
+                LightTurnOn(line, 255);
                 break;
 
             case 82:
                 // Lower Floor To Lowest
-                this.DoFloor(line, floor_e.lowerFloorToLowest);
+                DoFloor(line, floor_e.lowerFloorToLowest);
                 break;
 
             case 83:
                 // Lower Floor
-                this.DoFloor(line, floor_e.lowerFloor);
+                DoFloor(line, floor_e.lowerFloor);
                 break;
 
             case 84:
                 // LowerAndChange
-                this.DoFloor(line, floor_e.lowerAndChange);
+                DoFloor(line, floor_e.lowerAndChange);
                 break;
 
             case 86:
                 // Open Door
-                this.DoDoor(line, vldoor_e.open);
+                DoDoor(line, vldoor_e.open);
                 break;
 
             case 87:
                 // Perpetual Platform Raise
-                obs.PEV.DoPlat(line, plattype_e.perpetualRaise, 0);
+                DoPlat(line, plattype_e.perpetualRaise, 0);
                 break;
 
             case 88:
                 // PlatDownWaitUp
-                obs.PEV.DoPlat(line, plattype_e.downWaitUpStay, 0);
+                DoPlat(line, plattype_e.downWaitUpStay, 0);
                 break;
 
             case 89:
                 // Platform Stop
-                obs.PEV.StopPlat(line);
+                StopPlat(line);
                 break;
 
             case 90:
                 // Raise Door
-                this.DoDoor(line, vldoor_e.normal);
+                DoDoor(line, vldoor_e.normal);
                 break;
 
             case 91:
                 // Raise Floor
-                this.DoFloor(line, floor_e.raiseFloor);
+                DoFloor(line, floor_e.raiseFloor);
                 break;
 
             case 92:
                 // Raise Floor 24
-                this.DoFloor(line, floor_e.raiseFloor24);
+                DoFloor(line, floor_e.raiseFloor24);
                 break;
 
             case 93:
                 // Raise Floor 24 And Change
-                this.DoFloor(line, floor_e.raiseFloor24AndChange);
+                DoFloor(line, floor_e.raiseFloor24AndChange);
                 break;
 
             case 94:
                 // Raise Floor Crush
-                this.DoFloor(line, floor_e.raiseFloorCrush);
+                DoFloor(line, floor_e.raiseFloorCrush);
                 break;
 
             case 95:
                 // Raise floor to nearest height
                 // and change texture.
-                obs.PEV.DoPlat(line, plattype_e.raiseToNearestAndChange, 0);
+                DoPlat(line, plattype_e.raiseToNearestAndChange, 0);
                 break;
 
             case 96:
                 // Raise floor to shortest texture height
                 // on either side of lines.
-                this.DoFloor(line, floor_e.raiseToTexture);
+                DoFloor(line, floor_e.raiseToTexture);
                 break;
 
             case 97:
                 // TELEPORT!
-                this.Teleport(line, side, thing);
+                Teleport(line, side, thing);
                 break;
 
             case 98:
                 // Lower Floor (TURBO)
-                this.DoFloor(line, floor_e.turboLower);
+                DoFloor(line, floor_e.turboLower);
                 break;
 
             case 105:
                 // Blazing Door Raise (faster than TURBO!)
-                this.DoDoor(line, vldoor_e.blazeRaise);
+                DoDoor(line, vldoor_e.blazeRaise);
                 break;
 
             case 106:
                 // Blazing Door Open (faster than TURBO!)
-                this.DoDoor(line, vldoor_e.blazeOpen);
+                DoDoor(line, vldoor_e.blazeOpen);
                 break;
 
             case 107:
                 // Blazing Door Close (faster than TURBO!)
-                this.DoDoor(line, vldoor_e.blazeClose);
+                DoDoor(line, vldoor_e.blazeClose);
                 break;
 
             case 120:
                 // Blazing PlatDownWaitUpStay.
-                obs.PEV.DoPlat(line, plattype_e.blazeDWUS, 0);
+                DoPlat(line, plattype_e.blazeDWUS, 0);
                 break;
 
             case 126:
                 // TELEPORT MonsterONLY.
                 if (thing.player == null) {
-                    this.Teleport(line, side, thing);
+                    Teleport(line, side, thing);
                 }
                 break;
 
             case 128:
                 // Raise To Nearest Floor
-                this.DoFloor(line, floor_e.raiseFloorToNearest);
+                DoFloor(line, floor_e.raiseFloorToNearest);
                 break;
 
             case 129:
                 // Raise Floor Turbo
-                this.DoFloor(line, floor_e.raiseFloorTurbo);
+                DoFloor(line, floor_e.raiseFloorTurbo);
                 break;
         }
     }    
+
 }

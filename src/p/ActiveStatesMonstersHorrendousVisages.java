@@ -17,45 +17,58 @@
  */
 package p;
 
+import data.Limits;
 import data.mobjtype_t;
 import data.sounds;
 import defines.skill_t;
 import defines.statenum_t;
 import doom.thinker_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACUNIT;
+import utils.TraitFactory.ContextKey;
 
-interface ActiveStatesMonstersHorrendousVisages<R extends Actions.Registry & AbstractCommand<R>> extends ActionsSpawn<R>, ActionsMissiles<R> {
+interface ActiveStatesMonstersHorrendousVisages extends ActionTrait {
+    ContextKey<Brain> KEY_BRAIN = KEY_CHAIN.newKey(ActiveStatesMonstersHorrendousVisages.class, Brain.class);
+
+    mobj_t SpawnMobj(int x, int y, int z, mobjtype_t mobjtype_t);
+    mobj_t SpawnMissile(mobj_t mo, mobj_t targ, mobjtype_t mobjtype_t);
+    void TeleportMove(mobj_t newmobj, int x, int y);
+    void RemoveMobj(mobj_t mo);
+    boolean LookForPlayers(mobj_t newmobj, boolean b);
+    
+    final class Brain {
+        // Brain status
+        mobj_t[] braintargets = new mobj_t[Limits.NUMBRAINTARGETS];
+        int numbraintargets;
+        int braintargeton;
+        int easy = 0;
+    }
+    
     default void A_BrainAwake(mobj_t mo) {
-        final Actions.Registry obs = obs();
+        final Brain brain = contextRequire(KEY_BRAIN);
         thinker_t thinker;
         mobj_t m;
 
         // find all the target spots
-        obs.numbraintargets = 0;
-        obs.braintargeton = 0;
+        brain.numbraintargets = 0;
+        brain.braintargeton = 0;
 
         //thinker = obs.thinkercap.next;
-        for (thinker = obs.thinkercap.next;
-            thinker != obs.thinkercap;
-            thinker = thinker.next) {
+        for (thinker = getThinkerCap().next; thinker != getThinkerCap(); thinker = thinker.next) {
             if (thinker.thinkerFunction != ActiveStates.P_MobjThinker) {
                 continue;   // not a mobj
             }
             m = (mobj_t) thinker;
 
             if (m.type == mobjtype_t.MT_BOSSTARGET) {
-                obs.braintargets[obs.numbraintargets] = m;
-                obs.numbraintargets++;
+                brain.braintargets[brain.numbraintargets] = m;
+                brain.numbraintargets++;
             }
         }
 
-        obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_bossit);
+        StartSound(null, sounds.sfxenum_t.sfx_bossit);
     }
 
     default void A_BrainScream(mobj_t mo) {
-        final Actions.Registry obs = obs();
         int x;
         int y;
         int z;
@@ -63,77 +76,74 @@ interface ActiveStatesMonstersHorrendousVisages<R extends Actions.Registry & Abs
 
         for (x = mo.x - 196 * FRACUNIT; x < mo.x + 320 * FRACUNIT; x += FRACUNIT * 8) {
             y = mo.y - 320 * FRACUNIT;
-            z = 128 + obs.DOOM.random.P_Random() * 2 * FRACUNIT;
+            z = 128 + P_Random() * 2 * FRACUNIT;
             th = SpawnMobj(x, y, z, mobjtype_t.MT_ROCKET);
-            th.momz = obs.DOOM.random.P_Random() * 512;
+            th.momz = P_Random() * 512;
 
             th.SetMobjState(statenum_t.S_BRAINEXPLODE1);
 
-            th.mobj_tics -= obs.DOOM.random.P_Random() & 7;
+            th.mobj_tics -= P_Random() & 7;
             if (th.mobj_tics < 1) {
                 th.mobj_tics = 1;
             }
         }
 
-        obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_bosdth);
+        StartSound(null, sounds.sfxenum_t.sfx_bosdth);
     }
 
     default void A_BrainExplode(mobj_t mo) {
-        final Actions.Registry obs = obs();
         int x;
         int y;
         int z;
         mobj_t th;
 
-        x = mo.x + (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) * 2048;
+        x = mo.x + (P_Random() - P_Random()) * 2048;
         y = mo.y;
-        z = 128 + obs.DOOM.random.P_Random() * 2 * FRACUNIT;
+        z = 128 + P_Random() * 2 * FRACUNIT;
         th = SpawnMobj(x, y, z, mobjtype_t.MT_ROCKET);
-        th.momz = obs.DOOM.random.P_Random() * 512;
+        th.momz = P_Random() * 512;
 
         th.SetMobjState(statenum_t.S_BRAINEXPLODE1);
 
-        th.mobj_tics -= obs.DOOM.random.P_Random() & 7;
+        th.mobj_tics -= P_Random() & 7;
         if (th.mobj_tics < 1) {
             th.mobj_tics = 1;
         }
     }
 
     default void A_BrainDie(mobj_t mo) {
-        final Actions.Registry obs = obs();
-        obs.DOOM.ExitLevel();
+        DOOM().ExitLevel();
     }
 
     default void A_BrainSpit(mobj_t mo) {
-        final Actions.Registry obs = obs();
+        final Brain brain = contextRequire(KEY_BRAIN);
         mobj_t targ;
         mobj_t newmobj;
 
-        obs.easy ^= 1;
-        if (obs.DOOM.gameskill.ordinal() <= skill_t.sk_easy.ordinal() && (obs.easy == 0)) {
+        brain.easy ^= 1;
+        if (getGameSkill().ordinal() <= skill_t.sk_easy.ordinal() && (brain.easy == 0)) {
             return;
         }
 
         // shoot a cube at current target
-        targ = obs.braintargets[obs.braintargeton];
+        targ = brain.braintargets[brain.braintargeton];
 
         // Load-time fix: awake on zero numbrain targets, if A_BrainSpit is called.
-        if (obs.numbraintargets == 0) {
+        if (brain.numbraintargets == 0) {
             A_BrainAwake(mo);
             return;
         }
-        obs.braintargeton = (obs.braintargeton + 1) % obs.numbraintargets;
+        brain.braintargeton = (brain.braintargeton + 1) % brain.numbraintargets;
 
         // spawn brain missile
         newmobj = SpawnMissile(mo, targ, mobjtype_t.MT_SPAWNSHOT);
         newmobj.target = targ;
         newmobj.reactiontime = ((targ.y - mo.y) / newmobj.momy) / newmobj.mobj_state.tics;
 
-        obs.DOOM.doomSound.StartSound(null, sounds.sfxenum_t.sfx_bospit);
+        StartSound(null, sounds.sfxenum_t.sfx_bospit);
     }
 
     default void A_SpawnFly(mobj_t mo) {
-        final Actions.Registry obs = obs();
         mobj_t newmobj;
         mobj_t fog;
         mobj_t targ;
@@ -147,10 +157,10 @@ interface ActiveStatesMonstersHorrendousVisages<R extends Actions.Registry & Abs
 
         // First spawn teleport fog.
         fog = SpawnMobj(targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
-        obs.DOOM.doomSound.StartSound(fog, sounds.sfxenum_t.sfx_telept);
+        StartSound(fog, sounds.sfxenum_t.sfx_telept);
 
         // Randomly select monster to spawn.
-        r = obs.DOOM.random.P_Random();
+        r = P_Random();
 
         // Probability distribution (kind of :),
         // decreasing likelihood.
@@ -179,7 +189,7 @@ interface ActiveStatesMonstersHorrendousVisages<R extends Actions.Registry & Abs
         }
 
         newmobj = SpawnMobj(targ.x, targ.y, targ.z, type);
-        if (obs.EN.LookForPlayers(newmobj, true)) {
+        if (LookForPlayers(newmobj, true)) {
             newmobj.SetMobjState(newmobj.info.seestate);
         }
 
@@ -187,6 +197,6 @@ interface ActiveStatesMonstersHorrendousVisages<R extends Actions.Registry & Abs
         TeleportMove(newmobj, newmobj.x, newmobj.y);
 
         // remove self (i.e., cube).
-        obs.RemoveMobj(mo);
+        RemoveMobj(mo);
     }
 }

@@ -26,22 +26,28 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import static data.info.mobjinfo;
 import data.mobjtype_t;
+import doom.SourceCode.angle_t;
+import doom.SourceCode.fixed_t;
 import doom.thinker_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
-import static p.Actions.Registry.SKULLSPEED;
 import static p.MapUtils.AproxDistance;
 import static p.mobj_t.MF_SKULLFLY;
 
-interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R> {
+interface ActiveStatesMonstersPainsSouls extends ActionTrait {
+    static final int SKULLSPEED = 20 * m.fixed_t.MAPFRACUNIT;
+    
+    void A_FaceTarget(mobj_t actor);
+    void A_Fall(mobj_t actor);
+    void DamageMobj(mobj_t newmobj, mobj_t actor, mobj_t actor0, int i);
+    boolean TryMove(mobj_t newmobj, int x, int y);
+    mobj_t SpawnMobj(int x, int y, int z, mobjtype_t mobjtype_t);
+
     /**
      * SkullAttack
      * Fly at the player like a missile.
      */
     default void A_SkullAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t dest;
         int an;
         int dist;
@@ -53,7 +59,7 @@ interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCo
         dest = actor.target;
         actor.flags |= MF_SKULLFLY;
 
-        obs.DOOM.doomSound.StartSound(actor, actor.info.attacksound);
+        StartSound(actor, actor.info.attacksound);
         A_FaceTarget(actor);
         an = Tables.toBAMIndex(actor.angle);
         actor.momx = FixedMul(SKULLSPEED, finecosine[an]);
@@ -76,11 +82,10 @@ interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCo
      *
      */
     default void A_PainShootSkull(mobj_t actor, Long angle) {
-        final Actions.Registry obs = obs();
-        int x, y, z; // fixed
+        @fixed_t int x, y, z;
 
         mobj_t newmobj;
-        int an; // angle
+        @angle_t int an;
         int prestep;
         int count;
         thinker_t currentthinker;
@@ -88,8 +93,8 @@ interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCo
         // count total number of skull currently on the level
         count = 0;
 
-        currentthinker = obs.thinkercap.next;
-        while (currentthinker != obs.thinkercap) {
+        currentthinker = getThinkerCap().next;
+        while (currentthinker != getThinkerCap()) {
             if ((currentthinker.thinkerFunction == ActiveStates.P_MobjThinker)
                 && ((mobj_t) currentthinker).type == mobjtype_t.MT_SKULL) {
                 count++;
@@ -132,7 +137,6 @@ interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCo
     // Spawn a lost soul and launch it at the target
     // 
     default void A_PainAttack(mobj_t actor) {
-        final Actions.Registry obs = obs();
         if (actor.target == null) {
             return;
         }
@@ -142,7 +146,6 @@ interface ActiveStatesMonstersPainsSouls<R extends Actions.Registry & AbstractCo
     }
 
     default void A_PainDie(mobj_t actor) {
-        final Actions.Registry obs = obs();
         A_Fall(actor);
         A_PainShootSkull(actor, actor.angle + ANG90);
         A_PainShootSkull(actor, actor.angle + ANG180);

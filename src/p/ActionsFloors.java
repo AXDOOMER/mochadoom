@@ -19,8 +19,8 @@ package p;
 
 import static data.Limits.MAXINT;
 import data.sounds;
-import p.ActionSystem.AbstractCommand;
-
+import doom.thinker_t;
+import m.fixed_t;
 import static m.fixed_t.FRACUNIT;
 import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
@@ -28,17 +28,29 @@ import rr.sector_t;
 import rr.side_t;
 import static utils.C2JUtils.eval;
 
-interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends ActionsPlanes<R> {
+interface ActionsFloors extends ActionTrait {
+    result_e MovePlane(sector_t sector, int speed, int floordestheight, boolean crush, int i, int direction);
+    void RemoveThinker(thinker_t floor);
+    void RemoveActivePlat(plat_t plat);
+    int FindSectorFromLineTag(line_t line, int secnum);
+    boolean twoSided(int secnum, int i);
+    side_t getSide(int secnum, int i, int s);
+    sector_t getSector(int secnum, int i, int i0);
+
+    //
+    // FLOORS
+    //
+    int FLOORSPEED = fixed_t.MAPFRACUNIT;    
+
     /**
      * MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
      *
      */
     default void MoveFloor(floormove_t floor) {
-        final Actions.Registry obs = obs();
-        final result_e res = this.MovePlane(floor.sector, floor.speed, floor.floordestheight, floor.crush, 0, floor.direction);
+        final result_e res = MovePlane(floor.sector, floor.speed, floor.floordestheight, floor.crush, 0, floor.direction);
 
-        if (!eval(obs.DOOM.leveltime & 7)) {
-            obs.DOOM.doomSound.StartSound(floor.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
+        if (!eval(LevelTime() & 7)) {
+            StartSound(floor.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
         }
 
         if (res == result_e.pastdest) {
@@ -63,8 +75,9 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                         floor.sector.floorpic = floor.texture;
                 }
             }
-            obs.RemoveThinker(floor);
-            obs.DOOM.doomSound.StartSound(floor.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
+            
+            RemoveThinker(floor);
+            StartSound(floor.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
         }
     }
     
@@ -72,14 +85,13 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
     // HANDLE FLOOR TYPES
     //
     default boolean DoFloor(line_t line, floor_e floortype) {
-        final Actions.Registry obs = obs();
         int secnum = -1;
         boolean rtn = false;
         sector_t sec;
         floormove_t floor;
 
-        while ((secnum = obs.FindSectorFromLineTag(line, secnum)) >= 0) {
-            sec = obs.DOOM.levelLoader.sectors[secnum];
+        while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
+            sec = levelLoader().sectors[secnum];
 
             // ALREADY MOVING?  IF SO, KEEP GOING...
             if (sec.specialdata != null) {
@@ -91,7 +103,7 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
             floor = new floormove_t();
             sec.specialdata = floor;
             floor.thinkerFunction = ActiveStates.T_MoveFloor;
-            obs.AddThinker(floor);
+            AddThinker(floor);
             floor.type = floortype;
             floor.crush = false;
 
@@ -99,21 +111,21 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                 case lowerFloor:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = sec.FindHighestFloorSurrounding();
                     break;
 
                 case lowerFloorToLowest:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = sec.FindLowestFloorSurrounding();
                     break;
 
                 case turboLower:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED * 4;
+                    floor.speed = FLOORSPEED * 4;
                     floor.floordestheight = sec.FindHighestFloorSurrounding();
                     if (floor.floordestheight != sec.floorheight) {
                         floor.floordestheight += 8 * FRACUNIT;
@@ -125,7 +137,7 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                 case raiseFloor:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = sec.FindLowestCeilingSurrounding();
                     if (floor.floordestheight > sec.ceilingheight) {
                         floor.floordestheight = sec.ceilingheight;
@@ -137,34 +149,34 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                 case raiseFloorTurbo:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED * 4;
+                    floor.speed = FLOORSPEED * 4;
                     floor.floordestheight = sec.FindNextHighestFloor(sec.floorheight);
                     break;
 
                 case raiseFloorToNearest:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = sec.FindNextHighestFloor(sec.floorheight);
                     break;
 
                 case raiseFloor24:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = floor.sector.floorheight + 24 * FRACUNIT;
                     break;
                 case raiseFloor512:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = floor.sector.floorheight + 512 * FRACUNIT;
                     break;
 
                 case raiseFloor24AndChange:
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = floor.sector.floorheight + 24 * FRACUNIT;
                     sec.floorpic = line.frontsector.floorpic;
                     sec.special = line.frontsector.special;
@@ -176,14 +188,14 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
 
                     floor.direction = 1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     for (int i = 0; i < sec.linecount; ++i) {
-                        if (obs.twoSided(secnum, i)) {
+                        if (twoSided(secnum, i)) {
                             for (int s = 0; s < 2; ++s) {
-                                side = obs.getSide(secnum, i, s);
+                                side = getSide(secnum, i, s);
                                 if (side.bottomtexture >= 0) {
-                                    if (obs.DOOM.textureManager.getTextureheight(side.bottomtexture) < minsize) {
-                                        minsize = obs.DOOM.textureManager.getTextureheight(side.bottomtexture);
+                                    if (DOOM().textureManager.getTextureheight(side.bottomtexture) < minsize) {
+                                        minsize = DOOM().textureManager.getTextureheight(side.bottomtexture);
                                     }
                                 }
                             }
@@ -196,21 +208,21 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                 case lowerAndChange:
                     floor.direction = -1;
                     floor.sector = sec;
-                    floor.speed = Actions.Registry.FLOORSPEED;
+                    floor.speed = FLOORSPEED;
                     floor.floordestheight = sec.FindLowestFloorSurrounding();
                     floor.texture = sec.floorpic;
 
                     for (int i = 0; i < sec.linecount; i++) {
-                        if (obs.twoSided(secnum, i)) {
-                            if (obs.getSide(secnum, i, 0).sector.id == secnum) {
-                                sec = obs.getSector(secnum, i, 1);
+                        if (twoSided(secnum, i)) {
+                            if (getSide(secnum, i, 0).sector.id == secnum) {
+                                sec = getSector(secnum, i, 1);
                                 if (sec.floorheight == floor.floordestheight) {
                                     floor.texture = sec.floorpic;
                                     floor.newspecial = sec.special;
                                     break;
                                 }
                             } else {
-                                sec = obs.getSector(secnum, i, 0);
+                                sec = getSector(secnum, i, 0);
                                 if (sec.floorheight == floor.floordestheight) {
                                     floor.texture = sec.floorpic;
                                     floor.newspecial = sec.special;
@@ -228,7 +240,6 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
      * BUILD A STAIRCASE!
      */
     default boolean BuildStairs(line_t line, stair_e type) {
-        final Actions.Registry obs = obs();
         int secnum;
         int height;
         int i;
@@ -247,8 +258,8 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
 
         secnum = -1;
         rtn = false;
-        while ((secnum = obs.FindSectorFromLineTag(line, secnum)) >= 0) {
-            sec = obs.DOOM.levelLoader.sectors[secnum];
+        while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
+            sec = levelLoader().sectors[secnum];
 
             // ALREADY MOVING?  IF SO, KEEP GOING...
             if (sec.specialdata != null) {
@@ -260,16 +271,16 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
             floor = new floormove_t();
             sec.specialdata = floor;
             floor.thinkerFunction = ActiveStates.T_MoveFloor;
-            obs.AddThinker(floor);
+            AddThinker(floor);
             floor.direction = 1;
             floor.sector = sec;
             switch (type) {
                 case build8:
-                    speed = Actions.Registry.FLOORSPEED / 4;
+                    speed = FLOORSPEED / 4;
                     stairsize = 8 * FRACUNIT;
                     break;
                 case turbo16:
-                    speed = Actions.Registry.FLOORSPEED * 4;
+                    speed = FLOORSPEED * 4;
                     stairsize = 16 * FRACUNIT;
                     break;
             }
@@ -314,7 +325,7 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                     floor = new floormove_t();
                     sec.specialdata = floor;
                     floor.thinkerFunction = ActiveStates.T_MoveFloor;
-                    obs.AddThinker(floor);
+                    AddThinker(floor);
                     floor.direction = 1;
                     floor.sector = sec;
                     floor.speed = speed;
@@ -331,42 +342,38 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
      * Move a plat up and down
      */
     default void PlatRaise(plat_t plat) {
-        final Actions.Registry obs = obs();
         result_e res;
 
         switch (plat.status) {
             case up:
-                res = this.MovePlane(plat.sector,
-                        plat.speed,
-                        plat.high,
-                        plat.crush, 0, 1);
+                res = MovePlane(plat.sector, plat.speed, plat.high, plat.crush, 0, 1);
 
                 if (plat.type == plattype_e.raiseAndChange
                         || plat.type == plattype_e.raiseToNearestAndChange) {
-                    if (!eval(obs.DOOM.leveltime & 7)) {
-                        obs.DOOM.doomSound.StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
+                    if (!eval(LevelTime() & 7)) {
+                        StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
                     }
                 }
 
                 if (res == result_e.crushed && (!plat.crush)) {
                     plat.count = plat.wait;
                     plat.status = plat_e.down;
-                    obs.DOOM.doomSound.StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstart);
+                    StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstart);
                 } else {
                     if (res == result_e.pastdest) {
                         plat.count = plat.wait;
                         plat.status = plat_e.waiting;
-                        obs.DOOM.doomSound.StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
+                        StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
 
                         switch (plat.type) {
                             case blazeDWUS:
                             case downWaitUpStay:
-                                obs.PEV.RemoveActivePlat(plat);
+                                RemoveActivePlat(plat);
                                 break;
 
                             case raiseAndChange:
                             case raiseToNearestAndChange:
-                                obs.PEV.RemoveActivePlat(plat);
+                                RemoveActivePlat(plat);
                                 break;
 
                             default:
@@ -377,12 +384,12 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                 break;
 
             case down:
-                res = this.MovePlane(plat.sector, plat.speed, plat.low, false, 0, -1);
+                res = MovePlane(plat.sector, plat.speed, plat.low, false, 0, -1);
 
                 if (res == result_e.pastdest) {
                     plat.count = plat.wait;
                     plat.status = plat_e.waiting;
-                    obs.DOOM.doomSound.StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
+                    StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstop);
                 }
                 break;
 
@@ -393,11 +400,10 @@ interface ActionsFloors<R extends Actions.Registry & AbstractCommand<R>> extends
                     } else {
                         plat.status = plat_e.down;
                     }
-                    obs.DOOM.doomSound.StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstart);
+                    StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_pstart);
                 }
             case in_stasis:
                 break;
         }
     }
-
 }

@@ -23,25 +23,28 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import data.mobjtype_t;
 import data.sounds;
-import doom.SourceCode;
+import doom.SourceCode.fixed_t;
 import doom.thinker_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
+import static p.ActionTrait.*;
+import p.ActionTrait.Movement;
+import p.ActionTrait.Spechits;
 import static p.mobj_t.MF_MISSILE;
 import rr.line_t;
 import rr.sector_t;
 import rr.subsector_t;
 
-interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> extends ActionsThings<R>, ActionsUtility<R> {
+interface ActionsTeleportationx extends ActionTrait {
+    void UnsetThingPosition(mobj_t mobj);
+    mobj_t SpawnMobj(int oldx, int oldy, int oldz, mobjtype_t mobjtype_t);
+
     //
     // TELEPORTATION
     //
     default int Teleport(line_t line, int side, mobj_t thing) {
-        final Actions.Registry obs = obs();
         int i;
         int tag;
         mobj_t m;
@@ -49,7 +52,7 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
         int an;
         thinker_t thinker;
         sector_t sector;
-        @SourceCode.fixed_t int oldx, oldy, oldz;
+        @fixed_t int oldx, oldy, oldz;
 
         // don't teleport missiles
         if ((thing.flags & MF_MISSILE) != 0) {
@@ -63,10 +66,10 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
         }
 
         tag = line.tag;
-        for (i = 0; i < obs.DOOM.levelLoader.numsectors; i++) {
-            if (obs.DOOM.levelLoader.sectors[i].tag == tag) {
+        for (i = 0; i < levelLoader().numsectors; i++) {
+            if (levelLoader().sectors[i].tag == tag) {
                 //thinker = thinkercap.next;
-                for (thinker = obs.thinkercap.next; thinker != obs.thinkercap; thinker = thinker.next) {
+                for (thinker = getThinkerCap().next; thinker != getThinkerCap(); thinker = thinker.next) {
                     // not a mobj
                     if (thinker.thinkerFunction != ActiveStates.P_MobjThinker) {
                         continue;
@@ -89,7 +92,7 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
                     oldy = thing.y;
                     oldz = thing.z;
 
-                    if (!this.TeleportMove(thing, m.x, m.y)) {
+                    if (!TeleportMove(thing, m.x, m.y)) {
                         return 0;
                     }
 
@@ -100,14 +103,14 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
                     }
 
                     // spawn teleport fog at source and destination
-                    fog = this.SpawnMobj(oldx, oldy, oldz, mobjtype_t.MT_TFOG);
-                    obs.DOOM.doomSound.StartSound(fog, sounds.sfxenum_t.sfx_telept);
+                    fog = SpawnMobj(oldx, oldy, oldz, mobjtype_t.MT_TFOG);
+                    StartSound(fog, sounds.sfxenum_t.sfx_telept);
                     an = Tables.toBAMIndex(m.angle);
-                    fog = this.SpawnMobj(m.x + 20 * finecosine[an], m.y + 20 * finesine[an],
+                    fog = SpawnMobj(m.x + 20 * finecosine[an], m.y + 20 * finesine[an],
                              thing.z, mobjtype_t.MT_TFOG);
 
                     // emit sound, where?
-                    obs.DOOM.doomSound.StartSound(fog, sounds.sfxenum_t.sfx_telept);
+                    StartSound(fog, sounds.sfxenum_t.sfx_telept);
 
                     // don't move for a bit
                     if (thing.player != null) {
@@ -130,7 +133,9 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
     // P_TeleportMove
     //
     default boolean TeleportMove(mobj_t thing, int x, /*fixed*/ int y) {
-        final Actions.Registry obs = obs();
+        final Spechits spechits = contextRequire(KEY_SPECHITS);
+        final AbstractLevelLoader ll = levelLoader();
+        final Movement ma = contextRequire(KEY_MOVEMENT);
         int xl;
         int xh;
         int yl;
@@ -141,39 +146,39 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
         subsector_t newsubsec;
 
         // kill anything occupying the position
-        obs.tmthing = thing;
-        obs.tmflags = thing.flags;
+        ma.tmthing = thing;
+        ma.tmflags = thing.flags;
 
-        obs.tmx = x;
-        obs.tmy = y;
+        ma.tmx = x;
+        ma.tmy = y;
 
-        obs.tmbbox[BOXTOP] = y + obs.tmthing.radius;
-        obs.tmbbox[BOXBOTTOM] = y - obs.tmthing.radius;
-        obs.tmbbox[BOXRIGHT] = x + obs.tmthing.radius;
-        obs.tmbbox[BOXLEFT] = x - obs.tmthing.radius;
+        ma.tmbbox[BOXTOP] = y + ma.tmthing.radius;
+        ma.tmbbox[BOXBOTTOM] = y - ma.tmthing.radius;
+        ma.tmbbox[BOXRIGHT] = x + ma.tmthing.radius;
+        ma.tmbbox[BOXLEFT] = x - ma.tmthing.radius;
 
-        newsubsec = obs.DOOM.levelLoader.PointInSubsector(x, y);
-        obs.ceilingline = null;
+        newsubsec = ll.PointInSubsector(x, y);
+        ma.ceilingline = null;
 
         // The base floor/ceiling is from the subsector
         // that contains the point.
         // Any contacted lines the step closer together
         // will adjust them.
-        obs.tmfloorz = obs.tmdropoffz = newsubsec.sector.floorheight;
-        obs.tmceilingz = newsubsec.sector.ceilingheight;
+        ma.tmfloorz = ma.tmdropoffz = newsubsec.sector.floorheight;
+        ma.tmceilingz = newsubsec.sector.ceilingheight;
 
-        obs.DOOM.sceneRenderer.increaseValidCount(1); // This is r_main's ?
-        obs.numspechit = 0;
+        sceneRenderer().increaseValidCount(1); // This is r_main's ?
+        spechits.numspechit = 0;
 
         // stomp on any things contacted
-        xl = obs.DOOM.levelLoader.getSafeBlockX(obs.tmbbox[BOXLEFT] - obs.DOOM.levelLoader.bmaporgx - MAXRADIUS);
-        xh = obs.DOOM.levelLoader.getSafeBlockX(obs.tmbbox[BOXRIGHT] - obs.DOOM.levelLoader.bmaporgx + MAXRADIUS);
-        yl = obs.DOOM.levelLoader.getSafeBlockY(obs.tmbbox[BOXBOTTOM] - obs.DOOM.levelLoader.bmaporgy - MAXRADIUS);
-        yh = obs.DOOM.levelLoader.getSafeBlockY(obs.tmbbox[BOXTOP] - obs.DOOM.levelLoader.bmaporgy + MAXRADIUS);
+        xl = ll.getSafeBlockX(ma.tmbbox[BOXLEFT] - ll.bmaporgx - MAXRADIUS);
+        xh = ll.getSafeBlockX(ma.tmbbox[BOXRIGHT] - ll.bmaporgx + MAXRADIUS);
+        yl = ll.getSafeBlockY(ma.tmbbox[BOXBOTTOM] - ll.bmaporgy - MAXRADIUS);
+        yh = ll.getSafeBlockY(ma.tmbbox[BOXTOP] - ll.bmaporgy + MAXRADIUS);
 
         for (bx = xl; bx <= xh; bx++) {
             for (by = yl; by <= yh; by++) {
-                if (!this.BlockThingsIterator(bx, by, this::StompThing)) {
+                if (!BlockThingsIterator(bx, by, this::StompThing)) {
                     return false;
                 }
             }
@@ -181,16 +186,15 @@ interface ActionsTeleportation<R extends Actions.Registry & AbstractCommand<R>> 
 
         // the move is ok,
         // so link the thing into its new position
-        obs.UnsetThingPosition(thing);
+        UnsetThingPosition(thing);
 
-        thing.floorz = obs.tmfloorz;
-        thing.ceilingz = obs.tmceilingz;
+        thing.floorz = ma.tmfloorz;
+        thing.ceilingz = ma.tmceilingz;
         thing.x = x;
         thing.y = y;
 
-        obs.DOOM.levelLoader.SetThingPosition(thing);
+        ll.SetThingPosition(thing);
 
         return true;
     }
-
 }

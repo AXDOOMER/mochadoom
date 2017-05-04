@@ -26,35 +26,71 @@ import static data.Tables.finesine;
 import static data.info.mobjinfo;
 import data.mobjtype_t;
 import defines.statenum_t;
-import doom.SourceCode;
+import doom.SourceCode.P_Enemy;
 import static doom.SourceCode.P_Enemy.PIT_VileCheck;
+import doom.SourceCode.P_Map;
 import static doom.SourceCode.P_Map.PIT_RadiusAttack;
+import static doom.SourceCode.P_Map.PTR_ShootTraverse;
+import doom.SourceCode.angle_t;
 import doom.SourceCode.fixed_t;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.FixedDiv;
+import static m.fixed_t.FixedMul;
+import static p.ActionTrait.KEY_MOVEMENT;
+import static p.ActionsSpawn.KEY_SPAWN;
 import static p.mobj_t.MF_CORPSE;
+import static p.mobj_t.MF_NOBLOOD;
 import static p.mobj_t.MF_SHOOTABLE;
+import rr.line_t;
+import static rr.line_t.ML_TWOSIDED;
 import static utils.C2JUtils.eval;
+import utils.TraitFactory.ContextKey;
 
-interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extends ActionsShootEvents<R>, ActionsPathTraverse<R> {
+interface ActionsAttacks extends ActionsPathTraverse {
+    boolean gotoHitLine(intercept_t in, line_t li);
+    boolean CheckSight(mobj_t thing, mobj_t bombspot);
+    void ShootSpecialLine(mobj_t shootthing, line_t li);
+    void DamageMobj(mobj_t th, mobj_t shootthing, mobj_t shootthing0, int la_damage);
+    
+    final ContextKey<Attacks> KEY_ATTACKS = KEY_CHAIN.newKey(ActionsAttacks.class, Attacks.class);
+    
+    final class Attacks {
+        //
+        // P_LineAttack
+        //
+        //
+        // RADIUS ATTACK
+        //
+        mobj_t bombsource;
+        mobj_t bombspot;
+        int bombdamage;
+        ///////////////////// PIT AND PTR FUNCTIONS //////////////////
+        /**
+         * PIT_VileCheck Detect a corpse that could be raised.
+         */
+        mobj_t vileCorpseHit;
+        mobj_t vileObj;
+        int vileTryX;
+        int vileTryY;
+    }
+
     //
     // P_GunShot
     //
     default void P_GunShot(mobj_t mo, boolean accurate) {
-        final Actions.Registry obs = obs();
+        final Spawn targ = contextRequire(KEY_SPAWN);
         long angle;
         int damage;
 
-        damage = 5 * (obs.DOOM.random.P_Random() % 3 + 1);
+        damage = 5 * (P_Random() % 3 + 1);
         angle = mo.angle;
 
         if (!accurate) {
-            angle += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 18;
+            angle += (P_Random() - P_Random()) << 18;
         }
 
-        this.LineAttack(mo, angle, MISSILERANGE, obs.bulletslope, damage);
+        this.LineAttack(mo, angle, MISSILERANGE, targ.bulletslope, damage);
     }
     //
     // P_LineAttack
@@ -74,19 +110,19 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
      * @param slope fixed_t
      * @param damage
      */
-    default void LineAttack(mobj_t t1, @SourceCode.angle_t long angle, @fixed_t int distance, @fixed_t int slope, int damage) {
-        final Actions.Registry obs = obs();
+    default void LineAttack(mobj_t t1, @angle_t long angle, @fixed_t int distance, @fixed_t int slope, int damage) {
+        final Spawn targ = contextRequire(KEY_SPAWN);
         int x2, y2;
         
-        obs.shootthing = t1;
-        obs.la_damage = damage;
+        targ.shootthing = t1;
+        targ.la_damage = damage;
         x2 = t1.x + (distance >> FRACBITS) * finecosine(angle);
         y2 = t1.y + (distance >> FRACBITS) * finesine(angle);
-        obs.shootz = t1.z + (t1.height >> 1) + 8 * FRACUNIT;
-        obs.attackrange = distance;
-        obs.aimslope = slope;
+        targ.shootz = t1.z + (t1.height >> 1) + 8 * FRACUNIT;
+        targ.attackrange = distance;
+        targ.aimslope = slope;
 
-        this.PathTraverse(t1.x, t1.y, x2, y2, PT_ADDLINES | PT_ADDTHINGS, this::ShootTraverse);
+        PathTraverse(t1.x, t1.y, x2, y2, PT_ADDLINES | PT_ADDTHINGS, this::ShootTraverse);
     }
 
     //
@@ -98,7 +134,9 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
      * P_RadiusAttack Source is the creature that caused the explosion at spot.
      */
     default void RadiusAttack(mobj_t spot, mobj_t source, int damage) {
-        final Actions.Registry obs = obs();
+        final AbstractLevelLoader ll = levelLoader();
+        final Attacks att = contextRequire(KEY_ATTACKS);
+        
         int x;
         int y;
 
@@ -107,20 +145,20 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
         int yl;
         int yh;
 
-        @SourceCode.fixed_t int dist;
+        @fixed_t int dist;
 
         dist = (damage + MAXRADIUS) << FRACBITS;
-        yh = obs.DOOM.levelLoader.getSafeBlockY(spot.y + dist - obs.DOOM.levelLoader.bmaporgy);
-        yl = obs.DOOM.levelLoader.getSafeBlockY(spot.y - dist - obs.DOOM.levelLoader.bmaporgy);
-        xh = obs.DOOM.levelLoader.getSafeBlockX(spot.x + dist - obs.DOOM.levelLoader.bmaporgx);
-        xl = obs.DOOM.levelLoader.getSafeBlockX(spot.x - dist - obs.DOOM.levelLoader.bmaporgx);
-        obs.bombspot = spot;
-        obs.bombsource = source;
-        obs.bombdamage = damage;
+        yh = ll.getSafeBlockY(spot.y + dist - ll.bmaporgy);
+        yl = ll.getSafeBlockY(spot.y - dist - ll.bmaporgy);
+        xh = ll.getSafeBlockX(spot.x + dist - ll.bmaporgx);
+        xl = ll.getSafeBlockX(spot.x - dist - ll.bmaporgx);
+        att.bombspot = spot;
+        att.bombsource = source;
+        att.bombdamage = damage;
 
         for (y = yl; y <= yh; y++) {
             for (x = xl; x <= xh; x++) {
-                this.BlockThingsIterator(x, y, this::RadiusAttack);
+                BlockThingsIterator(x, y, this::RadiusAttack);
             }
         }
     }
@@ -129,8 +167,10 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
      * PIT_VileCheck Detect a corpse that could be raised.
      */
     
-    @SourceCode.P_Enemy.C(PIT_VileCheck) default boolean VileCheck(mobj_t thing) {
-        final Actions.Registry obs = obs();
+    @P_Enemy.C(PIT_VileCheck)
+    default boolean VileCheck(mobj_t thing) {
+        final Attacks att = contextRequire(KEY_ATTACKS);
+
         int maxdist;
         boolean check;
 
@@ -145,15 +185,16 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
         }
         maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE.ordinal()].radius;
 
-        if (Math.abs(thing.x - obs.vileTryX) > maxdist
-                || Math.abs(thing.y - obs.vileTryY) > maxdist) {
+        if (Math.abs(thing.x - att.vileTryX) > maxdist
+                || Math.abs(thing.y - att.vileTryY) > maxdist) {
             return true;        // not actually touching
         }
-        obs.vileCorpseHit = thing;
-        obs.vileCorpseHit.momx = obs.vileCorpseHit.momy = 0;
-        obs.vileCorpseHit.height <<= 2;
-        check = this.CheckPosition(obs.vileCorpseHit, obs.vileCorpseHit.x, obs.vileCorpseHit.y);
-        obs.vileCorpseHit.height >>= 2;
+        
+        att.vileCorpseHit = thing;
+        att.vileCorpseHit.momx = att.vileCorpseHit.momy = 0;
+        att.vileCorpseHit.height <<= 2;
+        check = CheckPosition(att.vileCorpseHit, att.vileCorpseHit.x, att.vileCorpseHit.y);
+        att.vileCorpseHit.height >>= 2;
 
         // check it doesn't fit here, or stop checking
         return !check;
@@ -162,12 +203,10 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
     /**
      * PIT_RadiusAttack "bombsource" is the creature that caused the explosion at "bombspot".
      */
-    @SourceCode.P_Map.C(PIT_RadiusAttack) default boolean RadiusAttack(mobj_t thing) {
-        final Actions.Registry obs = obs();
-        int dx, dy, dist;
-        fixed_t: {
-            dx: dy: dist:;
-        }
+    @P_Map.C(PIT_RadiusAttack)
+    default boolean RadiusAttack(mobj_t thing) {
+        final Attacks att = contextRequire(KEY_ATTACKS);
+        @fixed_t int dx, dy, dist;
 
         if (!eval(thing.flags & MF_SHOOTABLE)) {
             return true;
@@ -175,13 +214,12 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
 
         // Boss spider and cyborg
         // take no damage from concussion.
-        if (thing.type == mobjtype_t.MT_CYBORG
-                || thing.type == mobjtype_t.MT_SPIDER) {
+        if (thing.type == mobjtype_t.MT_CYBORG || thing.type == mobjtype_t.MT_SPIDER) {
             return true;
         }
 
-        dx = Math.abs(thing.x - obs.bombspot.x);
-        dy = Math.abs(thing.y - obs.bombspot.y);
+        dx = Math.abs(thing.x - att.bombspot.x);
+        dy = Math.abs(thing.y - att.bombspot.y);
 
         dist = dx > dy ? dx : dy;
         dist = (dist - thing.radius) >> FRACBITS;
@@ -190,15 +228,112 @@ interface ActionsAttacks<R extends Actions.Registry & AbstractCommand<R>> extend
             dist = 0;
         }
 
-        if (dist >= obs.bombdamage) {
+        if (dist >= att.bombdamage) {
             return true;    // out of range
         }
-        if (obs.EN.CheckSight(thing, obs.bombspot)) {
+        if (CheckSight(thing, att.bombspot)) {
             // must be in direct path
-            this.DamageMobj(thing, obs.bombspot, obs.bombsource, obs.bombdamage - dist);
+            DamageMobj(thing, att.bombspot, att.bombsource, att.bombdamage - dist);
         }
 
         return true;
     };
 
+    /**
+     * PTR_ShootTraverse
+     *
+     * 9/5/2011: Accepted _D_'s fix
+     */
+    @P_Map.C(PTR_ShootTraverse)
+    default boolean ShootTraverse(intercept_t in) {
+        final Spawn targ = contextRequire(KEY_SPAWN);
+        final Movement mov = contextRequire(KEY_MOVEMENT);
+        @fixed_t int x, y, z, frac;
+        line_t li;
+        mobj_t th;
+    
+        @fixed_t int slope, dist, thingtopslope, thingbottomslope;
+
+        if (in.isaline) {
+            li = (line_t) in.d();
+
+            if (li.special != 0) {
+                ShootSpecialLine(targ.shootthing, li);
+            }
+
+            if (!eval(li.flags & ML_TWOSIDED)) {
+                return gotoHitLine(in, li);
+            }
+
+            // crosses a two sided line
+            LineOpening(li);
+
+            dist = FixedMul(targ.attackrange, in.frac);
+
+            if (li.frontsector.floorheight != li.backsector.floorheight) {
+                slope = FixedDiv(mov.openbottom - targ.shootz, dist);
+                if (slope > targ.aimslope) {
+                    return gotoHitLine(in, li);
+                }
+            }
+
+            if (li.frontsector.ceilingheight != li.backsector.ceilingheight) {
+                slope = FixedDiv(mov.opentop - targ.shootz, dist);
+                if (slope < targ.aimslope) {
+                    return gotoHitLine(in, li);
+                }
+            }
+
+            // shot continues
+            return true;
+
+        }
+
+        // shoot a thing
+        th = (mobj_t) in.d();
+        if (th == targ.shootthing) {
+            return true;        // can't shoot self
+        }
+        if (!eval(th.flags & MF_SHOOTABLE)) {
+            return true;        // corpse or something
+        }
+        // check angles to see if the thing can be aimed at
+        dist = FixedMul(targ.attackrange, in.frac);
+        thingtopslope = FixedDiv(th.z + th.height - targ.shootz, dist);
+
+        if (thingtopslope < targ.aimslope) {
+            return true;        // shot over the thing
+        }
+        thingbottomslope = FixedDiv(th.z - targ.shootz, dist);
+
+        if (thingbottomslope > targ.aimslope) {
+            return true;        // shot under the thing
+        }
+
+        // hit thing
+        // position a bit closer
+        frac = in.frac - FixedDiv(10 * FRACUNIT, targ.attackrange);
+
+        x = targ.trace.x + FixedMul(targ.trace.dx, frac);
+        y = targ.trace.y + FixedMul(targ.trace.dy, frac);
+        z = targ.shootz + FixedMul(targ.aimslope, FixedMul(frac, targ.attackrange));
+
+        // Spawn bullet puffs or blod spots,
+        // depending on target type.
+        if (eval(((mobj_t) in.d()).flags & MF_NOBLOOD)) {
+            SpawnPuff(x, y, z);
+        } else {
+            SpawnBlood(x, y, z, targ.la_damage);
+        }
+
+        if (targ.la_damage != 0) {
+            DamageMobj(th, targ.shootthing, targ.shootthing, targ.la_damage);
+        }
+
+        // don't go any farther
+        return false;
+    };
+
+
+    
 }

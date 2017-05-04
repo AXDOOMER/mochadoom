@@ -26,24 +26,33 @@ import static data.Tables.BITS32;
 import data.mobjtype_t;
 import data.sounds;
 import defines.statenum_t;
+import doom.SourceCode.angle_t;
 import static doom.items.weaponinfo;
 import doom.player_t;
-import p.ActionSystem.AbstractCommand;
-
 import static doom.player_t.ps_flash;
 import static m.fixed_t.FRACUNIT;
-import static p.Actions.Registry.BFGCELLS;
 import static p.mobj_t.MF_JUSTATTACKED;
 import static utils.C2JUtils.eval;
 
-interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> extends ActionsAttacks<R>, ActionsMissiles<R> {
+interface ActiveStatesAttacks extends ActionsSpawn {
+    void P_BulletSlope(mobj_t mo);
+    void P_GunShot(mobj_t mo, boolean b);
+    void LineAttack(mobj_t mo, long angle, int MISSILERANGE, int i, int damage);
+    int AimLineAttack(mobj_t mo, long angle, int MELEERANGE);
+    void SpawnPlayerMissile(mobj_t mo, mobjtype_t mobjtype_t);
+    void RadiusAttack(mobj_t thingy, mobj_t target, int i);
+    void DamageMobj(mobj_t linetarget, mobj_t target, mobj_t target0, int damage);
+
+    // plasma cells for a bfg attack
+    // IDEA: make action functions partially parametrizable?
+    int BFGCELLS = 40;
+    
     //
     // A_FirePistol
     //
 
     default void A_FirePistol(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_pistol);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_pistol);
 
         player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
@@ -60,10 +69,9 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_FireShotgun
     //
     default void A_FireShotgun(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
         int i;
 
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_shotgn);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_shotgn);
         player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
 
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
@@ -83,12 +91,11 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
      * A_FireShotgun2
      */
     default void A_FireShotgun2(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
-        int i;
+        final Spawn sp = contextRequire(KEY_SPAWN);
         long angle;
         int damage;
 
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_dshtgn);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_dshtgn);
         player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
 
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= 2;
@@ -99,14 +106,11 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
 
         P_BulletSlope(player.mo);
 
-        for (i = 0; i < 20; i++) {
-            damage = 5 * (obs.DOOM.random.P_Random() % 3 + 1);
+        for (int i = 0; i < 20; i++) {
+            damage = 5 * (P_Random() % 3 + 1);
             angle = player.mo.angle;
-            angle += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 19;
-            LineAttack(player.mo,
-                angle,
-                MISSILERANGE,
-                obs.bulletslope + ((obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 5), damage);
+            angle += (P_Random() - P_Random()) << 19;
+            LineAttack(player.mo, angle, MISSILERANGE, sp.bulletslope + ((P_Random() - P_Random()) << 5), damage);
         }
     }
 
@@ -114,12 +118,12 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_Punch
     //
     default void A_Punch(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
-        long angle; //angle_t
+        final Spawn sp = contextRequire(KEY_SPAWN);
+        @angle_t long angle;
         int damage;
         int slope;
 
-        damage = (obs.DOOM.random.P_Random() % 10 + 1) << 1;
+        damage = (P_Random() % 10 + 1) << 1;
 
         if (eval(player.powers[pw_strength])) {
             damage *= 10;
@@ -129,17 +133,19 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
         //angle = (angle+(RND.P_Random()-RND.P_Random())<<18)/*&BITS32*/;
         // _D_: for some reason, punch didnt work until I change this
         // I think it's because of "+" VS "<<" prioritys...
-        angle += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 18;
+        angle += (P_Random() - P_Random()) << 18;
         slope = AimLineAttack(player.mo, angle, MELEERANGE);
         LineAttack(player.mo, angle, MELEERANGE, slope, damage);
 
         // turn to face target
-        if (eval(obs.linetarget)) {
-            obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_punch);
-            player.mo.angle = obs.DOOM.sceneRenderer.PointToAngle2(player.mo.x,
+        if (eval(sp.linetarget)) {
+            StartSound(player.mo, sounds.sfxenum_t.sfx_punch);
+            player.mo.angle = sceneRenderer().PointToAngle2(
+                player.mo.x,
                 player.mo.y,
-                obs.linetarget.x,
-                obs.linetarget.y) & BITS32;
+                sp.linetarget.x,
+                sp.linetarget.y
+            ) & BITS32;
         }
     }
 
@@ -147,29 +153,29 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_Saw
     //
     default void A_Saw(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
-        long angle; // angle_t
+        final Spawn sp = contextRequire(KEY_SPAWN);
+        @angle_t long angle;
         int damage;
         int slope;
 
-        damage = 2 * (obs.DOOM.random.P_Random() % 10 + 1);
+        damage = 2 * (P_Random() % 10 + 1);
         angle = player.mo.angle;
-        angle += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 18;
+        angle += (P_Random() - P_Random()) << 18;
         angle &= BITS32;
 
         // use meleerange + 1 se the puff doesn't skip the flash
         slope = AimLineAttack(player.mo, angle, MELEERANGE + 1);
         LineAttack(player.mo, angle, MELEERANGE + 1, slope, damage);
 
-        if (!eval(obs.linetarget)) {
-            obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_sawful);
+        if (!eval(sp.linetarget)) {
+            StartSound(player.mo, sounds.sfxenum_t.sfx_sawful);
             return;
         }
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_sawhit);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_sawhit);
 
         // turn to face target
-        angle = obs.DOOM.sceneRenderer.PointToAngle2(player.mo.x, player.mo.y,
-            obs.linetarget.x, obs.linetarget.y) & BITS32;
+        angle = sceneRenderer().PointToAngle2(player.mo.x, player.mo.y,
+            sp.linetarget.x, sp.linetarget.y) & BITS32;
         /* FIXME: this comparison is going to fail.... or not?
             If e.g. angle = 359 degrees (which will be mapped to a small negative number),
             and player.mo.angle = 160 degrees (a large, positive value), the result will be a
@@ -204,7 +210,6 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_FireMissile
     //
     default void A_FireMissile(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
         SpawnPlayerMissile(player.mo, mobjtype_t.MT_ROCKET);
     }
@@ -213,7 +218,6 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_FireBFG
     //
     default void A_FireBFG(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= BFGCELLS;
         SpawnPlayerMissile(player.mo, mobjtype_t.MT_BFG);
     }
@@ -222,13 +226,12 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_FireCGun
     //
     default void A_FireCGun(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
         // For convenience.
         int readyweap = player.readyweapon.ordinal();
         int flashstate = weaponinfo[readyweap].flashstate.ordinal();
         int current_state = psp.state.id;
 
-        obs.DOOM.doomSound.StartSound(player.mo, sounds.sfxenum_t.sfx_pistol);
+        StartSound(player.mo, sounds.sfxenum_t.sfx_pistol);
         if (!eval(player.ammo[weaponinfo[readyweap].ammo.ordinal()])) {
             return;
         }
@@ -244,7 +247,6 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
         );
 
         P_BulletSlope(player.mo);
-
         P_GunShot(player.mo, !eval(player.refire));
     }
 
@@ -252,7 +254,6 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_FirePlasma
     //
     default void A_FirePlasma(player_t player, pspdef_t psp) {
-        final p.Actions.Registry obs = obs();
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
 
         player.SetPsprite(
@@ -263,14 +264,12 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     }
 
     default void A_XScream(mobj_t actor) {
-        final p.Actions.Registry obs = obs();
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_slop);
+        StartSound(actor, sounds.sfxenum_t.sfx_slop);
     }
 
     default void A_Pain(mobj_t actor) {
-        final p.Actions.Registry obs = obs();
         if (actor.info.painsound != null) {
-            obs.DOOM.doomSound.StartSound(actor, actor.info.painsound);
+            StartSound(actor, actor.info.painsound);
         }
     }
 
@@ -278,7 +277,6 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // A_Explode
     //
     default void A_Explode(mobj_t thingy) {
-        final p.Actions.Registry obs = obs();
         RadiusAttack(thingy, thingy.target, 128);
     }
     
@@ -287,35 +285,31 @@ interface ActiveStatesAttacks<R extends Actions.Registry & AbstractCommand<R>> e
     // Spawn a BFG explosion on every monster in view
     //
     default void A_BFGSpray(mobj_t mo) {
-        final p.Actions.Registry obs = obs();
-        int i;
-        int j;
+        final Spawn sp = contextRequire(KEY_SPAWN);
+
         int damage;
         long an; // angle_t
 
         // offset angles from its attack angle
-        for (i = 0; i < 40; i++) {
+        for (int i = 0; i < 40; i++) {
             an = (mo.angle - ANG90 / 2 + ANG90 / 40 * i) & BITS32;
 
             // mo.target is the originator (player)
             //  of the missile
             AimLineAttack(mo.target, an, 16 * 64 * FRACUNIT);
 
-            if (!eval(obs.linetarget)) {
+            if (!eval(sp.linetarget)) {
                 continue;
             }
 
-            SpawnMobj(obs.linetarget.x,
-                obs.linetarget.y,
-                obs.linetarget.z + (obs.linetarget.height >> 2),
-                mobjtype_t.MT_EXTRABFG);
+            SpawnMobj(sp.linetarget.x, sp.linetarget.y, sp.linetarget.z + (sp.linetarget.height >> 2), mobjtype_t.MT_EXTRABFG);
 
             damage = 0;
-            for (j = 0; j < 15; j++) {
-                damage += (obs.DOOM.random.P_Random() & 7) + 1;
+            for (int j = 0; j < 15; j++) {
+                damage += (P_Random() & 7) + 1;
             }
 
-            DamageMobj(obs.linetarget, mo.target, mo.target, damage);
+            DamageMobj(sp.linetarget, mo.target, mo.target, damage);
         }
     }
 

@@ -22,12 +22,14 @@ import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import data.mobjtype_t;
 import data.sounds;
-import p.ActionSystem.AbstractCommand;
-
 import static m.fixed_t.FixedMul;
-import static p.Actions.Registry.FATSPREAD;
 
-public interface ActiveStatesMonstersMancubi<R extends Actions.Registry & AbstractCommand<R>> extends ActiveStatesAi<R>, ActiveStatesAttacks<R>, ActionsMissiles<R> {
+public interface ActiveStatesMonstersMancubi extends ActionTrait {
+    static final long FATSPREAD = Tables.ANG90 / 8;
+    
+    void A_FaceTarget(mobj_t actor);
+    mobj_t SpawnMissile(mobj_t actor, mobj_t target, mobjtype_t mobjtype_t);
+
     //
     // Mancubus attack,
     // firing three missiles (bruisers)
@@ -35,13 +37,11 @@ public interface ActiveStatesMonstersMancubi<R extends Actions.Registry & Abstra
     // Doesn't look like it. 
     //
     default void A_FatRaise(mobj_t actor) {
-        final Actions.Registry obs = obs();
         A_FaceTarget(actor);
-        obs.DOOM.doomSound.StartSound(actor, sounds.sfxenum_t.sfx_manatk);
+        StartSound(actor, sounds.sfxenum_t.sfx_manatk);
     }
 
     default void A_FatAttack1(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t mo;
         int an;
 
@@ -58,7 +58,6 @@ public interface ActiveStatesMonstersMancubi<R extends Actions.Registry & Abstra
     }
 
     default void A_FatAttack2(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t mo;
         int an;
 
@@ -75,7 +74,6 @@ public interface ActiveStatesMonstersMancubi<R extends Actions.Registry & Abstra
     }
 
     default void A_FatAttack3(mobj_t actor) {
-        final Actions.Registry obs = obs();
         mobj_t mo;
         int an;
 
@@ -93,4 +91,5 @@ public interface ActiveStatesMonstersMancubi<R extends Actions.Registry & Abstra
         mo.momx = FixedMul(mo.info.speed, finecosine[an]);
         mo.momy = FixedMul(mo.info.speed, finesine[an]);
     }
+
 }

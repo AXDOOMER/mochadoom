@@ -20,42 +20,41 @@ package p;
 import static data.Tables.BITS32;
 import static data.Tables.finecosine;
 import static data.Tables.finesine;
+import static data.info.mobjinfo;
 import data.mobjtype_t;
-import doom.SourceCode;
-import p.ActionSystem.AbstractCommand;
-
+import doom.SourceCode.angle_t;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
 import static p.MapUtils.AproxDistance;
+import static p.mobj_t.MF_MISSILE;
 import static p.mobj_t.MF_SHADOW;
 import static utils.C2JUtils.eval;
 
-interface ActionsMissiles<R extends Actions.Registry & AbstractCommand<R>> extends ActionsAim<R> {
+interface ActionsMissiles extends ActionsSpawn {
+    void CheckMissileSpawn(mobj_t th);
+    int AimLineAttack(mobj_t source, long an, int i);
 
     /**
      * P_SpawnMissile
      */
     default mobj_t SpawnMissile(mobj_t source, mobj_t dest, mobjtype_t type) {
-        final Actions.Registry obs = obs();
         mobj_t th;
-        @SourceCode.angle_t long an;
+        @angle_t long an;
         int dist;
 
-        th = this.SpawnMobj(source.x,
-                source.y,
-                source.z + 4 * 8 * FRACUNIT, type);
+        th = SpawnMobj(source.x, source.y, source.z + 4 * 8 * FRACUNIT, type);
 
         if (th.info.seesound != null) {
-            obs.DOOM.doomSound.StartSound(th, th.info.seesound);
+            StartSound(th, th.info.seesound);
         }
 
         th.target = source;    // where it came from
-        an = obs.DOOM.sceneRenderer.PointToAngle2(source.x, source.y, dest.x, dest.y) & BITS32;
+        an = sceneRenderer().PointToAngle2(source.x, source.y, dest.x, dest.y) & BITS32;
 
         // fuzzy player
         if (eval(dest.flags & MF_SHADOW)) {
-            an += (obs.DOOM.random.P_Random() - obs.DOOM.random.P_Random()) << 20;
+            an += (P_Random() - P_Random()) << 20;
         }
 
         th.angle = an & BITS32;
@@ -71,7 +70,7 @@ interface ActionsMissiles<R extends Actions.Registry & AbstractCommand<R>> exten
         }
 
         th.momz = (dest.z - source.z) / dist;
-        this.CheckMissileSpawn(th);
+        CheckMissileSpawn(th);
 
         return th;
     }
@@ -80,27 +79,28 @@ interface ActionsMissiles<R extends Actions.Registry & AbstractCommand<R>> exten
      * P_SpawnPlayerMissile Tries to aim at a nearby monster
      */
     default void SpawnPlayerMissile(mobj_t source, mobjtype_t type) {
-        final Actions.Registry obs = obs();
+        final Spawn targ = contextRequire(KEY_SPAWN);
+        
         mobj_t th;
-        @SourceCode.angle_t long an;
+        @angle_t long an;
         int x, y, z, slope; // ActionFunction
 
         // see which target is to be aimed at
         an = source.angle;
-        slope = this.AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+        slope = AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-        if (obs.linetarget == null) {
+        if (targ.linetarget == null) {
             an += 1 << 26;
             an &= BITS32;
-            slope = this.AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+            slope = AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-            if (obs.linetarget == null) {
+            if (targ.linetarget == null) {
                 an -= 2 << 26;
                 an &= BITS32;
-                slope = this.AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+                slope = AimLineAttack(source, an, 16 * 64 * FRACUNIT);
             }
 
-            if (obs.linetarget == null) {
+            if (targ.linetarget == null) {
                 an = source.angle & BITS32;
                 // angle should be "sane"..right?
                 // Just this line allows freelook.
@@ -115,7 +115,7 @@ interface ActionsMissiles<R extends Actions.Registry & AbstractCommand<R>> exten
         th = this.SpawnMobj(x, y, z, type);
 
         if (th.info.seesound != null) {
-            obs.DOOM.doomSound.StartSound(th, th.info.seesound);
+            StartSound(th, th.info.seesound);
         }
 
         th.target = source;
@@ -124,8 +124,28 @@ interface ActionsMissiles<R extends Actions.Registry & AbstractCommand<R>> exten
         th.momy = FixedMul(th.info.speed, finesine(an));
         th.momz = FixedMul(th.info.speed, slope);
 
-        this.CheckMissileSpawn(th);
+        CheckMissileSpawn(th);
     }
 
-    
+    /**
+     * P_ExplodeMissile
+     */
+    default void ExplodeMissile(mobj_t mo) {
+        mo.momx = mo.momy = mo.momz = 0;
+
+        // MAES 9/5/2011: using mobj code for that.
+        mo.SetMobjState(mobjinfo[mo.type.ordinal()].deathstate);
+
+        mo.mobj_tics -= P_Random() & 3;
+
+        if (mo.mobj_tics < 1) {
+            mo.mobj_tics = 1;
+        }
+
+        mo.flags &= ~MF_MISSILE;
+
+        if (mo.info.deathsound != null) {
+            StartSound(mo, mo.info.deathsound);
+        }
+    }
 }
