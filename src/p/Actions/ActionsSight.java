@@ -37,7 +37,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsSight extends ActionsSectors {
 
-    ContextKey<Sight> KEY_SIGHT = ACTION_KEY_CHAIN.newKey(ActionsSight.class, Sight.class);
+    ContextKey<Sight> KEY_SIGHT = ACTION_KEY_CHAIN.newKey(ActionsSight.class, Sight::new);
 
     class Sight {
 

@@ -25,6 +25,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /**
  * Purpose of this pattern-interface: store Trait-specific class-wise context objects
@@ -92,6 +94,8 @@ import java.util.function.Supplier;
  *    as negligible as one level of indirection + array access by int.
  */
 public class TraitFactory {
+    private final static Logger LOGGER = Loggers.getLogger(TraitFactory.class.getName());
+    
     public static <T extends Trait> SharedContext build(T traitUser, KeyChain usedChain)
         throws IllegalArgumentException, IllegalAccessException
     {
@@ -102,21 +106,29 @@ public class TraitFactory {
         throws IllegalArgumentException, IllegalAccessException
     {
         final FactoryContext c = new FactoryContext(idCapacity);
-        for (Class<?> cls: traitUser.getClass().getInterfaces()) {
-            Field[] declaredFields = cls.getDeclaredFields();
+        repeatRecursive(traitUser.getClass().getInterfaces(), c);
+        return c;
+    }
+
+    private static void repeatRecursive(final Class<?>[] traitUserInteraces, final FactoryContext c)
+        throws IllegalAccessException, SecurityException, IllegalArgumentException
+    {
+        for (Class<?> cls: traitUserInteraces) {
+            final Field[] declaredFields = cls.getDeclaredFields();
             for (final Field f: declaredFields) {
                 final int modifiers = f.getModifiers();
                 if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
-                    final Class<?> fieldClass = f.getDeclaringClass();
+                    final Class<?> fieldClass = f.getType();
                     if (fieldClass == ContextKey.class) {
-                        final Object fieldValue = f.get(null);
-                        final Type[] types = getParameterizedTypes(fieldValue);
+                        final ContextKey<?> key = ContextKey.class.cast(f.get(null));
+                        c.put(key, key.contextConstructor);
+                        LOGGER.fine(() -> String.format("%s for %s", c.get(key).getClass(), f.getDeclaringClass()));
                     }
                 }
             }
+            
+            repeatRecursive(cls.getInterfaces(), c);
         }
-        
-        return c;
     }
     
     public interface Trait {
@@ -174,25 +186,25 @@ public class TraitFactory {
     public final static class ContextKey<T> {
         final Class<? extends Trait> traitClass;
         final int preferredId;
-        final Class<T> contextClass;
+        final Supplier<T> contextConstructor;
 
-        public ContextKey(final Class<? extends Trait> traitClass, final int preferredId, final Class<T> contextClass) {
+        public ContextKey(final Class<? extends Trait> traitClass, int preferredId, Supplier<T> contextConstructor) {
             this.traitClass = traitClass;
             this.preferredId = preferredId;
-            this.contextClass = contextClass;
+            this.contextConstructor = contextConstructor;
         }
 
         @Override
         public String toString() {
-            return String.format("%s in the Trait %s (preferred id: %d)", contextClass, traitClass, preferredId);
+            return String.format("context in the Trait %s (preferred id: %d)", traitClass, preferredId);
         }
     }
     
     public final static class KeyChain {
         int currentCapacity;
         
-        public <T> ContextKey<T> newKey(final Class<? extends Trait> traitClass, final Class<T> contextClass) {
-            return new ContextKey<>(traitClass, currentCapacity++, contextClass);
+        public <T> ContextKey<T> newKey(final Class<? extends Trait> traitClass, Supplier<T> contextConstructor) {
+            return new ContextKey<>(traitClass, currentCapacity++, contextConstructor);
         }
     }
 
@@ -212,11 +224,12 @@ public class TraitFactory {
         }
 
         @Override
-        public void put(ContextKey<?> key, Supplier<Object> context) {
+        public void put(ContextKey<?> key, Supplier<?> context) {
             if (!hasMap) {
                 if (key.preferredId >= 0 && key.preferredId < keys.length) {
                     // return in the case of duplicate initialization of trait
                     if (keys[key.preferredId] == key) {
+                        LOGGER.finer(() -> "Already found, skipping: " + key);
                         return;
                     } else if (keys[key.preferredId] == null) {
                         keys[key.preferredId] = key;
@@ -251,9 +264,9 @@ public class TraitFactory {
     }
     
     public interface InsertConveyor {
-        void put(ContextKey<?> key, Supplier<Object> context);
+        void put(ContextKey<?> key, Supplier<?> context);
         
-        default void put(ContextKey<?> key, Object context) {
+        default void putObj(ContextKey<?> key, Object context) {
             put(key, () -> context);
         }
     }

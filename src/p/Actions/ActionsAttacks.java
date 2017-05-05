@@ -52,7 +52,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsAttacks extends ActionsAim, ActionsMobj, ActionsSight, ActionsShootEvents {
 
-    ContextKey<Attacks> KEY_ATTACKS = ACTION_KEY_CHAIN.newKey(ActionsAttacks.class, Attacks.class);
+    ContextKey<Attacks> KEY_ATTACKS = ACTION_KEY_CHAIN.newKey(ActionsAttacks.class, Attacks::new);
 
     final class Attacks {
 

@@ -24,13 +24,13 @@ import defines.skill_t;
 import defines.statenum_t;
 import doom.thinker_t;
 import static m.fixed_t.FRACUNIT;
+import p.Actions.ActiveStates.Sounds;
 import p.ActiveStates;
 import p.mobj_t;
 import utils.TraitFactory.ContextKey;
-import p.Actions.ActiveStates.Sounds;
 
 public interface HorrendousVisages extends Sounds {
-    ContextKey<Brain> KEY_BRAIN = ACTION_KEY_CHAIN.newKey(HorrendousVisages.class, Brain.class);
+    ContextKey<Brain> KEY_BRAIN = ACTION_KEY_CHAIN.newKey(HorrendousVisages.class, Brain::new);
 
     final class Brain {
         // Brain status

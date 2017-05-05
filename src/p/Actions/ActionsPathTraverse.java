@@ -46,7 +46,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsPathTraverse extends ActionsSectors {
 
-    ContextKey<Traverse> KEY_TRAVERSE = ACTION_KEY_CHAIN.newKey(ActionsPathTraverse.class, Traverse.class);
+    ContextKey<Traverse> KEY_TRAVERSE = ACTION_KEY_CHAIN.newKey(ActionsPathTraverse.class, Traverse::new);
 
     final class Traverse {
         //////////////// PIT FUNCTION OBJECTS ///////////////////

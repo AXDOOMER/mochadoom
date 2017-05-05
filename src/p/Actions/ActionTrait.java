@@ -42,7 +42,6 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import p.AbstractLevelLoader;
 import static p.AbstractLevelLoader.FIX_BLOCKMAP_512;
-import p.ActiveStates;
 import p.UnifiedGameMap;
 import p.intercept_t;
 import p.mobj_t;
@@ -65,9 +64,9 @@ import utils.TraitFactory.Trait;
 public interface ActionTrait extends Trait {
     TraitFactory.KeyChain ACTION_KEY_CHAIN = new TraitFactory.KeyChain();
 
-    ContextKey<SlideMove> KEY_SLIDEMOVE = ACTION_KEY_CHAIN.newKey(ActionTrait.class, SlideMove.class);
-    ContextKey<Spechits> KEY_SPECHITS = ACTION_KEY_CHAIN.newKey(ActionTrait.class, Spechits.class);
-    ContextKey<Movement> KEY_MOVEMENT = ACTION_KEY_CHAIN.newKey(ActionTrait.class, Movement.class);
+    ContextKey<SlideMove> KEY_SLIDEMOVE = ACTION_KEY_CHAIN.newKey(ActionTrait.class, SlideMove::new);
+    ContextKey<Spechits> KEY_SPECHITS = ACTION_KEY_CHAIN.newKey(ActionTrait.class, Spechits::new);
+    ContextKey<Movement> KEY_MOVEMENT = ACTION_KEY_CHAIN.newKey(ActionTrait.class, Movement::new);
     
     AbstractLevelLoader levelLoader();
     IHeadsUp headsUp();
@@ -83,13 +82,6 @@ public interface ActionTrait extends Trait {
     ActionsAttacks getAttacks();
 
     void AddThinker(thinker_t thinker); // see UnifiedGameMap
-    /**
-    if (thinker.thinkerFunction.isParamType(MobjConsumer.class)) {
-        thinker.thinkerFunction.fun(MobjConsumer.class).accept(obs, (mobj_t) thinker);
-    } else if (thinker.thinkerFunction.isParamType(ThinkerConsumer.class)) {
-        thinker.thinkerFunction.fun(ThinkerConsumer.class).accept(obs, thinker);
-    }*/
-    void CallThinkerFunction(ActiveStates function, thinker_t thinker);
     void StopSound(ISoundOrigin origin); // DOOM.doomSound.StopSound
     void StartSound(ISoundOrigin origin, sounds.sfxenum_t s); // DOOM.doomSound.StartSound
     void StartSound(ISoundOrigin origin, int s); // DOOM.doomSound.StartSound

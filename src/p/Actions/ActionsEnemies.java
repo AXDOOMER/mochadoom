@@ -41,7 +41,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsEnemies extends ActionsSight, ActionsSpawns {
 
-    ContextKey<Enemies> KEY_ENEMIES = ACTION_KEY_CHAIN.newKey(ActionsEnemies.class, Enemies.class);
+    ContextKey<Enemies> KEY_ENEMIES = ACTION_KEY_CHAIN.newKey(ActionsEnemies.class, Enemies::new);
 
     class Enemies {
 

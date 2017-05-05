@@ -51,9 +51,9 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsSectors extends ActionsLights, ActionsFloors, ActionsDoors, ActionsCeilings, ActionsSlideDoors {
 
-    ContextKey<RespawnQueue> KEY_RESP_QUEUE = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, RespawnQueue.class);
-    ContextKey<Spawn> KEY_SPAWN = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, Spawn.class);
-    ContextKey<Crushes> KEY_CRUSHES = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, Crushes.class);
+    ContextKey<RespawnQueue> KEY_RESP_QUEUE = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, RespawnQueue::new);
+    ContextKey<Spawn> KEY_SPAWN = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, Spawn::new);
+    ContextKey<Crushes> KEY_CRUSHES = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, Crushes::new);
 
     void RemoveMobj(mobj_t thing);
     void DamageMobj(mobj_t thing, mobj_t tmthing, mobj_t tmthing0, int damage);
@@ -465,5 +465,10 @@ public interface ActionsSectors extends ActionsLights, ActionsFloors, ActionsDoo
     default boolean twoSided(int sector, int line) {
         return eval((levelLoader().sectors[sector].lines[line]).flags & ML_TWOSIDED);
     }
-
+    
+    default void ClearRespawnQueue() {
+        // clear special respawning que
+        final RespawnQueue rq = contextRequire(KEY_RESP_QUEUE);
+        rq.iquehead = rq.iquetail = 0;
+    }
 }

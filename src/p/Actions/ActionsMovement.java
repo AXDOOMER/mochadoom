@@ -61,7 +61,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsMovement extends ActionsPathTraverse {
 
-    ContextKey<DirType> KEY_DIRTYPE = ACTION_KEY_CHAIN.newKey(ActionsMovement.class, DirType.class);
+    ContextKey<DirType> KEY_DIRTYPE = ACTION_KEY_CHAIN.newKey(ActionsMovement.class, DirType::new);
 
     //
     // P_XYMovement

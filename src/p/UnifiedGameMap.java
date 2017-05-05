@@ -657,7 +657,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
         return th;
     }
-    
+
 
     //
     // P_Init

@@ -40,7 +40,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsPlats extends ActionsMoveEvents, ActionsUseEvents {
 
-    ContextKey<Plats> KEY_PLATS = ACTION_KEY_CHAIN.newKey(ActionsPlats.class, Plats.class);
+    ContextKey<Plats> KEY_PLATS = ACTION_KEY_CHAIN.newKey(ActionsPlats.class, Plats::new);
 
     int FindSectorFromLineTag(line_t line, int secnum);
     void RemoveThinker(thinker_t activeplat);

@@ -22,7 +22,6 @@ import data.sounds;
 import defines.skill_t;
 import doom.DoomMain;
 import doom.player_t;
-import doom.thinker_t;
 import hu.IHeadsUp;
 import i.IDoomSystem;
 import java.util.logging.Level;
@@ -97,11 +96,6 @@ public class ActionFunctions extends UnifiedGameMap implements
     @Override
     public UnifiedGameMap.Switches getSwitches() {
         return SW;
-    }
-
-    @Override
-    public void CallThinkerFunction(ActiveStates function, thinker_t thinker) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override

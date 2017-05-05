@@ -36,7 +36,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
 
-    ContextKey<Ceilings> KEY_CEILINGS = ACTION_KEY_CHAIN.newKey(ActionsCeilings.class, Ceilings.class);
+    ContextKey<Ceilings> KEY_CEILINGS = ACTION_KEY_CHAIN.newKey(ActionsCeilings.class, Ceilings::new);
 
     void RemoveThinker(thinker_t activeCeiling);
     result_e MovePlane(sector_t sector, int speed, int bottomheight, boolean crush, int i, int direction);

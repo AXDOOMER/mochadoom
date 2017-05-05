@@ -20,7 +20,7 @@ import utils.TraitFactory.ContextKey;
 
 public interface ActionsSlideDoors extends ActionTrait {
 
-    ContextKey<SlideDoors> KEY_SLIDEDOORS = ACTION_KEY_CHAIN.newKey(ActionsSlideDoors.class, SlideDoors.class);
+    ContextKey<SlideDoors> KEY_SLIDEDOORS = ACTION_KEY_CHAIN.newKey(ActionsSlideDoors.class, SlideDoors::new);
 
     void RemoveThinker(thinker_t t);
 

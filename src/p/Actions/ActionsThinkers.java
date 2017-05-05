@@ -35,7 +35,9 @@ import static m.fixed_t.FRACBITS;
 import p.AbstractLevelLoader;
 import static p.Actions.ActionsSectors.KEY_RESP_QUEUE;
 import p.ActiveStates;
+import p.ActiveStates.MobjConsumer;
 import static p.ActiveStates.NOP;
+import p.ActiveStates.ThinkerConsumer;
 import static p.DoorDefines.FASTDARK;
 import static p.DoorDefines.SLOWDARK;
 import p.ThinkerList;
@@ -270,7 +272,11 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
                 thinker.prev.next = thinker.next;
                 // Z_Free (currentthinker);
             } else {
-                CallThinkerFunction(thinker.thinkerFunction, thinker);
+                if (thinker.thinkerFunction.isParamType(MobjConsumer.class)) {
+                    thinker.thinkerFunction.fun(MobjConsumer.class).accept(DOOM().actions, (mobj_t) thinker);
+                } else if (thinker.thinkerFunction.isParamType(ThinkerConsumer.class)) {
+                    thinker.thinkerFunction.fun(ThinkerConsumer.class).accept(DOOM().actions, thinker);
+                }
             }
             thinker = thinker.next;
         }
