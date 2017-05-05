@@ -174,6 +174,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         for(; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
             final event_t ev = events[eventtail];
+            ev.withMouse(mev -> mev.processed = true);
             
             M_Responder: {
                 if (menu.Responder(ev)) {

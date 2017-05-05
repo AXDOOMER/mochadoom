@@ -289,6 +289,7 @@ public interface event_t {
     final class mouseevent_t implements event_t {
         public volatile evtype_t type;
         public volatile boolean robotMove;
+        public volatile boolean processed = true;
         public volatile int buttons;
         public volatile int x, y;
 

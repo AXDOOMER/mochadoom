@@ -110,7 +110,10 @@ public enum EventHandler implements EventBase<EventHandler> {
         mapper.map(ActionMode.PERFORM, (observer, ev) -> {
             observer.mouseEvent.buttonOn((MouseEvent) ev);
             observer.mouseEvent.x = observer.mouseEvent.y = 0;
-            observer.feed(observer.mouseEvent);
+            if (observer.mouseEvent.processed) {
+                observer.mouseEvent.processed = false;
+                observer.feed(observer.mouseEvent);
+            }
         });
     }, ActionMode.REVERT, ActionMode.PERFORM),
     
@@ -118,7 +121,10 @@ public enum EventHandler implements EventBase<EventHandler> {
         mapper.map(ActionMode.PERFORM, (observer, ev) -> {
             observer.mouseEvent.buttonOff((MouseEvent) ev);
             observer.mouseEvent.x = observer.mouseEvent.y = 0;
-            observer.feed(observer.mouseEvent);
+            if (observer.mouseEvent.processed) {
+                observer.mouseEvent.processed = false;
+                observer.feed(observer.mouseEvent);
+            }
         });
     }, ActionMode.PERFORM),
     
@@ -320,7 +326,10 @@ public enum EventHandler implements EventBase<EventHandler> {
                 observer.mouseEvent.moveIn((MouseEvent) ev, centreX, centreY, isDrag);
             }
             
-            observer.feed(observer.mouseEvent);
+            if (observer.mouseEvent.processed) {
+                observer.mouseEvent.processed = false;
+                observer.feed(observer.mouseEvent);
+            }
         };
     }
 

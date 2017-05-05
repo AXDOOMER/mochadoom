@@ -563,6 +563,9 @@ public abstract class DoomStatus<T,V> {
         
         // Map strobe
         this.mapstrobe = CM.equals(Settings.vestrobe, Boolean.TRUE);
+        
+        // Mouse sensitivity
+        this.mouseSensitivity = CM.getValue(Settings.mouse_sensitivity, Integer.class);
     }
 
     public void commit() {
@@ -600,6 +603,9 @@ public abstract class DoomStatus<T,V> {
         
         // Map strobe
         CM.update(Settings.vestrobe, this.mapstrobe);
+        
+        // Mouse sensitivity
+        CM.update(Settings.mouse_sensitivity, this.mouseSensitivity);
     }
 }
 
