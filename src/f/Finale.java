@@ -670,7 +670,7 @@ public class Finale<T> {
 
 	public Finale(DoomMain<T, ?> DOOM) {
 		this.DOOM = DOOM;
-		hu_font = DOOM.handsUp.getHUFonts();
+		hu_font = DOOM.headsUp.getHUFonts();
 
 		//castinfo_t shit = new castinfo_t(CC_ZOMBIE, mobjtype_t.MT_POSSESSED);
 		castorder = new castinfo_t[]{

@@ -13,11 +13,11 @@ public class plat_t extends SectorAction implements IReadableDoomObject {
 
     public sector_t sector;
     public @fixed_t int speed, low, high;
-    int wait;
-    int count;
+    public int wait;
+    public int count;
     public plat_e status;
     public plat_e oldstatus;
-    boolean crush;
+    public boolean crush;
     public int tag;
     public plattype_e type;
 

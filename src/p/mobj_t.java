@@ -21,8 +21,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import p.ActionSystem.GoverningRegistry;
 import p.ActiveStates.MobjConsumer;
 import static p.MapUtils.AproxDistance;
 import rr.subsector_t;
@@ -90,11 +88,11 @@ import w.IWritableDoomObject;
 public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		IWritableDoomObject, IPackableDoomObject, IReadableDoomObject {
 
-	public final GoverningRegistry A;
+	public final ActionFunctions A;
     
     public static mobj_t createOn(final DoomMain<?, ?> context) {
         if (eval(context.actions)) {
-            return new mobj_t(context.actions.obs());
+            return new mobj_t(context.actions);
         }
         
         return new mobj_t();
@@ -105,7 +103,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		this.A = null;
     }
 
-	private mobj_t(final GoverningRegistry A) {
+	private mobj_t(final ActionFunctions A) {
 		this.spawnpoint = new mapthing_t();
 		this.A = A;
 		// A mobj_t is ALSO a thinker, as it always contains the struct.

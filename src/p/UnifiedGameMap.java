@@ -59,7 +59,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
     
     // //////////// Internal singletons //////////////
-    public Actions A;
+    public ActionFunctions A;
 
     Specials SPECS;
 
@@ -175,7 +175,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
     public class Specials {
         public static final int OK = 0, CRUSHED = 1, PASTDEST = 2;
 
-        protected line_t[] linespeciallist = new line_t[Limits.MAXLINEANIMS];
+        public line_t[] linespeciallist = new line_t[Limits.MAXLINEANIMS];
         public short numlinespecials;
         
         /**
@@ -193,9 +193,9 @@ public abstract class UnifiedGameMap implements ThinkerList {
         // P_UpdateSpecials
         // Animate planes, scroll walls, etc.
         //
-        boolean levelTimer;
+        public boolean levelTimer;
 
-        int levelTimeCount;
+        public int levelTimeCount;
         
         private Specials() {
             
@@ -283,7 +283,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
             }
         }
 
-        protected final void resizeLinesSpecialList() {
+        public final void resizeLinesSpecialList() {
             linespeciallist = C2JUtils.resize(linespeciallist[0], linespeciallist, linespeciallist.length * 2);
         }
         
@@ -428,7 +428,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
         //
         // Start a button counting down till it turns off.
         //
-        final void StartButton(line_t line, bwhere_e w, int texture, int time) {
+        public final void StartButton(line_t line, bwhere_e w, int texture, int time) {
             // See if button is already pressed
             for (button_t buttonlist1 : buttonlist) {
                 if (buttonlist1.btimer != 0 && buttonlist1.line == line) {
@@ -472,7 +472,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
         // Function that changes wall texture.
         // Tell it if switch is ok to use again (true=yes, it's a button).
         //
-        void ChangeSwitchTexture(line_t line, boolean useAgain) {
+        public void ChangeSwitchTexture(line_t line, boolean useAgain) {
             int texTop;
             int texMid;
             int texBot;
@@ -528,7 +528,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
             }
         }
         
-		final void initButtonList() {
+		public final void initButtonList() {
 			// Unlike plats, buttonlist needs statically allocated and reusable
 			// objects. The MAXBUTTONS limit actually applied to buttons PRESSED
 			// or ACTIVE at once, not how many there can actually be in a map.

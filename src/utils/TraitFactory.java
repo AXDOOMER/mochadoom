@@ -16,6 +16,10 @@
  */
 package utils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -25,6 +29,19 @@ import java.util.function.Supplier;
 /**
  * Purpose of this pattern-interface: store Trait-specific class-wise context objects
  * and be able to get them in constant time.
+ * 
+ * Simple usage:
+ *    You may read the theory below to understand, why and for what reason I wrote
+ *    TraitFactory. However, the simplest use is: create an interface extending Trait,
+ *    put there static final KeyChain object field, and declare some static ContextKey<>
+ *    fields in descending classes and/or interfaces for your objects using KeyChain.newKey.
+ *    
+ *    Then to initialize everything, just call TraitFactory.build() and the result
+ *    will be SharedContext to return on overriden method of Trait.
+ * 
+ *    TraitFactory.build utilizes (at the instantiation time, not in runtime) some
+ *    black reflection magic to free you from need to look for every Trait in line,
+ *    and call some registering function to add Objects to Keys in InsertConveyor.
  * 
  * General contract of Trait:
  * 
@@ -40,24 +57,19 @@ import java.util.function.Supplier;
  *    to determine idCapacity, or just guess big enough on your own. Also you can
  *    use helper object, KeyChain.
  * 
- * 1. In each Trait of your subset, you must create static final ContextKey
- *    and @Override this method. During the static final ContextKey initialization,
- *    you can also hack into incrementing some static non-final integer of the
- *    deepest Trait interface, to be sure all who do the same produce unique
- *    fast ContextKeys.
+ * 1. In a Trait of your subset, where you want to have some object in context, you
+ *    must create static final ContextKey fild. During the static final ContextKey
+ *    initialization, you can also hack into incrementing some static non-final
+ *    somewhere, to be sure all who do the same produce unique fast ContextKeys.
  * 
  *    You can create several ContextKeys per Trait and store several contexts,
  *    and, if your preferedIds are unique, they will be still instant-fast.
  * 
- * 2. The first lines of the overriden method must be a set of calls to every
- *    <? extends Trait>.super.register(f);
- *    of those Traits your current (overriding this method) Trait extends.
- *    If it is the first Trait on the lowest inheritance level, extending
- *    only base Trait interface, there should not be any .super.register(f); calls
+ * 2. You may want to be sure that all of your interfaces have created their context
+ *    objects and put them into the InsertConveyor. To do that, you should have a
+ *    method on the class using traits, that will descend into the top level traits,
+ *    then lower and lower until the last of the traits.
  * 
- * 3. After the calls to super.register(f)'s you must call:
- *    f.addMe(ContextKey, Object);
- *    
  *    ContextKey does not override hashCode and is a final class. So the hashCode()
  *    method will be something like memory pointer, and uniqye per ContextKey.
  *    Default context storage (FactoryContext.class) does not check it until
@@ -68,7 +80,7 @@ import java.util.function.Supplier;
  *    If your ContextKey does not overlap with another one, access to context Object
  *    would be the most instant of all possible.
  * 
- * 4. In use, call contextGet(ContextKey) or some helper methods to get
+ * 3. In use, call contextGet(ContextKey) or some helper methods to get
  *    the Object from context. Alternatively, you can acquire the SharedContext.
  *    The helper methods are better in case you fear nulls.
  * 
@@ -80,15 +92,34 @@ import java.util.function.Supplier;
  *    as negligible as one level of indirection + array access by int.
  */
 public class TraitFactory {
-    public static <T extends Trait> SharedContext build(T traitUser, int idCapacity) {
+    public static <T extends Trait> SharedContext build(T traitUser, KeyChain usedChain)
+        throws IllegalArgumentException, IllegalAccessException
+    {
+        return build(traitUser, usedChain.currentCapacity);
+    }
+    
+    public static <T extends Trait> SharedContext build(T traitUser, int idCapacity)
+        throws IllegalArgumentException, IllegalAccessException
+    {
         final FactoryContext c = new FactoryContext(idCapacity);
-        traitUser.register(c);
+        for (Class<?> cls: traitUser.getClass().getInterfaces()) {
+            Field[] declaredFields = cls.getDeclaredFields();
+            for (final Field f: declaredFields) {
+                final int modifiers = f.getModifiers();
+                if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
+                    final Class<?> fieldClass = f.getDeclaringClass();
+                    if (fieldClass == ContextKey.class) {
+                        final Object fieldValue = f.get(null);
+                        final Type[] types = getParameterizedTypes(fieldValue);
+                    }
+                }
+            }
+        }
+        
         return c;
     }
     
     public interface Trait {
-        void register(InsertConveyor f);
-        
         SharedContext getContext();
         
         default <T> T contextGet(ContextKey<T> key, T defaultValue) {
@@ -233,6 +264,14 @@ public class TraitFactory {
                 + "is dereferencing a null pointer when required to do not",
                 key, topLevel));
         }        
+    }
+    
+    private static Type[] getParameterizedTypes(Object object) {
+        Type superclassType = object.getClass().getGenericSuperclass();
+        if (!ParameterizedType.class.isAssignableFrom(superclassType.getClass())) {
+            return null;
+        }
+        return ((ParameterizedType)superclassType).getActualTypeArguments();
     }
     
     private TraitFactory() {}

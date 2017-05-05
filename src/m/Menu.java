@@ -1043,14 +1043,14 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
         if (!DOOM.menuactive){
             switch (sc) {
             case SC_MINUS: // Screen size down
-                if (DOOM.automapactive || DOOM.handsUp.chat_on[0])
+                if (DOOM.automapactive || DOOM.headsUp.chat_on[0])
                     return false;
                 SizeDisplay.invoke(0);
                 DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
                 return true;
 
             case SC_EQUALS: // Screen size up
-                if (DOOM.automapactive || DOOM.handsUp.chat_on[0])
+                if (DOOM.automapactive || DOOM.headsUp.chat_on[0])
                     return false;
                 SizeDisplay.invoke(1);
                 DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
@@ -1357,7 +1357,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
         this.initMenuRoutines();
         this.initDrawRoutines();
         this.initMenuItems();
-        this.hu_font=DOOM.handsUp.getHUFonts();
+        this.hu_font=DOOM.headsUp.getHUFonts();
 
         currentMenu = MainDef;
         DOOM.menuactive = false;
