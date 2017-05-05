@@ -1,109 +1,27 @@
 package p;
 
-import static data.Defines.ITEMQUESIZE;
-import static data.Defines.MELEERANGE;
-import static data.Defines.NF_SUBSECTOR;
-import static data.Defines.NUMAMMO;
-import static data.Defines.RANGECHECK;
-import static data.Defines.pw_allmap;
-import static data.Defines.pw_infrared;
-import static data.Defines.pw_invisibility;
-import static data.Defines.pw_invulnerability;
-import static data.Defines.pw_ironfeet;
-import static data.Defines.pw_strength;
 import data.Limits;
 import static data.Limits.BUTTONTIME;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
-import static data.Limits.MAXINTERCEPTS;
-import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.MAXSWITCHES;
-import static data.Limits.PLATSPEED;
-import static data.Limits.PLATWAIT;
-import static data.Tables.ANG270;
-import static data.Tables.ANG90;
-import static data.Tables.BITS32;
-import static data.info.mobjinfo;
-import data.mapthing_t;
-import data.mobjtype_t;
 import data.sounds.sfxenum_t;
-import defines.ammotype_t;
-import defines.card_t;
-import defines.statenum_t;
 import doom.DoomMain;
 import doom.SourceCode;
-import doom.SourceCode.P_MapUtl;
-import static doom.SourceCode.P_MapUtl.*;
-import doom.SourceCode.P_Mobj;
-import static doom.SourceCode.P_Mobj.*;
 import doom.SourceCode.P_Tick;
 import static doom.SourceCode.P_Tick.*;
-import doom.SourceCode.fixed_t;
-import static doom.englsh.GOTARMBONUS;
-import static doom.englsh.GOTARMOR;
-import static doom.englsh.GOTBACKPACK;
-import static doom.englsh.GOTBERSERK;
-import static doom.englsh.GOTBFG9000;
-import static doom.englsh.GOTBLUECARD;
-import static doom.englsh.GOTBLUESKUL;
-import static doom.englsh.GOTCELL;
-import static doom.englsh.GOTCELLBOX;
-import static doom.englsh.GOTCHAINGUN;
-import static doom.englsh.GOTCHAINSAW;
-import static doom.englsh.GOTCLIP;
-import static doom.englsh.GOTCLIPBOX;
-import static doom.englsh.GOTHTHBONUS;
-import static doom.englsh.GOTINVIS;
-import static doom.englsh.GOTINVUL;
-import static doom.englsh.GOTLAUNCHER;
-import static doom.englsh.GOTMAP;
-import static doom.englsh.GOTMEDIKIT;
-import static doom.englsh.GOTMEDINEED;
-import static doom.englsh.GOTMEGA;
-import static doom.englsh.GOTMSPHERE;
-import static doom.englsh.GOTPLASMA;
-import static doom.englsh.GOTREDCARD;
-import static doom.englsh.GOTREDSKULL;
-import static doom.englsh.GOTROCKBOX;
-import static doom.englsh.GOTROCKET;
-import static doom.englsh.GOTSHELLBOX;
-import static doom.englsh.GOTSHELLS;
-import static doom.englsh.GOTSHOTGUN;
-import static doom.englsh.GOTSHOTGUN2;
-import static doom.englsh.GOTSTIM;
-import static doom.englsh.GOTSUIT;
-import static doom.englsh.GOTSUPER;
-import static doom.englsh.GOTVISOR;
-import static doom.englsh.GOTYELWCARD;
-import static doom.englsh.GOTYELWSKUL;
-import static doom.items.weaponinfo;
-import doom.player_t;
 import doom.thinker_t;
-import doom.weapontype_t;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import m.Settings;
-import static m.fixed_t.FRACUNIT;
-import static m.fixed_t.FixedDiv;
 import static m.fixed_t.MAPFRACUNIT;
 import mochadoom.Engine;
 import mochadoom.Loggers;
-import static p.ActiveStates.NOP;
-import static p.ActiveStates.T_PlatRaise;
-import static p.DoorDefines.SLOWDARK;
-import static p.MapUtils.AproxDistance;
-import static p.MobjFlags.*;
 import rr.ISpriteManager;
 import rr.line_t;
-import static rr.line_t.*;
-import rr.node_t;
-import rr.sector_t;
-import rr.side_t;
-import rr.subsector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
-import static utils.C2JUtils.flags;
 
 // // FROM SIGHT
 
@@ -117,20 +35,12 @@ public abstract class UnifiedGameMap implements ThinkerList {
      * - Good Sign 2017/05/1
      */
     public UnifiedGameMap(DoomMain<?, ?> DOOM){
-        this.SL = new SlideDoor<Object, Object>(DOOM);
         this.SW = new Switches();
-        this.LEV = new Lights();
         this.SPECS = new Specials();
-        this.PEV = new Plats();
-        this.See = new Sight(); // Didn't initialize that.
-        this.EN = new Enemies();
         this.thinkercap = new thinker_t();
         /*for (int i=0; i<th_class.NUMTHCLASS; i++) { // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i]=new thinker_t();
         }*/
-        
-        intercepts = new intercept_t[MAXINTERCEPTS];
-        Arrays.setAll(intercepts, i -> new intercept_t());
 
         // Normally unused. It clashes with line attribute 124, and looks like ass
         // anyway. However it's fully implemented.
@@ -149,171 +59,18 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
     
     // //////////// Internal singletons //////////////
-    public Actions A;
+    public ActionFunctions A;
 
     Specials SPECS;
 
-    // DoorsFloors EV;
-    Plats PEV;
-
-    Lights LEV;
-
     Switches SW;
 
-    Sight See;
-
-    Enemies EN;
-    
-    SlideDoor<?, ?> SL;
-
     // ////////////////////////////////////////////
-
-    public int topslope;
-
-    public int bottomslope; // slopes to top and bottom of target
-    
-
-    //
-    // UTILITIES
-    //
-
-    //
-    // getSide()
-    // Will return a side_t*
-    // given the number of the current sector,
-    // the line number, and the side (0/1) that you want.
-    //
-    side_t getSide(int currentSector, int line, int side) {
-        return DOOM.levelLoader.sides[(DOOM.levelLoader.sectors[currentSector].lines[line]).sidenum[side]];
-    }
-
-    /**
-     * getSector()
-     * Will return a sector_t
-     * given the number of the current sector,
-     * the line number and the side (0/1) that you want.
-     */
-    
-    sector_t getSector(int currentSector, int line, int side) {
-        return DOOM.levelLoader.sides[(DOOM.levelLoader.sectors[currentSector].lines[line]).sidenum[side]].sector;
-    }
-
-    /**
-     * twoSided()
-     * Given the sector number and the line number,
-     * it will tell you whether the line is two-sided or not.
-     */
-    
-    protected boolean twoSided(int sector, int line) {
-        return eval((DOOM.levelLoader.sectors[sector].lines[line]).flags& ML_TWOSIDED);
-    }
-
-    /**
-     * RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
-     */
-    
-    protected int FindSectorFromLineTag(line_t line, int start) {
-        int i;
-
-        for (i = start + 1; i < DOOM.levelLoader.numsectors; i++)
-            if (DOOM.levelLoader.sectors[i].tag == line.tag)
-                return i;
-
-        return -1;
-    }
-
-    
-
-    // //////////////////// FROM p_maputl.c ////////////////////
-
-    @fixed_t protected int opentop, openbottom, openrange, lowfloor;
-
-    /**
-     * P_LineOpening Sets opentop and openbottom to the window through a two
-     * sided line. OPTIMIZE: keep this precalculated
-     */
-
-    public void LineOpening(line_t linedef) {
-        sector_t front;
-        sector_t back;
-
-        if (linedef.sidenum[1] == line_t.NO_INDEX) {
-            // single sided line
-            openrange = 0;
-            return;
-        }
-
-        front = linedef.frontsector;
-        back = linedef.backsector;
-
-        if (front.ceilingheight < back.ceilingheight)
-            opentop = front.ceilingheight;
-        else
-            opentop = back.ceilingheight;
-
-        if (front.floorheight > back.floorheight) {
-            openbottom = front.floorheight;
-            lowfloor = back.floorheight;
-        } else {
-            openbottom = back.floorheight;
-            lowfloor = front.floorheight;
-        }
-
-        openrange = opentop - openbottom;
-    }
 
     //
     // THING POSITION SETTING
     //
 
-    /**
-     * P_UnsetThingPosition Unlinks a thing from block map and sectors. On each
-     * position change, BLOCKMAP and other lookups maintaining lists ot things
-     * inside these structures need to be updated.
-     */
-
-    @SourceCode.Exact
-    @P_MapUtl.C(P_UnsetThingPosition)
-    public void UnsetThingPosition(mobj_t thing) {
-        final AbstractLevelLoader ll = DOOM.levelLoader;
-        final int blockx;
-        final int blocky;
-
-        if (!eval(thing.flags& MF_NOSECTOR)) {
-            // inert things don't need to be in blockmap?
-            // unlink from subsector
-            if (thing.snext != null) {
-                ((mobj_t) thing.snext).sprev = thing.sprev;
-            }
-
-            if (thing.sprev != null) {
-                ((mobj_t) thing.sprev).snext = thing.snext;
-            } else {
-                thing.subsector.sector.thinglist = (mobj_t) thing.snext;
-            }
-        }
-
-        if (!eval(thing.flags& MF_NOBLOCKMAP)) {
-            // inert things don't need to be in blockmap
-            // unlink from block map
-            if (thing.bnext != null) {
-                ((mobj_t) thing.bnext).bprev = thing.bprev;
-            }
-
-            if (thing.bprev != null) {
-                ((mobj_t) thing.bprev).bnext = thing.bnext;
-            } else {
-                blockx = ll.getSafeBlockX(thing.x - ll.bmaporgx);
-                blocky = ll.getSafeBlockY(thing.y - ll.bmaporgy);
-                
-                if (blockx >= 0 && blockx < ll.bmapwidth
-                 && blocky >= 0 && blocky < ll.bmapheight)
-                {
-                    ll.blocklinks[blocky * ll.bmapwidth + blockx] = (mobj_t) thing.bnext;
-                }
-            }
-        }
-    }
 
     //
     // BLOCK MAP ITERATORS
@@ -322,17 +79,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
     // If the function returns false,
     // exit with false without checking anything else.
     //
-
-    //
-    // INTERCEPT ROUTINES
-    //
-    protected intercept_t[] intercepts;
-
-    int intercept_p;
-
-    public divline_t trace=new divline_t();
-
-    boolean earlyout;
 
     int ptflags;
     
@@ -375,733 +121,8 @@ public abstract class UnifiedGameMap implements ThinkerList {
     protected final thinker_t[] thinkerclasscap=new thinker_t[th_class.NUMTHCLASS];*/
 
     public boolean sight_debug;
-    
-    protected final void ResizeIntercepts() {
-        intercepts = C2JUtils.resize(intercepts[0], intercepts, intercepts.length * 2);
-    }
 
-    class Lights {
 
-        //
-        // Start strobing lights (usually from a trigger)
-        //
-        void StartLightStrobing(line_t line) {
-            int secnum;
-            sector_t sec;
-
-            secnum = -1;
-            while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
-                sec = DOOM.levelLoader.sectors[secnum];
-                if (sec.specialdata != null)
-                    continue;
-
-                sec.SpawnStrobeFlash(SLOWDARK, 0);
-            }
-        }
-
-        //
-        // TURN LINE'S TAG LIGHTS OFF
-        //
-        void TurnTagLightsOff(line_t line) {
-            int i;
-            int min;
-            sector_t sector;
-            sector_t tsec;
-            line_t templine;
-
-            for (int j = 0; j < DOOM.levelLoader.numsectors; j++) {
-                sector = DOOM.levelLoader.sectors[j];
-                if (sector.tag == line.tag) {
-
-                    min = sector.lightlevel;
-                    for (i = 0; i < sector.linecount; i++) {
-                        templine = sector.lines[i];
-                        tsec = templine.getNextSector(sector);
-                        if (tsec == null)
-                            continue;
-                        if (tsec.lightlevel < min)
-                            min = tsec.lightlevel;
-                    }
-                    sector.lightlevel = (short) min;
-                }
-            }
-        }
-
-        //
-        // TURN LINE'S TAG LIGHTS ON
-        //
-        void LightTurnOn(line_t line, int bright) {
-
-            sector_t sector;
-            sector_t temp;
-            line_t templine;
-
-            for (int i = 0; i < DOOM.levelLoader.numsectors; i++) {
-                sector = DOOM.levelLoader.sectors[i];
-                if (sector.tag == line.tag) {
-                    // bright = 0 means to search
-                    // for highest light level
-                    // surrounding sector
-                    if (bright == 0) {
-                        for (int j = 0; j < sector.linecount; j++) {
-                            templine = sector.lines[j];
-                            temp = templine.getNextSector( sector);
-
-                            if (temp == null)
-                                continue;
-
-                            if (temp.lightlevel > bright)
-                                bright = temp.lightlevel;
-                        }
-                    }
-                    sector.lightlevel = (short) bright;
-                }
-            }
-        }
-
-    }
-
-    class Enemies {
-
-        // void A_Fall (mobj_t *actor);
-
-        //
-        // ENEMY THINKING
-        // Enemies are allways spawned
-        // with targetplayer = -1, threshold = 0
-        // Most monsters are spawned unaware of all players,
-        // but some can be made preaware
-        //
-
-        /**
-         * P_CheckMeleeRange
-         */
-
-        boolean CheckMeleeRange(mobj_t actor) {
-            mobj_t pl;
-            @fixed_t int dist;
-
-            if (actor.target == null)
-                return false;
-
-            pl = actor.target;
-            dist = AproxDistance(pl.x - actor.x, pl.y - actor.y);
-
-            if (dist >= MELEERANGE - 20 * FRACUNIT + pl.info.radius)
-                return false;
-
-            return EN.CheckSight(actor, actor.target);
-        }
-
-        /**
-         * P_CheckMissileRange
-         */
-
-        boolean CheckMissileRange(mobj_t actor) {
-            @fixed_t int dist;
-
-            if (!CheckSight(actor, actor.target))
-                return false;
-
-            if ((actor.flags & MF_JUSTHIT) != 0) {
-                // the target just hit the enemy,
-                // so fight back!
-                actor.flags &= ~MF_JUSTHIT;
-                return true;
-            }
-
-            if (actor.reactiontime != 0)
-                return false; // do not attack yet
-
-            // OPTIMIZE: get this from a global checksight
-            dist =
-                AproxDistance(actor.x - actor.target.x, actor.y
-                        - actor.target.y)
-                        - 64 * FRACUNIT;
-
-            // [SYNC}: Major desync cause of desyncs.
-            // DO NOT compare with null!
-            if (actor.info.meleestate == statenum_t.S_NULL)
-                dist -= 128 * FRACUNIT; // no melee attack, so fire more
-
-            dist >>= 16;
-
-            if (actor.type == mobjtype_t.MT_VILE) {
-                if (dist > 14 * 64)
-                    return false; // too far away
-            }
-
-            if (actor.type == mobjtype_t.MT_UNDEAD) {
-                if (dist < 196)
-                    return false; // close for fist attack
-                dist >>= 1;
-            }
-
-            if (actor.type == mobjtype_t.MT_CYBORG
-                    || actor.type == mobjtype_t.MT_SPIDER
-                    || actor.type == mobjtype_t.MT_SKULL) {
-                dist >>= 1;
-            }
-
-            if (dist > 200)
-                dist = 200;
-
-            if (actor.type == mobjtype_t.MT_CYBORG && dist > 160)
-                dist = 160;
-
-            return DOOM.random.P_Random() >= dist;
-        }
-
-        /**
-         * P_CheckSight Returns true if a straight line between t1 and t2 is
-         * unobstructed. Uses REJECT.
-         */
-
-        boolean CheckSight(mobj_t t1, mobj_t t2) {
-            int s1;
-            int s2;
-            int pnum;
-            int bytenum;
-            int bitnum;
-
-            // First check for trivial rejection.
-
-            // Determine subsector entries in REJECT table.
-            s1 = t1.subsector.sector.id; // (t1.subsector.sector - sectors);
-            s2 = t2.subsector.sector.id;// - sectors);
-            pnum = s1 * DOOM.levelLoader.numsectors + s2;
-            bytenum = pnum >> 3;
-            bitnum = 1 << (pnum & 7);
-
-            // Check in REJECT table.
-            if (eval(DOOM.levelLoader.rejectmatrix[bytenum]& bitnum)) {
-                See.sightcounts[0]++;
-
-                // can't possibly be connected
-                return false;
-            }
-
-            // An unobstructed LOS is possible.
-            // Now look from eyes of t1 to any part of t2.
-            See.sightcounts[1]++;
-
-            DOOM.sceneRenderer.increaseValidCount(1);
-
-            See.sightzstart = t1.z + t1.height - (t1.height >> 2);
-            topslope = (t2.z + t2.height) - See.sightzstart;
-            bottomslope = (t2.z) - See.sightzstart;
-
-            See.strace.x = t1.x;
-            See.strace.y = t1.y;
-            See.t2x = t2.x;
-            See.t2y = t2.y;
-            See.strace.dx = t2.x - t1.x;
-            See.strace.dy = t2.y - t1.y;
-
-            // the head node is the last node output
-            return See.CrossBSPNode(DOOM.levelLoader.numnodes - 1);
-        }
-
-        //
-        // Called by P_NoiseAlert.
-        // Recursively traverse adjacent sectors,
-        // sound blocking lines cut off traversal.
-        //
-
-        mobj_t soundtarget;
-
-        private void RecursiveSound(sector_t sec, int soundblocks) {
-            int i;
-            line_t check;
-            sector_t other;
-
-            // wake up all monsters in this sector
-            if (sec.validcount == DOOM.sceneRenderer.getValidCount()
-                    && sec.soundtraversed <= soundblocks + 1) {
-                return; // already flooded
-            }
-
-            sec.validcount = DOOM.sceneRenderer.getValidCount();
-            sec.soundtraversed = soundblocks + 1;
-            sec.soundtarget = soundtarget;
-
-            // "peg" to the level loader for syntactic sugar
-            side_t[] sides = DOOM.levelLoader.sides;
-
-            for (i = 0; i < sec.linecount; i++) {
-                check = sec.lines[i];
-                if ((check.flags & ML_TWOSIDED) == 0)
-                    continue;
-
-                LineOpening(check);
-
-                if (openrange <= 0)
-                    continue; // closed door
-
-                if (sides[check.sidenum[0]].sector == sec)
-                    other = sides[check.sidenum[1]].sector;
-                else
-                    other = sides[check.sidenum[0]].sector;
-
-                if ((check.flags & ML_SOUNDBLOCK) != 0) {
-                    if (soundblocks == 0)
-                        RecursiveSound(other, 1);
-                } else
-                    RecursiveSound(other, soundblocks);
-            }
-        }
-
-        /**
-         * P_NoiseAlert
-         * If a monster yells at a player,
-         * it will alert other monsters to the player.
-         */
-        
-        void NoiseAlert(mobj_t target, mobj_t emmiter) {
-            soundtarget = target;
-            DOOM.sceneRenderer.increaseValidCount(1);
-            RecursiveSound(emmiter.subsector.sector, 0);
-        }
-
-        /**
-         * P_FireWeapon. Originally in pspr
-         */
-        public void FireWeapon(player_t player) {
-            statenum_t newstate;
-
-            if (!player.CheckAmmo())
-                return;
-
-            player.mo.SetMobjState(statenum_t.S_PLAY_ATK1);
-            newstate = weaponinfo[player.readyweapon.ordinal()].atkstate;
-            player.SetPsprite(player_t.ps_weapon, newstate);
-            NoiseAlert(player.mo, player.mo);
-        }
-
-        //
-        // P_Move
-        // Move in the current direction,
-        // returns false if the move is blocked.
-        //
-
-        // Peg to map movement
-        line_t[] spechitp = new line_t[MAXSPECIALCROSS];
-
-        int numspechit;
-
-        /**
-         * P_LookForPlayers If allaround is false, only look 180 degrees in
-         * front. Returns true if a player is targeted.
-         */
-
-        boolean LookForPlayers(mobj_t actor, boolean allaround) {
-            int c;
-            int stop;
-            player_t player;
-            // sector_t sector;
-            long an; // angle
-            int dist; // fixed
-
-            // sector = actor.subsector.sector;
-
-            c = 0;
-            stop = (actor.lastlook - 1) & 3;
-
-            for (;; actor.lastlook = (actor.lastlook + 1) & 3) {
-                if (!DOOM.playeringame[actor.lastlook])
-                    continue;
-
-                if (c++ == 2 || actor.lastlook == stop) {
-                    // done looking
-                    return false;
-                }
-
-                player = DOOM.players[actor.lastlook];
-
-                if (player.health[0] <= 0)
-                    continue; // dead
-
-                if (!CheckSight(actor, player.mo))
-                    continue; // out of sight
-
-                if (!allaround) {
-                    an =
-                        (DOOM.sceneRenderer.PointToAngle2(actor.x, actor.y, player.mo.x,
-                            player.mo.y)
-                                - actor.angle)&BITS32;
-
-                    if (an > ANG90 && an < ANG270) {
-                        dist =
-                            AproxDistance(player.mo.x - actor.x, player.mo.y
-                                    - actor.y);
-                        // if real close, react anyway
-                        if (dist > MELEERANGE)
-                            continue; // behind back
-                    }
-                }
-
-                actor.target = player.mo;
-                return true;
-            }
-            // The compiler complains that this is unreachable
-            // return false;
-        }
-
-    }
-
-    class Plats {
-
-        Plats() {
-        	initActivePlats();
-        }
-
-        plat_t[] activeplats;
-
-        //
-        // Do Platforms
-        // "amount" is only used for SOME platforms.
-        //
-        boolean DoPlat(line_t line, plattype_e type, int amount) {
-            plat_t plat;
-            int secnum = -1;
-            boolean rtn = false;
-            sector_t sec;
-
-            // Activate all <type> plats that are in_stasis
-            switch (type) {
-            case perpetualRaise:
-                ActivateInStasis(line.tag);
-                break;
-
-            default:
-                break;
-            }
-
-            while ((secnum = FindSectorFromLineTag(line, secnum)) >= 0) {
-                sec = DOOM.levelLoader.sectors[secnum];
-
-                if (sec.specialdata != null)
-                    continue;
-
-                // Find lowest & highest floors around sector
-                rtn = true;
-                plat = new plat_t();
-
-
-                plat.type = type;
-                plat.sector = sec;
-                plat.sector.specialdata = plat;
-                plat.thinkerFunction = T_PlatRaise;
-                AddThinker(plat);
-                plat.crush = false;
-                plat.tag = line.tag;
-
-                switch (type) {
-                case raiseToNearestAndChange:
-                    plat.speed = PLATSPEED / 2;
-                    sec.floorpic = DOOM.levelLoader.sides[line.sidenum[0]].sector.floorpic;
-                    plat.high = sec.FindNextHighestFloor(sec.floorheight);
-                    plat.wait = 0;
-                    plat.status = plat_e.up;
-                    // NO MORE DAMAGE, IF APPLICABLE
-                    sec.special = 0;
-
-                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
-                    break;
-
-                case raiseAndChange:
-                    plat.speed = PLATSPEED / 2;
-                    sec.floorpic = DOOM.levelLoader.sides[line.sidenum[0]].sector.floorpic;
-                    plat.high = sec.floorheight + amount * FRACUNIT;
-                    plat.wait = 0;
-                    plat.status = plat_e.up;
-
-                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
-                    break;
-
-                case downWaitUpStay:
-                    plat.speed = PLATSPEED * 4;
-                    plat.low = sec.FindLowestFloorSurrounding();
-
-                    if (plat.low > sec.floorheight)
-                        plat.low = sec.floorheight;
-
-                    plat.high = sec.floorheight;
-                    plat.wait = 35 * PLATWAIT;
-                    plat.status = plat_e.down;
-                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
-                    break;
-
-                case blazeDWUS:
-                    plat.speed = PLATSPEED * 8;
-                    plat.low = sec.FindLowestFloorSurrounding();
-
-                    if (plat.low > sec.floorheight)
-                        plat.low = sec.floorheight;
-
-                    plat.high = sec.floorheight;
-                    plat.wait = 35 * PLATWAIT;
-                    plat.status = plat_e.down;
-                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
-                    break;
-
-                case perpetualRaise:
-                    plat.speed = PLATSPEED;
-                    plat.low = sec.FindLowestFloorSurrounding();
-
-                    if (plat.low > sec.floorheight)
-                        plat.low = sec.floorheight;
-
-                    plat.high = sec.FindHighestFloorSurrounding();
-
-                    if (plat.high < sec.floorheight)
-                        plat.high = sec.floorheight;
-
-                    plat.wait = 35 * PLATWAIT;
-                    // Guaranteed to be 0 or 1.
-                    plat.status = plat_e.values()[DOOM.random.P_Random() & 1];
-
-                    DOOM.doomSound.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
-                    break;
-                }
-                AddActivePlat(plat);
-            }
-            return rtn;
-        }
-
-        void ActivateInStasis(int tag) {
-            int i;
-
-            for (i = 0; i < activeplats.length; i++)
-                if ((activeplats[i] != null) && (activeplats[i].tag == tag)
-                        && (activeplats[i].status == plat_e.in_stasis)) {
-                    (activeplats[i]).status = (activeplats[i]).oldstatus;
-                    (activeplats[i]).thinkerFunction = T_PlatRaise;
-                    //FUNS.doWireThinker(activeplats[i]);
-                }
-        }
-
-        void StopPlat(line_t line) {
-            int j;
-
-            for (j = 0; j < activeplats.length; j++)
-                if ((activeplats[j] != null)
-                        && (activeplats[j].status != plat_e.in_stasis)
-                        && (activeplats[j].tag == line.tag)) {
-                    (activeplats[j]).oldstatus = (activeplats[j]).status;
-                    (activeplats[j]).status = plat_e.in_stasis;
-                    (activeplats[j]).thinkerFunction = null;
-                    //FUNS.doWireThinker(activeplats[j]);
-                }
-        }
-
-        
-        /*
-        void AddActivePlat(plat_t plat) {
-            int i;
-
-            for (i = 0; i < MAXPLATS; i++)
-                if (activeplats[i] == null) {
-                    activeplats[i] = plat;
-                    return;
-                }
-            I.Error("P_AddActivePlat: no more plats!");
-        } */
-
-        void RemoveActivePlat(plat_t plat) {
-            int i;
-            for (i = 0; i < activeplats.length; i++)
-                if (plat == activeplats[i]) {
-                    (activeplats[i]).sector.specialdata = null;
-                    RemoveThinker(activeplats[i]);
-                    activeplats[i] = null;
-
-                    return;
-                }
-            DOOM.doomSystem.Error("P_RemoveActivePlat: can't find plat!");
-        }
-
-		final void initActivePlats() {
-			// activeplats is just a placeholder. Plat objects aren't
-			// actually reused, so we don't need an initialized array.
-			// Same rule when resizing.
-			activeplats=new plat_t[data.Limits.MAXPLATS];
-		}
-
-    }
-
-    class Sight {
-
-        Sight() {
-            strace = new divline_t();
-            sightcounts = new int[2];
-        }
-
-        int sightzstart; // eye z of looker
-
-        divline_t strace; // from t1 to t2
-
-        int t2x;
-
-        int t2y;
-
-        int[] sightcounts;
-
-        
-
-        /**
-         * P_CrossSubsector Returns true if strace crosses the given subsector
-         * successfully.
-         */
-
-        boolean CrossSubsector(int num) {
-            int seg; // pointer inside segs
-            line_t line;
-            int s1;
-            int s2;
-            int count;
-            subsector_t sub;
-            sector_t front;
-            sector_t back;
-            @fixed_t int opentop;
-            int openbottom;
-            divline_t divl = new divline_t();
-            //vertex_t v1;
-            //vertex_t v2;
-            @fixed_t int frac;
-            int slope;
-
-            if (RANGECHECK) {
-                if (num >= DOOM.levelLoader.numsubsectors)
-                    DOOM.doomSystem.Error("P_CrossSubsector: ss %d with numss = %d",
-                        num, DOOM.levelLoader.numsubsectors);
-            }
-
-            sub = DOOM.levelLoader.subsectors[num];
-
-            // check lines
-            count = sub.numlines;
-            seg = sub.firstline;// LL.segs[sub.firstline];
-
-            for (; count > 0; seg++, count--) {
-                line = DOOM.levelLoader.segs[seg].linedef;
-
-                // allready checked other side?
-                if (line.validcount == DOOM.sceneRenderer.getValidCount())
-                    continue;
-
-                line.validcount = DOOM.sceneRenderer.getValidCount();
-
-                //v1 = line.v1;
-                //v2 = line.v2;
-                s1 = strace.DivlineSide(line.v1x, line.v1y);
-                s2 = strace.DivlineSide(line.v2x, line.v2y);
-
-                // line isn't crossed?
-                if (s1 == s2)
-                    continue;
-
-                divl.x = line.v1x;
-                divl.y = line.v1y;
-                divl.dx = line.v2x - line.v1x;
-                divl.dy = line.v2y - line.v1y;
-                s1 = divl.DivlineSide(strace.x, strace.y);
-                s2 = divl.DivlineSide(t2x, t2y);
-
-                // line isn't crossed?
-                if (s1 == s2)
-                    continue;
-
-                // stop because it is not two sided anyway
-                // might do this after updating validcount?
-                if (!flags(line.flags,ML_TWOSIDED))
-                    return false;
-
-                // crosses a two sided line
-                front = DOOM.levelLoader.segs[seg].frontsector;
-                back = DOOM.levelLoader.segs[seg].backsector;
-
-                // no wall to block sight with?
-                if (front.floorheight == back.floorheight
-                        && front.ceilingheight == back.ceilingheight)
-                    continue;
-
-                // possible occluder
-                // because of ceiling height differences
-                if (front.ceilingheight < back.ceilingheight)
-                    opentop = front.ceilingheight;
-                else
-                    opentop = back.ceilingheight;
-
-                // because of ceiling height differences
-                if (front.floorheight > back.floorheight)
-                    openbottom = front.floorheight;
-                else
-                    openbottom = back.floorheight;
-
-                // quick test for totally closed doors
-                if (openbottom >= opentop)
-                    return false; // stop
-
-                frac = MapUtils.P_InterceptVector(strace, divl);
-
-                if (front.floorheight != back.floorheight) {
-                    slope = FixedDiv(openbottom - sightzstart, frac);
-                    if (slope > bottomslope)
-                        bottomslope = slope;
-                }
-
-                if (front.ceilingheight != back.ceilingheight) {
-                    slope = FixedDiv(opentop - sightzstart, frac);
-                    if (slope < topslope)
-                        topslope = slope;
-                }
-
-                if (topslope <= bottomslope)
-                    return false; // stop
-            }
-            // passed the subsector ok
-            return true;
-        }
-
-        /**
-         * P_CrossBSPNode Returns true if strace crosses the given node
-         * successfully.
-         */
-
-        boolean CrossBSPNode(int bspnum) {
-            node_t bsp;
-            int side;
-
-            if (eval(bspnum& NF_SUBSECTOR)) {
-                if (bspnum == -1)
-                    return CrossSubsector(0);
-                else
-                    return CrossSubsector(bspnum & (~NF_SUBSECTOR));
-            }
-
-            bsp = DOOM.levelLoader.nodes[bspnum];
-
-            // decide which side the start point is on
-            side = bsp.DivlineSide(strace.x, strace.y);
-            if (side == 2)
-                side = 0; // an "on" should cross both sides
-
-            // cross the starting side
-            if (!CrossBSPNode(bsp.children[side]))
-                return false;
-
-            // the partition plane is crossed here
-            if (side == bsp.DivlineSide(t2x, t2y)) {
-                // the line doesn't touch the other side
-                return true;
-            }
-
-            // cross the ending side
-            return CrossBSPNode(bsp.children[side ^ 1]);
-        }
-
-    }
 
     //
     // P_InitPicAnims
@@ -1151,10 +172,10 @@ public abstract class UnifiedGameMap implements ThinkerList {
     //
     // SPECIAL SPAWNING
     //
-    class Specials {
+    public class Specials {
         public static final int OK = 0, CRUSHED = 1, PASTDEST = 2;
 
-        protected line_t[] linespeciallist = new line_t[Limits.MAXLINEANIMS];
+        public line_t[] linespeciallist = new line_t[Limits.MAXLINEANIMS];
         public short numlinespecials;
         
         /**
@@ -1172,9 +193,13 @@ public abstract class UnifiedGameMap implements ThinkerList {
         // P_UpdateSpecials
         // Animate planes, scroll walls, etc.
         //
-        boolean levelTimer;
+        public boolean levelTimer;
 
-        int levelTimeCount;
+        public int levelTimeCount;
+        
+        private Specials() {
+            
+        }
 
         public void UpdateSpecials() {
             int pic;
@@ -1258,15 +283,15 @@ public abstract class UnifiedGameMap implements ThinkerList {
             }
         }
 
-        protected final void resizeLinesSpecialList() {
+        public final void resizeLinesSpecialList() {
             linespeciallist = C2JUtils.resize(linespeciallist[0], linespeciallist, linespeciallist.length * 2);
         }
         
     }
 
-    class Switches {
+    public class Switches {
 
-    	Switches(){
+    	private Switches() {
     		switchlist= new int[MAXSWITCHES];
     		initButtonList();
     	}
@@ -1403,7 +428,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
         //
         // Start a button counting down till it turns off.
         //
-        final void StartButton(line_t line, bwhere_e w, int texture, int time) {
+        public final void StartButton(line_t line, bwhere_e w, int texture, int time) {
             // See if button is already pressed
             for (button_t buttonlist1 : buttonlist) {
                 if (buttonlist1.btimer != 0 && buttonlist1.line == line) {
@@ -1447,7 +472,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
         // Function that changes wall texture.
         // Tell it if switch is ok to use again (true=yes, it's a button).
         //
-        void ChangeSwitchTexture(line_t line, boolean useAgain) {
+        public void ChangeSwitchTexture(line_t line, boolean useAgain) {
             int texTop;
             int texMid;
             int texBot;
@@ -1503,7 +528,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
             }
         }
         
-		final void initButtonList() {
+		public final void initButtonList() {
 			// Unlike plats, buttonlist needs statically allocated and reusable
 			// objects. The MAXBUTTONS limit actually applied to buttons PRESSED
 			// or ACTIVE at once, not how many there can actually be in a map.
@@ -1519,94 +544,8 @@ public abstract class UnifiedGameMap implements ThinkerList {
         UseTraverse
     } */
 
-    //////////////// PIT FUNCTION OBJECTS ///////////////////
-    
-    //
-    // PIT_AddLineIntercepts.
-    // Looks for lines in the given block
-    // that intercept the given trace
-    // to add to the intercepts list.
-    //
-    // A line is crossed if its endpoints
-    // are on opposite sides of the trace.
-    // Returns true if earlyout and a solid line hit.
-    //
-
-    divline_t addLineDivLine = new divline_t();
-
-
-    //
-    // PIT_AddThingIntercepts
-    //
-    // maybe make this a shared instance variable?
-    divline_t thingInterceptDivLine = new divline_t();
  
     /////////// BEGIN MAP OBJECT CODE, USE AS BASIC
-
-    /**
-     * P_ExplodeMissile
-     */
-    protected void ExplodeMissile(mobj_t mo) {
-        mo.momx = mo.momy = mo.momz = 0;
-
-        // MAES 9/5/2011: using mobj code for that.
-        mo.SetMobjState(mobjinfo[mo.type.ordinal()].deathstate);
-
-        mo.mobj_tics -= DOOM.random.P_Random() & 3;
-
-        if (mo.mobj_tics < 1)
-            mo.mobj_tics = 1;
-
-        mo.flags &= ~MF_MISSILE;
-
-        if (mo.info.deathsound != null)
-        DOOM.doomSound.StartSound(mo, mo.info.deathsound);
-    }
-
-    //
-    // P_RemoveMobj
-    //
-    mapthing_t[] itemrespawnque = new mapthing_t[ITEMQUESIZE];
-
-    int[] itemrespawntime = new int[ITEMQUESIZE];
-
-    int iquehead;
-
-    int iquetail;
-
-    @SourceCode.Exact
-    @P_Mobj.C(P_RemoveMobj)
-    public void RemoveMobj(mobj_t mobj) {
-        if (eval(mobj.flags& MF_SPECIAL)
-        && !eval(mobj.flags& MF_DROPPED)
-        && (mobj.type != mobjtype_t.MT_INV)
-        && (mobj.type != mobjtype_t.MT_INS))
-        {
-            itemrespawnque[iquehead] = mobj.spawnpoint;
-            itemrespawntime[iquehead] = DOOM.leveltime;
-            iquehead = (iquehead + 1) & (ITEMQUESIZE - 1);
-
-            // lose one off the end?
-            if (iquehead == iquetail) {
-                iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
-            }
-        }
-
-        // unlink from sector and block lists
-        P_UnsetThingPosition: {
-            UnsetThingPosition(mobj);
-        }
-        
-        // stop any playing sound
-        S_StopSound: {
-            DOOM.doomSound.StopSound (mobj);
-        }
-        
-        // free block
-        P_RemoveThinker: {
-            RemoveThinker(mobj);
-        }
-    }
 
     // //////////////////////////////// THINKER CODE, GLOBALLY VISIBLE
     // /////////////////
@@ -1702,67 +641,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
         //newthinkerpresent = true;
     }
    
-    public void ClearPlatsBeforeLoading() {
-        for (int i = 0; i < PEV.activeplats.length; i++) {
-            PEV.activeplats[i] = null;
-        }
-    }
-    
-    public void AddActivePlat(plat_t plat) {
-        for (int i = 0; i < PEV.activeplats.length; i++) {
-            if (PEV.activeplats[i] == null) {
-                PEV.activeplats[i] = plat;
-                return;
-            }
-        }
-
-        /**
-         * Added option to turn off the resize
-         * - Good Sign 2017/04/26
-         */
-        // Uhh... lemme guess. Needs to resize?
-        // Resize but leave extra items empty.
-        if (Engine.getConfig().equals(Settings.extend_plats_limit, Boolean.TRUE)) {
-            PEV.activeplats = C2JUtils.resizeNoAutoInit(PEV.activeplats, 2 * PEV.activeplats.length);
-            AddActivePlat(plat);
-        } else {
-            LOGGER.log(Level.SEVERE, "P_AddActivePlat: no more plats!");
-            System.exit(1);
-        }
-    }
-        
-    // MAES: works, but not worth it.
-    // MobjPool mobjpool;
-        
-    //
-    // P_RemoveThinker
-    // Deallocation is lazy -- it will not actually be freed
-    // until its thinking turn comes up.
-    //
-    //
-    // killough 4/25/98:
-    //
-    // Instead of marking the function with -1 value cast to a function pointer,
-    // set the function to P_RemoveThinkerDelayed(), so that later, it will be
-    // removed automatically as part of the thinker process.
-    //
-    
-    @Override
-    @SourceCode.Compatible("thinker->function.acv = (actionf_v)(-1)")
-    @P_Tick.C(P_RemoveThinker)
-    public void RemoveThinker(thinker_t thinker) {
-        thinker.thinkerFunction = NOP;
-    }
-
-    //
-    // P_AllocateThinker
-    // Allocates memory and adds a new thinker at the end of the list.
-    //
-    //public void AllocateThinker(thinker_t thinker) {;
-        // UNUSED
-    //}
-
-
     //
     // P_AllocateThinker
     // Allocates memory and adds a new thinker at the end of the list.
@@ -1779,7 +657,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
         return th;
     }
-    
+
 
     //
     // P_Init
@@ -1788,383 +666,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
         SW.InitSwitchList();
         SPECS.InitPicAnims();
         DOOM.spriteManager.InitSprites(ISpriteManager.doomsprnames);
-    }
-
-    /**
-     * P_TouchSpecialThing LIKE ROMERO's ASS!!!
-     */
-    public void TouchSpecialThing(mobj_t special, mobj_t toucher) {
-        player_t player;
-        int i;
-        @fixed_t int delta;
-        sfxenum_t sound;
-
-        delta = special.z - toucher.z;
-
-        if (delta > toucher.height || delta < -8 * FRACUNIT) {
-            // out of reach
-            return;
-        }
-
-        sound = sfxenum_t.sfx_itemup;
-        player = toucher.player;
-
-        // Dead thing touching.
-        // Can happen with a sliding player corpse.
-        if (toucher.health <= 0) {
-            return;
-        }
-
-        // Identify by sprite.
-        switch (special.mobj_sprite) {
-            // armor
-            case SPR_ARM1:
-                if (!player.GiveArmor(1)) {
-                    return;
-                }
-                player.message = GOTARMOR;
-                break;
-
-            case SPR_ARM2:
-                if (!player.GiveArmor(2)) {
-                    return;
-                }
-                player.message = GOTMEGA;
-                break;
-
-            // bonus items
-            case SPR_BON1:
-                player.health[0]++; // can go over 100%
-                if (player.health[0] > 200) {
-                    player.health[0] = 200;
-                }
-                player.mo.health = player.health[0];
-                player.message = GOTHTHBONUS;
-                break;
-
-            case SPR_BON2:
-                player.armorpoints[0]++; // can go over 100%
-                if (player.armorpoints[0] > 200) {
-                    player.armorpoints[0] = 200;
-                }
-                if (player.armortype == 0) {
-                    player.armortype = 1;
-                }
-                player.message = GOTARMBONUS;
-                break;
-
-            case SPR_SOUL:
-                player.health[0] += 100;
-                if (player.health[0] > 200) {
-                    player.health[0] = 200;
-                }
-                player.mo.health = player.health[0];
-                player.message = GOTSUPER;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            case SPR_MEGA:
-                if (!DOOM.isCommercial()) {
-                    return;
-                }
-                player.health[0] = 200;
-                player.mo.health = player.health[0];
-                player.GiveArmor(2);
-                player.message = GOTMSPHERE;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            // cards
-            // leave cards for everyone
-            case SPR_BKEY:
-                if (!player.cards[card_t.it_bluecard.ordinal()]) {
-                    player.message = GOTBLUECARD;
-                }
-                player.GiveCard(card_t.it_bluecard);
-                if (!DOOM.netgame) {
-                    break;
-                }
-                return;
-
-            case SPR_YKEY:
-                if (!player.cards[card_t.it_yellowcard.ordinal()]) {
-                    player.message = GOTYELWCARD;
-                }
-                player.GiveCard(card_t.it_yellowcard);
-                if (!DOOM.netgame) {
-                    break;
-                }
-                return;
-
-            case SPR_RKEY:
-                if (!player.cards[card_t.it_redcard.ordinal()]) {
-                    player.message = GOTREDCARD;
-                }
-                player.GiveCard(card_t.it_redcard);
-                if (!DOOM.netgame) {
-                    break;
-                }
-                return;
-
-            case SPR_BSKU:
-                if (!player.cards[card_t.it_blueskull.ordinal()]) {
-                    player.message = GOTBLUESKUL;
-                }
-                player.GiveCard(card_t.it_blueskull);
-                if (!DOOM.netgame) {
-                    break;
-                }
-                return;
-
-            case SPR_YSKU:
-                if (!player.cards[card_t.it_yellowskull.ordinal()]) {
-                    player.message = GOTYELWSKUL;
-                }
-                player.GiveCard(card_t.it_yellowskull);
-                if (!DOOM.netgame) {
-                    break;
-                }
-                return;
-
-            case SPR_RSKU:
-                if (!player.cards[card_t.it_redskull.ordinal()]) {
-                    player.message = GOTREDSKULL;
-                }
-                player.GiveCard(card_t.it_redskull);
-                if (!DOOM.netgame) {
-                    break;
-                }
-                return;
-
-            // medikits, heals
-            case SPR_STIM:
-                if (!player.GiveBody(10)) {
-                    return;
-                }
-                player.message = GOTSTIM;
-                break;
-
-            case SPR_MEDI:
-                /**
-                 * Another fix with switchable option to enable
-                 * - Good Sign 2017/04/03
-                 */
-                boolean need = player.health[0] < 25;
-
-                if (!player.GiveBody(25)) {
-                    return;
-                }
-
-                if (DOOM.CM.equals(Settings.fix_medi_need, Boolean.FALSE)) // default behavior - with bug
-                {
-                    player.message = player.health[0] < 25 ? GOTMEDINEED : GOTMEDIKIT;
-                } else //proper behavior
-                {
-                    player.message = need ? GOTMEDINEED : GOTMEDIKIT;
-                }
-
-                break;
-
-            // power ups
-            case SPR_PINV:
-                if (!player.GivePower(pw_invulnerability)) {
-                    return;
-                }
-                player.message = GOTINVUL;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            case SPR_PSTR:
-                if (!player.GivePower(pw_strength)) {
-                    return;
-                }
-                player.message = GOTBERSERK;
-                if (player.readyweapon != weapontype_t.wp_fist) {
-                    player.pendingweapon = weapontype_t.wp_fist;
-                }
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            case SPR_PINS:
-                if (!player.GivePower(pw_invisibility)) {
-                    return;
-                }
-                player.message = GOTINVIS;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            case SPR_SUIT:
-                if (!player.GivePower(pw_ironfeet)) {
-                    return;
-                }
-                player.message = GOTSUIT;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            case SPR_PMAP:
-                if (!player.GivePower(pw_allmap)) {
-                    return;
-                }
-                player.message = GOTMAP;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            case SPR_PVIS:
-                if (!player.GivePower(pw_infrared)) {
-                    return;
-                }
-                player.message = GOTVISOR;
-                sound = sfxenum_t.sfx_getpow;
-                break;
-
-            // ammo
-            case SPR_CLIP:
-                if ((special.flags & MF_DROPPED) != 0) {
-                    if (!player.GiveAmmo(ammotype_t.am_clip, 0)) {
-                        return;
-                    }
-                } else {
-                    if (!player.GiveAmmo(ammotype_t.am_clip, 1)) {
-                        return;
-                    }
-                }
-                player.message = GOTCLIP;
-                break;
-
-            case SPR_AMMO:
-                if (!player.GiveAmmo(ammotype_t.am_clip, 5)) {
-                    return;
-                }
-                player.message = GOTCLIPBOX;
-                break;
-
-            case SPR_ROCK:
-                if (!player.GiveAmmo(ammotype_t.am_misl, 1)) {
-                    return;
-                }
-                player.message = GOTROCKET;
-                break;
-
-            case SPR_BROK:
-                if (!player.GiveAmmo(ammotype_t.am_misl, 5)) {
-                    return;
-                }
-                player.message = GOTROCKBOX;
-                break;
-
-            case SPR_CELL:
-                if (!player.GiveAmmo(ammotype_t.am_cell, 1)) {
-                    return;
-                }
-                player.message = GOTCELL;
-                break;
-
-            case SPR_CELP:
-                if (!player.GiveAmmo(ammotype_t.am_cell, 5)) {
-                    return;
-                }
-                player.message = GOTCELLBOX;
-                break;
-
-            case SPR_SHEL:
-                if (!player.GiveAmmo(ammotype_t.am_shell, 1)) {
-                    return;
-                }
-                player.message = GOTSHELLS;
-                break;
-
-            case SPR_SBOX:
-                if (!player.GiveAmmo(ammotype_t.am_shell, 5)) {
-                    return;
-                }
-                player.message = GOTSHELLBOX;
-                break;
-
-            case SPR_BPAK:
-                if (!player.backpack) {
-                    for (i = 0; i < NUMAMMO; i++) {
-                        player.maxammo[i] *= 2;
-                    }
-                    player.backpack = true;
-                }
-                for (i = 0; i < NUMAMMO; i++) {
-                    player.GiveAmmo(ammotype_t.values()[i], 1);
-                }
-                player.message = GOTBACKPACK;
-                break;
-
-            // weapons
-            case SPR_BFUG:
-                if (!player.GiveWeapon(weapontype_t.wp_bfg, false)) {
-                    return;
-                }
-                player.message = GOTBFG9000;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            case SPR_MGUN:
-                if (!player.GiveWeapon(weapontype_t.wp_chaingun,
-                    (special.flags & MF_DROPPED) != 0)) {
-                    return;
-                }
-                player.message = GOTCHAINGUN;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            case SPR_CSAW:
-                if (!player.GiveWeapon(weapontype_t.wp_chainsaw, false)) {
-                    return;
-                }
-                player.message = GOTCHAINSAW;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            case SPR_LAUN:
-                if (!player.GiveWeapon(weapontype_t.wp_missile, false)) {
-                    return;
-                }
-                player.message = GOTLAUNCHER;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            case SPR_PLAS:
-                if (!player.GiveWeapon(weapontype_t.wp_plasma, false)) {
-                    return;
-                }
-                player.message = GOTPLASMA;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            case SPR_SHOT:
-                if (!player.GiveWeapon(weapontype_t.wp_shotgun,
-                    (special.flags & MF_DROPPED) != 0)) {
-                    return;
-                }
-                player.message = GOTSHOTGUN;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            case SPR_SGN2:
-                if (!player.GiveWeapon(weapontype_t.wp_supershotgun,
-                    (special.flags & MF_DROPPED) != 0)) {
-                    return;
-                }
-                player.message = GOTSHOTGUN2;
-                sound = sfxenum_t.sfx_wpnup;
-                break;
-
-            default:
-                DOOM.doomSystem.Error("P_SpecialThing: Unknown gettable thing");
-        }
-
-        if ((special.flags & MF_COUNTITEM) != 0) {
-            player.itemcount++;
-        }
-        RemoveMobj(special);
-        player.bonuscount += player_t.BONUSADD;
-        if (player == DOOM.players[DOOM.consoleplayer]) {
-            DOOM.doomSound.StartSound(null, sound);
-        }
     }
 
     @Override

@@ -895,7 +895,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
             // Call action routine.
             // Modified handling.
             if (state.action.isParamType(PlayerSpriteConsumer.class)) {
-                state.action.fun(PlayerSpriteConsumer.class).accept(DOOM.actions.obs(), this, psp);
+                state.action.fun(PlayerSpriteConsumer.class).accept(DOOM.actions, this, psp);
                 if (!eval(psp.state)) {
                     break;
                 }

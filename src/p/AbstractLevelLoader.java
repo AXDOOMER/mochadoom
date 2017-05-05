@@ -66,6 +66,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     public int numsides;
     public side_t[] sides;
 
+
     // BLOCKMAP
     // Created from axis aligned bounding box
     // of the map, a rectangular array of
@@ -74,7 +75,9 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     // by spatial subdivision in 2D.
     //
     /** Blockmap size. */
-    protected int bmapwidth, bmapheight; // size in mapblocks
+    public int bmapwidth; // size in mapblocks
+
+    public int bmapheight; // size in mapblocks
 
     /**
      * killough 3/1/98: remove blockmap limit internally. Maes 29/9/2011: Header
@@ -100,7 +103,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * PVS lookup as well.
      */
 
-    protected byte[] rejectmatrix;
+    public byte[] rejectmatrix;
 
     // Maintain single and multi player starting spots.
 

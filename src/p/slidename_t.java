@@ -19,13 +19,13 @@ public class slidename_t {
 		this.backFrame4 = backFrame4;
 	}
 
-	String frontFrame1;
-	String frontFrame2;
-	String frontFrame3;
-	String frontFrame4;
-	String backFrame1;
-	String backFrame2;
-	String backFrame3;
-	String backFrame4;
+	public String frontFrame1;
+	public String frontFrame2;
+	public String frontFrame3;
+	public String frontFrame4;
+	public String backFrame1;
+	public String backFrame2;
+	public String backFrame3;
+	public String backFrame4;
 
 }

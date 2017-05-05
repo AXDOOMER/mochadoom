@@ -37,8 +37,8 @@ public class intercept_t {
     public boolean isaline;
     // MAES: this was an union of a mobj_t and a line_t,
     // returned as "d".
-    mobj_t thing;
-    line_t line;
+    public mobj_t thing;
+    public line_t line;
 
     public Interceptable d() {
         return (isaline) ? line : thing;

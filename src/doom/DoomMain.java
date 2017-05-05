@@ -57,7 +57,7 @@ import mochadoom.Engine;
 import n.DoomSystemNetworking;
 import n.DummyNetworkDriver;
 import p.AbstractLevelLoader;
-import p.Actions;
+import p.ActionFunctions;
 import p.BoomLevelLoader;
 import p.mobj_t;
 import rr.ISpriteManager;
@@ -231,7 +231,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
 
         if (gamestate == GS_LEVEL && eval(gametic)) {
-            handsUp.Erase();
+            headsUp.Erase();
         }
         
         // do buffered drawing
@@ -277,7 +277,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         // Automap was active, update only HU.    
         if (gamestate == GS_LEVEL && eval(gametic)) {
-            handsUp.Drawer();
+            headsUp.Drawer();
         }
 
         // clean up border stuff
@@ -986,7 +986,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     	}
     	
         // buttons
-        cmd.chatchar = handsUp.dequeueChatChar(); 
+        cmd.chatchar = headsUp.dequeueChatChar(); 
 
         if (gamekeydown[key_fire] || mousebuttons(mousebfire) || joybuttons(joybfire)) {
             cmd.buttons |= BT_ATTACK; 
@@ -1183,7 +1183,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         
         // killough 5/13/98: in case netdemo has consoleplayer other than green
         statusBar.Start();
-        handsUp.Start();
+        headsUp.Start();
         
         // killough: make -timedemo work on multilevel demos
         // Move to end of function to minimize noise -- killough 2/22/98:
@@ -1245,7 +1245,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             }
 
             HU_Responder: {
-                if (handsUp.Responder(ev)) {
+                if (headsUp.Responder(ev)) {
                     return true;    // chat ate the event 
                 }
             }
@@ -1455,7 +1455,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 actions.Ticker();
                 statusBar.Ticker();
                 autoMap.Ticker();
-                handsUp.Ticker();
+                headsUp.Ticker();
                 break;
 
             case GS_INTERMISSION:
@@ -2362,9 +2362,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     public final IDoomGameNetworking gameNetworking;
     public final AbstractLevelLoader levelLoader;
     public final IDoomMenu menu;
-    public final Actions actions;
+    public final ActionFunctions actions;
     public final SceneRenderer<T, V> sceneRenderer;
-    public final HU handsUp;
+    public final HU headsUp;
     public final IAutoMap<T, V> autoMap;
     public final Finale<T> finale;
     public final EndLevel<T, V> endLevel;
@@ -2438,13 +2438,13 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         this.spriteManager = new SpriteManager<>(this);
         
         // Heads-up, Menu, Level Loader
-        this.handsUp = new HU(this);
+        this.headsUp = new HU(this);
         this.menu = new Menu<>(this);
         this.levelLoader = new BoomLevelLoader(this);
         
         // Renderer, Actions, StatusBar, AutoMap
         this.sceneRenderer = bppMode.sceneRenderer(this);
-        this.actions = new Actions(this);
+        this.actions = new ActionFunctions(this);
         this.statusBar = new StatusBar(this);
 
         // Let the renderer pick its own. It makes linking easier.
@@ -2515,7 +2515,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         doomSound.Init(snd_SfxVolume * 8, snd_MusicVolume * 8);
 
         System.out.print("HU_Init: Setting up heads up display.\n");
-        handsUp.Init();
+        headsUp.Init();
 
         System.out.print("ST_Init: Init status bar.\n");
         statusBar.Init();
@@ -2542,7 +2542,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         for (int i = 0; i <= 9; i++) {
 
             String chatmacro = String.format("chatmacro%d", i);
-            this.handsUp.setChatMacro(i, CM.getValue(Settings.valueOf(chatmacro), String.class));
+            this.headsUp.setChatMacro(i, CM.getValue(Settings.valueOf(chatmacro), String.class));
         }
     }
 
@@ -2558,7 +2558,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         // These should be handled by the HU
         for (int i = 0; i <= 9; i++) {
-            CM.update(Settings.valueOf(String.format("chatmacro%d", i)), this.handsUp.chat_macros[i]);
+            CM.update(Settings.valueOf(String.format("chatmacro%d", i)), this.headsUp.chat_macros[i]);
         }
     }
     
