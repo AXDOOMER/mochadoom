@@ -1,5 +1,7 @@
 package automap;
 
+import doom.SourceCode.AM_Map;
+import static doom.SourceCode.AM_Map.AM_Responder;
 import doom.event_t;
 
 public interface IAutoMap<T,V> {
@@ -27,10 +29,11 @@ public interface IAutoMap<T,V> {
     public final int GRIDRANGE   =0;
     
     // Called by main loop.
-    public boolean Responder (event_t ev);
+    @AM_Map.C(AM_Responder)
+    public boolean Responder(event_t ev);
 
     // Called by main loop.
-    public void Ticker ();
+    public void Ticker();
 
     // Called by main loop,
     // called instead of view drawer if automap active.

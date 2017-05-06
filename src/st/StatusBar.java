@@ -32,6 +32,8 @@ import defines.*;
 import doom.DoomMain;
 import doom.SourceCode;
 import doom.SourceCode.CauseOfDesyncProbability;
+import doom.SourceCode.ST_Stuff;
+import static doom.SourceCode.ST_Stuff.ST_Responder;
 import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
@@ -745,8 +747,9 @@ public class StatusBar extends AbstractStatusBar {
     // Respond to keyboard input events,
     // intercept cheats.
 
+    @Override
+    @ST_Stuff.C(ST_Responder)
     public boolean Responder(event_t ev) {
-        int i;
         if (ev.isType(evtype_t.ev_keydown)) {
             if (!DOOM.netgame) {
                 // b. - enabled for more debug fun.
@@ -769,11 +772,10 @@ public class StatusBar extends AbstractStatusBar {
                     plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
-                    for (i = 0; i < NUMWEAPONS; i++)
+                    for (int i = 0; i < NUMWEAPONS; i++)
                         plyr.weaponowned[i] = true; // true
-
-                    for (i = 0; i < NUMAMMO; i++)
-                        plyr.ammo[i] = plyr.maxammo[i];
+                    
+                    System.arraycopy(plyr.maxammo, 0, plyr.ammo, 0, NUMAMMO);
 
                     plyr.message = STSTR_FAADDED;
                 }
@@ -782,13 +784,12 @@ public class StatusBar extends AbstractStatusBar {
                     plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
-                    for (i = 0; i < NUMWEAPONS; i++)
+                    for (int i = 0; i < NUMWEAPONS; i++)
                         plyr.weaponowned[i] = true; // true
+                    
+                    System.arraycopy(plyr.maxammo, 0, plyr.ammo, 0, NUMAMMO);
 
-                    for (i = 0; i < NUMAMMO; i++)
-                        plyr.ammo[i] = plyr.maxammo[i];
-
-                    for (i = 0; i < NUMCARDS; i++)
+                    for (int i = 0; i < NUMCARDS; i++)
                         plyr.cards[i] = true;
 
                     plyr.message = STSTR_KFAADDED;
@@ -833,7 +834,7 @@ public class StatusBar extends AbstractStatusBar {
                         plyr.message = STSTR_NCOFF;
                 }
                 // 'behold?' power-up cheats
-                for (i = 0; i < 6; i++) {
+                for (int i = 0; i < 6; i++) {
                     if (ev.ifKeyAsciiChar(cheat_powerup[i]::CheckCheat)) {
                         if (plyr.powers[i] == 0)
                            plyr.GivePower(i);

@@ -174,7 +174,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         for(; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
             final event_t ev = events[eventtail];
-            ev.withMouse(mev -> mev.processed = true);
+            ev.withMouse(event_t.mouseevent_t::processedNotify);
             
             M_Responder: {
                 if (menu.Responder(ev)) {
@@ -872,6 +872,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * 
      */
     
+    @G_Game.C(G_BuildTiccmd)
     private void BuildTiccmd (ticcmd_t cmd) 
     { 
         int i;
@@ -882,8 +883,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         int side;
         int look;
 
-        //base = I_BaseTiccmd ();     // empty, or external driver
-        // memcpy (cmd,base,sizeof(*cmd));
+        I_BaseTiccmd:;     // empty, or external driver
         base.copyTo(cmd);
 
         cmd.consistancy = consistancy[consoleplayer][maketic % BACKUPTICS];
@@ -969,20 +969,17 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
 
     	// Look up/down/center keys
-    	if(gamekeydown[key_lookup])
-    	{
+    	if(gamekeydown[key_lookup]) {
     		System.err.print("Look up\n");
     		look = lspeed;
     	}
     	
-    	if(gamekeydown[key_lookdown])
-    	{
+    	if(gamekeydown[key_lookdown]) {
     		System.err.print("Look down\n");
     		look = -lspeed;
     	}
     	
-    	if(gamekeydown[key_lookcenter])
-    	{
+    	if(gamekeydown[key_lookcenter]) {
     		System.err.print("Center look\n");
     		look = TOCENTER;
     	}
@@ -1011,60 +1008,55 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
 
         // mouse
-        if (mousebuttons(mousebforward)) 
+        if (mousebuttons(mousebforward)) {
             forward += forwardmove[speed];
+        }
 
-        // forward double click (operator precedence? && over >
-        if (mousebuttons(mousebforward) != (dclickstate!=0) && (dclicktime > 1) ) 
-        { 
-            dclickstate = mousebuttons(mousebforward)?1:0; 
-            if (dclickstate!=0) 
-                dclicks++; 
-            if (dclicks == 2) 
-            { 
-                cmd.buttons |= BT_USE; 
-                dclicks = 0; 
-            } 
-            else 
-                dclicktime = 0; 
-        } 
-        else 
-        { 
-            dclicktime += ticdup; 
-            if (dclicktime > 20) 
-            { 
-                dclicks = 0; 
-                dclickstate = 0; 
-            } 
+        // forward double click
+        if (mousebuttons(mousebforward) != eval(dclickstate) && dclicktime > 1) {
+            dclickstate = mousebuttons(mousebforward) ? 1 : 0;
+            if (dclickstate != 0) {
+                dclicks++;
+            }
+            if (dclicks == 2) {
+                cmd.buttons |= BT_USE;
+                dclicks = 0;
+            } else {
+                dclicktime = 0;
+            }
+        } else {
+            dclicktime += ticdup;
+            if (dclicktime > 20) {
+                dclicks = 0;
+                dclickstate = 0;
+            }
         }
 
         // strafe double click
-        bstrafe = mousebuttons(mousebstrafe) || joybuttons(joybstrafe); 
-        if ((bstrafe != (dclickstate2!=0)) && dclicktime2 > 1 ) 
-        { 
-            dclickstate2 = bstrafe?1:0; 
-            if (dclickstate2!=0) 
-                dclicks2++; 
-            if (dclicks2 == 2) 
-            { 
-                cmd.buttons |= BT_USE; 
-                dclicks2 = 0; 
-            } 
-            else 
-                dclicktime2 = 0; 
-        } 
-        else 
-        { 
-            dclicktime2 += ticdup; 
-            if (dclicktime2 > 20) 
-            { 
-                dclicks2 = 0; 
-                dclickstate2 = 0; 
-            } 
-        } 
+        bstrafe = mousebuttons(mousebstrafe) || joybuttons(joybstrafe);
+        if ((bstrafe != eval(dclickstate2)) && dclicktime2 > 1) {
+            dclickstate2 = bstrafe ? 1 : 0;
+            if (dclickstate2 != 0) {
+                dclicks2++;
+            }
+            if (dclicks2 == 2) {
+                cmd.buttons |= BT_USE;
+                dclicks2 = 0;
+            } else {
+                dclicktime2 = 0;
+            }
+        } else {
+            dclicktime2 += ticdup;
+            if (dclicktime2 > 20) {
+                dclicks2 = 0;
+                dclickstate2 = 0;
+            }
+        }
 
         // By default, no vertical mouse movement
-        if (!novert) forward += mousey; 
+        if (!novert) {
+            forward += mousey;
+        }
 
         if (strafe) 
             side += mousex*2; 
@@ -1210,6 +1202,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * G_Responder  
      * Get info needed to make ticcmd_ts for the players.
      */
+    @SourceCode.Compatible
     @G_Game.C(G_Responder)
     public boolean Responder(event_t ev) {
         // allow spy mode changes even during the demo
@@ -1264,8 +1257,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
 
         if (gamestate == GS_FINALE) {
-            if (finale.Responder(ev)) {
-                return true;    // finale ate the event 
+            F_Responder: {
+                if (finale.Responder(ev)) {
+                    return true;    // finale ate the event 
+                }
             }
         }
 
@@ -1276,21 +1271,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     return true;
                 }
 
-                /* CAPS lock will only go through as a keyup event
-                if (ev.data1 == KEY_CAPSLOCK) 
-                { 
-                    if (justfocused) justfocused=false;
-                        else
-                    // If caps are turned on, turn autorun on anyway.
-                    if (!alwaysrun) {
-                        alwaysrun=true;
-                        players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
-                    }
-                    return true; 
-                } */
                 ev.withKey(sc -> gamekeydown[sc.ordinal()] = true);
                 return true;    // eat key down events 
             case ev_keyup:
+                /* CAPS lock will only go through as a keyup event */
                 if (ev.isKey(SC_CAPSLK)) {
                     // Just toggle it. It's too hard to read the state.
                     alwaysrun = !alwaysrun;

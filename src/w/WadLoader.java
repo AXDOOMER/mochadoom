@@ -22,8 +22,8 @@
 
 package w;
 
-import static data.Defines.*;
-import i.*;
+import static data.Defines.PU_CACHE;
+import static doom.SourceCode.W_Wad.W_CheckNumForName;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -38,6 +38,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import doom.SourceCode;
+import doom.SourceCode.W_Wad;
+import i.DummySystem;
+import i.IDoomSystem;
 import mochadoom.Loggers;
 import rr.patch_t;
 import utils.C2JUtils;
@@ -328,6 +332,7 @@ public class WadLoader implements IWadLoader {
     /* (non-Javadoc)
 	 * @see w.IWadLoader#Reload()
 	 */
+	@Override
 	@SuppressWarnings("null")
 	public void Reload() throws Exception {
 		wadinfo_t header = new wadinfo_t();
@@ -360,7 +365,7 @@ public class WadLoader implements IWadLoader {
 		// MAES: we can't read raw structs here, and even less BLOCKS of
 		// structs.
 
-		DoomIO.readObjectArrayWithReflection(handle,fileinfo, (int) length);
+		DoomIO.readObjectArrayWithReflection(handle,fileinfo, length);
 
 		/*
 		 * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
@@ -389,6 +394,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitMultipleFiles(java.lang.String[])
 	 */
 	
+	@Override
 	public void InitMultipleFiles(String[] filenames) throws Exception {
 		int size;
 
@@ -463,6 +469,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#InitFile(java.lang.String)
 	 */
+	@Override
 	public void InitFile(String filename) throws Exception {
 		String[] names = new String[1];
 
@@ -474,6 +481,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#NumLumps()
 	 */
+	@Override
 	public final int NumLumps() {
 		return numlumps;
 	}
@@ -558,6 +566,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#GetLumpinfoForName(java.lang.String)
 	 */
 
+	@Override
 	public lumpinfo_t GetLumpinfoForName(String name) {
 
 		int v1;
@@ -591,6 +600,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#GetNumForName(java.lang.String)
 	 */
 	
+	@Override
 	public int GetNumForName(String name) {
 		int i;
 
@@ -611,7 +621,8 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#GetNameForNum(int)
 	 */
-    public String GetNameForNum(int lumpnum) {
+    @Override
+	public String GetNameForNum(int lumpnum) {
         if (lumpnum>=0 && lumpnum<this.numlumps){
             return this.lumpinfo[lumpnum].name;
         }
@@ -625,6 +636,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#LumpLength(int)
 	 */
+	@Override
 	public int LumpLength(int lump) {
 		if (lump >= numlumps)
 			I.Error("W_LumpLength: %i >= numlumps", lump);
@@ -725,6 +737,7 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 */
 	
+	@Override
 	@SuppressWarnings("unchecked")
     public <T> T CacheLumpNum(int lump, int tag, Class<T> what) {
 		
@@ -759,7 +772,7 @@ public class WadLoader implements IWadLoader {
 						// CacheLumpNumIntoArray instead.
 						thebuffer.rewind();
 						lumpcache[lump] = (CacheableDoomObject) what.newInstance();
-						((CacheableDoomObject) lumpcache[lump]).unpack((ByteBuffer) thebuffer);
+						lumpcache[lump].unpack(thebuffer);
 						
 						// Track it for freeing
 						Track(lumpcache[lump],lump);
@@ -811,6 +824,7 @@ public class WadLoader implements IWadLoader {
 	 *  @return
 	 */
 	
+	@Override
 	@Deprecated
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
 			Class<?> what) throws IOException {
@@ -958,6 +972,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpNameAsRawBytes(java.lang.String, int)
 	 */
 
+	@Override
 	public byte[] CacheLumpNameAsRawBytes(String name, int tag) {
 		return ((DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag,
 				null)).getBuffer().array();
@@ -967,7 +982,8 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpNumAsRawBytes(int, int)
 	 */
 
-    public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
+    @Override
+	public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
         return ((DoomBuffer) this.CacheLumpNum(num, tag,
                 null)).getBuffer().array();
     	}
@@ -977,14 +993,16 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int)
 	 */
 
+	@Override
 	public DoomBuffer CacheLumpName(String name, int tag) {
-		return (DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag,
+		return this.CacheLumpNum(this.GetNumForName(name), tag,
 				DoomBuffer.class);
 
 	}
 	
-	   public DoomBuffer CacheLumpNumAsDoomBuffer(int lump) {
-	        return (DoomBuffer) this.CacheLumpNum(lump, 0,
+	   @Override
+	public DoomBuffer CacheLumpNumAsDoomBuffer(int lump) {
+	        return this.CacheLumpNum(lump, 0,
 	                DoomBuffer.class);
 	    }
 	
@@ -993,8 +1011,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchName(java.lang.String)
 	 */
 
+	@Override
 	public patch_t CachePatchName(String name) {
-		return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE,
+		return this.CacheLumpNum(this.GetNumForName(name), PU_CACHE,
 				patch_t.class);
 
 	}
@@ -1003,8 +1022,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchName(java.lang.String, int)
 	 */
 
+	@Override
 	public patch_t CachePatchName(String name, int tag) {
-		return (patch_t) this.CacheLumpNum(this.GetNumForName(name), tag,
+		return this.CacheLumpNum(this.GetNumForName(name), tag,
 				patch_t.class);
 	}
 
@@ -1012,13 +1032,15 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchNum(int, int)
 	 */
 
+	@Override
 	public patch_t CachePatchNum(int num) {
-		return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
+		return this.CacheLumpNum(num, PU_CACHE, patch_t.class);
 	}
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
+	@Override
 	public <T extends CacheableDoomObject> T CacheLumpName(String name, int tag, Class<T> what) {
 		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
 				what);
@@ -1076,6 +1098,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#isLumpMarker(int)
 	 */
+	@Override
 	public boolean isLumpMarker(int lump){
 	    return (lumpinfo[lump].size==0);
 	}
@@ -1083,6 +1106,7 @@ public class WadLoader implements IWadLoader {
 	   /* (non-Javadoc)
 	 * @see w.IWadLoader#GetNameForLump(int)
 	 */
+	@Override
 	public String GetNameForLump(int lump){
 	        return lumpinfo[lump].name;
 	    }
@@ -1126,45 +1150,52 @@ public class WadLoader implements IWadLoader {
         }
     }
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see w.IWadLoader#CheckNumForName(java.lang.String)
 	 */
     @Override
+    @SourceCode.Compatible
+    @W_Wad.C(W_CheckNumForName)
 	public int CheckNumForName(String name/* , int namespace */) {
-		Integer r = doomhash.get(name);
+		final Integer r = doomhash.get(name);
 		// System.out.print("Found "+r);
 
-		if (r != null)
+		if (r != null) {
 			return r;
+		}
 
 		// System.out.print(" found "+lumpinfo[i]+"\n" );
 		return -1;
 	}
 
-	   /* (non-Javadoc)
-     * @see w.IWadLoader#CheckNumForName(java.lang.String)
-     */
-    public int[] CheckNumsForName(String name)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see w.IWadLoader#CheckNumForName(java.lang.String)
+	 */
+    @Override
+	public int[] CheckNumsForName(String name) {
+		list.clear();
 
-    {
-        
-        list.clear();
-        
-        // Dumb search, no chained hashtables I'm afraid :-/
-        // Move backwards, so list is compiled with more recent ones first.
-        for (int i=numlumps-1;i>=0;i--){
-            if (name.compareToIgnoreCase(lumpinfo[i].name)==0) list.add(i);
-        }
-        
-        final int num=list.size();
-        int[] result=new int[num];
-        for (int i=0;i<num;i++){
-            result[i]=list.get(i);
-        }
-    
-        // Might be empty/null, so check that out.
-        return result;
-    }
+		// Dumb search, no chained hashtables I'm afraid :-/
+		// Move backwards, so list is compiled with more recent ones first.
+		for (int i = numlumps - 1; i >= 0; i--) {
+			if (name.compareToIgnoreCase(lumpinfo[i].name) == 0) {
+				list.add(i);
+			}
+		}
+
+		final int num = list.size();
+		int[] result = new int[num];
+		for (int i = 0; i < num; i++) {
+			result[i] = list.get(i);
+		}
+
+		// Might be empty/null, so check that out.
+		return result;
+	}
     
     private final ArrayList<Integer> list=new ArrayList<Integer>();
 	

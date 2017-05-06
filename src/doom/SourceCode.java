@@ -24,6 +24,16 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 @Retention(SOURCE)
 public @interface SourceCode {
     
+    public enum AM_Map {
+        AM_Responder,
+        AM_Ticker,
+        AM_Drawer,
+        AM_Stop;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { AM_Map value(); }
+    }
+    
     public enum D_Main {
         D_DoomLoop,
         D_ProcessEvents;
@@ -32,7 +42,18 @@ public @interface SourceCode {
         @interface C { D_Main value(); }
     }
     
+    public enum F_Finale {
+        F_Responder,
+        F_Ticker,
+        F_Drawer,
+        F_StartFinale;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { F_Finale value(); }
+    }
+    
     public enum G_Game {
+        G_BuildTiccmd,
         G_PlayerReborn,
         G_CheckSpot,
         G_DeathMatchSpawnPlayer,
@@ -281,6 +302,17 @@ public @interface SourceCode {
         @Documented
         @Retention(SOURCE) public
         @interface C { R_Main value(); }
+    }
+    
+    public enum ST_Stuff {
+        ST_Responder,
+        ST_Ticker,
+        ST_Drawer,
+        ST_Start,
+        ST_Init;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { ST_Stuff value(); }
     }
     
     public enum W_Wad {

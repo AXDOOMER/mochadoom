@@ -108,7 +108,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             observer.mouseEvent.buttonOn((MouseEvent) ev);
             observer.mouseEvent.x = observer.mouseEvent.y = 0;
             if (observer.mouseEvent.processed) {
-                observer.mouseEvent.processed = false;
+                observer.mouseEvent.resetNotify();
                 observer.feed(observer.mouseEvent);
             }
         });
@@ -119,7 +119,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             observer.mouseEvent.buttonOff((MouseEvent) ev);
             observer.mouseEvent.x = observer.mouseEvent.y = 0;
             if (observer.mouseEvent.processed) {
-                observer.mouseEvent.processed = false;
+                observer.mouseEvent.resetNotify();
                 observer.feed(observer.mouseEvent);
             }
         });
@@ -324,7 +324,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             }
             
             if (observer.mouseEvent.processed) {
-                observer.mouseEvent.processed = false;
+                observer.mouseEvent.resetNotify();
                 observer.feed(observer.mouseEvent);
             }
         };

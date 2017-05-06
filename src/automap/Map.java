@@ -174,6 +174,8 @@ import static data.Defines.*;
 import static data.Limits.*;
 import static data.Tables.*;
 import doom.DoomMain;
+import doom.SourceCode.AM_Map;
+import static doom.SourceCode.AM_Map.AM_Responder;
 import static doom.englsh.*;
 import doom.event_t;
 import doom.evtype_t;
@@ -894,6 +896,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
      */
 
     @Override
+    @AM_Map.C(AM_Responder)
     public final boolean Responder(event_t ev) {
         boolean rc;
         rc = false;
