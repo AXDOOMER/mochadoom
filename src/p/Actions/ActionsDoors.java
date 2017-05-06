@@ -70,6 +70,8 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             door.direction = 1;
                             StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                             break;
+                        default:
+                        	break;
                     }
                 }
                 break;
@@ -83,6 +85,8 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             door.type = vldoor_e.normal;
                             StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                             break;
+                        default:
+                        	break;
                     }
                 }
                 break;
@@ -107,6 +111,8 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             door.direction = 0;
                             door.topcountdown = 35 * 30;
                             break;
+                        default:
+                        	break;
                     }
                 } else if (res == result_e.crushed) {
                     switch (door.type) {
@@ -137,6 +143,8 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             door.sector.specialdata = null;
                             RemoveThinker(door);  // unlink and free
                             break;
+                        default:
+                        	break;
                     }
                 }
                 break;
@@ -259,6 +267,8 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                     if (door.topheight != sec.ceilingheight) {
                         StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                     }
+                default:
+                	break;
             }
 
         }

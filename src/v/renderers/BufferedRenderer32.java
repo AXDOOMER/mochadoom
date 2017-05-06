@@ -28,7 +28,6 @@ import java.awt.image.VolatileImage;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.logging.Level;
 import mochadoom.Loggers;
-import static v.renderers.SoftwareParallelVideoRenderer.PARALLELISM;
 import v.tables.BlurryTable;
 import v.tables.ColorTint;
 import static v.tables.ColorTint.GREY_TINTS;

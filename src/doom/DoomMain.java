@@ -264,6 +264,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             case GS_DEMOSCREEN:
                 PageDrawer();
                 break;
+            default:
+            	break;
         }
 
         // draw the view directly
@@ -1377,6 +1379,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     break;
                 case ga_nothing:
                     break;
+                default:
+                	break;
             }
         }
 
@@ -1469,6 +1473,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             case GS_DEMOSCREEN:
                 PageTicker();
                 break;
+                
+            default:
+            	break;
         }
     } 
 

@@ -151,7 +151,8 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
     }
     
     private class DimensionImpl extends java.awt.Dimension implements Dimension {
-        private int offsetX, offsetY;
+		private static final long serialVersionUID = 4598094740125688728L;
+		private int offsetX, offsetY;
         private int fitWidth, fitHeight;
 
         DimensionImpl(int width, int height) {

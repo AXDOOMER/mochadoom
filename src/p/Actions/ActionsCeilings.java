@@ -87,6 +87,8 @@ public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
                         case fastCrushAndRaise:
                         case crushAndRaise:
                             ceiling.direction = -1;
+                        default:
+                        	break;
                     }
                 }
                 break;

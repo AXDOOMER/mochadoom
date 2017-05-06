@@ -1698,6 +1698,9 @@ public void WI_unloadData()
             case NoState:
                 drawNoState();
                 break;
+                
+            default:
+            	break;
         }
     }
 

@@ -2,48 +2,44 @@ package doom;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import w.DoomBuffer;
 
 public class doomdata_t implements IDatagramSerializable {
 
-    public static final int DOOMDATALEN=8+data.Defines.BACKUPTICS*ticcmd_t.TICCMDLEN;
+	public static final int DOOMDATALEN = 8 + data.Defines.BACKUPTICS * ticcmd_t.TICCMDLEN;
     
-     // High bit is retransmit request.
-     /** MAES: was "unsigned" */
-     public int        checksum; 
+	// High bit is retransmit request.
+	/** MAES: was "unsigned" */
+	public int checksum;
+
+	/*
+	 * CAREFUL!!! Those "bytes" are actually unsigned
+	 */
+
+	/** Only valid if NCMD_RETRANSMIT. */
+	public byte retransmitfrom;
+
+	public byte starttic;
+	public byte player;
+	public byte numtics;
+	public ticcmd_t[] cmds;
      
-     /* CAREFUL!!! Those "bytes" are actually unsigned
-      * 
-      */
-     
-     /** Only valid if NCMD_RETRANSMIT. */     
-     public byte        retransmitfrom;
-     
-     public byte        starttic;
-     public byte        player;
-     public byte        numtics;
-     public ticcmd_t[]        cmds;
-     
-    public doomdata_t(){
-        cmds = new ticcmd_t[data.Defines.BACKUPTICS];
-        Arrays.setAll(cmds, i -> new ticcmd_t());
-        // Enough space for its own header + the ticcmds;
-        buffer=new byte[DOOMDATALEN];
-        // This "pegs" the ByteBuffer to this particular array.
-        // Separate updates are not necessary.
-        bbuf=ByteBuffer.wrap(buffer);
-    }
-    
+	public doomdata_t() {
+		cmds = new ticcmd_t[data.Defines.BACKUPTICS];
+		Arrays.setAll(cmds, i -> new ticcmd_t());
+		// Enough space for its own header + the ticcmds;
+		buffer = new byte[DOOMDATALEN];
+		// This "pegs" the ByteBuffer to this particular array.
+		// Separate updates are not necessary.
+		bbuf = ByteBuffer.wrap(buffer);
+	}
+
     // Used for datagram serialization.
     private byte[] buffer;
     private ByteBuffer bbuf;
-
-    
     
     @Override
     public byte[] pack() {        
-        
         bbuf.rewind();
         
         // Why making it harder?
@@ -56,20 +52,18 @@ public class doomdata_t implements IDatagramSerializable {
         // FIXME: it's probably more efficient to use System.arraycopy ? 
         // Or are the packets too small anyway? At most we'll be sending "doomdata_t's"
         
-        for (int i=0;i<cmds.length;i++){
-            bbuf.put(cmds[i].pack());
-        }
+		for (int i = 0; i < cmds.length; i++) {
+			bbuf.put(cmds[i].pack());
+		}
         
         return bbuf.array();
-    
     }
 
     @Override
     public void pack(byte[] buf, int offset) {
-        
-        // No need to make it harder...just pack it and slap it in.
-        byte[] tmp=this.pack();
-        System.arraycopy(tmp, 0, buf, offset, tmp.length);        
+		// No need to make it harder...just pack it and slap it in.
+		byte[] tmp = this.pack();
+		System.arraycopy(tmp, 0, buf, offset, tmp.length);
     }
 
     @Override
@@ -79,59 +73,58 @@ public class doomdata_t implements IDatagramSerializable {
 
     @Override
     public void unpack(byte[] buf, int offset) {
-        checksum=DoomBuffer.getBEInt(buf);
-        offset=+4;
-        retransmitfrom=buf[offset++];
-        starttic=buf[offset++];
-        player=buf[offset++];
-        numtics=buf[offset++];
-        
-        for (int i=0;i<cmds.length;i++){
-            cmds[i].unpack(buf,offset);
-            offset+=ticcmd_t.TICCMDLEN;
-            }
-        
+		checksum = DoomBuffer.getBEInt(buf);
+		offset = +4;
+		retransmitfrom = buf[offset++];
+		starttic = buf[offset++];
+		player = buf[offset++];
+		numtics = buf[offset++];
+
+		for (int i = 0; i < cmds.length; i++) {
+			cmds[i].unpack(buf, offset);
+			offset += ticcmd_t.TICCMDLEN;
+		}
     }
     
     public void selfUnpack(){
         unpack(this.buffer);
     }
     
-    public void copyFrom(doomdata_t source) {        
-        this.checksum=source.checksum;
-        this.numtics=source.numtics;
-        this.player=source.player;
-        this.retransmitfrom=source.retransmitfrom;
-        this.starttic=source.starttic;
-        
-        // MAES: this was buggy as hell, and didn't work at all, which
-        // in turn prevented other subsystems such as speed throttling and
-        // networking to work.
-        // 
-        // This should be enough to alter the ByteBuffer too.
-        //System.arraycopy(source.cached(), 0, this.buffer, 0, DOOMDATALEN);
-        // This should set all fields
-        //selfUnpack();        
-        }
+	public void copyFrom(doomdata_t source) {
+		this.checksum = source.checksum;
+		this.numtics = source.numtics;
+		this.player = source.player;
+		this.retransmitfrom = source.retransmitfrom;
+		this.starttic = source.starttic;
+
+		// MAES: this was buggy as hell, and didn't work at all, which
+		// in turn prevented other subsystems such as speed throttling and
+		// networking to work.
+		//
+		// This should be enough to alter the ByteBuffer too.
+		// System.arraycopy(source.cached(), 0, this.buffer, 0, DOOMDATALEN);
+		// This should set all fields
+		// selfUnpack();
+	}
+
+	@Override
+	public byte[] cached() {
+		return this.buffer;
+	}
     
-    @Override
-     public byte[] cached(){
-         return this.buffer;
-     }
-    
-    StringBuilder sb=new StringBuilder();
-    public String toString(){
-        sb.setLength(0);
-        sb.append("doomdata_t ");
-        sb.append(retransmitfrom);
-        sb.append(" starttic ");
-        sb.append(starttic);
-        sb.append(" player ");
-        sb.append(player);
-        sb.append(" numtics ");
-        sb.append(numtics);
-        return sb.toString();
-        
-    }
+	StringBuilder sb = new StringBuilder();
+
+	public String toString() {
+		sb.setLength(0);
+		sb.append("doomdata_t ");
+		sb.append(retransmitfrom);
+		sb.append(" starttic ");
+		sb.append(starttic);
+		sb.append(" player ");
+		sb.append(player);
+		sb.append(" numtics ");
+		sb.append(numtics);
+		return sb.toString();
+	}
 
  }

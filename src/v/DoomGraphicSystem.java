@@ -18,11 +18,11 @@
 package v;
 
 import f.Wiper;
-import mochadoom.Engine;
 import java.awt.Image;
 import java.awt.Rectangle;
 import m.IRandom;
 import m.Settings;
+import mochadoom.Engine;
 import rr.patch_t;
 import v.graphics.Horizontal;
 import v.graphics.Plotter;

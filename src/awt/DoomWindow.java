@@ -130,7 +130,9 @@ public interface DoomWindow<E extends Component & DoomWindow<E>> {
     }
     
     final static class JPanelWindow extends JPanel implements DoomWindow<JPanelWindow> {
-        private JPanelWindow() {
+		private static final long serialVersionUID = 4031722796186278753L;
+
+		private JPanelWindow() {
             init();
         }
         
@@ -147,7 +149,9 @@ public interface DoomWindow<E extends Component & DoomWindow<E>> {
     }
     
     final static class CanvasWindow extends Canvas implements DoomWindow<CanvasWindow> {
-        private CanvasWindow(GraphicsConfiguration config) {
+		private static final long serialVersionUID = 1180777361390303859L;
+
+		private CanvasWindow(GraphicsConfiguration config) {
             super(config);
         }
     }

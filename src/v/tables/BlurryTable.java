@@ -16,10 +16,12 @@
  */
 package v.tables;
 
-import mochadoom.Engine;
 import java.util.TreeMap;
 import m.Settings;
+import mochadoom.Engine;
 import v.graphics.Colors;
+import static v.graphics.Lights.COLORMAP_BLURRY;
+import static v.graphics.Lights.COLORMAP_FIXED;
 import static v.graphics.Palettes.*;
 
 /**

@@ -16,8 +16,8 @@
  */
 package v.tables;
 
-import mochadoom.Engine;
 import m.Settings;
+import mochadoom.Engine;
 
 /**
  *

@@ -17,10 +17,7 @@
 
 package awt;
 
-import awt.EventBase.ActionMode;
 import static awt.EventBase.Relate;
-import awt.EventBase.RelationAffection;
-import awt.EventBase.RelationType;
 import g.Signals;
 import static g.Signals.ScanCode.*;
 import java.awt.Point;

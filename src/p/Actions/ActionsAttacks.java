@@ -38,8 +38,6 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import p.AbstractLevelLoader;
-import static p.Actions.ActionTrait.KEY_MOVEMENT;
-import static p.Actions.ActionsSectors.KEY_SPAWN;
 import p.intercept_t;
 import p.mobj_t;
 import static p.mobj_t.MF_CORPSE;

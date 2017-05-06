@@ -1,8 +1,5 @@
 package data;
 
-import static data.Tables.FINEANGLES;
-import static data.Tables.SLOPERANGE;
-import static data.Tables.tantoangle;
 import static m.fixed_t.*;
 
 // Emacs style mode select   -*- C++ -*- 

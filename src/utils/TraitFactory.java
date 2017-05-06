@@ -272,7 +272,9 @@ public class TraitFactory {
     }
     
     private static class SharedContextException extends RuntimeException {
-        SharedContextException(ContextKey<?> key, Class<? extends Trait> topLevel) {
+		private static final long serialVersionUID = 5356800492346200764L;
+
+		SharedContextException(ContextKey<?> key, Class<? extends Trait> topLevel) {
             super(String.format("Trait context %s is not initialized when used by %s or"
                 + "is dereferencing a null pointer when required to do not",
                 key, topLevel));

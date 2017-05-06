@@ -16,8 +16,6 @@
  */
 package v.graphics;
 
-import static v.graphics.Lights.COLORMAP_LIGHTS_15;
-import static v.graphics.Lights.COLORMAP_LIGHTS_24;
 import static v.graphics.Palettes.PAL_NUM_COLORS;
 import v.tables.GreyscaleFilter;
 

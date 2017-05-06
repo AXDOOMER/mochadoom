@@ -88,7 +88,8 @@ public interface Screens<V, E extends Enum<E>> {
     }
     
     class BadRangeException extends Exception {
-        public BadRangeException(String m) { super(m);}
+		private static final long serialVersionUID = 2903441181162189295L;
+		public BadRangeException(String m) { super(m);}
         public BadRangeException() {}
     }
 }

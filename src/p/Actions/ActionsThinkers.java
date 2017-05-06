@@ -33,7 +33,6 @@ import static doom.SourceCode.P_Tick.P_RemoveThinker;
 import doom.thinker_t;
 import static m.fixed_t.FRACBITS;
 import p.AbstractLevelLoader;
-import static p.Actions.ActionsSectors.KEY_RESP_QUEUE;
 import p.ActiveStates;
 import p.ActiveStates.MobjConsumer;
 import static p.ActiveStates.NOP;

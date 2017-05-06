@@ -77,6 +77,8 @@ public interface ActionsFloors extends ActionsPlats {
                     case lowerAndChange:
                         floor.sector.special = (short) floor.newspecial;
                         floor.sector.floorpic = floor.texture;
+                    default:
+                    	break;
                 }
             }
 
@@ -236,6 +238,8 @@ public interface ActionsFloors extends ActionsPlats {
                             }
                         }
                     }
+                default:
+                	break;
             }
         }
         return rtn;

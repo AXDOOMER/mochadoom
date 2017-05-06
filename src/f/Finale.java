@@ -100,6 +100,8 @@ public class Finale<T> {
         case freedoom1:
 			texts = doom_text;
 			break;
+        default:
+        	break;
 		}
 
 		// Okay - IWAD dependend stuff.

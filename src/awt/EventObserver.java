@@ -196,6 +196,8 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
                     affected.forEach(h -> {
                         actionStateHolder.disableAction(h, relation.affectedMode);
                     });
+                default:
+                	break;
             }
         });
         

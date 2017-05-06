@@ -32,7 +32,6 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import mochadoom.Loggers;
 import p.AbstractLevelLoader;
-import static p.Actions.ActionTrait.ACTION_KEY_CHAIN;
 import p.ActiveStates;
 import p.divline_t;
 import p.floor_e;

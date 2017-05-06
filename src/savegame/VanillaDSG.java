@@ -308,6 +308,8 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
                     }
 
                 }
+            default:
+            	break;
         }
     }
 
@@ -363,6 +365,8 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
                     }
 
                 }
+            default:
+            	break;
         }
     }
 

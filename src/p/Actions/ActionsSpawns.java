@@ -46,7 +46,6 @@ import doom.player_t;
 import java.util.logging.Level;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
-import static p.Actions.ActionsSectors.KEY_SPAWN;
 import p.ActiveStates;
 import p.mobj_t;
 import static p.mobj_t.MF_AMBUSH;

@@ -1125,6 +1125,9 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
                 DOOM.graphicSystem.setUsegamma(usegamma);
                 DOOM.autoMap.Repalette();
                 return true;
+                
+            default:
+            	break;
 
             }
         } else if (sc == SC_F5 && DOOM.ticker instanceof DelegateTicker) { // Toggle ticker
