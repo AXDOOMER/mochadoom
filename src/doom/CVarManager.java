@@ -79,12 +79,13 @@ public class CVarManager {
      */
     public <T> Optional<T> get(final CommandVariable cv, final Class<T> itemType, final int position) {        
         if (cv.arguments[position] == itemType) {
-            if (!cVarMap.containsKey(cv))
+            if (!cVarMap.containsKey(cv)) {
                 return Optional.empty();
+            }
             
             @SuppressWarnings("unchecked")
             final T ret = (T) cVarMap.get(cv)[position];
-            return Optional.of(ret);
+            return Optional.ofNullable(ret);
         }
         
         throw new IllegalArgumentException("CVar argument at position " + position + " is not of class " + itemType.getName());
@@ -111,8 +112,9 @@ public class CVarManager {
         try {
             @SuppressWarnings("unchecked")
             final Object[] mapped = cVarMap.get(cv);
-            if (mapped == null)
+            if (mapped == null) {
                 return false;
+            }
             
             @SuppressWarnings("unchecked")
             final T item = (T) mapped[position];
