@@ -29,6 +29,8 @@ import data.sounds;
 import doom.CommandVariable;
 import doom.DoomMain;
 import doom.SourceCode;
+import doom.SourceCode.P_Spec;
+import static doom.SourceCode.P_Spec.P_SpawnSpecials;
 import static doom.SourceCode.P_Tick.P_RemoveThinker;
 import doom.thinker_t;
 import static m.fixed_t.FRACBITS;
@@ -71,6 +73,7 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
     /**
      * P_SpawnSpecials After the map has been loaded, scan for specials that spawn thinkers
      */
+    @P_Spec.C(P_SpawnSpecials)
     default void SpawnSpecials() {
         final DoomMain<?, ?> D = DOOM();
         final AbstractLevelLoader ll = levelLoader();
@@ -183,7 +186,7 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
         for (int i = 0; i < this.getMaxCeilings(); i++) {
             this.getActiveCeilings()[i] = null;
         }
-
+        
         getSwitches().initButtonList();
 
         // UNUSED: no horizonal sliders.

@@ -8,6 +8,7 @@ import static data.Limits.MAXSWITCHES;
 import data.sounds.sfxenum_t;
 import doom.DoomMain;
 import doom.SourceCode;
+import doom.SourceCode.CauseOfDesyncProbability;
 import doom.SourceCode.P_Tick;
 import static doom.SourceCode.P_Tick.*;
 import doom.thinker_t;
@@ -570,29 +571,29 @@ public abstract class UnifiedGameMap implements ThinkerList {
      * P_InitThinkers
      */
     @Override
+    @SourceCode.Suspicious(CauseOfDesyncProbability.MEDIUM)
+    @P_Tick.C(P_InitThinkers)
     public void InitThinkers() {
     	
-        // mobjpool.drain();
-        
         /*for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i].cprev = thinkerclasscap[i].cnext = thinkerclasscap[i];*/
         
-    	thinker_t next=thinkercap.next;
-    	thinker_t prev=thinkercap.prev;
-    	
-    	// Unlink the "dangling" thinkers that may still be attached
-    	// to the thinkercap. When loading a new level, they DO NOT get unloaded,
-    	// wtf...
-    	if (next!=null && next!=thinkercap) {
-    		//System.err.println("Next link to thinkercap nulled");
-    		next.prev=null;
-    	}
+        thinker_t next = thinkercap.next;
+        thinker_t prev = thinkercap.prev;
 
-    	if (prev!=null && prev!=thinkercap) {
-    		//System.err.println("Prev link to thinkercap nulled");
-    		prev.next=null;
-    	}
-    	
+        // Unlink the "dangling" thinkers that may still be attached
+        // to the thinkercap. When loading a new level, they DO NOT get unloaded,
+        // wtf...
+        if (next != null && next != thinkercap) {
+            //System.err.println("Next link to thinkercap nulled");
+            next.prev = null;
+        }
+
+        if (prev != null && prev != thinkercap) {
+            //System.err.println("Prev link to thinkercap nulled");
+            prev.next = null;
+        }
+
         thinkercap.next = thinkercap;
         thinkercap.prev = thinkercap;
     }

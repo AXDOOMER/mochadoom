@@ -19,6 +19,7 @@ import demo.IDemoTicCmd;
 import demo.VanillaDoomDemo;
 import demo.VanillaTiccmd;
 import static doom.NetConsts.*;
+import doom.SourceCode.CauseOfDesyncProbability;
 import doom.SourceCode.D_Main;
 import static doom.SourceCode.D_Main.*;
 import doom.SourceCode.G_Game;
@@ -1107,7 +1108,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * 
      * //extern gamestate_t wipegamestate;
      */
-    @SourceCode.Suspicious
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
     @G_Game.C(G_DoLoadLevel)
     public boolean DoLoadLevel () 
     { 
@@ -1186,8 +1187,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         memset(joyarray, false, joyarray.length);
         
         /**
-         * Suspicious, yet tested to have probably no desync-effect:
+         * Probably no desync-effect
          * - GoodSign 2017/05/07
+         * 
+         * @SourceCode.Suspicious
          */
         
         // killough 5/13/98: in case netdemo has consoleplayer other than green
@@ -1350,7 +1353,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         while (gameaction != ga_nothing) { 
             switch (gameaction) { 
                 case ga_loadlevel:
-                    DoLoadLevel();
+                    G_DoLoadLevel: {
+                        DoLoadLevel();
+                    }
                     break;
                 case ga_newgame:
                     DoNewGame();

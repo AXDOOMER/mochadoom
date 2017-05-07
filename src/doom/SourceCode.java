@@ -236,10 +236,71 @@ public @interface SourceCode {
     }
     
     public enum P_Setup {
-        P_SetupLevel;
+        P_SetupLevel,
+        P_LoadThings;
         @Documented
         @Retention(SOURCE) public
         @interface C { P_Setup value(); }
+    }
+    
+    public enum P_Spec {
+        P_InitPicAnims,
+        P_SpawnSpecials,
+        P_UpdateSpecials,
+        P_UseSpecialLine,
+        P_ShootSpecialLine,
+        P_CrossSpecialLine,
+        P_PlayerInSpecialSector,
+        twoSided,
+        getSector,
+        getSide,
+        P_FindLowestFloorSurrounding,
+        P_FindHighestFloorSurrounding,
+        P_FindNextHighestFloor,
+        P_FindLowestCeilingSurrounding,
+        P_FindHighestCeilingSurrounding,
+        P_FindSectorFromLineTag,
+        P_FindMinSurroundingLight,
+        getNextSector,
+        EV_DoDonut,
+        P_SpawnFireFlicker,
+        T_LightFlash,
+        P_SpawnLightFlash,
+        T_StrobeFlash,
+        P_SpawnStrobeFlash,
+        EV_StartLightStrobing,
+        EV_TurnTagLightsOff,
+        EV_LightTurnOn,
+        T_Glow,
+        P_SpawnGlowingLight,
+        P_ChangeSwitchTexture,
+        P_InitSwitchList,
+        T_PlatRaise,
+        EV_DoPlat,
+        P_AddActivePlat,
+        P_RemoveActivePlat,
+        EV_StopPlat,
+        P_ActivateInStasis,
+        EV_VerticalDoor,
+        EV_DoDoor,
+        EV_DoLockedDoor,
+        T_VerticalDoor,
+        P_SpawnDoorCloseIn30,
+        P_SpawnDoorRaiseIn5Mins,
+        EV_DoCeiling,
+        T_MoveCeiling,
+        P_AddActiveCeiling,
+        P_RemoveActiveCeiling,
+        EV_CeilingCrushStop,
+        P_ActivateInStasisCeiling,
+        T_MovePlane,
+        EV_BuildStairs,
+        EV_DoFloor,
+        T_MoveFloor,
+        EV_Teleport;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Spec value(); }
     }
     
     public enum P_Ceiling {
