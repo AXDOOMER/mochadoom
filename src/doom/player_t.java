@@ -29,6 +29,7 @@ import p.pspdef_t;
 import rr.sector_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.*;
+import static utils.GenericCopy.malloc;
 import v.graphics.Palettes;
 import w.DoomBuffer;
 import w.DoomIO;
@@ -77,8 +78,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         maxammo = new int[NUMAMMO];
         cards = new boolean[card_t.NUMCARDS.ordinal()];
         weaponowned = new boolean[NUMWEAPONS];
-        psprites = new pspdef_t[NUMPSPRITES];
-        Arrays.setAll(psprites, i -> new pspdef_t());
+        psprites = malloc(pspdef_t::new, pspdef_t[]::new, NUMPSPRITES);
         this.mo = mobj_t.createOn(DOOM);
         // If a player doesn't reference himself through his object, he will have an existential crisis.
         this.mo.player = this;

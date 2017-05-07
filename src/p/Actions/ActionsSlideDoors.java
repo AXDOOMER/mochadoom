@@ -1,7 +1,6 @@
 package p.Actions;
 
 import doom.thinker_t;
-import java.util.Arrays;
 import java.util.logging.Level;
 import mochadoom.Loggers;
 import p.AbstractLevelLoader;
@@ -16,6 +15,7 @@ import rr.TextureManager;
 import rr.line_t;
 import static rr.line_t.ML_BLOCKING;
 import rr.sector_t;
+import static utils.GenericCopy.malloc;
 import utils.TraitFactory.ContextKey;
 
 public interface ActionsSlideDoors extends ActionTrait {
@@ -47,12 +47,7 @@ public interface ActionsSlideDoors extends ActionTrait {
     };
 
     final class SlideDoors {
-
-        slideframe_t[] slideFrames = new slideframe_t[MAXSLIDEDOORS];
-
-        {
-            Arrays.setAll(slideFrames, i -> new slideframe_t());
-        }
+        slideframe_t[] slideFrames = malloc(slideframe_t::new, slideframe_t[]::new, MAXSLIDEDOORS);
     }
 
     default void SlidingDoor(slidedoor_t door) {

@@ -1,7 +1,7 @@
 package doom;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import static utils.GenericCopy.malloc;
 import w.DoomBuffer;
 
 public class doomdata_t implements IDatagramSerializable {
@@ -25,8 +25,7 @@ public class doomdata_t implements IDatagramSerializable {
 	public ticcmd_t[] cmds;
      
 	public doomdata_t() {
-		cmds = new ticcmd_t[data.Defines.BACKUPTICS];
-		Arrays.setAll(cmds, i -> new ticcmd_t());
+		cmds = malloc(ticcmd_t::new, ticcmd_t[]::new, data.Defines.BACKUPTICS);
 		// Enough space for its own header + the ticcmds;
 		buffer = new byte[DOOMDATALEN];
 		// This "pegs" the ByteBuffer to this particular array.

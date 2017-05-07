@@ -16,6 +16,10 @@
  */
 package utils;
 
+import java.util.Arrays;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+
 public class GenericCopy {
     private static final boolean[] BOOL_0 = {false};
     private static final byte[] BYTE_0 = {0};
@@ -144,6 +148,18 @@ public class GenericCopy {
     @SuppressWarnings("SuspiciousSystemArraycopy")
     public static <T> void memcpy(T srcArray, int srcStart, T dstArray, int dstStart, int length) {
         System.arraycopy(srcArray, srcStart, dstArray, dstStart, length);
+    }
+    
+    public static <T> T[] malloc(final ArraySupplier<T> supplier, final IntFunction<T[]> generator, final int length) {
+        final T[] array = generator.apply(length);
+        Arrays.setAll(array, supplier::getWithInt);
+        return array;
+    }
+    
+    public interface ArraySupplier<T> extends Supplier<T> {
+        default T getWithInt(int ignoredInt) {
+            return get();
+        }
     }
     
     private GenericCopy() {}

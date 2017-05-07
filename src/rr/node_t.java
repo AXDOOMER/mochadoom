@@ -22,9 +22,8 @@ import static utils.C2JUtils.eval;
 public class node_t implements Resettable {
 
     public node_t() {
-        bbox = new BBox[2];
+        bbox = new BBox[] {new BBox(), new BBox()};
         children = new int[2];
-        Arrays.setAll(bbox, i -> new BBox());
     }
 
     public node_t(int x, int y, int dx, int dy, BBox[] bbox,

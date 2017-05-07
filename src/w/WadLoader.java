@@ -23,7 +23,11 @@
 package w;
 
 import static data.Defines.PU_CACHE;
+import doom.SourceCode;
+import doom.SourceCode.W_Wad;
 import static doom.SourceCode.W_Wad.W_CheckNumForName;
+import i.DummySystem;
+import i.IDoomSystem;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -32,19 +36,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.IntFunction;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import doom.SourceCode;
-import doom.SourceCode.W_Wad;
-import i.DummySystem;
-import i.IDoomSystem;
 import mochadoom.Loggers;
 import rr.patch_t;
 import utils.C2JUtils;
+import utils.GenericCopy.ArraySupplier;
+import static utils.GenericCopy.malloc;
 
 public class WadLoader implements IWadLoader {
 
@@ -222,7 +224,7 @@ public class WadLoader implements IWadLoader {
 
 			length = header.numlumps;
 			// Init everything:
-			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
+			fileinfo = malloc(filelump_t::new, filelump_t[]::new, (int) length);
 			
 			dis.close();
 			
@@ -261,10 +263,9 @@ public class WadLoader implements IWadLoader {
 			// an ArrayList?
 
 			int oldsize = lumpinfo.length;
-			lumpinfo_t[] newlumpinfo = new lumpinfo_t[numlumps];
+			lumpinfo_t[] newlumpinfo = malloc(lumpinfo_t::new, lumpinfo_t[]::new, numlumps);
 
 			try {
-                Arrays.setAll(newlumpinfo, i -> new lumpinfo_t());
 				System.arraycopy(lumpinfo, 0, newlumpinfo, 0, oldsize);
 			} catch (Exception e) {
 				// if (!lumpinfo)
@@ -898,23 +899,25 @@ public class WadLoader implements IWadLoader {
 	 */
 	
     @Override
-	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num, Class<T> what){
-
+	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num, ArraySupplier<T> what, IntFunction<T[]> arrGen){
 		if (lump >= numlumps) {
 			I.Error("CacheLumpNumIntoArray: %i >= numlumps", lump);
 		}
 
-		if (!implementsInterface(what, CacheableDoomObject.class)){
+        /**
+         * Impossible condition unless you hack generics somehow
+         *  - Good Sign 2017/05/07
+         */
+		/*if (!implementsInterface(what, CacheableDoomObject.class)){
 			I.Error("CacheLumpNumIntoArray: %s does not implement CacheableDoomObject", what.getName());
-		}
+		}*/
 	
 		// Nothing cached here...
 		if ((lumpcache[lump] == null) && (what != null)) {
 			//System.out.println("cache miss on lump " + lump);
 			// Read as a byte buffer anyway.
 		    ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
-
-			T[] stuff = C2JUtils.createArrayOfObjects(what, num);
+			T[] stuff = malloc(what, arrGen, num);
 			
 			// Store the buffer anyway (as a CacheableDoomObjectContainer)
 			lumpcache[lump] = new CacheableDoomObjectContainer<>(stuff);

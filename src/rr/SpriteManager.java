@@ -4,9 +4,10 @@ import static data.Defines.PU_CACHE;
 import doom.DoomMain;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import static m.fixed_t.FRACBITS;
+import static utils.GenericCopy.malloc;
 import w.lumpinfo_t;
 
 /** An stand-alone sprite loader. Surprisingly, it is quite a 
@@ -25,8 +26,7 @@ public class SpriteManager<T, V> implements ISpriteManager {
 	    public static final int MAX_SPRITE_FRAMES = 29;
 	    
         public SpriteManager(DoomMain<T, V> DOOM){
-            sprtemp = new spriteframe_t[MAX_SPRITE_FRAMES];
-            Arrays.setAll(sprtemp, i -> new spriteframe_t());
+            sprtemp = malloc(spriteframe_t::new, spriteframe_t[]::new, MAX_SPRITE_FRAMES);
             this.DOOM = DOOM;
         }
         
@@ -81,7 +81,7 @@ public class SpriteManager<T, V> implements ISpriteManager {
 
         protected final void InitSpriteDefs(String[] namelist) {
             int numentries = lastspritelump - firstspritelump + 1;
-            Hashtable<Integer, List<Integer>> hash;
+            HashMap<Integer, List<Integer>> hash;
             int i;
 
             if (numentries == 0 || namelist == null)
@@ -92,8 +92,7 @@ public class SpriteManager<T, V> implements ISpriteManager {
 
             numsprites = i;
 
-            sprites = new spritedef_t[numsprites];
-            Arrays.setAll(sprites, j -> new spritedef_t());
+            sprites = malloc(spritedef_t::new, spritedef_t[]::new, numsprites);
 
             // Create hash table based on just the first four letters of each
             // sprite
@@ -102,9 +101,7 @@ public class SpriteManager<T, V> implements ISpriteManager {
             // multiple entries (sprites) on the same primary key (the 4 first chars of
             // the sprite name)
 
-            hash = new Hashtable<Integer, List<Integer>>(numentries); // allocate
-                                                                        // hash
-                                                                        // table
+            hash = new HashMap<>(numentries); // allocate hash table
 
             // We have to trasverse this in the opposite order, so that later
             // lumps
@@ -115,7 +112,7 @@ public class SpriteManager<T, V> implements ISpriteManager {
                 // etc.)
                 //
                 if (!hash.containsKey(hashcode)) {
-                    hash.put(hashcode, new ArrayList<Integer>());
+                    hash.put(hashcode, new ArrayList<>());
                 }
 
                 // Store (yet another) lump index for this sprite.

@@ -4,7 +4,6 @@ import static data.Limits.*;
 import doom.DoomMain;
 import doom.player_t;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
@@ -19,6 +18,7 @@ import rr.drawfuns.R_DrawSpanUnrolled;
 import rr.drawfuns.R_DrawTLColumn;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
+import static utils.GenericCopy.malloc;
 
 /** This is a second attempt at building a seg-focused parallel renderer, instead of
  * column-based. It does function, but is broken and has unsolved data dependencies.
@@ -31,6 +31,7 @@ import rr.drawfuns.R_DrawTranslatedColumnLow;
 
 public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T, V> {
     
+    @SuppressWarnings("unchecked")
     public ParallelRenderer2(DoomMain<T, V> DOOM, int wallthread, int floorthreads, int nummaskedthreads) {
         super(DOOM, wallthread, floorthreads, nummaskedthreads);
         System.out.println("Parallel Renderer 2 (Seg-based)");
@@ -44,8 +45,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         ((ParallelThings2<T, V>) MyThings).maskedworkers = maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
         InitMaskedWorkers();
         
-        ((ParallelSegs2<T, V>) MySegs).RSI = new RenderSegInstruction[MAXSEGS * 3];
-        Arrays.setAll(((ParallelSegs2<T, V>) MySegs).RSI, i -> new RenderSegInstruction<>());
+        ((ParallelSegs2<T, V>) MySegs).RSI = malloc(RenderSegInstruction::new, RenderSegInstruction[]::new, MAXSEGS * 3);
     }
 
 	@Override
@@ -80,6 +80,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
 	 * 
 	 */
 
+    @Override
     @SuppressWarnings("unchecked")
 	public void RenderPlayerView (player_t player)
 	{   

@@ -23,6 +23,7 @@ import rr.ISpriteManager;
 import rr.line_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
+import static utils.GenericCopy.malloc;
 
 // // FROM SIGHT
 
@@ -534,7 +535,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 			// objects. The MAXBUTTONS limit actually applied to buttons PRESSED
 			// or ACTIVE at once, not how many there can actually be in a map.
 			
-            buttonlist = C2JUtils.createArrayOfObjects(button_t.class, MAXBUTTONS);
+            buttonlist = malloc(button_t::new, button_t[]::new, MAXBUTTONS);
         }
     }
 

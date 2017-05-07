@@ -6,8 +6,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import static utils.GenericCopy.malloc;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 import w.DoomIO;
@@ -81,8 +81,7 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
             playeringame[i] = b.get() != 0;
         }
 
-        this.commands = new VanillaTiccmd[lens];
-        Arrays.setAll(commands, i -> new VanillaTiccmd());
+        this.commands = malloc(VanillaTiccmd::new, VanillaTiccmd[]::new, lens);
 
         try {
             DoomBuffer.readObjectArray(b, this.commands, lens);

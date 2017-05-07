@@ -33,7 +33,6 @@ import i.IDoomSystem;
 import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
@@ -56,6 +55,7 @@ import rr.drawfuns.DoomSpanFunction;
 import rr.drawfuns.SpanVars;
 import static rr.line_t.*;
 import utils.C2JUtils;
+import static utils.GenericCopy.malloc;
 import v.graphics.Palettes;
 import static v.renderers.DoomScreen.*;
 import v.tables.BlurryTable;
@@ -296,8 +296,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         cliprange_t[] solidsegs;
 
         public BSP() {
-            solidsegs = new cliprange_t[MAXSEGS + 1];
-            Arrays.setAll(solidsegs, i -> new cliprange_t());
+            solidsegs = malloc(cliprange_t::new, cliprange_t[]::new, MAXSEGS + 1);
         }
 
         /**
@@ -1610,8 +1609,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             this.vp_vars = R.getVPVars();
             this.seg_vars = R.getSegVars();
             col = new column_t();
-            seg_vars.drawsegs = new drawseg_t[seg_vars.MAXDRAWSEGS];
-            Arrays.setAll(seg_vars.drawsegs, i -> new drawseg_t());
+            seg_vars.drawsegs = malloc(drawseg_t::new, drawseg_t[]::new, seg_vars.MAXDRAWSEGS);
             this.floorclip = new short[DOOM.vs.getScreenWidth()];
             this.ceilingclip = new short[DOOM.vs.getScreenWidth()];
             BLANKFLOORCLIP = new short[DOOM.vs.getScreenWidth()];

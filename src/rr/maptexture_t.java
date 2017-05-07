@@ -3,7 +3,7 @@ package rr;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
+import static utils.GenericCopy.malloc;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 
@@ -40,8 +40,7 @@ public class maptexture_t implements CacheableDoomObject{
         // are left in the TEXTURE lump.
         patchcount = (short) Math.min(patchcount, (buf.capacity() - buf.position()) / mappatch_t.size());
 
-        patches = new mappatch_t[patchcount];
-        Arrays.setAll(patches, i -> new mappatch_t());
+        patches = malloc(mappatch_t::new, mappatch_t[]::new, patchcount);
         DoomBuffer.readObjectArray(buf, patches, patchcount);
     }  
 };

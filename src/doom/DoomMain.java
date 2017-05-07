@@ -2436,7 +2436,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         this.cVarManager = Engine.getCVM();
 
         // Prepare events array with event instances
-        Arrays.setAll(events, i -> event_t.EMPTY_EVENT);
+        Arrays.fill(events, event_t.EMPTY_EVENT);
 
         // Create DoomSystem
         this.doomSystem = new DoomSystem(this);

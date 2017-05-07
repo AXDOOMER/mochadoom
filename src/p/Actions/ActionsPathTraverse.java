@@ -28,7 +28,6 @@ import static data.Limits.MAXINTERCEPTS;
 import doom.SourceCode.P_MapUtl;
 import static doom.SourceCode.P_MapUtl.P_PathTraverse;
 import doom.SourceCode.fixed_t;
-import java.util.Arrays;
 import java.util.function.Predicate;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
@@ -42,6 +41,7 @@ import p.mobj_t;
 import rr.line_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.eval;
+import static utils.GenericCopy.malloc;
 import utils.TraitFactory.ContextKey;
 
 public interface ActionsPathTraverse extends ActionsSectors {
@@ -76,11 +76,7 @@ public interface ActionsPathTraverse extends ActionsSectors {
         //
         // INTERCEPT ROUTINES
         //
-        intercept_t[] intercepts = new intercept_t[MAXINTERCEPTS];
-
-        {
-            Arrays.setAll(intercepts, i -> new intercept_t());
-        }
+        intercept_t[] intercepts = malloc(intercept_t::new, intercept_t[]::new, MAXINTERCEPTS);
 
         void ResizeIntercepts() {
             intercepts = C2JUtils.resize(intercepts[0], intercepts, intercepts.length * 2);

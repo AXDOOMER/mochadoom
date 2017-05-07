@@ -203,6 +203,14 @@ public final class C2JUtils {
     }
 
     /**
+     * Use of this method is very bad. It prevents refactoring measures. Also,
+     * the use of reflection is acceptable on initialization, but in runtime it
+     * causes performance loss. Use instead:
+     *  SomeType[] array = new SomeType[length];
+     *  Arrays.setAll(array, i -> new SomeType());
+     * 
+     * - Good Sign 2017/05/07
+     * 
      * Uses reflection to automatically create and initialize an array of
      * objects of the specified class. Does not require casting on "reception".
      * 
@@ -212,7 +220,7 @@ public final class C2JUtils {
      * @return
      * @return
      */
-
+    @Deprecated
     public static <T> T[] createArrayOfObjects(Class<T> c, int num) {
         T[] os;
 

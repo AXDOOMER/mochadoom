@@ -35,7 +35,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.function.IntFunction;
-import java.util.function.Supplier;
 import m.BBox;
 import static m.BBox.*;
 import m.fixed_t;
@@ -55,6 +54,8 @@ import s.degenmobj_t;
 import utils.C2JUtils;
 import static utils.C2JUtils.flags;
 import static utils.C2JUtils.unsigned;
+import utils.GenericCopy.ArraySupplier;
+import static utils.GenericCopy.malloc;
 import w.CacheableDoomObjectContainer;
 import w.DoomBuffer;
 import w.wadfile_info_t;
@@ -174,11 +175,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
      *        elements to realloc
      */
 
-    private <T> T[] malloc_IfSameLevel(T[] p, int numstuff, Supplier<T> supplier, IntFunction<T[]> generator) {
+    private <T> T[] malloc_IfSameLevel(T[] p, int numstuff, ArraySupplier<T> supplier, IntFunction<T[]> generator) {
         if (!samelevel || (p == null)) {
-            final T[] array = generator.apply(numstuff);
-            Arrays.setAll(array, i -> supplier.get());
-            return array;
+            return malloc(supplier, generator, numstuff);
         }
         return p;
     }
@@ -186,11 +185,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
     // e6y: Smart calloc
     // Used by P_SetupLevel() for smart data loading
     // Clear the memory without allocation if level is the same
-    private <T extends Resettable> T[] calloc_IfSameLevel(T[] p, int numstuff, Supplier<T> supplier, IntFunction<T[]> generator) {
+    private <T extends Resettable> T[] calloc_IfSameLevel(T[] p, int numstuff, ArraySupplier<T> supplier, IntFunction<T[]> generator) {
         if (!samelevel) {
-            final T[] array = generator.apply(numstuff);
-            Arrays.setAll(array, i -> supplier.get());
-            return array;
+            return malloc(supplier, generator, numstuff);
         } else {
             // TODO: stuff should be resetted!
             C2JUtils.resetAll(p);
@@ -335,7 +332,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         // Load data into cache.
         // cph 2006/07/29 - cast to mapvertex_t here, making the loop below much
         // neater
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numvertexes, mapvertex_t.class);
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numvertexes, mapvertex_t::new, mapvertex_t[]::new);
 
         // Copy and convert vertex coordinates,
         // internal representation as fixed.
@@ -359,38 +356,29 @@ public class BoomLevelLoader extends AbstractLevelLoader {
     // figgi -- FIXME: Automap showes wrong zoom boundaries when starting game
     // when P_LoadVertexes2 is used with classic BSP nodes.
 
-    private void P_LoadVertexes2(int lump, int gllump)
-            throws IOException {
+    private void P_LoadVertexes2(int lump, int gllump) throws IOException {
         final ByteBuffer gldata;
-        int i;
         mapvertex_t[] ml;
 
         // GL vertexes come after regular ones.
         firstglvertex = DOOM.wadLoader.LumpLength(lump) / mapvertex_t.sizeOf();
         numvertexes = DOOM.wadLoader.LumpLength(lump) / mapvertex_t.sizeOf();
 
-        if (gllump >= 0) // check for glVertices
-        {
+        if (gllump >= 0) { // check for glVertices
             // Read GL lump into buffer. This allows some flexibility
             gldata = DOOM.wadLoader.CacheLumpNumAsDoomBuffer(gllump).getBuffer();
 
-            if (nodesVersion == gNd2) // 32 bit GL_VERT format (16.16 fixed)
-            {
-
+            if (nodesVersion == gNd2) { // 32 bit GL_VERT format (16.16 fixed)
                 // These vertexes are double in size than regular Doom vertexes.
                 // Furthermore, we have to skip the first 4 bytes
                 // (GL_VERT_OFFSET)
                 // of the gl lump.
-                numvertexes +=
-                    (DOOM.wadLoader.LumpLength(gllump) - GL_VERT_OFFSET)
-                            / mapglvertex_t.sizeOf();
+                numvertexes += (DOOM.wadLoader.LumpLength(gllump) - GL_VERT_OFFSET) / mapglvertex_t.sizeOf();
 
                 // Vertexes size accomodates both normal and GL nodes.
                 vertexes = malloc_IfSameLevel(vertexes, numvertexes, vertex_t::new, vertex_t[]::new);
 
-                final mapglvertex_t[] mgl =
-                    C2JUtils.createArrayOfObjects(mapglvertex_t.class,
-                        numvertexes - firstglvertex);
+                final mapglvertex_t mgl[] = malloc(mapglvertex_t::new, mapglvertex_t[]::new, numvertexes - firstglvertex);
 
                 // Get lump and skip first 4 bytes
                 gldata.rewind();
@@ -400,7 +388,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
                 int mgl_count = 0;
 
-                for (i = firstglvertex; i < numvertexes; i++) {
+                for (int i = firstglvertex; i < numvertexes; i++) {
                     vertexes[i].x = mgl[mgl_count].x;
                     vertexes[i].y = mgl[mgl_count].y;
                     mgl_count++;
@@ -410,8 +398,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 numvertexes += DOOM.wadLoader.LumpLength(gllump) / mapvertex_t.sizeOf();
                 vertexes = malloc_IfSameLevel(vertexes, numvertexes, vertex_t::new, vertex_t[]::new);
 
-                ml = new mapvertex_t[numvertexes - firstglvertex];
-                Arrays.setAll(ml, ii -> new mapvertex_t());
+                ml = malloc(mapvertex_t::new, mapvertex_t[]::new, numvertexes - firstglvertex);
 
                 // We can read this "directly" because no skipping is involved.
                 gldata.rewind();
@@ -420,7 +407,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 // numvertexes-firstglvertex,mapvertex_t.class);
                 int ml_count = 0;
 
-                for (i = firstglvertex; i < numvertexes; i++) {
+                for (int i = firstglvertex; i < numvertexes; i++) {
                     vertexes[i].x = ml[ml_count].x;
                     vertexes[i].y = ml[ml_count].y;
                     ml_count++;
@@ -430,9 +417,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         }
 
         // Loading of regular lumps (sheesh!)
-        ml = DOOM.wadLoader.CacheLumpNumIntoArray(lump, firstglvertex, mapvertex_t.class);
+        ml = DOOM.wadLoader.CacheLumpNumIntoArray(lump, firstglvertex, mapvertex_t::new, mapvertex_t[]::new);
 
-        for (i = 0; i < firstglvertex; i++) {
+        for (int i = 0; i < firstglvertex; i++) {
             vertexes[i].x = ml[i].x;
             vertexes[i].y = ml[i].y;
         }
@@ -483,7 +470,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         numsegs = DOOM.wadLoader.LumpLength(lump) / mapseg_t.sizeOf();
         segs = calloc_IfSameLevel(segs, numsegs, seg_t::new, seg_t[]::new);
 
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsegs, mapseg_t.class); // cph -
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsegs, mapseg_t::new, mapseg_t[]::new); // cph -
                                                                        // wad
                                                                        // lump
                                                                        // handling
@@ -618,7 +605,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         numsegs = DOOM.wadLoader.LumpLength(lump) / mapseg_v4_t.sizeOf();
         segs = calloc_IfSameLevel(segs, numsegs, seg_t::new, seg_t[]::new);
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsegs, mapseg_v4_t.class);
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsegs, mapseg_v4_t::new, mapseg_v4_t[]::new);
 
         if ((data == null) || (numsegs == 0))
             DOOM.doomSystem.Error("P_LoadSegs_V4: no segs in level");
@@ -777,7 +764,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         numsubsectors = DOOM.wadLoader.LumpLength(lump) / mapsubsector_t.sizeOf();
         subsectors = calloc_IfSameLevel(subsectors, numsubsectors, subsector_t::new, subsector_t[]::new);
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsubsectors, mapsubsector_t.class);
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsubsectors, mapsubsector_t::new, mapsubsector_t[]::new);
 
         if ((data == null) || (numsubsectors == 0)) {
             DOOM.doomSystem.Error("P_LoadSubsectors: no subsectors in level");
@@ -801,7 +788,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         numsubsectors = DOOM.wadLoader.LumpLength(lump) / mapsubsector_v4_t.sizeOf();
         subsectors = calloc_IfSameLevel(subsectors, numsubsectors, subsector_t::new, subsector_t[]::new);
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsubsectors, mapsubsector_v4_t.class);
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsubsectors, mapsubsector_v4_t::new, mapsubsector_v4_t[]::new);
 
         if ((data == null) || (numsubsectors == 0))
             DOOM.doomSystem.Error("P_LoadSubsectors_V4: no subsectors in level");
@@ -824,7 +811,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         numsectors = DOOM.wadLoader.LumpLength(lump) / mapsector_t.sizeOf();
         sectors = calloc_IfSameLevel(sectors, numsectors, sector_t::new, sector_t[]::new);
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsectors, mapsector_t.class); // cph
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsectors, mapsector_t::new, mapsector_t[]::new); // cph
                                                                              // -
                                                                              // wad
                                                                              // lump
@@ -886,7 +873,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         numnodes = DOOM.wadLoader.LumpLength(lump) / mapnode_t.sizeOf();
         nodes = malloc_IfSameLevel(nodes, numnodes, node_t::new, node_t[]::new);
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numnodes, mapnode_t.class); // cph
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numnodes, mapnode_t::new, mapnode_t[]::new); // cph
                                                                          // -
                                                                          // wad
                                                                          // lump
@@ -983,7 +970,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
     }
 
      private void P_LoadZSegs(ByteBuffer data) throws IOException {
-        final mapseg_znod_t nodes[] = C2JUtils.createArrayOfObjects(mapseg_znod_t.class,numsegs);
+        final mapseg_znod_t nodes[] = malloc(mapseg_znod_t::new, mapseg_znod_t[]::new, numsegs);
         CacheableDoomObjectContainer.unpack(data,nodes);
 
         for (int i = 0; i < numsegs; i++) {
@@ -1099,7 +1086,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
             if (orgVerts + newVerts == numvertexes) {
                 newvertarray = vertexes;
             } else {
-                newvertarray = C2JUtils.createArrayOfObjects(vertex_t.class, orgVerts + newVerts);
+                newvertarray = new vertex_t[orgVerts + newVerts];
+                // TODO: avoid creating new objects that will be rewritten instantly - Good Sign 2017/05/07
+                Arrays.setAll(newvertarray, ii -> new vertex_t());
                 System.arraycopy(vertexes, 0, newvertarray, 0, orgVerts);
             }
 
@@ -1184,7 +1173,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         len = CheckZNodesOverflow(len, numNodes * mapnode_znod_t.sizeOf());
 
-        mapnode_znod_t[] znodes = C2JUtils.createArrayOfObjects(mapnode_znod_t.class, numNodes);
+        mapnode_znod_t znodes[] = malloc(mapnode_znod_t::new, mapnode_znod_t[]::new, numNodes);
         CacheableDoomObjectContainer.unpack(data, znodes);
 
         for (int i = 0; i < numNodes; i++) {
@@ -1234,7 +1223,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
     @P_Setup.C(P_LoadThings)
     private void P_LoadThings(int lump) {
         int numthings = DOOM.wadLoader.LumpLength(lump) / mapthing_t.sizeOf();
-        final mapthing_t[] data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numthings, mapthing_t.class);
+        final mapthing_t[] data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numthings, mapthing_t::new, mapthing_t[]::new);
 
         mobj_t mobj;
         int mobjcount = 0;
@@ -1323,7 +1312,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         numlines = DOOM.wadLoader.LumpLength(lump) / maplinedef_t.sizeOf();
         lines = calloc_IfSameLevel(lines, numlines, line_t::new, line_t[]::new);
-        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numlines, maplinedef_t.class); // cph
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numlines, maplinedef_t::new, maplinedef_t[]::new); // cph
                                                                             // -
                                                                             // wad
                                                                             // lump
@@ -1498,7 +1487,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
     private void P_LoadSideDefs2(int lump) {
         // cph - final*, wad lump handling updated
-        final mapsidedef_t[] data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsides, mapsidedef_t.class);
+        final mapsidedef_t[] data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsides, mapsidedef_t::new, mapsidedef_t[]::new);
         
         for (int i = 0; i < numsides; i++) {
             final mapsidedef_t msd = data[i];
@@ -1758,14 +1747,11 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         }
 
         // allocate line tables for each sector
-        // line_t[] linebuffer =
-        // C2JUtils.createArrayOfObjects(line_t.class,total);
         // e6y: REJECT overrun emulation code
         // moved to P_LoadReject
         for (int i = 0; i < numsectors; i++) {
             sector = sectors[i];
-            sector.lines = new line_t[sector.linecount];
-            Arrays.setAll(sector.lines, ii -> new line_t());
+            sector.lines = malloc(line_t::new, line_t[]::new, sector.linecount);
             // linebuffer += sector.linecount;
             sector.linecount = 0;
             BBox.ClearBox(sector.blockbox);

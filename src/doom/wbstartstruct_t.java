@@ -1,13 +1,12 @@
 package doom;
 
 import static data.Limits.MAXPLAYERS;
-import java.util.Arrays;
+import static utils.GenericCopy.malloc;
 
 public class wbstartstruct_t implements Cloneable{
 
         public wbstartstruct_t(){
-            plyr = new wbplayerstruct_t[MAXPLAYERS];
-            Arrays.setAll(plyr, i -> new wbplayerstruct_t());
+            plyr = malloc(wbplayerstruct_t::new, wbplayerstruct_t[]::new, MAXPLAYERS);
         }
     
         public int      epsd;   // episode # (0-2)
