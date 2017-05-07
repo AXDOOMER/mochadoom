@@ -60,7 +60,6 @@ import mochadoom.Loggers;
 public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
     
     static final Optional<Robot> MOUSE_ROBOT = createRobot();
-    private static final Cursor HIDDEN_CURSOR = createHiddenCursor();
     private static final Logger LOGGER = Loggers.getLogger(EventObserver.class.getName());
 
     /**
@@ -95,9 +94,12 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      * ...return the invisible cursor
      * @author vekltron
      */
-    private static Cursor createHiddenCursor() {
+    private Cursor createHiddenCursor() {
         final Toolkit tk = Toolkit.getDefaultToolkit();
         final Dimension dim = tk.getBestCursorSize(2, 2);
+        if (dim.width == 0 || dim.height == 0) {
+            return this.initialCursor;
+        }
         final BufferedImage transparent = new BufferedImage(dim.width, dim.height, BufferedImage.TYPE_INT_ARGB);
         return tk.createCustomCursor(transparent, new Point(1, 1), "HiddenCursor");
     }
@@ -142,6 +144,11 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      * Presumably a system Cursor, that is to be used on cursor restore.
      */
     private final Cursor initialCursor;
+
+    /**
+     * Ivisible cursor on the systems who support changing cursors
+     */
+    private final Cursor hiddenCursor;
     
     /**
      * To construct the Observer you only need to provide it with the class of Enum used
@@ -153,6 +160,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         this.doomEventConsumer = doomEventConsumer;
         this.component = component;
         this.initialCursor = component.getCursor();
+        this.hiddenCursor = createHiddenCursor();
         this.keyStateHolder = new KeyStateHolder<>();
     }
     
@@ -233,7 +241,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      */
     protected void modifyCursor(final AWTEvent event) {
         component.getInputContext().selectInputMethod(java.util.Locale.US);
-        component.setCursor(HIDDEN_CURSOR);
+        component.setCursor(hiddenCursor);
     }
 
     /**
