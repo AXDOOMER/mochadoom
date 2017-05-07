@@ -1,9 +1,10 @@
 package p;
 
-import java.io.IOException;
-
-import rr.subsector_t;
 import defines.skill_t;
+import doom.SourceCode.P_Setup;
+import static doom.SourceCode.P_Setup.P_SetupLevel;
+import java.io.IOException;
+import rr.subsector_t;
 
 public interface ILevelLoader {
 
@@ -58,6 +59,7 @@ public interface ILevelLoader {
      * @param skill
      * @throws IOException 
      */
+    @P_Setup.C(P_SetupLevel)
 	void SetupLevel(int episode, int map, int playermask, skill_t skill) throws IOException;
 
 	/**

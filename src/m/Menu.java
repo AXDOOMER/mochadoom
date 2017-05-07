@@ -15,6 +15,7 @@ import doom.SourceCode;
 import doom.SourceCode.M_Menu;
 import static doom.SourceCode.M_Menu.M_Responder;
 import static doom.SourceCode.M_Menu.M_StartControlPanel;
+import static doom.SourceCode.M_Menu.M_Ticker;
 import doom.englsh;
 import static doom.englsh.DOSY;
 import static doom.englsh.EMPTYSTRING;
@@ -1344,6 +1345,9 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     /**
      * M_Ticker
      */
+    @Override
+    @SourceCode.Exact
+    @M_Menu.C(M_Ticker)
     public void Ticker() {
         if (--skullAnimCounter <= 0) {
             whichSkull ^= 1;

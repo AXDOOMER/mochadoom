@@ -54,6 +54,9 @@ public @interface SourceCode {
     
     public enum G_Game {
         G_BuildTiccmd,
+        G_DoCompleted,
+        G_DoReborn,
+        G_DoLoadLevel,
         G_PlayerReborn,
         G_CheckSpot,
         G_DeathMatchSpawnPlayer,
@@ -230,6 +233,13 @@ public @interface SourceCode {
         @Documented
         @Retention(SOURCE) public
         @interface C { P_SaveG value(); }
+    }
+    
+    public enum P_Setup {
+        P_SetupLevel;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Setup value(); }
     }
     
     public enum P_Ceiling {

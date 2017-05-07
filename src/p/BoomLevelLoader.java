@@ -25,6 +25,8 @@ import defines.slopetype_t;
 import doom.CommandVariable;
 import doom.DoomMain;
 import doom.DoomStatus;
+import doom.SourceCode.P_Setup;
+import static doom.SourceCode.P_Setup.P_SetupLevel;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -2064,9 +2066,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
     //
     // killough 5/3/98: reformatted, cleaned up
 
-    public void SetupLevel(int episode, int map, int playermask, skill_t skill)
-            throws IOException {
-        int i;
+    @Override
+    @P_Setup.C(P_SetupLevel)
+    public void SetupLevel(int episode, int map, int playermask, skill_t skill) throws IOException {
         String lumpname;
         int lumpnum;
 
@@ -2079,30 +2081,33 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         // R_StopAllInterpolations();
 
-        DOOM.totallive =
-            DOOM.totalkills =
-                DOOM.totalitems = DOOM.totalsecret = DOOM.wminfo.maxfrags = 0;
+        DOOM.totallive = DOOM.totalkills = DOOM.totalitems = DOOM.totalsecret = DOOM.wminfo.maxfrags = 0;
         DOOM.wminfo.partime = 180;
 
-        for (i = 0; i < Limits.MAXPLAYERS; i++) {
-            DOOM.players[i].killcount =
-                DOOM.players[i].secretcount = DOOM.players[i].itemcount = 0;
+        for (int i = 0; i < Limits.MAXPLAYERS; i++) {
+            DOOM.players[i].killcount = DOOM.players[i].secretcount = DOOM.players[i].itemcount = 0;
             // TODO DM.players[i].resurectedkillcount = 0;//e6y
         }
 
-        // Initial height of PointOfView will be set by player think.
+        // Initial height of PointOfView
+        // will be set by player think.
         DOOM.players[DOOM.consoleplayer].viewz = 1;
 
         // Make sure all sounds are stopped before Z_FreeTags.
-        DOOM.doomSound.Start();
+        S_Start: {
+            DOOM.doomSound.Start();
+        }
 
-        // Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1);
+        Z_FreeTags:; // Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1);
+        
         if (rejectlump != -1) { // cph - unlock the reject table
             DOOM.wadLoader.UnlockLumpNum(rejectlump);
             rejectlump = -1;
         }
 
-        DOOM.actions.InitThinkers();
+        P_InitThinkers: {
+            DOOM.actions.InitThinkers();
+        }
 
         // if working with a devlopment map, reload it
         // W.Reload (); killough 1/31/98: W.Reload obsolete
@@ -2197,7 +2202,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
             // clear out mobj chains
             if (blocklinks != null
                     && blocklinks.length == bmapwidth * bmapheight) {
-                for (i = 0; i < bmapwidth * bmapheight; i++) {
+                for (int i = 0; i < bmapwidth * bmapheight; i++) {
                     blocklinks[i] = null;
                 }
             } else
@@ -2249,13 +2254,13 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         /* cph - reset all multiplayer starts */
 
-        for (i = 0; i < playerstarts.length; i++) {
+        for (int i = 0; i < playerstarts.length; i++) {
             DOOM.playerstarts[i] = null;
         }
 
         deathmatch_p = 0;
 
-        for (i = 0; i < Limits.MAXPLAYERS; i++)
+        for (int i = 0; i < Limits.MAXPLAYERS; i++)
             DOOM.players[i].mo = null;
         // TODO: TracerClearStarts();
 
@@ -2265,7 +2270,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
         // if deathmatch, randomly spawn the active players
         if (DOOM.deathmatch) {
-            for (i = 0; i < Limits.MAXPLAYERS; i++)
+            for (int i = 0; i < Limits.MAXPLAYERS; i++)
                 if (DOOM.playeringame[i]) {
                     DOOM.players[i].mo = null; // not needed? - done before
                                              // P_LoadThings
@@ -2274,7 +2279,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         } else // if !deathmatch, check all necessary player starts actually
                // exist
         {
-            for (i = 0; i < Limits.MAXPLAYERS; i++)
+            for (int i = 0; i < Limits.MAXPLAYERS; i++)
                 if (DOOM.playeringame[i] && !C2JUtils.eval(DOOM.players[i].mo))
                     DOOM.doomSystem.Error("P_SetupLevel: missing player %d start\n", i + 1);
         }

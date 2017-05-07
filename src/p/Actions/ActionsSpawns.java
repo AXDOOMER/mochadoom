@@ -212,8 +212,7 @@ public interface ActionsSpawns extends ActionsSectors {
         p = getPlayer(mthing.type - 1);
 
         if (p.playerstate == PST_REBORN) {
-            G_PlayerReborn:
-            {
+            G_PlayerReborn: {
                 p.PlayerReborn();
             }
         }
@@ -222,8 +221,7 @@ public interface ActionsSpawns extends ActionsSectors {
         x = mthing.x << FRACBITS;
         y = mthing.y << FRACBITS;
         z = ONFLOORZ;
-        P_SpawnMobj:
-        {
+        P_SpawnMobj: {
             mobj = this.SpawnMobj(x, y, z, mobjtype_t.MT_PLAYER);
         }
 
@@ -247,8 +245,7 @@ public interface ActionsSpawns extends ActionsSectors {
         p.viewheight = VIEWHEIGHT;
 
         // setup gun psprite
-        P_SetupPsprites:
-        {
+        P_SetupPsprites: {
             p.SetupPsprites();
         }
 
@@ -261,13 +258,11 @@ public interface ActionsSpawns extends ActionsSectors {
 
         if (mthing.type - 1 == ConsolePlayerNumber()) {
             // wake up the status bar
-            ST_Start:
-            {
+            ST_Start: {
                 statusBar().Start();
             }
             // wake up the heads up text
-            HU_Start:
-            {
+            HU_Start: {
                 headsUp().Start();
             }
         }

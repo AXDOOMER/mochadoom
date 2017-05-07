@@ -872,6 +872,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * 
      */
     
+    @SourceCode.Compatible
     @G_Game.C(G_BuildTiccmd)
     private void BuildTiccmd (ticcmd_t cmd) 
     { 
@@ -1058,83 +1059,89 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             forward += mousey;
         }
 
-        if (strafe) 
-            side += mousex*2; 
-        else 
-            cmd.angleturn -= mousex*0x8; 
+        if (strafe) {
+            side += mousex * 2;
+        } else {
+            cmd.angleturn -= mousex * 0x8;
+        }
 
         mousex = mousey = 0; 
 
-        if (forward > MAXPLMOVE()) 
-            forward = MAXPLMOVE(); 
-        else if (forward < -MAXPLMOVE()) 
-            forward = -MAXPLMOVE(); 
-        if (side > MAXPLMOVE()) 
-            side = MAXPLMOVE(); 
-        else if (side < -MAXPLMOVE()) 
-            side = -MAXPLMOVE(); 
+        if (forward > MAXPLMOVE()) {
+            forward = MAXPLMOVE();
+        } else if (forward < -MAXPLMOVE()) {
+            forward = -MAXPLMOVE();
+        }
+        if (side > MAXPLMOVE()) {
+            side = MAXPLMOVE();
+        } else if (side < -MAXPLMOVE()) {
+            side = -MAXPLMOVE();
+        }
 
         cmd.forwardmove += forward; 
         cmd.sidemove += side;
 
-    	if(players[consoleplayer].playerstate == PST_LIVE)
-    	{
-    		if(look < 0)
-    		{
-    			look += 16;
-    		}
-    		
-    		cmd.lookfly = (char) look;
-    	}
-        
-        // special buttons
-        if (sendpause) 
-        { 
-            sendpause = false; 
-            cmd.buttons = BT_SPECIAL | BTS_PAUSE; 
-        } 
+        if (players[consoleplayer].playerstate == PST_LIVE) {
+            if (look < 0) {
+                look += 16;
+            }
 
-        if (sendsave) 
-        { 
-            sendsave = false; 
-            cmd.buttons = (char) (BT_SPECIAL | BTS_SAVEGAME | (savegameslot<<BTS_SAVESHIFT)); 
-        } 
+            cmd.lookfly = (char) look;
+        }
+
+        // special buttons
+        if (sendpause) {
+            sendpause = false;
+            cmd.buttons = BT_SPECIAL | BTS_PAUSE;
+        }
+
+        if (sendsave) {
+            sendsave = false;
+            cmd.buttons = (char) (BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT));
+        }
     } 
 
 
-    //
-    // G_DoLoadLevel 
-    //
-    //extern  gamestate_t     wipegamestate; 
-
+    /**
+     * G_DoLoadLevel 
+     * 
+     * //extern gamestate_t wipegamestate;
+     */
+    @SourceCode.Suspicious
+    @G_Game.C(G_DoLoadLevel)
     public boolean DoLoadLevel () 
     { 
-        int             i; 
-
-        // Set the sky map.
-        // First thing, we have a dummy sky texture name,
-        //  a flat. The data is in the WAD only because
-        //  we look for an actual index, instead of simply
-        //  setting one.
-        textureManager.setSkyFlatNum(textureManager.FlatNumForName ( SKYFLATNAME ));
-
         /**
          * Added a config switch to this fix
-         * -  Good Sign 2017/04/26
+         *  - Good Sign 2017/04/26
+         * 
+         * Fixed R_FlatNumForName was a part of the fix, not vanilla code
+         *  - Good Sign 2017/05/07
          * 
          * DOOM determines the sky texture to be used
          * depending on the current episode, and the game version.
+         * 
+         * @SourceCode.Compatible
          */
         if (Engine.getConfig().equals(Settings.fix_sky_change, Boolean.TRUE) && (isCommercial()
                 || ( gamemission == GameMission_t.pack_tnt )
                 || ( gamemission == GameMission_t.pack_plut )))
         {
+            // Set the sky map.
+            // First thing, we have a dummy sky texture name,
+            //  a flat. The data is in the WAD only because
+            //  we look for an actual index, instead of simply
+            //  setting one.
+            textureManager.setSkyFlatNum(textureManager.FlatNumForName(SKYFLATNAME));
+
             textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY3"));
-            if (gamemap < 12)
+            if (gamemap < 12) {
                 textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY1"));
-            else
-                if (gamemap < 21)
+            } else {
+                if (gamemap < 21) {
                     textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY2"));
+                }
+            }
         }
 
         levelstarttic = gametic;        // for time calculation
@@ -1144,17 +1151,18 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         gamestate = GS_LEVEL; 
 
-        for (i=0 ; i<MAXPLAYERS ; i++) 
-        { 
-            if (playeringame[i] && players[i].playerstate == PST_DEAD) 
-                players[i].playerstate = PST_REBORN; 
-            // I don't give a shit if it's not super-duper optimal. 
-            Arrays.fill(players[i].frags, 0);
+        for (int i = 0; i < MAXPLAYERS; i++) {
+            if (playeringame[i] && players[i].playerstate == PST_DEAD) {
+                players[i].playerstate = PST_REBORN;
+            }
 
-        } 
+            memset(players[i].frags, 0, players[i].frags.length);
+        }
 
         try {
-            levelLoader.SetupLevel(gameepisode, gamemap, 0, gameskill);
+            P_SetupLevel: {
+                levelLoader.SetupLevel(gameepisode, gamemap, 0, gameskill);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             // Failure loading level.
@@ -1162,18 +1170,25 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
         
         displayplayer = consoleplayer;      // view the guy you are playing    
+        I_GetTime: {
+            starttime = ticker.GetTime();
+        }
         gameaction = ga_nothing; 
-        //Z_CheckHeap ();
+        Z_CheckHeap:;
 
         // clear cmd building stuff
-        Arrays.fill(gamekeydown, false);
+        memset(gamekeydown, false, gamekeydown.length);
         keysCleared = true;
         joyxmove = joyymove = 0; 
         mousex = mousey = 0; 
         sendpause = sendsave = paused = false; 
-        Arrays.fill(mousearray, false);
-        Arrays.fill(joyarray, false); 
+        memset(mousearray, false, mousearray.length);
+        memset(joyarray, false, joyarray.length);
         
+        /**
+         * Suspicious, yet tested to have probably no desync-effect:
+         * - GoodSign 2017/05/07
+         */
         
         // killough 5/13/98: in case netdemo has consoleplayer other than green
         statusBar.Start();
@@ -1182,14 +1197,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         // killough: make -timedemo work on multilevel demos
         // Move to end of function to minimize noise -- killough 2/22/98:
 
-        if (timingdemo)
-          {
-            if (first)
-              {
+        if (timingdemo) {
+            if (first) {
                 starttime = RealTime.GetTime();
-                first=false;
-              }
-          }
+                first = false;
+            }
+        }
         
         // Try reclaiming some memory from limit-expanded buffers.
         sceneRenderer.resetLimits();
@@ -1322,11 +1335,14 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * 
      * Make ticcmd_ts for the players.
      */
+    @G_Game.C(G_Ticker)
     public void Ticker() { 
         // do player reborns if needed
         for (int i = 0; i < MAXPLAYERS; i++) {
             if (playeringame[i] && players[i].playerstate == PST_REBORN) {
-                DoReborn(i);
+                G_DoReborn: {
+                    DoReborn(i);
+                }
             }
         }
 
@@ -1581,9 +1597,11 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
     }
 
-    //
-    // G_DoReborn 
-    // 
+    /**
+     * G_DoReborn 
+     */
+    @SourceCode.Exact
+    @G_Game.C(G_DoReborn)
     public void DoReborn (int playernum) { 
         if (!netgame) {
             // reload the level from scratch
@@ -1596,27 +1614,40 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
             // spawn at random spot if in death match 
             if (deathmatch) {
-                DeathMatchSpawnPlayer(playernum);
+                G_DeathMatchSpawnPlayer: {
+                    DeathMatchSpawnPlayer(playernum);
+                }
                 return;
             }
 
-            if (CheckSpot(playernum, playerstarts[playernum])) {
-                actions.SpawnPlayer(playerstarts[playernum]);
-                return;
+            G_CheckSpot: {
+                if (CheckSpot(playernum, playerstarts[playernum])) {
+                    P_SpawnPlayer: {
+                        actions.SpawnPlayer(playerstarts[playernum]);
+                    }
+                    return;
+                }
             }
 
             // try to spawn at one of the other players spots 
             for (int i = 0; i < MAXPLAYERS; i++) {
-                if (CheckSpot(playernum, playerstarts[i])) {
-                    playerstarts[i].type = (short) (playernum + 1); // fake as other player 
-                    actions.SpawnPlayer(playerstarts[i]);
-                    playerstarts[i].type = (short) (i + 1);     // restore 
-                    return;
+                G_CheckSpot: {
+                    if (CheckSpot(playernum, playerstarts[i])) {
+                        playerstarts[i].type = (short) (playernum + 1); // fake as other player 
+                        P_SpawnPlayer: {
+                            actions.SpawnPlayer(playerstarts[i]);
+                        }
+                        playerstarts[i].type = (short) (i + 1);     // restore 
+                        return;
+                    }
                 }
                 // he's going to be inside something.  Too bad.
                 // MAES: Yeah, they're like, fuck him.
             }
-            actions.SpawnPlayer(playerstarts[playernum]);
+            
+            P_SpawnPlayer: {
+                actions.SpawnPlayer(playerstarts[playernum]);
+            }
         } 
     } 
 
@@ -1654,6 +1685,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         gameaction = ga_completed;
     }
 
+    @G_Game.C(G_DoCompleted)
     protected void DoCompleted() {
         gameaction = ga_nothing;
 
@@ -1709,6 +1741,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         if (isCommercial())        {
             if (secretexit) {
                 switch(gamemap) {
+                    case 2:
+                        wminfo.next = 32; //Fix Doom 3 BFG Edition, MAP02 secret exit to MAP33 Betray 
+                        break;
                     case 15:
                         wminfo.next = 30;
                         break;
@@ -1720,6 +1755,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 case 31:
                 case 32:
                     wminfo.next = 15;
+                    break;
+                case 33:
+                    wminfo.next = 3; //Fix Doom 3 BFG Edition, MAP33 Betray exit back to MAP03 
                     break;
                 default:
                     wminfo.next = gamemap;
