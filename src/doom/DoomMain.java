@@ -1289,8 +1289,22 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
                 ev.withKey(sc -> {
                     gamekeydown[sc.ordinal()] = true;
-                    if (vanillaKeyBehavior && sc == SC_LSHIFT) {
-                        gamekeydown[SC_RSHIFT.ordinal()] = true;
+                    if (vanillaKeyBehavior) {
+                        switch(sc) {
+                            case SC_LSHIFT:
+                            case SC_RSHIFT:
+                                gamekeydown[SC_RSHIFT.ordinal()] = gamekeydown[SC_LSHIFT.ordinal()] = true;
+                                break;
+                            case SC_LCTRL:
+                            case SC_RCTRL:
+                                gamekeydown[SC_RCTRL.ordinal()] = gamekeydown[SC_LCTRL.ordinal()] = true;
+                                break;
+                            case SC_LALT:
+                            case SC_RALT:
+                                gamekeydown[SC_RALT.ordinal()] = gamekeydown[SC_LALT.ordinal()] = true;
+                                break;
+                            default: break;
+                        }
                     }
                 });
                 return true;    // eat key down events 
@@ -1304,8 +1318,22 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
                 ev.withKey(sc -> {
                     gamekeydown[sc.ordinal()] = false;
-                    if (vanillaKeyBehavior && sc == SC_LSHIFT) {
-                        gamekeydown[SC_RSHIFT.ordinal()] = false;
+                    if (vanillaKeyBehavior) {
+                        switch(sc) {
+                            case SC_LSHIFT:
+                            case SC_RSHIFT:
+                                gamekeydown[SC_RSHIFT.ordinal()] = gamekeydown[SC_LSHIFT.ordinal()] = false;
+                                break;
+                            case SC_LCTRL:
+                            case SC_RCTRL:
+                                gamekeydown[SC_RCTRL.ordinal()] = gamekeydown[SC_LCTRL.ordinal()] = false;
+                                break;
+                            case SC_LALT:
+                            case SC_RALT:
+                                gamekeydown[SC_RALT.ordinal()] = gamekeydown[SC_LALT.ordinal()] = false;
+                                break;
+                            default: break;
+                        }
                     }
                 });
                 return false;   // always let key up events filter down 
