@@ -1287,7 +1287,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     return true;
                 }
 
-                ev.withKey(sc -> gamekeydown[sc.ordinal()] = true);
+                ev.withKey(sc -> {
+                    gamekeydown[sc.ordinal()] = true;
+                    if (vanillaKeyBehavior && sc == SC_LSHIFT) {
+                        gamekeydown[SC_RSHIFT.ordinal()] = true;
+                    }
+                });
                 return true;    // eat key down events 
             case ev_keyup:
                 /* CAPS lock will only go through as a keyup event */
@@ -1297,7 +1302,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     players[consoleplayer].message = String.format("Always run: %s", alwaysrun);
                 }
 
-                ev.withKey(sc -> gamekeydown[sc.ordinal()] = false);
+                ev.withKey(sc -> {
+                    gamekeydown[sc.ordinal()] = false;
+                    if (vanillaKeyBehavior && sc == SC_LSHIFT) {
+                        gamekeydown[SC_RSHIFT.ordinal()] = false;
+                    }
+                });
                 return false;   // always let key up events filter down 
 
             case ev_mouse:

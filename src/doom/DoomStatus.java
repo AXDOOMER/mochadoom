@@ -401,6 +401,8 @@ public abstract class DoomStatus<T,V> {
     public int key_strafe = SC_LALT.ordinal();
     public int key_speed = SC_RSHIFT.ordinal();
 
+    public boolean vanillaKeyBehavior;
+
     public int key_recordstop = SC_Q.ordinal();
     public int[] key_numbers = Stream.of(SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7, SC_8, SC_9, SC_0)
         .mapToInt(Enum::ordinal).toArray();
@@ -566,6 +568,9 @@ public abstract class DoomStatus<T,V> {
         
         // Mouse sensitivity
         this.mouseSensitivity = CM.getValue(Settings.mouse_sensitivity, Integer.class);
+        
+        // This should indicate keyboard behavior should be as close as possible to vanilla
+        this.vanillaKeyBehavior = CM.equals(Settings.vanilla_key_behavior, Boolean.TRUE);
     }
 
     public void commit() {
