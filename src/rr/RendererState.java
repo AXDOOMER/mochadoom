@@ -27,6 +27,8 @@ import static data.Tables.finetangent;
 import static data.Tables.tantoangle;
 import doom.CommandVariable;
 import doom.DoomMain;
+import doom.SourceCode.R_Draw;
+import static doom.SourceCode.R_Draw.R_FillBackScreen;
 import doom.player_t;
 import doom.thinker_t;
 import i.IDoomSystem;
@@ -56,7 +58,11 @@ import rr.drawfuns.SpanVars;
 import static rr.line_t.*;
 import utils.C2JUtils;
 import static utils.GenericCopy.malloc;
+import static v.DoomGraphicSystem.V_NOSCALEOFFSET;
+import static v.DoomGraphicSystem.V_NOSCALEPATCH;
+import static v.DoomGraphicSystem.V_NOSCALESTART;
 import v.graphics.Palettes;
+import v.renderers.DoomScreen;
 import static v.renderers.DoomScreen.*;
 import v.tables.BlurryTable;
 import v.tables.LightsAndColors;
@@ -2300,6 +2306,9 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
         MySegs.ExecuteSetViewSize(view.width);
     }
+    
+    private final Rectangle backScreenRect = new Rectangle();
+    private final Rectangle tilePatchRect = new Rectangle();
 
     /**
      * R_FillBackScreen Fills the back screen with a pattern for variable screen
@@ -2308,8 +2317,11 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
      * R_VideoErase.
      */
     @Override
+    @R_Draw.C(R_FillBackScreen)
     public void FillBackScreen() {
+        final boolean scaleSetting = Engine.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE);
         flat_t src;
+        DoomScreen dest;
         int x;
         int y;
         patch_t patch;
@@ -2334,53 +2346,71 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
         /* This is a flat we're reading here */
         src = DOOM.wadLoader.CacheLumpName(name, PU_CACHE, flat_t.class);
-
+        dest = BG;
+        
         /**
-         * This part actually draws the border itself, without bevels MAES:
+         * TODO: cache it?
+         * This part actually draws the border itself, without bevels
+         * 
+         * MAES:
          * improved drawing routine for extended bit-depth compatibility.
          *
          * Now supports configurable vanilla-like scaling of tiles
          * - Good Sign 2017/04/09
+         * 
+         * @SourceCode.Compatible
          */
-        if (Engine.getConfig().equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
-            final V scaled = DOOM.graphicSystem.ScaleBlock(DOOM.graphicSystem.convertPalettedBlock(src.data), DOOM.vs, 64, 64);
-            DOOM.graphicSystem.TileScreenArea(BG, new Rectangle(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()),
-                scaled, new Rectangle(0, 0, 64 * DOOM.graphicSystem.getScalingX(), 64 * DOOM.graphicSystem.getScalingY()));
-        } else {
-            DOOM.graphicSystem.TileScreenArea(BG, new Rectangle(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()),
-                DOOM.graphicSystem.convertPalettedBlock(src.data), new Rectangle(0, 0, 64, 64));
+        Tiling: {
+            this.backScreenRect.setBounds(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight());
+            this.tilePatchRect.setBounds(0, 0, 64, 64);
+            V block = DOOM.graphicSystem.convertPalettedBlock(src.data);
+            if (scaleSetting) {
+                block = DOOM.graphicSystem.ScaleBlock(block, DOOM.vs, tilePatchRect.width, tilePatchRect.height);
+                this.tilePatchRect.width *= DOOM.graphicSystem.getScalingX();
+                this.tilePatchRect.height *= DOOM.graphicSystem.getScalingY();
+            }
+            DOOM.graphicSystem.TileScreenArea(dest, backScreenRect, block, tilePatchRect);
         }
+        
+        final int scaleFlags = V_NOSCALEOFFSET | V_NOSCALESTART | (scaleSetting ? 0 : V_NOSCALEPATCH);
+        final int stepX = scaleSetting ? DOOM.graphicSystem.getScalingX() << 3 : 8;
+        final int stepY = scaleSetting ? DOOM.graphicSystem.getScalingY() << 3 : 8;
 
         patch = DOOM.wadLoader.CachePatchName("BRDR_T", PU_CACHE);
-        for (x = 0; x < view.scaledwidth; x += 8) {
-            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx + x, view.windowy - 8);
+        for (x = 0; x < view.scaledwidth; x += stepX) {
+            DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx + x, view.windowy - stepY, scaleFlags);
         }
 
         patch = DOOM.wadLoader.CachePatchName("BRDR_B", PU_CACHE);
-        for (x = 0; x < view.scaledwidth; x += 8) {
-            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx + x, view.windowy + view.height);
+        for (x = 0; x < view.scaledwidth; x += stepX) {
+            DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx + x, view.windowy + view.height, scaleFlags);
         }
 
         patch = DOOM.wadLoader.CachePatchName("BRDR_L", PU_CACHE);
-        for (y = 0; y < view.height; y += 8) {
-            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx - 8, view.windowy + y);
+        for (y = 0; y < view.height; y += stepY) {
+            DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx - stepX, view.windowy + y, scaleFlags);
         }
 
         patch = DOOM.wadLoader.CachePatchName("BRDR_R", PU_CACHE);
-        for (y = 0; y < view.height; y += 8) {
-            DOOM.graphicSystem.DrawPatch(BG, patch, view.windowx + view.scaledwidth, view.windowy + y);
+        for (y = 0; y < view.height; y += stepY) {
+            DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx + view.scaledwidth, view.windowy + y, scaleFlags);
         }
 
         // Draw beveled edge. Top-left
-        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_TL", PU_CACHE), view.windowx - 8, view.windowy - 8);
+        patch = DOOM.wadLoader.CachePatchName("BRDR_TL", PU_CACHE);
+        DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx - stepX, view.windowy - stepY, scaleFlags);
 
         // Top-right.
-        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_TR", PU_CACHE), view.windowx + view.scaledwidth, view.windowy - 8);
+        patch = DOOM.wadLoader.CachePatchName("BRDR_TR", PU_CACHE);
+        DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx + view.scaledwidth, view.windowy - stepY, scaleFlags);
 
         // Bottom-left
-        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_BL", PU_CACHE), view.windowx - 8, view.windowy + view.height);
+        patch = DOOM.wadLoader.CachePatchName("BRDR_BL", PU_CACHE);
+        DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx - stepX, view.windowy + view.height, scaleFlags);
+        
         // Bottom-right.
-        DOOM.graphicSystem.DrawPatch(BG, DOOM.wadLoader.CachePatchName("BRDR_BR", PU_CACHE), view.windowx + view.width, view.windowy + view.height);
+        patch = DOOM.wadLoader.CachePatchName("BRDR_BR", PU_CACHE);
+        DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx + view.width, view.windowy + view.height, scaleFlags);
     }
 
     /**

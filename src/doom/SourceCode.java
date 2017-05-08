@@ -391,6 +391,13 @@ public @interface SourceCode {
         @interface C { R_Data value(); }
     }
     
+    public enum R_Draw {
+        R_FillBackScreen;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { R_Draw value(); }
+    }
+    
     public enum R_Main {
         R_PointOnSide,
         R_PointOnSegSide,
