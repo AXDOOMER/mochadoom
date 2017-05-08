@@ -2214,11 +2214,17 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         if (setblocks == 11) {
             view.scaledwidth = DOOM.vs.getScreenWidth();
             view.height = DOOM.vs.getScreenHeight();
-        } else {
+        } else if (DOOM.CM.equals(Settings.scale_screen_tiles, Boolean.TRUE)) {
+            /**
+             * Make it exactly as in vanilla DOOM
+             *  - Good Sign 2017/05/08
+             */
+            view.scaledwidth = (setblocks * 32) * DOOM.vs.getScalingX();
+            view.height = ((setblocks * 168 / 10) & ~7) * DOOM.vs.getScalingY();
+        } else { // Mocha Doom formula looks better for non-scaled tiles
             view.scaledwidth = setblocks * (DOOM.vs.getScreenWidth() / 10);
             // Height can only be a multiple of 8.
-            view.height
-                = (short) ((setblocks * (DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()) / 10) & ~7);
+            view.height = (short) ((setblocks * (DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight()) / 10) & ~7);
         }
 
         skydcvars.viewheight
