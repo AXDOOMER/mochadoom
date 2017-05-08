@@ -2372,7 +2372,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             DOOM.graphicSystem.TileScreenArea(dest, backScreenRect, block, tilePatchRect);
         }
         
-        final int scaleFlags = V_NOSCALEOFFSET | V_NOSCALESTART | (scaleSetting ? 0 : V_NOSCALEPATCH);
+        final int scaleFlags = V_NOSCALESTART | (scaleSetting ? 0 : V_NOSCALEOFFSET | V_NOSCALEPATCH);
         final int stepX = scaleSetting ? DOOM.graphicSystem.getScalingX() << 3 : 8;
         final int stepY = scaleSetting ? DOOM.graphicSystem.getScalingY() << 3 : 8;
 
