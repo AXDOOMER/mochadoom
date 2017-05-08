@@ -2241,12 +2241,16 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         // TODO: P.MapEnd();
 
         // preload graphics
-        if (DOOM.precache)
-            DOOM.textureManager.PrecacheLevel();
+        if (DOOM.precache) {
+            /* @SourceCode.Compatible if together */
+            R_PrecacheLevel: {
+                DOOM.textureManager.PrecacheLevel();
 
-        // MAES: thinkers are separate than texture management. Maybe split
-        // sprite management as well?
-        DOOM.sceneRenderer.PreCacheThinkers();
+                // MAES: thinkers are separate than texture management. Maybe split
+                // sprite management as well?
+                DOOM.sceneRenderer.PreCacheThinkers();
+            }
+        }
 
         /*
          * if (GL_DOOM){ if (V_GetMode() == VID_MODEGL) { // e6y // Do not

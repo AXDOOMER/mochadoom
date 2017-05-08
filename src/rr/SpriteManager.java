@@ -3,10 +3,10 @@ package rr;
 import static data.Defines.PU_CACHE;
 import doom.DoomMain;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import static m.fixed_t.FRACBITS;
+import static utils.C2JUtils.memset;
 import static utils.GenericCopy.malloc;
 import w.lumpinfo_t;
 
@@ -139,11 +139,11 @@ public class SpriteManager<T, V> implements ISpriteManager {
                     // "tristate" of sorts, where -1
                     // means a sprite of uncertain status. Goto
                     // InstallSpriteLumps for more.
-                    for (int k = 0; k < sprtemp.length; k++) {
-                        Arrays.fill(sprtemp[k].flip, (byte) -1);
-                        Arrays.fill(sprtemp[k].lump, (short) -1);
+                    for (final spriteframe_t sprtemp1: sprtemp) {
+                        memset(sprtemp1.flip, (byte) -1, sprtemp1.flip.length);
+                        memset(sprtemp1.lump, (short) -1, sprtemp1.lump.length);
                         // This should be INDETERMINATE at this point.
-                        sprtemp[k].rotate = -1;
+                        sprtemp1.rotate = -1;
                     }
                     maxframe = -1;
 
@@ -151,38 +151,31 @@ public class SpriteManager<T, V> implements ISpriteManager {
                     // relative
                     // to e.g. TROO. In coalesced lumps, there will be overlap.
                     // This procedure should, in theory, trump older ones.
-
-                    for (Integer j : list) {
-
+                    list.forEach((j) -> {
                         lumpinfo_t lump = DOOM.wadLoader.GetLumpInfo(j + firstspritelump);
-
                         // We don't know a-priori which frames exist.
                         // However, we do know how to interpret existing ones,
                         // and have an implicit maximum sequence of 29 Frames.
                         // A frame can also hame multiple rotations.
-
                         if (lump.name.substring(0, 4).equalsIgnoreCase(
-                                spritename.substring(0, 4))) {
-
+                            spritename.substring(0, 4))) {
                             int frame = lump.name.charAt(4) - 'A';
                             int rotation = lump.name.charAt(5) - '0';
-
                             if (sprtemp[frame].rotate != -1) {
                                 // We already encountered this sprite, but we
                                 // may need to trump it with something else
 
                             }
-
                             InstallSpriteLump(j + firstspritelump, frame,
-                                    rotation, false);
+                                rotation, false);
                             if (lump.name.length() >= 7) {
                                 frame = lump.name.charAt(6) - 'A';
                                 rotation = lump.name.charAt(7) - '0';
                                 InstallSpriteLump(j + firstspritelump, frame,
-                                        rotation, true);
+                                    rotation, true);
                             }
                         }
-                    }
+                    });
 
                     // check the frames that were found for completeness
                     if ((sprites[i].numframes = ++maxframe) != 0) // killough
@@ -190,7 +183,7 @@ public class SpriteManager<T, V> implements ISpriteManager {
                     {
                         int frame;
                         for (frame = 0; frame < maxframe; frame++)
-                            switch ((int) sprtemp[frame].rotate) {
+                            switch (sprtemp[frame].rotate) {
                             case -1:
                                 // no rotations were found for that frame at all
                                 DOOM.doomSystem.Error("R_InitSprites: No patches found for %s frame %c",
@@ -243,11 +236,12 @@ public class SpriteManager<T, V> implements ISpriteManager {
             spritetopoffset = new int[numspritelumps];
 
             for (i = 0; i < numspritelumps; i++) {
-                if ((i & 63) == 0)
+                if ((i & 63) == 0) {
                     System.out.print(".");
+                }
 
-                patch = (patch_t) DOOM.wadLoader.CacheLumpNum(firstspritelump + i, PU_CACHE,
-                        patch_t.class);
+                patch = DOOM.wadLoader.CacheLumpNum(firstspritelump + i, PU_CACHE,
+                    patch_t.class);
                 spritewidth[i] = patch.width << FRACBITS;
                 spriteoffset[i] = patch.leftoffset << FRACBITS;
                 spritetopoffset[i] = patch.topoffset << FRACBITS;
@@ -267,8 +261,9 @@ public class SpriteManager<T, V> implements ISpriteManager {
                 DOOM.doomSystem.Error("R_InstallSpriteLump: Bad frame characters in lump %d",
                         lump);
 
-            if ((int) frame > maxframe)
+            if (frame > maxframe) {
                 maxframe = frame;
+            }
 
             if (rotation == 0) { // the lump should be used for all rotations
                 int r;

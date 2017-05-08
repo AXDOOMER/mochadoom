@@ -1,6 +1,6 @@
 package rr;
 
-import java.util.Arrays;
+import static utils.C2JUtils.memset;
 import v.scale.VideoScale;
 
 /**
@@ -157,7 +157,7 @@ public class visplane_t {
         BOTTOMOFFSET = vs.getScreenWidth() + TOPOFFSET + MIDDLEPADDING;
         if (clearvisplane == null || clearvisplane.length < vs.getScreenWidth()) {
             clearvisplane = new char[vs.getScreenWidth()];
-            Arrays.fill(clearvisplane, Character.MAX_VALUE);
+            memset(clearvisplane, Character.MAX_VALUE, clearvisplane.length);
         }
     }
 };

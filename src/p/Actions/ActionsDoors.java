@@ -19,6 +19,10 @@ package p.Actions;
 
 import data.sounds;
 import defines.card_t;
+import doom.SourceCode;
+import doom.SourceCode.P_Doors;
+import static doom.SourceCode.P_Doors.P_SpawnDoorCloseIn30;
+import static doom.SourceCode.P_Doors.P_SpawnDoorRaiseIn5Mins;
 import static doom.englsh.PD_BLUEK;
 import static doom.englsh.PD_BLUEO;
 import static doom.englsh.PD_REDK;
@@ -29,6 +33,7 @@ import doom.player_t;
 import doom.thinker_t;
 import static m.fixed_t.FRACUNIT;
 import p.ActiveStates;
+import static p.ActiveStates.T_VerticalDoor;
 import static p.DoorDefines.VDOORSPEED;
 import static p.DoorDefines.VDOORWAIT;
 import p.mobj_t;
@@ -418,5 +423,64 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
         // find the top and bottom of the movement range
         door.topheight = sec.FindLowestCeilingSurrounding();
         door.topheight -= 4 * FRACUNIT;
+    }
+    
+    //
+    // Spawn a door that closes after 30 seconds
+    //
+    @SourceCode.Exact
+    @P_Doors.C(P_SpawnDoorCloseIn30)
+    default void SpawnDoorCloseIn30(sector_t sector) {
+        vldoor_t door;
+
+        Z_Malloc: {
+            door = new vldoor_t();
+        }
+
+        P_AddThinker: {
+            AddThinker(door);
+        }
+
+        sector.specialdata = door;
+        sector.special = 0;
+
+        door.thinkerFunction = T_VerticalDoor;
+        door.sector = sector;
+        door.direction = 0;
+        door.type = vldoor_e.normal;
+        door.speed = VDOORSPEED;
+        door.topcountdown = 30 * 35;
+    }
+
+    /**
+     * Spawn a door that opens after 5 minutes
+     */
+    @SourceCode.Exact
+    @P_Doors.C(P_SpawnDoorRaiseIn5Mins)
+    default void SpawnDoorRaiseIn5Mins(sector_t sector, int secnum) {
+        vldoor_t door;
+
+        Z_Malloc: {
+            door = new vldoor_t();
+        }
+
+        P_AddThinker: {
+            AddThinker(door);
+        }
+        
+        sector.specialdata = door;
+        sector.special = 0;
+        
+        door.thinkerFunction = T_VerticalDoor;
+        door.sector = sector;
+        door.direction = 2;
+        door.type = vldoor_e.raiseIn5Mins;
+        door.speed = VDOORSPEED;
+        P_FindLowestCeilingSurrounding: {
+            door.topheight = sector.FindLowestCeilingSurrounding();
+        }
+        door.topheight -= 4 * FRACUNIT;
+        door.topwait = VDOORWAIT;
+        door.topcountdown = 5 * 60 * 35;
     }
 }

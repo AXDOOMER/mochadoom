@@ -320,6 +320,14 @@ public final class C2JUtils {
         }
     }
 
+    public static void memset(byte[] array, byte value, int len) {
+        if (len > 0)
+            array[0] = value;
+        for (int i = 1; i < len; i += i) {
+            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i) : i);
+        }
+    }
+
     public static void memset(char[] array, char value, int len) {
         if (len > 0)
             array[0] = value;

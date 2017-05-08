@@ -149,7 +149,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
          */
         if (ev == event_t.CANCEL_KEYS) {
             // PAINFULLY and FORCEFULLY clear the buttons.
-            Arrays.fill(gamekeydown, false);
+            memset(gamekeydown, false, gamekeydown.length);
             keysCleared = true;
             return; // Nothing more to do here.
         }
@@ -1110,8 +1110,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      */
     @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
     @G_Game.C(G_DoLoadLevel)
-    public boolean DoLoadLevel () 
-    { 
+    public boolean DoLoadLevel() { 
         /**
          * Added a config switch to this fix
          *  - Good Sign 2017/04/26
@@ -1170,7 +1169,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             return false;
         }
         
-        displayplayer = consoleplayer;      // view the guy you are playing    
+        displayplayer = consoleplayer; // view the guy you are playing    
         I_GetTime: {
             starttime = ticker.GetTime();
         }
@@ -1396,19 +1395,29 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     }
                     break;
                 case ga_newgame:
-                    DoNewGame();
+                    G_DoNewGame: {
+                        DoNewGame();
+                    }
                     break;
                 case ga_loadgame:
-                    DoLoadGame();
+                    G_DoLoadGame: {
+                        DoLoadGame();
+                    }
                     break;
                 case ga_savegame:
-                    DoSaveGame();
+                    G_DoSaveGame: {
+                        DoSaveGame();
+                    }
                     break;
                 case ga_playdemo:
-                    DoPlayDemo();
+                    G_DoPlayDemo: {
+                        DoPlayDemo();
+                    }
                     break;
                 case ga_completed:
-                    DoCompleted();
+                    G_DoCompleted: {
+                        DoCompleted();
+                    }
                     break;
                 case ga_victory:
                     finale.StartFinale();
@@ -1728,18 +1737,23 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         gameaction = ga_completed;
     }
 
+    @SourceCode.Exact
     @G_Game.C(G_DoCompleted)
     protected void DoCompleted() {
         gameaction = ga_nothing;
 
         for (int i = 0; i < MAXPLAYERS; i++) {
             if (playeringame[i]) {
-                players[i].PlayerFinishLevel(); // take away cards and stuff 
+                G_PlayerFinishLevel: { // take away cards and stuff 
+                    players[i].PlayerFinishLevel();
+                }
             }
         }
 
         if (automapactive) {
-            autoMap.Stop();
+            AM_Stop: {
+                autoMap.Stop();
+            }
         }
 
         if (!isCommercial()) {
@@ -1754,34 +1768,17 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                         players[i].didsecret = true;
                     }
                     break;
+                default:
+                    break;
             }
         }
 
-        /*  Hmmm - why? MAES: Clearly redundant.
-        if ( (gamemap == 8)
-                && (!isCommercial()) ) 
-        {
-            // victory 
-            gameaction =  ga_victory; 
-            return; 
-        } 
-
-        if ( (gamemap == 9)
-                && !isCommercial() ) 
-        {
-            // exit secret level 
-            for (i=0 ; i<MAXPLAYERS ; i++) 
-                players[i].didsecret = true; 
-        } 
-         */
-
-
-        wminfo.didsecret = players[consoleplayer].didsecret; 
-        wminfo.epsd = gameepisode -1; 
-        wminfo.last = gamemap -1;
+        wminfo.didsecret = players[consoleplayer].didsecret;
+        wminfo.epsd = gameepisode - 1;
+        wminfo.last = gamemap - 1;
 
         // wminfo.next is 0 biased, unlike gamemap
-        if (isCommercial())        {
+        if (isCommercial()) {
             if (secretexit) {
                 switch(gamemap) {
                     case 2:
@@ -1793,6 +1790,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     case 31:
                         wminfo.next = 31;
                         break;
+                    default:
+                        break;
                 }
             } else switch(gamemap) {
                 case 31:
@@ -1800,14 +1799,14 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     wminfo.next = 15;
                     break;
                 case 33:
-                    wminfo.next = 3; //Fix Doom 3 BFG Edition, MAP33 Betray exit back to MAP03 
+                    wminfo.next = 2; //Fix Doom 3 BFG Edition, MAP33 Betray exit back to MAP03 
                     break;
                 default:
                     wminfo.next = gamemap;
             }
         } else {
             if (secretexit) {
-                wminfo.next = 8;    // go to secret level 
+                wminfo.next = 8; // go to secret level 
             } else if (gamemap == 9) {
                 // returning from secret level 
                 switch (gameepisode) {
@@ -1823,9 +1822,11 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     case 4:
                         wminfo.next = 2;
                         break;
+                    default:
+                        break;
                 }
             } else {
-                wminfo.next = gamemap;          // go to next level 
+                wminfo.next = gamemap; // go to next level 
             }
         }
 
@@ -1850,7 +1851,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             wminfo.plyr[i].sitems = players[i].itemcount;
             wminfo.plyr[i].ssecret = players[i].secretcount;
             wminfo.plyr[i].stime = leveltime;
-            C2JUtils.memcpy(wminfo.plyr[i].frags, players[i].frags, wminfo.plyr[i].frags.length);
+            memcpy(wminfo.plyr[i].frags, players[i].frags, wminfo.plyr[i].frags.length);
         } 
 
         gamestate = GS_INTERMISSION; 
@@ -1858,10 +1859,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         automapactive = false; 
 
         if (statcopy != null) {
-            C2JUtils.memcpy(statcopy, wminfo, 1);
+            memcpy(statcopy, wminfo, 1);
         }
 
-        endLevel.Start (wminfo); 
+        WI_Start: {
+            endLevel.Start(wminfo);
+        } 
     } 
 
 
@@ -1917,9 +1920,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * This is fugly. Making a "savegame object" will make at least certain comparisons easier, and avoid writing code
      * twice.
      */
+    @SourceCode.Suspicious(CauseOfDesyncProbability.MEDIUM)
+    @G_Game.C(G_DoLoadGame)
     protected void DoLoadGame() {
         try {
-            int i;
             StringBuffer vcheck = new StringBuffer();
             VanillaDSGHeader header = new VanillaDSGHeader();
             IDoomSaveGame dsg = new VanillaDSG<>(this);
@@ -1945,12 +1949,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             gameskill = header.getGameskill();
             gameepisode = header.getGameepisode();
             gamemap = header.getGamemap();
-            for (i = 0; i < MAXPLAYERS; i++) {
-                playeringame[i] = header.getPlayeringame()[i];
-            }
+            System.arraycopy(header.getPlayeringame(), 0, playeringame, 0, MAXPLAYERS);
 
             // load a base level 
-            InitNew(gameskill, gameepisode, gamemap);
+            G_InitNew: {
+                InitNew(gameskill, gameepisode, gamemap);
+            }
 
             if (gameaction == ga_failure) {
                 // failure to load. Abort.
@@ -1963,8 +1967,14 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             // get the times 
             leveltime = header.getLeveltime();
 
+            boolean ok;
             // dearchive all the modifications
-            boolean ok = dsg.doLoad(f);
+            P_UnArchivePlayers:
+            P_UnArchiveWorld: 
+            P_UnArchiveThinkers:
+            P_UnArchiveSpecials: {
+                ok = dsg.doLoad(f);
+            }
             f.close();
 
             // MAES: this will cause a forced exit.
@@ -1974,17 +1984,23 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             // a "tentative loading" subsystem, which will only alter the game
             // if everything works out without errors. But who cares :-p
             if (!ok) {
-                doomSystem.Error("Bad savegame");
+                I_Error: {
+                    doomSystem.Error("Bad savegame");
+                }
             }
 
             // done 
             //Z_Free (savebuffer); 
             if (sceneRenderer.getSetSizeNeeded()) {
-                sceneRenderer.ExecuteSetViewSize();
+                R_ExecuteSetViewSize: {
+                    sceneRenderer.ExecuteSetViewSize();
+                }
             }
 
             // draw the pattern into the back screen
-            sceneRenderer.FillBackScreen();
+            R_FillBackScreen: {
+                sceneRenderer.FillBackScreen();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -2001,6 +2017,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         sendsave = true;
     }
 
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
+    @G_Game.C(G_DoSaveGame)
     protected void DoSaveGame() {
 
         try {
@@ -2011,8 +2029,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             IDoomSaveGameHeader header = new VanillaDSGHeader();
             IDoomSaveGame dsg = new VanillaDSG<>(this);
 
-            if (cVarManager.bool(CommandVariable.CDROM)) {
-                build.append("c:\\doomdata\\");
+            M_CheckParm: {
+                if (cVarManager.bool(CommandVariable.CDROM)) {
+                    build.append("c:\\doomdata\\");
+                }
             }
             
             build.append(String.format("%s%d.dsg", SAVEGAMENAME, savegameslot));
@@ -2031,7 +2051,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
             // Try opening a save file. No intermediate buffer (performance?)
             try (DataOutputStream f = new DataOutputStream(new FileOutputStream(name))) {
-                boolean ok = dsg.doSave(f);
+                P_ArchivePlayers:
+                P_ArchiveWorld:
+                P_ArchiveThinkers:
+                P_ArchiveSpecials: {
+                    boolean ok = dsg.doSave(f);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -2044,7 +2069,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         players[consoleplayer].message = GGSAVED;
 
         // draw the pattern into the back screen
-        sceneRenderer.FillBackScreen();
+        R_FillBackScreen: {
+            sceneRenderer.FillBackScreen();
+        }
     }
 
     skill_t d_skill;
@@ -2058,6 +2085,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         gameaction = ga_newgame; 
     } 
 
+    @SourceCode.Exact
+    @G_Game.C(G_DoNewGame)
     public void DoNewGame() {
         demoplayback = false;
         netdemo = false;
@@ -2068,7 +2097,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         fastparm = false;
         nomonsters = false;
         consoleplayer = 0;
-        InitNew(d_skill, d_episode, d_map);
+        G_InitNew: {
+            InitNew(d_skill, d_episode, d_map);
+        }
         gameaction = ga_nothing;
     } 
 
@@ -2077,13 +2108,16 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      * Can be called by the startup code or the menu task,
      * consoleplayer, displayplayer, playeringame[] should be set. 
      */
+    @SourceCode.Compatible
+    @G_Game.C(G_InitNew)
     public void InitNew(skill_t skill, int episode, int map) { InitNew(skill, episode, map, false); }
     private void InitNew(skill_t skill, int episode, int map, boolean noSwitchRandom) {
         if (paused) { 
             paused = false; 
-            doomSound.ResumeSound (); 
+            S_ResumeSound: {
+                doomSound.ResumeSound();
+            } 
         } 
-
 
         if (skill.ordinal() > skill_t.sk_nightmare.ordinal()) {
             skill = skill_t.sk_nightmare;
@@ -2117,6 +2151,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             map = 9;
         }
 
+        /**
+         * I wrote it that way. No worries JavaRandom will never be picked on vanilla demo playback
+         * - Good Sign 2017/05/08
+         * 
+         * @SourceCode.Compatible
+         */
         if (!noSwitchRandom) {
             if (cVarManager.bool(CommandVariable.JAVARANDOM)) {
                 random.requireRandom(VERSION | JAVARANDOM_MASK);
@@ -2125,7 +2165,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             }
         }
 
-        random.ClearRandom (); 
+        M_ClearRandom: {
+            random.ClearRandom ();
+        }
+        
         respawnmonsters = skill == skill_t.sk_nightmare || respawnparm;
 
         // If on nightmare/fast monsters make everything MOAR pimp.
@@ -2134,17 +2177,17 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 states[i].tics >>= 1;
             }
             
-            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 20*MAPFRACUNIT; 
-            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 20*MAPFRACUNIT; 
-            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 20*MAPFRACUNIT; 
+            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 20 * MAPFRACUNIT;
+            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 20 * MAPFRACUNIT;
+            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 20 * MAPFRACUNIT;
         } else if (skill != skill_t.sk_nightmare && gameskill == skill_t.sk_nightmare) {
             for (int i = statenum_t.S_SARG_RUN1.ordinal(); i <= statenum_t.S_SARG_PAIN2.ordinal(); i++) {
                 states[i].tics <<= 1;
             }
             
-            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 15*MAPFRACUNIT; 
-            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 10*MAPFRACUNIT; 
-            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 10*MAPFRACUNIT; 
+            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 15 * MAPFRACUNIT;
+            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 10 * MAPFRACUNIT;
+            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 10 * MAPFRACUNIT;
         } 
 
         // force players to be initialized upon first level load         
@@ -2165,29 +2208,35 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         // set the sky map for the episode
         if (isCommercial()) {
-            textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY3"));
+            textureManager.setSkyTexture(textureManager.TextureNumForName("SKY3"));
             if (gamemap < 12) {
-                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY1"));
-            } else if (gamemap < 21) {
-                textureManager.setSkyTexture(textureManager.TextureNumForName ("SKY2"));
-            }
-        } else switch (episode) { 
-            case 1:
                 textureManager.setSkyTexture(textureManager.TextureNumForName("SKY1"));
-                break;
-            case 2:
+            } else if (gamemap < 21) {
                 textureManager.setSkyTexture(textureManager.TextureNumForName("SKY2"));
-                break;
-            case 3:
-                textureManager.setSkyTexture(textureManager.TextureNumForName("SKY3"));
-                break;
-            case 4:   // Special Edition sky
-                textureManager.setSkyTexture(textureManager.TextureNumForName("SKY4"));
-                break;
+            }
+        } else {
+            switch (episode) {
+                case 1:
+                    textureManager.setSkyTexture(textureManager.TextureNumForName("SKY1"));
+                    break;
+                case 2:
+                    textureManager.setSkyTexture(textureManager.TextureNumForName("SKY2"));
+                    break;
+                case 3:
+                    textureManager.setSkyTexture(textureManager.TextureNumForName("SKY3"));
+                    break;
+                case 4: // Special Edition sky
+                    textureManager.setSkyTexture(textureManager.TextureNumForName("SKY4"));
+                    break;
+                default:
+                    break;
+            }
         }
 
-        if (!DoLoadLevel()) {
-            levelLoadFailure();
+        G_DoLoadLevel: {
+            if (!DoLoadLevel()) {
+                levelLoadFailure();
+            }
         }
     } 
 
@@ -2291,6 +2340,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     }
 
     @SuppressWarnings("UnusedAssignment")
+    @SourceCode.Compatible
+    @G_Game.C(G_DoPlayDemo)
     public void DoPlayDemo() {
 
         skill_t skill;
@@ -2299,10 +2350,12 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         gameaction = ga_nothing;
         // MAES: Yeah, it's OO all the way now, baby ;-)
-        try {
-            demobuffer = wadLoader.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC, VanillaDoomDemo.class);
-        } catch (Exception e) {
-            fail = true;
+        W_CacheLumpName: {
+            try {
+                demobuffer = wadLoader.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC, VanillaDoomDemo.class);
+            } catch (Exception e) {
+                fail = true;
+            }
         }
 
         fail = (demobuffer.getSkill() == null);
@@ -2339,7 +2392,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         // don't spend a lot of time in loadlevel 
         precache = false;
-        InitNew(skill, episode, map, true);
+        G_InitNew: {
+            InitNew(skill, episode, map, true);
+        }
         precache = true;
 
         usergame = false;
@@ -3430,13 +3485,13 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
      *
      * 
      */
-    public void ArbitrateNetStart () throws IOException
+    public void ArbitrateNetStart() throws IOException
     {
         int i;
         autostart = true;
 
         // Clear it up...
-        Arrays.fill(gotinfo, false);
+        memset(gotinfo, false, gotinfo.length);
         if (doomcom.consoleplayer != 0) {
             // listen for setup info from key player
             System.out.println("listening for network start info...\n");

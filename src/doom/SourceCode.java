@@ -57,6 +57,10 @@ public @interface SourceCode {
         G_DoCompleted,
         G_DoReborn,
         G_DoLoadLevel,
+        G_DoSaveGame,
+        G_DoPlayDemo,
+        G_PlayerFinishLevel,
+        G_DoNewGame,
         G_PlayerReborn,
         G_CheckSpot,
         G_DeathMatchSpawnPlayer,
@@ -162,6 +166,22 @@ public @interface SourceCode {
         @interface C { M_Random value(); }
     }
     
+    public enum P_Doors {
+        T_VerticalDoor,
+        EV_VerticalDoor,
+        EV_DoDoor,
+        EV_DoLockedDoor,
+        P_SpawnDoorCloseIn30,
+        P_SpawnDoorRaiseIn5Mins,
+        P_InitSlidingDoorFrames,
+        P_FindSlidingDoorType,
+        T_SlidingDoor,
+        EV_SlidingDoor;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Doors value(); }
+    }
+    
     public enum P_Map {
         P_CheckPosition,
         PIT_CheckThing,
@@ -221,6 +241,23 @@ public @interface SourceCode {
         @interface C { P_Enemy value(); }
     }
     
+    public enum P_Lights {
+        T_FireFlicker,
+        P_SpawnFireFlicker,
+        T_LightFlash,
+        P_SpawnLightFlash,
+        T_StrobeFlash,
+        P_SpawnStrobeFlash,
+        EV_StartLightStrobing,
+        EV_TurnTagLightsOff,
+        EV_LightTurnOn,
+        T_Glow,
+        P_SpawnGlowingLight;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { P_Lights value(); }
+    }
+    
     public enum P_SaveG {
         P_ArchivePlayers,
         P_UnArchivePlayers,
@@ -263,16 +300,6 @@ public @interface SourceCode {
         P_FindMinSurroundingLight,
         getNextSector,
         EV_DoDonut,
-        P_SpawnFireFlicker,
-        T_LightFlash,
-        P_SpawnLightFlash,
-        T_StrobeFlash,
-        P_SpawnStrobeFlash,
-        EV_StartLightStrobing,
-        EV_TurnTagLightsOff,
-        EV_LightTurnOn,
-        T_Glow,
-        P_SpawnGlowingLight,
         P_ChangeSwitchTexture,
         P_InitSwitchList,
         T_PlatRaise,
@@ -281,12 +308,6 @@ public @interface SourceCode {
         P_RemoveActivePlat,
         EV_StopPlat,
         P_ActivateInStasis,
-        EV_VerticalDoor,
-        EV_DoDoor,
-        EV_DoLockedDoor,
-        T_VerticalDoor,
-        P_SpawnDoorCloseIn30,
-        P_SpawnDoorRaiseIn5Mins,
         EV_DoCeiling,
         T_MoveCeiling,
         P_AddActiveCeiling,
@@ -358,6 +379,18 @@ public @interface SourceCode {
         @interface C { P_Pspr value(); }
     }
     
+    public enum R_Data {
+        R_GetColumn,
+        R_InitData,
+        R_PrecacheLevel,
+        R_FlatNumForName,
+        R_TextureNumForName,
+        R_CheckTextureNumForName;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { R_Data value(); }
+    }
+    
     public enum R_Main {
         R_PointOnSide,
         R_PointOnSegSide,
@@ -398,6 +431,21 @@ public @interface SourceCode {
         @Documented
         @Retention(SOURCE) public
         @interface C { W_Wad value(); }
+    }
+    
+    public enum WI_Stuff {
+        WI_initVariables,
+        WI_loadData,
+        WI_initDeathmatchStats,
+        WI_initAnimatedBack,
+        WI_initNetgameStats,
+        WI_initStats,
+        WI_Ticker,
+        WI_Drawer,
+        WI_Start;
+        @Documented
+        @Retention(SOURCE) public
+        @interface C { WI_Stuff value(); }
     }
     
     public interface D_Think {
@@ -455,12 +503,12 @@ public @interface SourceCode {
 
     @Documented
     @Retention(SOURCE)
-    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    @Target({METHOD, FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface angle_t {}
     
     @Documented
     @Retention(SOURCE)
-    @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
+    @Target({METHOD, FIELD, LOCAL_VARIABLE, PARAMETER})
     public @interface fixed_t {}
     
     @Documented

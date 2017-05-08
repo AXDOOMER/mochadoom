@@ -1,24 +1,27 @@
 package rr;
 
+import defines.slopetype_t;
+import doom.SourceCode;
+import doom.SourceCode.P_Spec;
+import static doom.SourceCode.P_Spec.getNextSector;
+import doom.thinker_t;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
-import p.Interceptable;
-import p.Resettable;
-import s.degenmobj_t;
-import w.DoomIO;
-import w.IPackableDoomObject;
-import w.IReadableDoomObject;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.*;
+import p.Interceptable;
+import p.Resettable;
+import s.degenmobj_t;
 import static utils.C2JUtils.eval;
-import defines.slopetype_t;
-import doom.thinker_t;
+import static utils.C2JUtils.memset;
+import w.DoomIO;
+import w.IPackableDoomObject;
+import w.IReadableDoomObject;
 
 /** This is the actual linedef */
 
@@ -257,13 +260,16 @@ public class line_t
      * getNextSector() Return sector_t * of sector next to current. NULL if not
      * two-sided line
      */
-
+    @SourceCode.Compatible("getNextSector(line_t line, sector_t sec)")
+    @P_Spec.C(getNextSector)
     public sector_t getNextSector(sector_t sec) {
-        if (!eval(flags& ML_TWOSIDED))
+        if (!eval(flags & ML_TWOSIDED)) {
             return null;
+        }
 
-        if (frontsector == sec)
+        if (frontsector == sec) {
             return backsector;
+        }
 
         return frontsector;
     }
@@ -300,7 +306,7 @@ public class line_t
         v1x = v1y = v2x = v2y = 0;
         dx = dy = 0;
         flags = special = tag = 0;
-        Arrays.fill(sidenum, (char) 0);
+        memset(sidenum, (char) 0, sidenum.length);
         Arrays.fill(bbox, 0);
         slopetype = slopetype_t.ST_HORIZONTAL;
         frontsector = backsector = null;

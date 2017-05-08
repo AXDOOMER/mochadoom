@@ -32,7 +32,6 @@ import static doom.SourceCode.P_MapUtl.P_BlockLinesIterator;
 import static doom.SourceCode.P_MapUtl.P_BlockThingsIterator;
 import doom.SourceCode.fixed_t;
 import doom.player_t;
-import doom.thinker_t;
 import hu.IHeadsUp;
 import i.IDoomSystem;
 import java.util.function.Predicate;
@@ -42,6 +41,7 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import p.AbstractLevelLoader;
 import static p.AbstractLevelLoader.FIX_BLOCKMAP_512;
+import p.ThinkerList;
 import p.UnifiedGameMap;
 import p.intercept_t;
 import p.mobj_t;
@@ -61,7 +61,7 @@ import utils.TraitFactory;
 import utils.TraitFactory.ContextKey;
 import utils.TraitFactory.Trait;
 
-public interface ActionTrait extends Trait {
+public interface ActionTrait extends Trait, ThinkerList {
     TraitFactory.KeyChain ACTION_KEY_CHAIN = new TraitFactory.KeyChain();
 
     ContextKey<SlideMove> KEY_SLIDEMOVE = ACTION_KEY_CHAIN.newKey(ActionTrait.class, SlideMove::new);
@@ -81,12 +81,10 @@ public interface ActionTrait extends Trait {
     ActionsEnemies getEnemies();
     ActionsAttacks getAttacks();
 
-    void AddThinker(thinker_t thinker); // see UnifiedGameMap
     void StopSound(ISoundOrigin origin); // DOOM.doomSound.StopSound
     void StartSound(ISoundOrigin origin, sounds.sfxenum_t s); // DOOM.doomSound.StartSound
     void StartSound(ISoundOrigin origin, int s); // DOOM.doomSound.StartSound
 
-    thinker_t getThinkerCap(); // see UnifiedGameMap
     player_t getPlayer(int number); //DOOM.players[]
     skill_t getGameSkill(); // DOOM.gameskill
     mobj_t createMobj(); // mobj_t.from(DOOM);

@@ -25,6 +25,7 @@ package w;
 import static data.Defines.PU_CACHE;
 import doom.SourceCode;
 import doom.SourceCode.W_Wad;
+import static doom.SourceCode.W_Wad.W_CacheLumpName;
 import static doom.SourceCode.W_Wad.W_CheckNumForName;
 import i.DummySystem;
 import i.IDoomSystem;
@@ -1044,9 +1045,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
 	@Override
+    @W_Wad.C(W_CacheLumpName)
 	public <T extends CacheableDoomObject> T CacheLumpName(String name, int tag, Class<T> what) {
-		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
-				what);
+		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag, what);
 	}
 
 	//

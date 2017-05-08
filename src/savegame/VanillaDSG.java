@@ -26,12 +26,12 @@ import java.util.logging.Level;
 import m.Settings;
 import mochadoom.Engine;
 import mochadoom.Loggers;
+import p.Actions.ActionsLights.glow_t;
+import p.Actions.ActionsLights.lightflash_t;
 import static p.ActiveStates.*;
 import p.ThinkerList;
 import p.ceiling_t;
 import p.floormove_t;
-import p.glow_t;
-import p.lightflash_t;
 import p.mobj_t;
 import p.plat_t;
 import p.strobe_t;
@@ -774,7 +774,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
 
                 case tc_flash:
                     PADSAVEP(f, maxsize);
-                    flash = new lightflash_t(this.DOOM.random);
+                    flash = new lightflash_t();
                     flash.read(f);
                     flash.sector = DOOM.levelLoader.sectors[flash.sectorid];
                     flash.thinkerFunction = T_LightFlash;
@@ -816,7 +816,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
      * @param save_p
      */
     protected final int PADSAVEP(int save_p) {
-        return (save_p += (4 - (save_p & 3)) & 3);
+        return (save_p + ((4 - (save_p & 3)) & 3));
     }
 
     //protected final int PADSAVEP(ByteBuffer b, int save_p){

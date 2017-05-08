@@ -4,6 +4,10 @@ import static data.Defines.PU_CACHE;
 import static data.Defines.PU_STATIC;
 import static data.Defines.SKYFLATNAME;
 import doom.DoomMain;
+import doom.SourceCode;
+import doom.SourceCode.CauseOfDesyncProbability;
+import doom.SourceCode.R_Data;
+import static doom.SourceCode.R_Data.R_PrecacheLevel;
 import i.IDoomSystem;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -746,7 +750,7 @@ public class SimpleTextureManager
             if (count > 0) {
                 // Draw post, AND fill solidity map
                 System.arraycopy(patch.data, source, cache, position, count);
-                Arrays.fill(pixmap, position, position+count, true);
+                Arrays.fill(pixmap, position, position + count, true);
             }
             // Repeat for next post(s), if any.
         }
@@ -893,17 +897,18 @@ public class SimpleTextureManager
      */
     
     
-    int     flatmemory;
-    int     texturememory;    
+    int flatmemory;
+    int texturememory;
 
-    public void PrecacheLevel () throws IOException
-    {
-        
+    @Override
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
+    @R_Data.C(R_PrecacheLevel)
+    public void PrecacheLevel() throws IOException {
+
         this.preCacheFlats();
         this.preCacheTextures();
-        
+
         // recache sprites.
-        
         /* MAES: this code into PrecacheThinkers
         spritepresent = new boolean[numsprites];
         
@@ -931,7 +936,7 @@ public class SimpleTextureManager
             }
         }
         }
-        */
+         */
     }
     
     protected final void preCacheFlats(){

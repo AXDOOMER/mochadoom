@@ -2813,7 +2813,6 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         boolean[] spritepresent;
         thinker_t th;
         spriteframe_t sf;
-        int i, j, k;
         int lump;
 
         final spritedef_t[] sprites = DOOM.spriteManager.getSprites();
@@ -2828,13 +2827,13 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         }
 
         spritememory = 0;
-        for (i = 0; i < numsprites; i++) {
+        for (int i = 0; i < numsprites; i++) {
             if (!spritepresent[i])
                 continue;
 
-            for (j = 0; j < sprites[i].numframes; j++) {
+            for (int j = 0; j < sprites[i].numframes; j++) {
                 sf = sprites[i].spriteframes[j];
-                for (k = 0; k < 8; k++) {
+                for (int k = 0; k < 8; k++) {
                     lump = DOOM.spriteManager.getFirstSpriteLump() + sf.lump[k];
                     spritememory += DOOM.wadLoader.GetLumpInfo(lump).size;
                     DOOM.wadLoader.CacheLumpNum(lump, PU_CACHE, patch_t.class);

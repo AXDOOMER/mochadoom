@@ -131,6 +131,16 @@ import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import defines.*;
 import doom.DoomMain;
+import doom.SourceCode;
+import doom.SourceCode.CauseOfDesyncProbability;
+import doom.SourceCode.WI_Stuff;
+import static doom.SourceCode.WI_Stuff.WI_Start;
+import static doom.SourceCode.WI_Stuff.WI_initAnimatedBack;
+import static doom.SourceCode.WI_Stuff.WI_initDeathmatchStats;
+import static doom.SourceCode.WI_Stuff.WI_initNetgameStats;
+import static doom.SourceCode.WI_Stuff.WI_initStats;
+import static doom.SourceCode.WI_Stuff.WI_initVariables;
+import static doom.SourceCode.WI_Stuff.WI_loadData;
 import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
@@ -138,7 +148,6 @@ import doom.wbstartstruct_t;
 import rr.*;
 import static v.DoomGraphicSystem.*;
 import static v.renderers.DoomScreen.*;
-import w.animenum_t;
 
 /**
  * This class (stuff.c) seems to implement the endlevel screens.
@@ -151,11 +160,11 @@ public class EndLevel<T, V> extends AbstractEndLevel {
     ////////////////// STATUS ///////////////////
     private final DoomMain<T, V> DOOM;
 
-    private static int COUNT_KILLS = 2;
-    private static int COUNT_ITEMS = 4;
-    private static int COUNT_SECRETS = 6;
-    private static int COUNT_TIME = 8;
-    private static int COUNT_DONE = 10;
+    private static final int COUNT_KILLS = 2;
+    private static final int COUNT_ITEMS = 4;
+    private static final int COUNT_SECRETS = 6;
+    private static final int COUNT_TIME = 8;
+    private static final int COUNT_DONE = 10;
 
     static enum endlevel_state {
         NoState,
@@ -312,7 +321,7 @@ public class EndLevel<T, V> extends AbstractEndLevel {
 
         // Pre-scale stuff.
         SP_STATSX = 50 * DOOM.vs.getSafeScaling();
-        SP_STATSY = 50 * DOOM.vs.getSafeScaling();;
+        SP_STATSY = 50 * DOOM.vs.getSafeScaling();
 
         SP_TIMEX = 16 * DOOM.vs.getSafeScaling();
         SP_TIMEY = (DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight());
@@ -427,8 +436,9 @@ public class EndLevel<T, V> extends AbstractEndLevel {
         }
     }
 
+    @SourceCode.Exact
+    @WI_Stuff.C(WI_initAnimatedBack)
     protected void initAnimatedBack() {
-        int i;
         anim_t a;
 
         if (DOOM.isCommercial()) {
@@ -439,19 +449,25 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             return;
         }
 
-        for (i = 0; i < NUMANIMS[wbs.epsd]; i++) {
+        for (int i = 0; i < NUMANIMS[wbs.epsd]; i++) {
             a = anims[wbs.epsd][i];
 
             // init variables
             a.ctr = -1;
 
-            // specify the next time to draw it
-            if (a.type == animenum_t.ANIM_ALWAYS) {
-                a.nexttic = bcnt + 1 + (DOOM.random.M_Random() % a.period);
-            } else if (a.type == animenum_t.ANIM_RANDOM) {
-                a.nexttic = bcnt + 1 + a.data2 + (DOOM.random.M_Random() % a.data1);
-            } else if (a.type == animenum_t.ANIM_LEVEL) {
-                a.nexttic = bcnt + 1;
+            if (null != a.type) // specify the next time to draw it
+            switch (a.type) {
+                case ANIM_ALWAYS:
+                    a.nexttic = bcnt + 1 + (DOOM.random.M_Random() % a.period);
+                    break;
+                case ANIM_RANDOM:
+                    a.nexttic = bcnt + 1 + a.data2 + (DOOM.random.M_Random() % a.data1);
+                    break;
+                case ANIM_LEVEL:
+                    a.nexttic = bcnt + 1;
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -822,20 +838,18 @@ public class EndLevel<T, V> extends AbstractEndLevel {
     int[][] dm_frags = new int[MAXPLAYERS][MAXPLAYERS];
     int[] dm_totals = new int[MAXPLAYERS];
 
+    @SourceCode.Exact
+    @WI_Stuff.C(WI_initDeathmatchStats)
     protected void initDeathmatchStats() {
-
-        int i;
-        int j;
-
         state = endlevel_state.StatCount;
         acceleratestage = 0;
         dm_state = 1;
 
         cnt_pause = TICRATE;
 
-        for (i = 0; i < MAXPLAYERS; i++) {
+        for (int i = 0; i < MAXPLAYERS; i++) {
             if (DOOM.playeringame[i]) {
-                for (j = 0; j < MAXPLAYERS; j++) {
+                for (int j = 0; j < MAXPLAYERS; j++) {
                     if (DOOM.playeringame[j]) {
                         dm_frags[i][j] = 0;
                     }
@@ -845,7 +859,9 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             }
         }
 
-        initAnimatedBack();
+        WI_initAnimatedBack: {
+            initAnimatedBack();
+        }
     }
 
     protected void updateDeathmatchStats() {
@@ -1009,29 +1025,31 @@ public class EndLevel<T, V> extends AbstractEndLevel {
     int dofrags;
     int ng_state;
 
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
+    @WI_Stuff.C(WI_initNetgameStats)
     protected void initNetgameStats() {
-
-        int i;
-
         state = endlevel_state.StatCount;
         acceleratestage = 0;
         ng_state = 1;
 
         cnt_pause = TICRATE;
 
-        for (i = 0; i < MAXPLAYERS; i++) {
+        for (int i = 0; i < MAXPLAYERS; i++) {
             if (!DOOM.playeringame[i]) {
                 continue;
             }
 
             cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
-
+            
             dofrags += fragSum(i);
         }
 
+        //Suspicious - Good Sign 2017/05/08
         dofrags = ~ ~dofrags;
 
-        initAnimatedBack();
+        WI_initAnimatedBack: {
+            initAnimatedBack();
+        }
     }
 
     protected void updateNetgameStats() {
@@ -1234,6 +1252,8 @@ public class EndLevel<T, V> extends AbstractEndLevel {
 
     int sp_state;
 
+    @SourceCode.Exact
+    @WI_Stuff.C(WI_initStats)
     protected void initStats() {
         state = endlevel_state.StatCount;
         acceleratestage = 0;
@@ -1242,7 +1262,9 @@ public class EndLevel<T, V> extends AbstractEndLevel {
         cnt_time = cnt_par = -1;
         cnt_pause = TICRATE;
 
-        initAnimatedBack();
+        WI_initAnimatedBack: {
+            initAnimatedBack();
+        }
     }
 
     protected void updateStats() {
@@ -1443,16 +1465,15 @@ public class EndLevel<T, V> extends AbstractEndLevel {
 
     }
 
+    @SourceCode.Compatible
+    @WI_Stuff.C(WI_loadData)
     protected void loadData() {
-        int i;
-        int j;
         String name;
         anim_t a;
 
         if (DOOM.isCommercial()) {
             name = "INTERPIC";
-        } else //sprintf(name, "WIMAP%d", wbs.epsd);
-        {
+        } else { //sprintf(name, "WIMAP%d", wbs.epsd);
             name = ("WIMAP" + Integer.toString(wbs.epsd));
         }
 
@@ -1479,30 +1500,28 @@ public class EndLevel<T, V> extends AbstractEndLevel {
         //}
         if (DOOM.isCommercial()) {
             NUMCMAPS = 32;
-//	lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMCMAPS,
-//				       PU_, 0);
 
             lnames = new patch_t[NUMCMAPS];
-            String xxx = new String("CWILV%02d");
+            String xxx = "CWILV%02d";
             //String buffer;
-            for (i = 0; i < NUMCMAPS; i++) {
+            for (int i = 0; i < NUMCMAPS; i++) {
                 name = String.format(xxx, i);
-                lnames[i] = (patch_t) DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
+                lnames[i] = DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
             }
         } else {
             lnames = new patch_t[NUMMAPS];
-            String xxx = new String("WILV%d%d");
+            String xxx = "WILV%d%d";
 
-            for (i = 0; i < NUMMAPS; i++) {
+            for (int i = 0; i < NUMMAPS; i++) {
                 name = String.format(xxx, wbs.epsd, i);
-                lnames[i] = (patch_t) DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
+                lnames[i] = DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
             }
 
             // you are here
-            yah[0] = (patch_t) DOOM.wadLoader.CacheLumpName("WIURH0", PU_STATIC, patch_t.class);
+            yah[0] = DOOM.wadLoader.CacheLumpName("WIURH0", PU_STATIC, patch_t.class);
 
             // you are here (alt.)
-            yah[1] = (patch_t) DOOM.wadLoader.CacheLumpName("WIURH1", PU_STATIC, patch_t.class);
+            yah[1] = DOOM.wadLoader.CacheLumpName("WIURH1", PU_STATIC, patch_t.class);
 
             yah[2] = null;
 
@@ -1510,16 +1529,16 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             splat = new patch_t[]{DOOM.wadLoader.CacheLumpName("WISPLAT", PU_STATIC, patch_t.class), null};
 
             if (wbs.epsd < 3) {
-                xxx = new String("WIA%d%02d%02d");
+                xxx = "WIA%d%02d%02d";
                 //xxx=new PrintfFormat("WIA%d%.2d%.2d");
-                for (j = 0; j < NUMANIMS[wbs.epsd]; j++) {
+                for (int j = 0; j < NUMANIMS[wbs.epsd]; j++) {
                     a = anims[wbs.epsd][j];
-                    for (i = 0; i < a.nanims; i++) {
+                    for (int i = 0; i < a.nanims; i++) {
                         // MONDO HACK!
                         if (wbs.epsd != 1 || j != 8) {
                             // animations
                             name = String.format(xxx, wbs.epsd, j, i);
-                            a.p[i] = (patch_t) DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
+                            a.p[i] = DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
                         } else {
                             // HACK ALERT!
                             a.p[i] = anims[1][4].p[i];
@@ -1530,85 +1549,85 @@ public class EndLevel<T, V> extends AbstractEndLevel {
         }
 
         // More hacks on minus sign.
-        wiminus = (patch_t) DOOM.wadLoader.CacheLumpName("WIMINUS", PU_STATIC, patch_t.class);
+        wiminus = DOOM.wadLoader.CacheLumpName("WIMINUS", PU_STATIC, patch_t.class);
 
-        String xxx = new String("WINUM%d");
-        for (i = 0; i < 10; i++) {
+        String xxx = "WINUM%d";
+        for (int i = 0; i < 10; i++) {
             // numbers 0-9
             name = String.format(xxx, i);
-            num[i] = (patch_t) DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
+            num[i] = DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
         }
 
         // percent sign
-        percent = (patch_t) DOOM.wadLoader.CacheLumpName("WIPCNT", PU_STATIC, patch_t.class);
+        percent = DOOM.wadLoader.CacheLumpName("WIPCNT", PU_STATIC, patch_t.class);
 
         // "finished"
-        finished = (patch_t) DOOM.wadLoader.CacheLumpName("WIF", PU_STATIC, patch_t.class);
+        finished = DOOM.wadLoader.CacheLumpName("WIF", PU_STATIC, patch_t.class);
 
         // "entering"
-        entering = (patch_t) DOOM.wadLoader.CacheLumpName("WIENTER", PU_STATIC, patch_t.class);
+        entering = DOOM.wadLoader.CacheLumpName("WIENTER", PU_STATIC, patch_t.class);
 
         // "kills"
-        kills = (patch_t) DOOM.wadLoader.CacheLumpName("WIOSTK", PU_STATIC, patch_t.class);
+        kills = DOOM.wadLoader.CacheLumpName("WIOSTK", PU_STATIC, patch_t.class);
 
         // "scrt"
-        secret = (patch_t) DOOM.wadLoader.CacheLumpName("WIOSTS", PU_STATIC, patch_t.class);
+        secret = DOOM.wadLoader.CacheLumpName("WIOSTS", PU_STATIC, patch_t.class);
 
         // "secret"
-        sp_secret = (patch_t) DOOM.wadLoader.CacheLumpName("WISCRT2", PU_STATIC, patch_t.class);
+        sp_secret = DOOM.wadLoader.CacheLumpName("WISCRT2", PU_STATIC, patch_t.class);
 
         // Yuck. 
         if (DOOM.language == Language_t.french) {
             // "items"
             if (DOOM.netgame && !DOOM.deathmatch) {
-                items = (patch_t) DOOM.wadLoader.CacheLumpName("WIOBJ", PU_STATIC, patch_t.class);
+                items = DOOM.wadLoader.CacheLumpName("WIOBJ", PU_STATIC, patch_t.class);
             } else {
-                items = (patch_t) DOOM.wadLoader.CacheLumpName("WIOSTI", PU_STATIC, patch_t.class);
+                items = DOOM.wadLoader.CacheLumpName("WIOSTI", PU_STATIC, patch_t.class);
             }
         } else {
-            items = (patch_t) DOOM.wadLoader.CacheLumpName("WIOSTI", PU_STATIC, patch_t.class);
+            items = DOOM.wadLoader.CacheLumpName("WIOSTI", PU_STATIC, patch_t.class);
         }
 
         // "frgs"
-        frags = (patch_t) DOOM.wadLoader.CacheLumpName("WIFRGS", PU_STATIC, patch_t.class);
+        frags = DOOM.wadLoader.CacheLumpName("WIFRGS", PU_STATIC, patch_t.class);
 
         // ":"
-        colon = (patch_t) DOOM.wadLoader.CacheLumpName("WICOLON", PU_STATIC, patch_t.class);
+        colon = DOOM.wadLoader.CacheLumpName("WICOLON", PU_STATIC, patch_t.class);
 
         // "time"
-        time = (patch_t) DOOM.wadLoader.CacheLumpName("WITIME", PU_STATIC, patch_t.class);
+        time = DOOM.wadLoader.CacheLumpName("WITIME", PU_STATIC, patch_t.class);
 
         // "sucks"
-        sucks = (patch_t) DOOM.wadLoader.CacheLumpName("WISUCKS", PU_STATIC, patch_t.class);
+        sucks = DOOM.wadLoader.CacheLumpName("WISUCKS", PU_STATIC, patch_t.class);
 
         // "par"
-        par = (patch_t) DOOM.wadLoader.CacheLumpName("WIPAR", PU_STATIC, patch_t.class);
+        par = DOOM.wadLoader.CacheLumpName("WIPAR", PU_STATIC, patch_t.class);
 
         // "killers" (vertical)
-        killers = (patch_t) DOOM.wadLoader.CacheLumpName("WIKILRS", PU_STATIC, patch_t.class);
+        killers = DOOM.wadLoader.CacheLumpName("WIKILRS", PU_STATIC, patch_t.class);
 
         // "victims" (horiz)
-        victims = (patch_t) DOOM.wadLoader.CacheLumpName("WIVCTMS", PU_STATIC, patch_t.class);
+        victims = DOOM.wadLoader.CacheLumpName("WIVCTMS", PU_STATIC, patch_t.class);
 
         // "total"
-        total = (patch_t) DOOM.wadLoader.CacheLumpName("WIMSTT", PU_STATIC, patch_t.class);
+        total = DOOM.wadLoader.CacheLumpName("WIMSTT", PU_STATIC, patch_t.class);
 
         // your face
-        star = (patch_t) DOOM.wadLoader.CacheLumpName("STFST01", PU_STATIC, patch_t.class);
+        star = DOOM.wadLoader.CacheLumpName("STFST01", PU_STATIC, patch_t.class);
 
         // dead face
-        bstar = (patch_t) DOOM.wadLoader.CacheLumpName("STFDEAD0", PU_STATIC, patch_t.class);
+        bstar = DOOM.wadLoader.CacheLumpName("STFDEAD0", PU_STATIC, patch_t.class);
 
-        String xx1 = new String("STPB%d");
-        String xx2 = new String("WIBP%d");
-        for (i = 0; i < MAXPLAYERS; i++) {
+        String xx1 = "STPB%d";
+        String xx2 = "WIBP%d";
+        for (int i = 0; i < MAXPLAYERS; i++) {
             // "1,2,3,4"
             name = String.format(xx1, i);
-            p[i] = (patch_t) DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);;
+            p[i] = DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
 
             // "1,2,3,4"
             name = String.format(xx2, i + 1);
-            bp[i] = (patch_t) DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);;
+            bp[i] = DOOM.wadLoader.CacheLumpName(name, PU_STATIC, patch_t.class);
         }
 
     }
@@ -1704,8 +1723,9 @@ public void WI_unloadData()
         }
     }
 
+    @SourceCode.Compatible
+    @WI_Stuff.C(WI_initVariables)
     protected void initVariables(wbstartstruct_t wbstartstruct) {
-
         wbs = wbstartstruct.clone();
 
         if (RANGECHECKING) {
@@ -1749,17 +1769,28 @@ public void WI_unloadData()
         }
     }
 
+    @SourceCode.Exact
+    @WI_Stuff.C(WI_Start)
     public void Start(wbstartstruct_t wbstartstruct) {
-
-        initVariables(wbstartstruct);
-        loadData();
+        WI_initVariables: {
+            initVariables(wbstartstruct);
+        }
+        WI_loadData: {
+            loadData();
+        }
 
         if (DOOM.deathmatch) {
-            initDeathmatchStats();
+            WI_initDeathmatchStats: {
+                initDeathmatchStats();
+            }
         } else if (DOOM.netgame) {
-            initNetgameStats();
+            WI_initNetgameStats: {
+                initNetgameStats();
+            }
         } else {
-            initStats();
+            WI_initStats: {
+                initStats();
+            }
         }
     }
 
@@ -1768,6 +1799,6 @@ public void WI_unloadData()
     }
 
     protected static boolean RNGCHECK(int what, int min, int max) {
-        return (what >= min && what <= max) ? true : false;
+        return (what >= min && what <= max);
     }
 }

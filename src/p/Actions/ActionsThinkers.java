@@ -29,6 +29,7 @@ import data.sounds;
 import doom.CommandVariable;
 import doom.DoomMain;
 import doom.SourceCode;
+import doom.SourceCode.CauseOfDesyncProbability;
 import doom.SourceCode.P_Spec;
 import static doom.SourceCode.P_Spec.P_SpawnSpecials;
 import static doom.SourceCode.P_Tick.P_RemoveThinker;
@@ -73,11 +74,12 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
     /**
      * P_SpawnSpecials After the map has been loaded, scan for specials that spawn thinkers
      */
+    @SourceCode.Suspicious(CauseOfDesyncProbability.LOW)
     @P_Spec.C(P_SpawnSpecials)
     default void SpawnSpecials() {
         final DoomMain<?, ?> D = DOOM();
         final AbstractLevelLoader ll = levelLoader();
-        final UnifiedGameMap.Specials SPECS = getSpecials();
+        final UnifiedGameMap.Specials sp = getSpecials();
         sector_t sector;
 
         /*int     episode;
@@ -87,17 +89,17 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
         episode = 2;
          */
         // See if -TIMER needs to be used.
-        SPECS.levelTimer = false;
+        sp.levelTimer = false;
 
         if (D.cVarManager.bool(CommandVariable.AVG) && IsDeathMatch()) {
-            SPECS.levelTimer = true;
-            SPECS.levelTimeCount = 20 * 60 * 35;
+            sp.levelTimer = true;
+            sp.levelTimeCount = 20 * 60 * 35;
         }
 
         if (IsDeathMatch()) {
             D.cVarManager.with(CommandVariable.TIMER, 0, (Integer i) -> {
-                SPECS.levelTimer = true;
-                SPECS.levelTimeCount = i * 60 * 35;
+                sp.levelTimer = true;
+                sp.levelTimeCount = i * 60 * 35;
             });
         }
 
@@ -112,28 +114,38 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
             switch (sector.special) {
                 case 1:
                     // FLICKERING LIGHTS
-                    sector.SpawnLightFlash();
+                    P_SpawnLightFlash: {
+                        SpawnLightFlash(sector);
+                    }
                     break;
 
                 case 2:
                     // STROBE FAST
-                    sector.SpawnStrobeFlash(FASTDARK, 0);
+                    P_SpawnStrobeFlash: {
+                        SpawnStrobeFlash(sector, FASTDARK, 0);
+                    }
                     break;
 
                 case 3:
                     // STROBE SLOW
-                    sector.SpawnStrobeFlash(SLOWDARK, 0);
+                    P_SpawnStrobeFlash: {
+                        SpawnStrobeFlash(sector, SLOWDARK, 0);
+                    }
                     break;
 
                 case 4:
                     // STROBE FAST/DEATH SLIME
-                    sector.SpawnStrobeFlash(FASTDARK, 0);
+                    P_SpawnStrobeFlash: {
+                        SpawnStrobeFlash(sector, FASTDARK, 0);
+                    }
                     sector.special = 4;
                     break;
 
                 case 8:
                     // GLOWING LIGHT
-                    sector.SpawnGlowingLight();
+                    P_SpawnGlowingLight: {
+                        SpawnGlowingLight(sector);
+                    }
                     break;
                 case 9:
                     // SECRET SECTOR
@@ -142,42 +154,52 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
 
                 case 10:
                     // DOOR CLOSE IN 30 SECONDS
-                    sector.SpawnDoorCloseIn30();
+                    SpawnDoorCloseIn30: {
+                        SpawnDoorCloseIn30(sector);
+                    }
                     break;
 
                 case 12:
                     // SYNC STROBE SLOW
-                    sector.SpawnStrobeFlash(SLOWDARK, 1);
+                    P_SpawnStrobeFlash: {
+                        SpawnStrobeFlash(sector, SLOWDARK, 1);
+                    }
                     break;
 
                 case 13:
                     // SYNC STROBE FAST
-                    sector.SpawnStrobeFlash(FASTDARK, 1);
+                    P_SpawnStrobeFlash: {
+                        SpawnStrobeFlash(sector, FASTDARK, 1);
+                    }
                     break;
 
                 case 14:
                     // DOOR RAISE IN 5 MINUTES
-                    sector.SpawnDoorRaiseIn5Mins(i);
+                    P_SpawnDoorRaiseIn5Mins: {
+                        SpawnDoorRaiseIn5Mins(sector, i);
+                    }
                     break;
 
                 case 17:
-                    sector.SpawnFireFlicker();
+                    P_SpawnFireFlicker: {
+                        SpawnFireFlicker(sector);
+                    }
                     break;
             }
         }
 
         //  Init line EFFECTs
-        SPECS.numlinespecials = 0;
+        sp.numlinespecials = 0;
         for (int i = 0; i < ll.numlines; i++) {
             switch (ll.lines[i].special) {
                 case 48:
                     // EFFECT FIRSTCOL SCROLL+
                     // Maes 6/4/2012: removed length limit.
-                    if (SPECS.numlinespecials == SPECS.linespeciallist.length) {
-                        SPECS.resizeLinesSpecialList();
+                    if (sp.numlinespecials == sp.linespeciallist.length) {
+                        sp.resizeLinesSpecialList();
                     }
-                    SPECS.linespeciallist[SPECS.numlinespecials] = ll.lines[i];
-                    SPECS.numlinespecials++;
+                    sp.linespeciallist[sp.numlinespecials] = ll.lines[i];
+                    sp.numlinespecials++;
                     break;
             }
         }

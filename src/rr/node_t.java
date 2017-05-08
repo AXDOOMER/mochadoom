@@ -4,7 +4,6 @@ import doom.SourceCode;
 import doom.SourceCode.R_Main;
 import static doom.SourceCode.R_Main.*;
 import doom.SourceCode.fixed_t;
-import java.util.Arrays;
 import m.BBox;
 import m.ISyncLogger;
 import m.Settings;
@@ -13,6 +12,7 @@ import static m.fixed_t.FixedMul;
 import mochadoom.Engine;
 import p.Resettable;
 import static utils.C2JUtils.eval;
+import static utils.C2JUtils.memset;
 
 /**
  * BSP node.
@@ -196,7 +196,7 @@ public class node_t implements Resettable {
             bbox[i].ClearBox();
         }
 
-        Arrays.fill(children, 0);
+        memset(children, 0, children.length);
     }
 
 }

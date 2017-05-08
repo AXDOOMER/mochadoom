@@ -2,6 +2,7 @@ package automap;
 
 import doom.SourceCode.AM_Map;
 import static doom.SourceCode.AM_Map.AM_Responder;
+import static doom.SourceCode.AM_Map.AM_Stop;
 import doom.event_t;
 
 public interface IAutoMap<T,V> {
@@ -44,7 +45,8 @@ public interface IAutoMap<T,V> {
 
     // Called to force the automap to quit
     // if the level is completed while it is up.
-    public void  Stop ();
+    @AM_Map.C(AM_Stop)
+    public void Stop();
 
     public void Start();
 }

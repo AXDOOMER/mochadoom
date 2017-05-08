@@ -181,6 +181,7 @@ public interface IWadLoader {
      */
     public abstract patch_t CachePatchNum(int num);
 
+    @W_Wad.C(W_CacheLumpName)
     public abstract <T extends CacheableDoomObject> T CacheLumpName(String name, int tag, Class<T> what);
 
     /**

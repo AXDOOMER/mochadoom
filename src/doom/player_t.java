@@ -20,7 +20,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 import static m.fixed_t.*;
 import p.ActiveStates.PlayerSpriteConsumer;
 import p.mobj_t;
@@ -236,15 +235,15 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
      * It's probably faster to clone the null player
      */
     public void reset() {
-        Arrays.fill(this.ammo, 0);
-        Arrays.fill(this.armorpoints, 0);
-        Arrays.fill(this.cards, false);
-        Arrays.fill(this.frags, 0);
-        Arrays.fill(this.health, 0);
-        Arrays.fill(this.maxammo, 0);
-        Arrays.fill(this.powers, 0);
-        Arrays.fill(this.weaponowned, false);
-        //Arrays.fill(this.psprites, null);
+        memset(ammo, 0, ammo.length);
+        memset(armorpoints, 0, armorpoints.length);
+        memset(cards, false, cards.length);
+        memset(frags, 0, frags.length);
+        memset(health, 0, health.length);
+        memset(maxammo, 0, maxammo.length);
+        memset(powers, 0, powers.length);
+        memset(weaponowned, false, weaponowned.length);
+        //memset(psprites, null, psprites.length);
         this.cheats = 0; // Forgot to clear up cheats flag...
         this.armortype = 0;
         this.attackdown = false;
@@ -624,9 +623,11 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
      * G_PlayerFinishLevel
      * Called when a player completes a level.
      */
+    @SourceCode.Compatible
+    @G_Game.C(G_PlayerFinishLevel)
     public final void PlayerFinishLevel() {
-        Arrays.fill(powers, 0);
-        Arrays.fill(cards, false);
+        memset(powers, 0, powers.length);
+        memset(cards, false, cards.length);
         mo.flags &= ~mobj_t.MF_SHADOW;     // cancel invisibility 
         extralight = 0;          // cancel gun flashes 
         fixedcolormap = Palettes.COLORMAP_FIXED;       // cancel ir gogles 

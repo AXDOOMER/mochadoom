@@ -17,14 +17,224 @@
  */
 package p.Actions;
 
+import doom.SourceCode;
+import doom.SourceCode.P_Lights;
+import static doom.SourceCode.P_Lights.P_SpawnFireFlicker;
+import static doom.SourceCode.P_Lights.P_SpawnGlowingLight;
+import static doom.SourceCode.P_Lights.P_SpawnLightFlash;
+import static doom.SourceCode.P_Lights.P_SpawnStrobeFlash;
+import doom.SourceCode.P_Spec;
+import static doom.SourceCode.P_Spec.P_FindMinSurroundingLight;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import p.AbstractLevelLoader;
+import static p.ActiveStates.T_FireFlicker;
+import static p.ActiveStates.T_Glow;
+import static p.ActiveStates.T_LightFlash;
+import static p.ActiveStates.T_StrobeFlash;
 import static p.DoorDefines.SLOWDARK;
+import static p.DoorDefines.STROBEBRIGHT;
+import p.strobe_t;
+import rr.SectorAction;
 import rr.line_t;
 import rr.sector_t;
+import w.DoomIO;
 
 public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
 
     int FindSectorFromLineTag(line_t line, int secnum);
+    
+    //
+    // P_LIGHTS
+    //
+    public class fireflicker_t extends SectorAction {
+        public int count;
+        public int maxlight;
+        public int minlight;
+    }
+
+    //
+    // BROKEN LIGHT EFFECT
+    //
+    public class lightflash_t extends SectorAction {
+
+        public int count;
+        public int maxlight;
+        public int minlight;
+        public int maxtime;
+        public int mintime;
+
+        @Override
+        public void read(DataInputStream f) throws IOException {
+            super.read(f); // Call thinker reader first            
+            super.sectorid = DoomIO.readLEInt(f); // Sector index
+            count = DoomIO.readLEInt(f);
+            maxlight = DoomIO.readLEInt(f);
+            minlight = DoomIO.readLEInt(f);
+            maxtime = DoomIO.readLEInt(f);
+            mintime = DoomIO.readLEInt(f);
+        }
+
+        @Override
+        public void pack(ByteBuffer b) throws IOException {
+            super.pack(b); //12            
+            b.putInt(super.sectorid); // 16
+            b.putInt(count); //20
+            b.putInt(maxlight);//24
+            b.putInt(minlight);//28
+            b.putInt(maxtime);//32
+            b.putInt(mintime);//36
+        }
+    }
+    
+    public class glow_t extends SectorAction {
+
+        public int minlight;
+        public int maxlight;
+        public int direction;
+
+
+        @Override
+        public void read(DataInputStream f) throws IOException {
+
+            super.read(f); // Call thinker reader first            
+            super.sectorid = DoomIO.readLEInt(f); // Sector index
+            minlight = DoomIO.readLEInt(f);
+            maxlight = DoomIO.readLEInt(f);
+            direction = DoomIO.readLEInt(f);
+        }
+
+        @Override
+        public void pack(ByteBuffer b) throws IOException {
+            super.pack(b); //12            
+            b.putInt(super.sectorid); // 16
+            b.putInt(minlight);//20
+            b.putInt(maxlight);//24
+            b.putInt(direction);//38
+        }
+    }
+    
+    //
+    // Find minimum light from an adjacent sector
+    //
+    @SourceCode.Exact
+    @P_Spec.C(P_FindMinSurroundingLight)
+    default int FindMinSurroundingLight(sector_t sector, int max) {
+        int min;
+        line_t line;
+        sector_t check;
+
+        min = max;
+        for (int i = 0; i < sector.linecount; i++) {
+            line = sector.lines[i];
+            getNextSector: {
+                check = line.getNextSector(sector);
+            }
+
+            if (check == null) {
+                continue;
+            }
+
+            if (check.lightlevel < min) {
+                min = check.lightlevel;
+            }
+        }
+        return min;
+    }
+    
+    /**
+     * P_SpawnLightFlash After the map has been loaded, scan each sector for
+     * specials that spawn thinkers
+     */
+    @SourceCode.Exact
+    @P_Lights.C(P_SpawnLightFlash)
+    default void SpawnLightFlash(sector_t sector) {
+        lightflash_t flash;
+
+        // nothing special about it during gameplay
+        sector.special = 0;
+
+        Z_Malloc: {
+            flash = new lightflash_t();
+        }
+
+        P_AddThinker: {
+            AddThinker(flash);
+        }
+
+        flash.thinkerFunction = T_LightFlash;
+        flash.sector = sector;
+        flash.maxlight = sector.lightlevel;
+
+        flash.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
+        flash.maxtime = 64;
+        flash.mintime = 7;
+        flash.count = (P_Random() & flash.maxtime) + 1;
+    }
+
+    //
+    // P_SpawnStrobeFlash
+    // After the map has been loaded, scan each sector
+    // for specials that spawn thinkers
+    //
+    @SourceCode.Exact
+    @P_Lights.C(P_SpawnStrobeFlash)
+    default void SpawnStrobeFlash(sector_t sector, int fastOrSlow, int inSync) {
+        strobe_t flash;
+
+        Z_Malloc: {
+            flash = new strobe_t();
+        }
+
+        P_AddThinker: {
+            AddThinker(flash);
+        }
+
+        flash.sector = sector;
+        flash.darktime = fastOrSlow;
+        flash.brighttime = STROBEBRIGHT;
+        flash.thinkerFunction = T_StrobeFlash;
+        flash.maxlight = sector.lightlevel;
+        flash.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
+
+        if (flash.minlight == flash.maxlight) {
+            flash.minlight = 0;
+        }
+
+        // nothing special about it during gameplay
+        sector.special = 0;
+
+        if (inSync == 0) {
+            flash.count = (P_Random() & 7) + 1;
+        } else {
+            flash.count = 1;
+        }
+    }
+
+    @SourceCode.Exact
+    @P_Lights.C(P_SpawnGlowingLight)
+    default void SpawnGlowingLight(sector_t sector) {
+        glow_t g;
+
+        Z_Malloc: {
+            g = new glow_t();
+        }
+
+        P_AddThinker: {
+            AddThinker(g);
+        }
+
+        g.sector = sector;
+        P_FindMinSurroundingLight: {
+            g.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
+        }
+        g.maxlight = sector.lightlevel;
+        g.thinkerFunction = T_Glow;
+        g.direction = -1;
+
+        sector.special = 0;
+    }
 
     //
     // Start strobing lights (usually from a trigger)
@@ -43,8 +253,35 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
                 continue;
             }
 
-            sec.SpawnStrobeFlash(SLOWDARK, 0);
+            SpawnStrobeFlash(sec, SLOWDARK, 0);
         }
+    }
+
+    //
+    // P_SpawnFireFlicker
+    //
+    @SourceCode.Exact
+    @P_Lights.C(P_SpawnFireFlicker)
+    default void SpawnFireFlicker(sector_t sector) {
+        fireflicker_t flick;
+
+        // Note that we are resetting sector attributes.
+        // Nothing special about it during gameplay.
+        sector.special = 0;
+
+        Z_Malloc: {
+            flick = new fireflicker_t();
+        }
+        
+        P_AddThinker: {
+            AddThinker(flick);
+        }
+        
+        flick.thinkerFunction = T_FireFlicker;
+        flick.sector = sector;
+        flick.maxlight = sector.lightlevel;
+        flick.minlight = FindMinSurroundingLight(sector, sector.lightlevel) + 16;
+        flick.count = 4;
     }
 
     //

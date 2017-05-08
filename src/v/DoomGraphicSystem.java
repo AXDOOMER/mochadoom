@@ -92,7 +92,7 @@ public interface DoomGraphicSystem<T, V> {
      * Added by _D_. Unsure if I should use VSI objects instead, as they
      * already carry scaling information which doesn't need to be repacked...
      */
-    final int V_NOSCALESTART =      0x00010000;   // dont scale x,y, start coords
+    final int V_NOSCALESTART      = 0x00010000;   // dont scale x,y, start coords
     final int V_SCALESTART        = 0x00020000;   // scale x,y, start coords
     final int V_SCALEPATCH        = 0x00040000;   // scale patch
     final int V_NOSCALEPATCH      = 0x00080000;   // don't scale patch
