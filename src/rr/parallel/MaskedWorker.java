@@ -49,19 +49,20 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
     protected final int id;
     protected final int numthreads;
     
-    protected ColVars<T,V> maskedcvars;
+    //protected ColVars<T,V> maskedcvars;
    
     public MaskedWorker(VideoScale vs, SceneRenderer<T, V> R, int id, int numthreads, CyclicBarrier barrier) {
 	    super(vs, R);
 	    // Workers have their own set, not a "pegged" one.
-	    this.colfuncshi=new ColFuncs<T,V>();
-	    this.colfuncslow=new ColFuncs<T,V>();
-	    this.maskedcvars=new ColVars<T,V>();
+	    this.colfuncshi=new ColFuncs<>();
+	    this.colfuncslow=new ColFuncs<>();
+	    this.maskedcvars=new ColVars<>();
 	    this.id=id;
         this.numthreads=numthreads;
         this.barrier=barrier;        
     }
 	
+    @Override
 	public final void completeColumn(){
 	    // Does nothing. Shuts up inheritance
 	}
@@ -148,6 +149,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
      * 
      * 
      */
+    @Override
     protected final void DrawVisSprite(vissprite_t<V> vis) {
         column_t column;
         int texturecolumn;
@@ -173,8 +175,9 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             colfunc = colfuncs.fuzz;
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
             colfunc = colfuncs.trans;
-            maskedcvars.dc_translation = (T) colormaps.getTranslationTable(vis.mobjflags);
-
+            @SuppressWarnings("unchecked")
+            final T translation = (T) colormaps.getTranslationTable(vis.mobjflags);
+            maskedcvars.dc_translation = translation;
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
@@ -191,15 +194,17 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         for (maskedcvars.dc_x = x1; maskedcvars.dc_x <= x2; maskedcvars.dc_x++, frac += vis.xiscale) {
             texturecolumn = frac >> FRACBITS;
             if (true) {
-                if (texturecolumn < 0 || texturecolumn >= patch.width)
-                    I.Error("R_DrawSpriteRange: bad texturecolumn %d vs %d %d %d",texturecolumn,patch.width,x1,x2);
+                if (texturecolumn < 0 || texturecolumn >= patch.width) {
+                    I.Error("R_DrawSpriteRange: bad texturecolumn %d vs %d %d %d", texturecolumn, patch.width, x1, x2);
+                }
             }
             column = patch.columns[texturecolumn];
             
-            if (column==null)
-                System.err.printf("Null column for texturecolumn %d\n",texturecolumn,x1,x2);
-            else
-            DrawMaskedColumn(column);
+            if (column == null) {
+                System.err.printf("Null column for texturecolumn %d\n", texturecolumn, x1, x2);
+            } else {
+                DrawMaskedColumn(column);
+            }
         }
 
         colfunc = colfuncs.masked;
@@ -213,6 +218,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
      * @param x2
      */
     
+    @Override
     protected final void RenderMaskedSegRange(drawseg_t ds, int x1, int x2) {
     	
     	// Trivial rejection
@@ -227,8 +233,9 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         int lightnum;
         int texnum;
         int bias=startx-ds.x1; // Correct for starting outside
-        if (bias<0) bias=0; // nope, it ain't.
-        
+        if (bias < 0) {
+            bias = 0; // nope, it ain't.
+        }        
         // System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
 
         // Calculate light table.
@@ -271,9 +278,11 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             maskedcvars.dc_texturemid = maskedcvars.dc_texturemid + TexMan.getTextureheight(texnum)
                     - view.z;
         } else {
-            maskedcvars.dc_texturemid = frontsector.ceilingheight < backsector.ceilingheight ? frontsector.ceilingheight
-                    : backsector.ceilingheight;
-            maskedcvars.dc_texturemid = maskedcvars.dc_texturemid - view.z;
+            maskedcvars.dc_texturemid = frontsector.ceilingheight < backsector.ceilingheight
+                ? frontsector.ceilingheight
+                : backsector.ceilingheight;
+            
+            maskedcvars.dc_texturemid -= view.z;
         }
         maskedcvars.dc_texturemid += MyBSP.curline.sidedef.rowoffset;
 
@@ -323,6 +332,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
      * 
      */
 
+    @Override
     protected final void DrawPSprite(pspdef_t psp) {
 
         int tx;
@@ -338,17 +348,17 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
 
         // decide which patch to use (in terms of angle?)
         if (RANGECHECK) {
-            if (psp.state.sprite.ordinal() >= SM.getNumSprites())
-                I.Error("R_ProjectSprite: invalid sprite number %d ",
-                        psp.state.sprite);
+            if (psp.state.sprite.ordinal() >= SM.getNumSprites()) {
+                I.Error("R_ProjectSprite: invalid sprite number %d ", psp.state.sprite);
+            }
         }
 
         sprdef = SM.getSprite(psp.state.sprite.ordinal());
         
         if (RANGECHECK) {
-            if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
-                I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
-                        psp.state.sprite, psp.state.frame);
+            if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes) {
+                I.Error("R_ProjectSprite: invalid sprite frame %d : %d ", psp.state.sprite, psp.state.frame);
+            }
         }
         
         sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK];
@@ -356,10 +366,10 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         // Base frame for "angle 0" aka viewed from dead-front.
         lump = sprframe.lump[0];
         // Q: where can this be set? A: at sprite loadtime.
-        flip = (boolean) (sprframe.flip[0] != 0);
+        flip = sprframe.flip[0] != 0;
 
         // calculate edges of the shape. tx is expressed in "view units".
-        tx = (int) (FixedMul(psp.sx, view.BOBADJUST) - view.WEAPONADJUST);
+        tx = FixedMul(psp.sx, view.BOBADJUST) - view.WEAPONADJUST;
 
         tx -= spriteoffset[lump];
 
@@ -484,14 +494,11 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         
         try {
             barrier.await();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
+        } catch (InterruptedException | BrokenBarrierException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+        // TODO Auto-generated catch block
     }
     
 }

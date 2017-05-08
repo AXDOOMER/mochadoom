@@ -128,12 +128,12 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
     }
 
     // To use inside packetsend. Declare once and reuse to save on heap costs.
-    private doomdata_t sendData;
-    private doomdata_t recvData;
+    private final doomdata_t sendData;
+    private final doomdata_t recvData;
 
     // We also reuse always the same DatagramPacket, "peged" to sw's byte buffer.
-    private DatagramPacket recvPacket;
-    private DatagramPacket sendPacket;
+    private final DatagramPacket recvPacket;
+    private final DatagramPacket sendPacket;
 
     public void sendSocketPacket(DatagramSocket ds, DatagramPacket dp) throws IOException {
         ds.send(dp);
@@ -218,7 +218,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
                 return;
             } catch (Exception e) {
                 if (e.getClass() != java.nio.channels.IllegalBlockingModeException.class) {
-                    DOOM.doomSystem.Error("GetPacket: %s", e.getStackTrace());
+                    DOOM.doomSystem.Error("GetPacket: %s", (Object[]) e.getStackTrace());
                 }
             }
 
@@ -233,13 +233,13 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
                 //static int first=1;
                 if (first) {
                     sb.setLength(0);
-                    sb.append("(" + DOOM.consoleplayer + ") PacketRECV len=");
+                    sb.append("(").append(DOOM.consoleplayer).append(") PacketRECV len=");
                     sb.append(recvPacket.getLength());
                     sb.append(":p=[0x");
                     sb.append(Integer.toHexString(recvData.checksum));
                     sb.append(" 0x");
                     sb.append(DoomBuffer.getBEInt(recvData.retransmitfrom, recvData.starttic, recvData.player, recvData.numtics));
-                    sb.append("numtics: " + recvData.numtics);
+                    sb.append("numtics: ").append(recvData.numtics);
                     System.out.println(sb.toString());
                     first = false;
                 }

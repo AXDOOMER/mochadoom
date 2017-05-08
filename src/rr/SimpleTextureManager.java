@@ -33,9 +33,7 @@ import w.lumpinfo_t;
  *
  */
 
-public class SimpleTextureManager
-        implements TextureManager<byte[]> {
-    
+public class SimpleTextureManager implements TextureManager<byte[]> {
     IWadLoader W;
     IDoomSystem I;
     AbstractLevelLoader LL;

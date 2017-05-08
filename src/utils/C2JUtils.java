@@ -186,8 +186,9 @@ public final class C2JUtils {
      * @throws Exception
      * @throws
      */
-
+    @Deprecated
     public static <T> void initArrayOfObjects(T[] os) {
+        @SuppressWarnings("unchecked")
         Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = 0; i < os.length; i++) {

@@ -294,6 +294,8 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
             completeInit();
         }
 
+        @Override
+        @SuppressWarnings("unchecked")
         protected void InitMaskedWorkers() {
             maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
@@ -438,6 +440,8 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
             BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
         }
 
+        @Override
+        @SuppressWarnings("unchecked")
         protected void InitMaskedWorkers() {
             maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {

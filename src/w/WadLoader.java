@@ -944,8 +944,10 @@ public class WadLoader implements IWadLoader {
         if (lumpcache[lump] == null) {
             return null;
         }
-		
-        return ((CacheableDoomObjectContainer<T>) lumpcache[lump]).getStuff();
+        
+        @SuppressWarnings("unchecked")
+        final CacheableDoomObjectContainer<T> cont = (CacheableDoomObjectContainer<T>) lumpcache[lump];
+        return cont.getStuff();
 	}
 	
 	public CacheableDoomObject CacheLumpNum(int lump)

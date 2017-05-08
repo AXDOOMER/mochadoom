@@ -1,6 +1,5 @@
 package rr;
 
-import v.tables.LightsAndColors;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.SIL_BOTTOM;
@@ -19,6 +18,7 @@ import rr.drawfuns.ColumnFunction;
 import static rr.line_t.ML_DONTPEGBOTTOM;
 import v.graphics.Palettes;
 import v.scale.VideoScale;
+import v.tables.LightsAndColors;
 import w.IWadLoader;
 
 /**
@@ -118,6 +118,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      * Sprites are actually drawn here. MAES: Optimized. No longer needed to
      * pass x1 and x2 parameters (useless) +2 fps on nuts.wad timedemo.
      */
+    @SuppressWarnings("unchecked")
     protected void DrawVisSprite(vissprite_t<V> vis) {
         column_t column;
         int texturecolumn;
@@ -135,8 +136,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
             colfunc = colfuncs.fuzz;
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
             colfunc = colfuncs.trans;
-            maskedcvars.dc_translation =
-                (T) colormaps.getTranslationTable(vis.mobjflags);
+            maskedcvars.dc_translation = (T) colormaps.getTranslationTable(vis.mobjflags);
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
@@ -692,6 +692,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      * SOLUTION: use the version taking raw byte[] arguments.
      */
 
+    @SuppressWarnings("unchecked")
     protected final void DrawMaskedColumn(column_t column) {
         int topscreen;
         int bottomscreen;
