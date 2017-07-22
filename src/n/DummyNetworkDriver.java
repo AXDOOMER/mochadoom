@@ -1,12 +1,10 @@
 package n;
 
-import i.DoomStatusAware;
-import i.IDoomSystem;
+import doom.CommandVariable;
 import doom.DoomMain;
-import doom.DoomStatus;
-import doom.IDoomGameNetworking;
 import doom.NetConsts;
 import doom.doomcom_t;
+import mochadoom.Engine;
 
 /** Does nothing.
  *  Allows running single-player games without an actual network.
@@ -16,16 +14,14 @@ import doom.doomcom_t;
  *
  */
 
-public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomStatusAware{
+public class DummyNetworkDriver<T, V> implements NetConsts, DoomSystemNetworking {
 
 	////////////// STATUS ///////////
 
-	IDoomSystem I;
-	DoomMain DM;
-	IDoomGameNetworking DGN;
+    private final DoomMain<T, V> DOOM;
 
-	public DummyNetworkDriver(DoomStatus DC){
-		updateStatus(DC);
+	public DummyNetworkDriver(DoomMain<T, V> DOOM){
+        this.DOOM = DOOM;
 	}
 
 	@Override
@@ -35,12 +31,12 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 		doomcom.ticdup=1;
 
 		// single player game
-		DM.netgame = false;
+        DOOM.netgame = Engine.getCVM().present(CommandVariable.NET);
 		doomcom.id = DOOMCOM_ID;
 		doomcom.numplayers = doomcom.numnodes = 1;
 		doomcom.deathmatch = 0;
 		doomcom.consoleplayer = 0;
-		DGN.setDoomCom(doomcom);
+		DOOM.gameNetworking.setDoomCom(doomcom);
 	}
 
 	@Override
@@ -48,11 +44,4 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 		// TODO Auto-generated method stub
 
 	}
-
-	@Override
-	public void updateStatus(DoomStatus DC) {
-		this.DM=DC.DM;
-		this.DGN=DC.DM;
-	}
-
 }

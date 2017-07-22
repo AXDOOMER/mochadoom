@@ -1,9 +1,8 @@
 package m;
 
-import java.util.Random;
-
 import data.mobjtype_t;
-import doom.think_t;
+import java.util.Random;
+import p.ActiveStates;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -28,71 +27,82 @@ import doom.think_t;
 // Don't expect vanilla demo compatibility with THIS!
 //
 //-----------------------------------------------------------------------------
+/**
+ * Actually, now there is demo compatilbility switch: use of JavaRandom is now
+ * default in singleplayer, unless you play demo, unless you record demo,
+ * when you play demo, DoomRandom is picked instead, same for record, unless
+ * you specify -javarandom command line argument, in that case when you record
+ * demo, version information will be changed, and JavaRandom used,
+ * when you play this demo, DoomRandom will not be picked, when you play
+ * another demo, it will pick DoomRandom.
+ * 
+ * When you dont pass -javarandom, but play demo recorded with JavaRandom,
+ * it will pick JavaRandom for this demo playback
+ *  - Good Sign 2017/04/14
+ */
+class JavaRandom implements IRandom {
 
-public class JavaRandom implements IRandom{
+    protected int rndindex = 0;
+    protected int prndindex = 0;
 
-protected int	rndindex = 0;
-protected int	prndindex = 0;
+    // Which one is deterministic?
+    @Override
+    public int P_Random() {
+        rndindex++;
+        return (0xFF & r.nextInt());
+    }
 
-// Which one is deterministic?
-public int P_Random ()
-{
-	rndindex++;
-	return (0xFF&r.nextInt());
-	
+    @Override
+    public int M_Random() {
+        prndindex++;
+        return (0xFF & m.nextInt());
+    }
+
+    @Override
+    public final void ClearRandom() {
+        rndindex = prndindex = 0;
+        r.setSeed(666);
+    }
+
+    JavaRandom() {
+        r = new Random(666);
+        m = new Random(666);
+        this.ClearRandom();
+    }
+
+    @Override
+    public int getIndex() {
+        return rndindex;
+    }
+
+    private final Random r;
+    private final Random m;
+
+    @Override
+    public int P_Random(int caller) {
+        // DUMMY
+        return P_Random();
+    }
+
+    @Override
+    public int P_Random(String message) {
+        // DUMMY
+        return P_Random();
+    }
+
+    @Override
+    public int P_Random(ActiveStates caller, int sequence) {
+        // DUMMY
+        return P_Random();
+    }
+
+    @Override
+    public int P_Random(ActiveStates caller, mobjtype_t type, int sequence) {
+        // DUMMY
+        return P_Random();
+    }
+
 }
-
-public int M_Random ()
-{
-	prndindex++;
-	return (0xFF&m.nextInt());
-}
-
-public void ClearRandom ()
-{
-	rndindex=prndindex=0;
-    r.setSeed(666);
-}
-
-public JavaRandom(){
-	r=new Random(666);
-	m=new Random(666);
-    this.ClearRandom();
-}
-
-public int getIndex(){
-	return rndindex;
-}
-
-private Random r;
-private Random m;
-
-@Override
-public int P_Random(int caller) {    
-    // DUMMY
-    return P_Random();
-}
-
-@Override
-public int P_Random(String message) {
-    // DUMMY
-    return P_Random();
-}
-
-@Override
-public int P_Random(think_t caller, int sequence) {
-    // DUMMY
-    return P_Random();
-}
-
-@Override
-public int P_Random(think_t caller, mobjtype_t type, int sequence) {
-    // DUMMY
-    return P_Random();
-}
-
-}
-
 
 //$Log: JavaRandom.java,v $
 //Revision 1.3  2013/06/03 11:00:03  velktron

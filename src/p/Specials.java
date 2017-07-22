@@ -3,6 +3,8 @@ package p;
 import doom.player_t;
 import m.fixed_t;
 import static m.fixed_t.*;
+import p.Actions.ActionsLights.glow_t;
+import p.Actions.ActionsLights.lightflash_t;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;

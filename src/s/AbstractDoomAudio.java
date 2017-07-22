@@ -1,19 +1,19 @@
 package s;
 
+import data.Defines;
 import static data.Tables.ANGLETOFINESHIFT;
 import static data.Tables.BITS32;
 import static data.Tables.finesine;
-import static data.sounds.S_sfx;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FixedMul;
-import p.mobj_t;
-import data.Defines;
 import data.musicinfo_t;
 import data.sfxinfo_t;
 import data.sounds;
+import static data.sounds.S_sfx;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
-import doom.DoomStatus;
+import doom.DoomMain;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedMul;
+import p.mobj_t;
 
 /** Some stuff that is not implementation dependant
  *  This includes channel management, sound priorities,
@@ -28,7 +28,7 @@ import doom.DoomStatus;
 
 public class AbstractDoomAudio implements IDoomSound{
 
-	protected final DoomStatus<?,?> DS;
+	protected final DoomMain<?,?> DS;
 	protected final IMusic IMUS;
 	protected final ISoundDriver ISND;
 
@@ -61,12 +61,12 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	protected int nextcleanup;
 
-	public AbstractDoomAudio(DoomStatus<?,?> DS, int numChannels){
+	public AbstractDoomAudio(DoomMain<?,?> DS, int numChannels){
 		this.DS = DS;
 		this.numChannels=numChannels;
 		this.channels=new channel_t[numChannels];
-		this.IMUS=DS.IMUS;
-		this.ISND=DS.ISND;
+		this.IMUS=DS.music;
+		this.ISND=DS.soundDriver;
 	}
 
 
@@ -209,7 +209,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		if (sfx_id < 1 || sfx_id > NUMSFX){
 			Exception e=new Exception();
 			e.printStackTrace();
-			DS.I.Error("Bad sfx #: %d", sfx_id);
+			DS.doomSystem.Error("Bad sfx #: %d", sfx_id);
 		}
 
 		sfx = S_sfx[sfx_id];
@@ -269,7 +269,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		if (sfx_id >= sfxenum_t.sfx_sawup.ordinal()
 				&& sfx_id <= sfxenum_t.sfx_sawhit.ordinal())
 		{	
-			pitch += 8 - (DS.RND.M_Random()&15);
+			pitch += 8 - (DS.random.M_Random()&15);
 
 			if (pitch<0)
 				pitch = 0;
@@ -279,7 +279,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		else if (sfx_id != sfxenum_t.sfx_itemup.ordinal()
 				&& sfx_id != sfxenum_t.sfx_tink.ordinal())
 		{
-			pitch += 16 - (DS.RND.M_Random()&31);
+			pitch += 16 - (DS.random.M_Random()&31);
 
 			if (pitch<0)
 				pitch = 0;
@@ -561,7 +561,7 @@ public class AbstractDoomAudio implements IDoomSound{
 	{
 		if (volume < 0 || volume > 127)
 		{
-			DS.I.Error("Attempt to set music volume at %d",
+			DS.doomSystem.Error("Attempt to set music volume at %d",
 					volume);
 		}    
 
@@ -573,7 +573,7 @@ public class AbstractDoomAudio implements IDoomSound{
 	{
 
 		if (volume < 0 || volume > 127)
-			DS.I.Error("Attempt to set sfx volume at %d", volume);
+			DS.doomSystem.Error("Attempt to set sfx volume at %d", volume);
 
 		snd_SfxVolume = volume;
 
@@ -614,7 +614,7 @@ public class AbstractDoomAudio implements IDoomSound{
 				|| (musicnum >= musicenum_t.NUMMUSIC.ordinal()) )
 		{
 
-			DS.I.Error("Bad music number %d", musicnum);
+			DS.doomSystem.Error("Bad music number %d", musicnum);
 		}
 		else
 			music = sounds.S_music[musicnum];
@@ -629,11 +629,11 @@ public class AbstractDoomAudio implements IDoomSound{
 		if (music.lumpnum==0)
 		{
 			namebuf=String.format("d_%s", music.name);
-			music.lumpnum = DS.W.GetNumForName(namebuf);
+			music.lumpnum = DS.wadLoader.GetNumForName(namebuf);
 		}
 
 		// load & register it
-		music.data = DS.W.CacheLumpNumAsRawBytes(music.lumpnum, Defines.PU_MUSIC);
+		music.data = DS.wadLoader.CacheLumpNumAsRawBytes(music.lumpnum, Defines.PU_MUSIC);
 		music.handle = IMUS.RegisterSong(music.data);
 
 		// play it

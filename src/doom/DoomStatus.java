@@ -1,23 +1,18 @@
 package doom;
 
 import static data.Defines.*;
-import static g.Keys.*;
 import static data.Limits.*;
-import java.io.OutputStreamWriter;
-
-import automap.IAutoMap;
-import m.IUseVariables;
-import m.IVariablesManager;
-import m.Settings;
-import p.mobj_t;
-import rr.Renderer;
-import utils.C2JUtils;
-import v.DoomVideoRenderer;
 import data.mapthing_t;
 import defines.*;
 import demo.IDoomDemo;
 import f.Finale;
-import f.Wiper;
+import static g.Signals.ScanCode.*;
+import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import m.Settings;
+import mochadoom.Engine;
+import p.mobj_t;
 
 /**
  * We need globally shared data structures, for defining the global state
@@ -29,7 +24,7 @@ import f.Wiper;
  * document where everything is supposed to come from/reside.
  */
 
-public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVariables {
+public abstract class DoomStatus<T,V> {
 
 	public static final int	BGCOLOR=		7;
 	public static final int	FGCOLOR		=8;
@@ -62,18 +57,18 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
      *  etc. can be handled more cleanly.
      * */
 
-    private GameMode_t gamemode;
+    private GameMode gamemode;
     
-    public void setGameMode(GameMode_t mode){
+    public void setGameMode(GameMode mode){
     	this.gamemode=mode;
     }
     
-    public GameMode_t getGameMode(){
+    public GameMode getGameMode(){
     	return gamemode;
     }
     
     public boolean isShareware(){
-    	return (gamemode== GameMode_t.shareware);
+    	return (gamemode== GameMode.shareware);
     }    
     
     /** Commercial means Doom 2, Plutonia, TNT, and possibly others like XBLA.
@@ -81,10 +76,12 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
      * @return
      */
     public boolean isCommercial(){
-    	return (gamemode== GameMode_t.commercial ||
-    			gamemode== GameMode_t.pack_plut ||
-    			gamemode== GameMode_t.pack_tnt ||
-    			gamemode== GameMode_t.pack_xbla);
+    	return (gamemode== GameMode.commercial ||
+    			gamemode== GameMode.pack_plut ||
+    			gamemode== GameMode.pack_tnt ||
+    			gamemode== GameMode.pack_xbla ||
+                gamemode== GameMode.freedoom2 ||
+                gamemode== GameMode.freedm);
     }
     
     /** Retail means Ultimate.
@@ -92,7 +89,7 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
      * @return
      */
     public boolean isRetail(){
-    	return (gamemode== GameMode_t.retail );
+        return (gamemode== GameMode.retail || gamemode == GameMode.freedoom1 );
     }
     
     /** Registered is a subset of Ultimate 
@@ -101,13 +98,10 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
      */
 
     public boolean isRegistered(){
-    	return (gamemode== GameMode_t.registered || gamemode== GameMode_t.retail );
+    	return (gamemode== GameMode.registered || gamemode== GameMode.retail || gamemode == GameMode.freedoom1 );
     }
     
     public GameMission_t gamemission;
-
-    /** Set if homebrew PWAD stuff has been added. */
-    public boolean modifiedgame;
 
     /** Language. */
     public Language_t language;
@@ -172,6 +166,8 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     public boolean automapactive; // In AutoMap mode?
 
     public boolean menuactive; // Menu overlayed?
+    
+    public boolean mousecaptured = true;
 
     public boolean paused; // Game Pause?
 
@@ -243,9 +239,14 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 
     // Quit after playing a demo from cmdline.
     public boolean singledemo;
+    
+    public boolean mapstrobe;
 
-    /** Set this to GS_DEMOSCREEN upon init, else it will be null*/
-    public gamestate_t gamestate=gamestate_t.GS_DEMOSCREEN;
+    /** 
+     * Set this to GS_DEMOSCREEN upon init, else it will be null
+     * Good Sign at 2017/03/21: I hope it is no longer true info, since I've checked its assignment by NetBeans
+     */
+    public gamestate_t gamestate = gamestate_t.GS_DEMOSCREEN;
 
     // -----------------------------
     // Internal parameters, fixed.
@@ -254,9 +255,6 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     // WAD, partly set at startup time.
 
     public int gametic;
-
-    // Bookkeeping on players - state.
-    public player_t[] players;
 
     // Alive? Disconnected?
     public boolean[] playeringame = new boolean[MAXPLAYERS];
@@ -293,13 +291,15 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     // wipegamestate can be set to -1
     // to force a wipe on the next draw
     // wipegamestate can be set to -1 to force a wipe on the next draw
-    public gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
+    public gamestate_t wipegamestate = gamestate_t.GS_DEMOSCREEN;
+
+    public int mouseSensitivity = 5;	// AX: Fix wrong defaut mouseSensitivity
     
-    public int mouseSensitivity=5;	// AX: Fix wrong defaut mouseSensitivity
+    /** Set if homebrew PWAD stuff has been added. */
+    public boolean modifiedgame = false;
     
-    // debug flag to cancel adaptiveness
-    // Set to true during timedemos.
-    public boolean singletics=false;
+    /** debug flag to cancel adaptiveness set to true during timedemos. */
+    public boolean singletics = false;
     
     /* A "fastdemo" is a demo with a clock that tics as
      * fast as possible, yet it maintains adaptiveness and doesn't
@@ -308,7 +308,7 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     protected boolean fastdemo;
     protected boolean normaldemo;
     
-    protected String loaddemo;
+    protected String loaddemo = null;
     
     public int bodyqueslot;
 
@@ -329,40 +329,25 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 
     public int rndindex;
 
-    public int maketic;
-
-    public int[] nettics = new int[MAXNETNODES];
-
     public ticcmd_t[][] netcmds;// [MAXPLAYERS][BACKUPTICS];
       
     /** MAES: this WAS NOT in the original. 
      *  Remember to call it!
      */
-    protected void initNetGameStuff() {
+    protected final void initNetGameStuff() {
         //this.netbuffer = new doomdata_t();
         this.doomcom = new doomcom_t();
         this.netcmds = new ticcmd_t[MAXPLAYERS][BACKUPTICS];
 
-        C2JUtils.initArrayOfObjects(localcmds);
-        for (int i=0;i<MAXPLAYERS;i++){
-        C2JUtils.initArrayOfObjects(netcmds[i]);
+        Arrays.setAll(localcmds, i -> new ticcmd_t());
+        for (int i = 0; i < MAXPLAYERS; i++) {
+            Arrays.setAll(netcmds[i], j -> new ticcmd_t());
         }
-        
     }
     
-    public abstract void Init();
-
     // Fields used for selecting variable BPP implementations.
     
     protected abstract Finale<T> selectFinale();
-    
-    protected abstract DoomVideoRenderer<T,V> selectVideoRenderer();
-    
-    protected abstract Renderer<T,V> selectRenderer();
-    
-    protected abstract Wiper<T,V> selectWiper();
-    
-    protected abstract IAutoMap<T,V> selectAutoMap();
     
     // MAES: Fields specific to DoomGame. A lot of them were
     // duplicated/externalized
@@ -405,37 +390,31 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     protected byte[] savebuffer;
 
     /* TODO Proper reconfigurable controls. Defaults hardcoded for now. T3h h4x, d00d. */
+    public int key_right = SC_NUMKEY6.ordinal();
+    public int key_left = SC_NUMKEY4.ordinal();
+    public int key_up = SC_W.ordinal();
+    public int key_down = SC_S.ordinal();
+    public int key_strafeleft = SC_A.ordinal();
+    public int key_straferight = SC_D.ordinal();
+    public int key_fire = SC_LCTRL.ordinal();
+    public int key_use = SC_SPACE.ordinal();
+    public int key_strafe = SC_LALT.ordinal();
+    public int key_speed = SC_RSHIFT.ordinal();
 
-    public int key_right=KEY_RIGHTARROW;
+    public boolean vanillaKeyBehavior;
 
-    public int key_left=KEY_LEFTARROW;
-
-    public int key_up='w';
-
-    public int key_down='a';
-
-    public int key_strafeleft='s';
-
-    public int key_straferight='d';
-
-    public int key_fire=KEY_CTRL;
-
-    public int key_use=' ';
-    
-    public int key_strafe=KEY_ALT;
-
-    public int key_speed=KEY_SHIFT;
+    public int key_recordstop = SC_Q.ordinal();
+    public int[] key_numbers = Stream.of(SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7, SC_8, SC_9, SC_0)
+        .mapToInt(Enum::ordinal).toArray();
     
     // Heretic stuff
-    public int		key_lookup=KEY_PGUP;
-    public int		key_lookdown=KEY_PGDN;
-    public int      key_lookcenter=KEY_END;
-
-    public int mousebfire=0;
-
-    public int mousebstrafe=2;	// AX: Fixed - Now we use the right mouse buttons
-
-    public int mousebforward=1;	// AX: Fixed - Now we use the right mouse buttons
+    public int key_lookup = SC_PGUP.ordinal();
+    public int key_lookdown = SC_PGDOWN.ordinal();
+    public int key_lookcenter = SC_END.ordinal();
+    
+    public int mousebfire = 0;
+    public int mousebstrafe = 2;	// AX: Fixed - Now we use the right mouse buttons
+    public int mousebforward = 1;	// AX: Fixed - Now we use the right mouse buttons
 
     public int joybfire;
 
@@ -543,130 +522,96 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     
     public static int compatibility_level;
     
-    public DoomStatus(){
-    	players = new player_t[MAXPLAYERS];
-    	C2JUtils.initArrayOfObjects(players);
-
+    public final ConfigManager CM = Engine.getConfig();
+    
+    public DoomStatus() {
     	this.wminfo=new wbstartstruct_t();
     	initNetGameStuff();
     }
 
-    @Override
-    public void registerVariableManager(IVariablesManager manager) {
-        this.VM=manager;        
-    }
-
-    @Override
     public void update() {
 
-           this.snd_SfxVolume=VM.getSetting(Settings.sfx_volume).getInteger();
-           this.snd_MusicVolume=VM.getSetting(Settings.music_volume).getInteger();
-           this.alwaysrun=VM.getSetting(Settings.alwaysrun).getBoolean();
-                     
-          
-           // Keys...
-           this.key_right=VM.getSetting(Settings.key_right).getChar();
-           this.key_left=VM.getSetting(Settings.key_left).getChar();
-           this.key_up=VM.getSetting(Settings.key_up).getChar();
-           this.key_down=VM.getSetting(Settings.key_down).getChar();
-           this.key_strafeleft=VM.getSetting(Settings.key_strafeleft).getChar();
-           this.key_straferight=VM.getSetting(Settings.key_straferight).getChar();
-           this.key_fire=VM.getSetting(Settings.key_fire).getChar();
-           this.key_use=VM.getSetting(Settings.key_use).getChar();
-           this.key_strafe=VM.getSetting(Settings.key_strafe).getChar();
-           this.key_speed=VM.getSetting(Settings.key_speed).getChar();
-           
+        this.snd_SfxVolume = CM.getValue(Settings.sfx_volume, Integer.class);
+        this.snd_MusicVolume = CM.getValue(Settings.music_volume, Integer.class);
+        this.alwaysrun = CM.equals(Settings.alwaysrun, Boolean.TRUE);
 
-           // Mouse buttons
-           this.use_mouse=VM.getSetting(Settings.use_mouse).getBoolean();
-           this.mousebfire=VM.getSetting(Settings.mouseb_fire).getInteger();
-           this.mousebstrafe=VM.getSetting(Settings.mouseb_strafe).getInteger();
-           this.mousebforward=VM.getSetting(Settings.mouseb_forward).getInteger();
-           
-           // Joystick
-
-           this.use_joystick=VM.getSetting(Settings.use_joystick).getBoolean();
-           this.joybfire=VM.getSetting(Settings.joyb_fire).getInteger();
-           this.joybstrafe=VM.getSetting(Settings.joyb_strafe).getInteger();
-           this.joybuse=VM.getSetting(Settings.joyb_use).getInteger();
-           this.joybspeed=VM.getSetting(Settings.joyb_speed).getInteger();
-
-           // Sound
-           this.numChannels=VM.getSetting(Settings.snd_channels).getInteger();
-
-           // Video...so you should wait until video renderer is active.           
-           this.V.setUsegamma(VM.getSetting(Settings.usegamma).getInteger());
-           
-           // These should really be handled by the menu.
-           this.M.setShowMessages(VM.getSetting(Settings.show_messages).getBoolean());
-           this.M.setScreenBlocks(VM.getSetting(Settings.screenblocks).getInteger());
-
-           // These should be handled by the HU
-
-           for (int i=0;i<=9;i++){
-               
-           String chatmacro=String.format("chatmacro%d",i);
-           this.HU.setChatMacro(i,VM.getSetting(chatmacro).toString());
-           }
-        }
-
-    @Override
-    public void commit() {
-        VM.putSetting(Settings.sfx_volume,this.snd_SfxVolume);
-        VM.putSetting(Settings.music_volume,this.snd_MusicVolume);
-        VM.putSetting(Settings.alwaysrun, this.alwaysrun);
-       
-       
         // Keys...
-        VM.putSetting(Settings.key_right,this.key_right);
-        VM.putSetting(Settings.key_left,this.key_left);
-        VM.putSetting(Settings.key_up,this.key_up);
-        VM.putSetting(Settings.key_down,this.key_down);
-        VM.putSetting(Settings.key_strafeleft,this.key_strafeleft);
-        VM.putSetting(Settings.key_straferight,this.key_straferight);
-        VM.putSetting(Settings.key_fire,this.key_fire);
-        VM.putSetting(Settings.key_use,this.key_use);
-        VM.putSetting(Settings.key_strafe,this.key_strafe);
-        VM.putSetting(Settings.key_speed,this.key_speed);
-        
+        this.key_right = CM.getValue(Settings.key_right, Integer.class);
+        this.key_left = CM.getValue(Settings.key_left, Integer.class);
+        this.key_up = CM.getValue(Settings.key_up, Integer.class);
+        this.key_down = CM.getValue(Settings.key_down, Integer.class);
+        this.key_strafeleft = CM.getValue(Settings.key_strafeleft, Integer.class);
+        this.key_straferight = CM.getValue(Settings.key_straferight, Integer.class);
+        this.key_fire = CM.getValue(Settings.key_fire, Integer.class);
+        this.key_use = CM.getValue(Settings.key_use, Integer.class);
+        this.key_strafe = CM.getValue(Settings.key_strafe, Integer.class);
+        this.key_speed = CM.getValue(Settings.key_speed, Integer.class);
 
         // Mouse buttons
-        VM.putSetting(Settings.use_mouse,this.use_mouse);
-        VM.putSetting(Settings.mouseb_fire,this.mousebfire);
-        VM.putSetting(Settings.mouseb_strafe,this.mousebstrafe);
-        VM.putSetting(Settings.mouseb_forward,this.mousebforward);
-        
-        // Joystick
+        this.use_mouse = CM.equals(Settings.use_mouse, 1);
+        this.mousebfire = CM.getValue(Settings.mouseb_fire, Integer.class);
+        this.mousebstrafe = CM.getValue(Settings.mouseb_strafe, Integer.class);
+        this.mousebforward = CM.getValue(Settings.mouseb_forward, Integer.class);
 
-        VM.putSetting(Settings.use_joystick,this.use_joystick);
-        VM.putSetting(Settings.joyb_fire,this.joybfire);
-        VM.putSetting(Settings.joyb_strafe,this.joybstrafe);
-        VM.putSetting(Settings.joyb_use,this.joybuse);
-        VM.putSetting(Settings.joyb_speed,this.joybspeed);
+        // Joystick
+        this.use_joystick = CM.equals(Settings.use_joystick, 1);
+        this.joybfire = CM.getValue(Settings.joyb_fire, Integer.class);
+        this.joybstrafe = CM.getValue(Settings.joyb_strafe, Integer.class);
+        this.joybuse = CM.getValue(Settings.joyb_use, Integer.class);
+        this.joybspeed = CM.getValue(Settings.joyb_speed, Integer.class);
 
         // Sound
-        VM.putSetting(Settings.snd_channels,this.numChannels);
+        this.numChannels = CM.getValue(Settings.snd_channels, Integer.class);
         
-        // Video...         
-        VM.putSetting(Settings.usegamma,V.getUsegamma());
+        // Map strobe
+        this.mapstrobe = CM.equals(Settings.vestrobe, Boolean.TRUE);
         
-        // These should really be handled by the menu.
-        VM.putSetting(Settings.show_messages,this.M.getShowMessages());
-        VM.putSetting(Settings.screenblocks,this.M.getScreenBlocks());
+        // Mouse sensitivity
+        this.mouseSensitivity = CM.getValue(Settings.mouse_sensitivity, Integer.class);
         
-        // These should be handled by the HU
-
-        for (int i=0;i<=9;i++){
-            
-        String chatmacro=String.format("chatmacro%d",i);
-        VM.putSetting(chatmacro,this.HU.chat_macros[i]);
-        }
-        
+        // This should indicate keyboard behavior should be as close as possible to vanilla
+        this.vanillaKeyBehavior = CM.equals(Settings.vanilla_key_behavior, Boolean.TRUE);
     }
-    
 
-    
+    public void commit() {
+        CM.update(Settings.sfx_volume, this.snd_SfxVolume);
+        CM.update(Settings.music_volume, this.snd_MusicVolume);
+        CM.update(Settings.alwaysrun, this.alwaysrun);
 
+        // Keys...
+        CM.update(Settings.key_right, this.key_right);
+        CM.update(Settings.key_left, this.key_left);
+        CM.update(Settings.key_up, this.key_up);
+        CM.update(Settings.key_down, this.key_down);
+        CM.update(Settings.key_strafeleft, this.key_strafeleft);
+        CM.update(Settings.key_straferight, this.key_straferight);
+        CM.update(Settings.key_fire, this.key_fire);
+        CM.update(Settings.key_use, this.key_use);
+        CM.update(Settings.key_strafe, this.key_strafe);
+        CM.update(Settings.key_speed, this.key_speed);
+
+        // Mouse buttons
+        CM.update(Settings.use_mouse, this.use_mouse ? 1 : 0);
+        CM.update(Settings.mouseb_fire, this.mousebfire);
+        CM.update(Settings.mouseb_strafe, this.mousebstrafe);
+        CM.update(Settings.mouseb_forward, this.mousebforward);
+
+        // Joystick
+        CM.update(Settings.use_joystick, this.use_joystick ? 1 : 0);
+        CM.update(Settings.joyb_fire, this.joybfire);
+        CM.update(Settings.joyb_strafe, this.joybstrafe);
+        CM.update(Settings.joyb_use, this.joybuse);
+        CM.update(Settings.joyb_speed, this.joybspeed);
+
+        // Sound
+        CM.update(Settings.snd_channels, this.numChannels);
+        
+        // Map strobe
+        CM.update(Settings.vestrobe, this.mapstrobe);
+        
+        // Mouse sensitivity
+        CM.update(Settings.mouse_sensitivity, this.mouseSensitivity);
+    }
 }
 
 // $Log: DoomStatus.java,v $

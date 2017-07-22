@@ -4,7 +4,7 @@ public class pQuickSprite{
     public static final void sort(vissprite_t[] c){
         int i,j,left = 0,right = c.length - 1,stack_pointer = -1;
         int[] stack = new int[128];
-        vissprite_t swap,temp;
+        vissprite_t<?> swap,temp;
         while(true){
             if(right - left <= 7){
                 for(j=left+1;j<=right;j++){

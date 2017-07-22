@@ -2,28 +2,23 @@ package rr;
 
 import static data.Limits.MAXINT;
 import static data.Limits.MAX_ADJOINING_SECTORS;
-import static m.fixed_t.FRACUNIT;
-import static m.fixed_t.FRACBITS;
-import static p.DoorDefines.*;
-
+import doom.SourceCode;
+import doom.SourceCode.P_Spec;
+import static doom.SourceCode.P_Spec.P_FindLowestCeilingSurrounding;
+import doom.SourceCode.fixed_t;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-
+import java.util.logging.Level;
 import m.IRandom;
-import doom.think_t;
-import doom.thinker_t;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
+import mochadoom.Loggers;
 import p.Resettable;
 import p.ThinkerList;
-import p.fireflicker_t;
-import p.glow_t;
-import p.lightflash_t;
 import p.mobj_t;
-import p.strobe_t;
-import p.vldoor_e;
-import p.vldoor_t;
 import s.degenmobj_t;
+import static utils.C2JUtils.memset;
 import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -34,8 +29,7 @@ import w.IReadableDoomObject;
  * 
  * @author Maes
  */
-public class sector_t
-        implements IReadableDoomObject, IPackableDoomObject, Resettable {
+public class sector_t implements IReadableDoomObject, IPackableDoomObject, Resettable {
 
     public ThinkerList TL;
 
@@ -98,6 +92,7 @@ public class sector_t
     /** killough 1/30/98: improves searches for tags. */
     public int nexttag,firsttag;  
 
+    @Override
     public String toString() {
         String str =
             String.format("Sector: %d %x %x %d %d %d %d %d", id, floorheight,
@@ -105,31 +100,8 @@ public class sector_t
                 tag); // needed?
 
         return str;
-
     }
 
-    //
-    // Find minimum light from an adjacent sector
-    //
-    public int FindMinSurroundingLight(int max) {
-        int i;
-        int min;
-        line_t line;
-        sector_t check;
-
-        min = max;
-        for (i = 0; i < this.linecount; i++) {
-            line = this.lines[i];
-            check = line.getNextSector(this);
-
-            if (check == null)
-                continue;
-
-            if (check.lightlevel < min)
-                min = check.lightlevel;
-        }
-        return min;
-    }
 
     //
     // P_FindLowestFloorSurrounding()
@@ -218,8 +190,8 @@ public class sector_t
 
             // Check for overflow. Exit.
             if (h >= MAX_ADJOINING_SECTORS) {
-                System.err
-                        .print("Sector with more than 20 adjoining sectors\n");
+                Loggers.getLogger(sector_t.class.getName()).log(Level.WARNING,
+                    "Sector with more than 20 adjoining sectors\n");
                 break;
             }
         }
@@ -241,21 +213,26 @@ public class sector_t
     //
     // FIND LOWEST CEILING IN THE SURROUNDING SECTORS
     //
-    public int FindLowestCeilingSurrounding() {
-        int i;
+    @SourceCode.Exact
+    @P_Spec.C(P_FindLowestCeilingSurrounding)
+    public @fixed_t int FindLowestCeilingSurrounding() {
         line_t check;
         sector_t other;
         int height = MAXINT;
 
-        for (i = 0; i < this.linecount; i++) {
+        for (int i = 0; i < this.linecount; i++) {
             check = this.lines[i];
-            other = check.getNextSector(this);
+            getNextSector: {
+                other = check.getNextSector(this);
+            }
 
-            if (other == null)
+            if (other == null) {
                 continue;
+            }
 
-            if (other.ceilingheight < height)
+            if (other.ceilingheight < height) {
                 height = other.ceilingheight;
+            }
         }
         return height;
     }
@@ -282,134 +259,6 @@ public class sector_t
         return height;
     }
 
-    //
-    // P_SpawnFireFlicker
-    //
-    public void SpawnFireFlicker() {
-        fireflicker_t flick;
-
-        // Note that we are resetting sector attributes.
-        // Nothing special about it during gameplay.
-        this.special = 0;
-
-        flick = new fireflicker_t(RND);
-        flick.function = think_t.T_FireFlicker;
-        TL.AddThinker(flick);
-        flick.sector = this;
-        flick.maxlight = this.lightlevel;
-        flick.minlight = this.FindMinSurroundingLight(this.lightlevel) + 16;
-        flick.count = 4;
-    }
-
-    /**
-     * Spawn a door that opens after 5 minutes
-     */
-
-    public void SpawnDoorRaiseIn5Mins(int secnum) {
-        vldoor_t door;
-
-        door = new vldoor_t();
-
-        this.specialdata = door;
-        this.special = 0;
-        door.function = think_t.T_VerticalDoor;
-        TL.AddThinker(door);
-        door.sector = this;
-        door.direction = 2;
-        door.type = vldoor_e.raiseIn5Mins;
-        door.speed = VDOORSPEED;
-        door.topheight = this.FindLowestCeilingSurrounding();
-        door.topheight -= 4 * FRACUNIT;
-        door.topwait = VDOORWAIT;
-        door.topcountdown = 5 * 60 * 35;
-    }
-
-    //
-    // Spawn a door that closes after 30 seconds
-    //
-    public void SpawnDoorCloseIn30() {
-        vldoor_t door;
-
-        door = new vldoor_t();
-
-        this.specialdata = door;
-        this.special = 0;
-
-        door.function = think_t.T_VerticalDoor;
-        TL.AddThinker(door);
-        door.sector = this;
-        door.direction = 0;
-        door.type = vldoor_e.normal;
-        door.speed = VDOORSPEED;
-        door.topcountdown = 30 * 35;
-    }
-
-    //
-    // P_SpawnStrobeFlash
-    // After the map has been loaded, scan each sector
-    // for specials that spawn thinkers
-    //
-    public void SpawnStrobeFlash(int fastOrSlow, int inSync) {
-        strobe_t flash;
-
-        flash = new strobe_t();
-        flash.sector = this;
-        flash.darktime = fastOrSlow;
-        flash.brighttime = STROBEBRIGHT;
-        flash.function = think_t.T_StrobeFlash;
-        TL.AddThinker(flash);
-        flash.maxlight = this.lightlevel;
-        flash.minlight = this.FindMinSurroundingLight(this.lightlevel);
-
-        if (flash.minlight == flash.maxlight)
-            flash.minlight = 0;
-
-        // nothing special about it during gameplay
-        this.special = 0;
-
-        if (inSync == 0)
-            flash.count = (RND.P_Random() & 7) + 1;
-        else
-            flash.count = 1;
-    }
-
-    /**
-     * P_SpawnLightFlash After the map has been loaded, scan each sector for
-     * specials that spawn thinkers
-     */
-
-    public void SpawnLightFlash() {
-        lightflash_t flash;
-
-        // nothing special about it during gameplay
-        special = 0;
-
-        flash = new lightflash_t(RND);
-        flash.function = think_t.T_LightFlash;
-        TL.AddThinker((thinker_t) flash);
-        flash.sector = this;
-        flash.maxlight = lightlevel;
-
-        flash.minlight = FindMinSurroundingLight(lightlevel);
-        flash.maxtime = 64;
-        flash.mintime = 7;
-        flash.count = (RND.P_Random() & flash.maxtime) + 1;
-    }
-
-    public void SpawnGlowingLight() {
-        glow_t g;
-
-        g = new glow_t();
-        g.sector = this;
-        g.minlight = FindMinSurroundingLight(this.lightlevel);
-        g.maxlight = lightlevel;
-        g.function = think_t.T_Glow;
-        TL.AddThinker(g);
-        g.direction = -1;
-
-        this.special = 0;
-    }
-
     @Override
     public void read(DataInputStream f)
             throws IOException {
@@ -423,8 +272,8 @@ public class sector_t
         this.ceilingheight = DoomIO.readLEShort(f) << FRACBITS;
         // MAES: it may be necessary to apply a hack in order to
         // read vanilla savegames.
-        this.floorpic = (short) DoomIO.readLEShort(f);
-        this.ceilingpic = (short) DoomIO.readLEShort(f);
+        this.floorpic = DoomIO.readLEShort(f);
+        this.ceilingpic = DoomIO.readLEShort(f);
         // f.skipBytes(4);
         this.lightlevel = DoomIO.readLEShort(f);
         this.special = DoomIO.readLEShort(f); // needed?
@@ -457,7 +306,7 @@ public class sector_t
         tag = 0;
         soundtraversed = 0;
         soundtarget = null;
-        Arrays.fill(blockbox, 0);
+        memset(blockbox, 0, blockbox.length);
         soundorg = null;
         validcount = 0;
         thinglist = null;

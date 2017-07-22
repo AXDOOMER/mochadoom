@@ -5,17 +5,15 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 //
-// The source is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-
-//
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 //
 // DESCRIPTION:
 // Handles WAD file header, directory, lump I/O.
@@ -24,6 +22,13 @@
 
 package w;
 
+import static data.Defines.PU_CACHE;
+import doom.SourceCode;
+import doom.SourceCode.W_Wad;
+import static doom.SourceCode.W_Wad.W_CacheLumpName;
+import static doom.SourceCode.W_Wad.W_CheckNumForName;
+import i.DummySystem;
+import i.IDoomSystem;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -32,35 +37,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.IntFunction;
+import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
+import mochadoom.Loggers;
 import rr.patch_t;
-
 import utils.C2JUtils;
-
-import static data.Defines.*;
-import i.*;
+import utils.GenericCopy.ArraySupplier;
+import static utils.GenericCopy.malloc;
 
 public class WadLoader implements IWadLoader {
 
-	protected IDoomSystem I;
+    protected IDoomSystem I;
 
-	///// CONSTRUCTOR
-	
-	   public WadLoader(IDoomSystem I) {
-	        this();
-	        this.I = I;
-	    }
+    ///// CONSTRUCTOR
+    public WadLoader(IDoomSystem I) {
+        this();
+        this.I = I;
+    }
 
-	    public WadLoader() {
-	        lumpinfo = new lumpinfo_t[0];
-	        zone= new Hashtable<CacheableDoomObject, Integer>();
-	        wadfiles=new ArrayList<wadfile_info_t>();
-	        this.I=new DummySystem();
-	    }
+    public WadLoader() {
+        lumpinfo = new lumpinfo_t[0];
+        zone = new HashMap<>();
+        wadfiles = new ArrayList<>();
+        this.I = new DummySystem();
+    }
 	
 	
 	//// FIELDS
@@ -221,7 +225,7 @@ public class WadLoader implements IWadLoader {
 
 			length = header.numlumps;
 			// Init everything:
-			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
+			fileinfo = malloc(filelump_t::new, filelump_t[]::new, (int) length);
 			
 			dis.close();
 			
@@ -260,10 +264,9 @@ public class WadLoader implements IWadLoader {
 			// an ArrayList?
 
 			int oldsize = lumpinfo.length;
-			lumpinfo_t[] newlumpinfo = new lumpinfo_t[numlumps];
+			lumpinfo_t[] newlumpinfo = malloc(lumpinfo_t::new, lumpinfo_t[]::new, numlumps);
 
 			try {
-				C2JUtils.initArrayOfObjects(newlumpinfo, lumpinfo_t.class);
 				System.arraycopy(lumpinfo, 0, newlumpinfo, 0, oldsize);
 			} catch (Exception e) {
 				// if (!lumpinfo)
@@ -273,7 +276,7 @@ public class WadLoader implements IWadLoader {
 			// Bye bye, old lumpinfo!
 			lumpinfo = newlumpinfo;
 
-			// MAES: lump_p was an alias for lumpinfo[startlump]. I know it's a
+			// MAES: lum_p was an alias for lumpinfo[startlump]. I know it's a
 			// bit crude as an approximation but heh...
 
 			lump_p = startlump;
@@ -331,6 +334,7 @@ public class WadLoader implements IWadLoader {
     /* (non-Javadoc)
 	 * @see w.IWadLoader#Reload()
 	 */
+	@Override
 	@SuppressWarnings("null")
 	public void Reload() throws Exception {
 		wadinfo_t header = new wadinfo_t();
@@ -363,7 +367,7 @@ public class WadLoader implements IWadLoader {
 		// MAES: we can't read raw structs here, and even less BLOCKS of
 		// structs.
 
-		DoomIO.readObjectArrayWithReflection(handle,fileinfo, (int) length);
+		DoomIO.readObjectArrayWithReflection(handle,fileinfo, length);
 
 		/*
 		 * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
@@ -392,6 +396,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitMultipleFiles(java.lang.String[])
 	 */
 	
+	@Override
 	public void InitMultipleFiles(String[] filenames) throws Exception {
 		int size;
 
@@ -466,6 +471,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#InitFile(java.lang.String)
 	 */
+	@Override
 	public void InitFile(String filename) throws Exception {
 		String[] names = new String[1];
 
@@ -477,6 +483,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#NumLumps()
 	 */
+	@Override
 	public final int NumLumps() {
 		return numlumps;
 	}
@@ -487,7 +494,7 @@ public class WadLoader implements IWadLoader {
 	 * A slightly better implementation, uses string hashes
 	 * as direct comparators (though 64-bit long descriptors
 	 * could be used). It's faster than the old method, but
-	 * still short from the Hashtable's performance by 
+	 * still short from the HashMap's performance by 
 	 * an order of magnitude. 
 	 * 
      * @param name
@@ -521,7 +528,7 @@ public class WadLoader implements IWadLoader {
 	 * translation of how the C original worked, which was none too good 
 	 * even without the overhead of converting a string to
 	 * its integer representation. It's so bad, that it's two orders
-	 * of magnitude slower than a Hashtable implemetation, and one from
+	 * of magnitude slower than a HashMap implemetation, and one from
 	 * a direct hash/longname comparison with linear search.
 	 * 
 	 * @param name
@@ -561,6 +568,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#GetLumpinfoForName(java.lang.String)
 	 */
 
+	@Override
 	public lumpinfo_t GetLumpinfoForName(String name) {
 
 		int v1;
@@ -594,6 +602,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#GetNumForName(java.lang.String)
 	 */
 	
+	@Override
 	public int GetNumForName(String name) {
 		int i;
 
@@ -602,8 +611,8 @@ public class WadLoader implements IWadLoader {
 		if (i == -1) {
 			Exception e = new Exception();
 			e.printStackTrace();
-			System.err.println("Error:" + name + "not found");
-			System.err.println("Hash:"
+			System.err.println("Error: " + name + " not found");
+			System.err.println("Hash: "
 					+ Long.toHexString(name8.getLongHash(name)));
 			I.Error("W_GetNumForName: %s not found!", name);
 		}
@@ -614,7 +623,8 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#GetNameForNum(int)
 	 */
-    public String GetNameForNum(int lumpnum) {
+    @Override
+	public String GetNameForNum(int lumpnum) {
         if (lumpnum>=0 && lumpnum<this.numlumps){
             return this.lumpinfo[lumpnum].name;
         }
@@ -628,6 +638,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#LumpLength(int)
 	 */
+	@Override
 	public int LumpLength(int lump) {
 		if (lump >= numlumps)
 			I.Error("W_LumpLength: %i >= numlumps", lump);
@@ -728,6 +739,7 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 */
 	
+	@Override
 	@SuppressWarnings("unchecked")
     public <T> T CacheLumpNum(int lump, int tag, Class<T> what) {
 		
@@ -762,7 +774,7 @@ public class WadLoader implements IWadLoader {
 						// CacheLumpNumIntoArray instead.
 						thebuffer.rewind();
 						lumpcache[lump] = (CacheableDoomObject) what.newInstance();
-						((CacheableDoomObject) lumpcache[lump]).unpack((ByteBuffer) thebuffer);
+						lumpcache[lump].unpack(thebuffer);
 						
 						// Track it for freeing
 						Track(lumpcache[lump],lump);
@@ -814,9 +826,10 @@ public class WadLoader implements IWadLoader {
 	 *  @return
 	 */
 	
+	@Override
 	@Deprecated
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
-			Class what) throws IOException {
+			Class<?> what) throws IOException {
 
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
@@ -886,51 +899,55 @@ public class WadLoader implements IWadLoader {
 	 *  @return a properly sized array of the correct type.
 	 */
 	
-	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num,
-			Class<T> what){
-
+    @Override
+	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num, ArraySupplier<T> what, IntFunction<T[]> arrGen){
 		if (lump >= numlumps) {
 			I.Error("CacheLumpNumIntoArray: %i >= numlumps", lump);
 		}
 
-		if (!implementsInterface(what, CacheableDoomObject.class)){
+        /**
+         * Impossible condition unless you hack generics somehow
+         *  - Good Sign 2017/05/07
+         */
+		/*if (!implementsInterface(what, CacheableDoomObject.class)){
 			I.Error("CacheLumpNumIntoArray: %s does not implement CacheableDoomObject", what.getName());
-		}
+		}*/
 	
 		// Nothing cached here...
-		if ((lumpcache[lump] == null)&&(what!=null)) {
+		if ((lumpcache[lump] == null) && (what != null)) {
 			//System.out.println("cache miss on lump " + lump);
 			// Read as a byte buffer anyway.
 		    ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
-
-			T[] stuff=(T[]) C2JUtils.createArrayOfObjects(what, num);
+			T[] stuff = malloc(what, arrGen, num);
 			
 			// Store the buffer anyway (as a CacheableDoomObjectContainer)
-			lumpcache[lump] = new CacheableDoomObjectContainer<T>(stuff);
+			lumpcache[lump] = new CacheableDoomObjectContainer<>(stuff);
 			
 			// Auto-unpack it, if possible.
 
-			try {
-				thebuffer.rewind();
-				lumpcache[lump].unpack(thebuffer);
-				} catch (Exception e) {
-					System.err.println("Could not auto-unpack lump " + lump
-							+ " into an array of objects of class " + what);
-					e.printStackTrace();
-				}
+            try {
+                thebuffer.rewind();
+                lumpcache[lump].unpack(thebuffer);
+            } catch (IOException e) {
+                Loggers.getLogger(WadLoader.class.getName()).log(Level.WARNING, String.format(
+                        "Could not auto-unpack lump %s into an array of objects of class %s", lump, what
+                ), e);
+            }
 			
 			// Track it (as ONE lump)
 			Track(lumpcache[lump],lump);
-
-
 		} else {
 			//System.out.println("cache hit on lump " + lump);
 			// Z.ChangeTag (lumpcache[lump],tag);
 		}
 
-		if (lumpcache[lump]==null) return null;
-		
-		return (T[]) ((CacheableDoomObjectContainer<T>)lumpcache[lump]).getStuff();
+        if (lumpcache[lump] == null) {
+            return null;
+        }
+        
+        @SuppressWarnings("unchecked")
+        final CacheableDoomObjectContainer<T> cont = (CacheableDoomObjectContainer<T>) lumpcache[lump];
+        return cont.getStuff();
 	}
 	
 	public CacheableDoomObject CacheLumpNum(int lump)
@@ -961,6 +978,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpNameAsRawBytes(java.lang.String, int)
 	 */
 
+	@Override
 	public byte[] CacheLumpNameAsRawBytes(String name, int tag) {
 		return ((DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag,
 				null)).getBuffer().array();
@@ -970,7 +988,8 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpNumAsRawBytes(int, int)
 	 */
 
-    public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
+    @Override
+	public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
         return ((DoomBuffer) this.CacheLumpNum(num, tag,
                 null)).getBuffer().array();
     	}
@@ -980,14 +999,16 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int)
 	 */
 
+	@Override
 	public DoomBuffer CacheLumpName(String name, int tag) {
-		return (DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag,
+		return this.CacheLumpNum(this.GetNumForName(name), tag,
 				DoomBuffer.class);
 
 	}
 	
-	   public DoomBuffer CacheLumpNumAsDoomBuffer(int lump) {
-	        return (DoomBuffer) this.CacheLumpNum(lump, 0,
+	   @Override
+	public DoomBuffer CacheLumpNumAsDoomBuffer(int lump) {
+	        return this.CacheLumpNum(lump, 0,
 	                DoomBuffer.class);
 	    }
 	
@@ -996,8 +1017,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchName(java.lang.String)
 	 */
 
+	@Override
 	public patch_t CachePatchName(String name) {
-		return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE,
+		return this.CacheLumpNum(this.GetNumForName(name), PU_CACHE,
 				patch_t.class);
 
 	}
@@ -1006,8 +1028,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchName(java.lang.String, int)
 	 */
 
+	@Override
 	public patch_t CachePatchName(String name, int tag) {
-		return (patch_t) this.CacheLumpNum(this.GetNumForName(name), tag,
+		return this.CacheLumpNum(this.GetNumForName(name), tag,
 				patch_t.class);
 	}
 
@@ -1015,16 +1038,18 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchNum(int, int)
 	 */
 
+	@Override
 	public patch_t CachePatchNum(int num) {
-		return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
+		return this.CacheLumpNum(num, PU_CACHE, patch_t.class);
 	}
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
+	@Override
+    @W_Wad.C(W_CacheLumpName)
 	public <T extends CacheableDoomObject> T CacheLumpName(String name, int tag, Class<T> what) {
-		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
-				what);
+		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag, what);
 	}
 
 	//
@@ -1079,6 +1104,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#isLumpMarker(int)
 	 */
+	@Override
 	public boolean isLumpMarker(int lump){
 	    return (lumpinfo[lump].size==0);
 	}
@@ -1086,6 +1112,7 @@ public class WadLoader implements IWadLoader {
 	   /* (non-Javadoc)
 	 * @see w.IWadLoader#GetNameForLump(int)
 	 */
+	@Override
 	public String GetNameForLump(int lump){
 	        return lumpinfo[lump].name;
 	    }
@@ -1105,17 +1132,17 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 * TO get an idea of how superior using a hashtable is, on 1000000 random
 	 * lump searches the original takes 48 seconds, searching for precomputed
-	 * hashes takes 2.84, and using a Hashtable takes 0.2 sec.
+	 * hashes takes 2.84, and using a HashMap takes 0.2 sec.
 	 * 
 	 * And the best part is that Java provides a perfectly reasonable implementation.
 	 * 
 	 */
 
-	Hashtable<String, Integer> doomhash;
+	HashMap<String, Integer> doomhash;
 
 	protected void InitLumpHash() {
 
-		doomhash = new Hashtable<String, Integer>(numlumps);
+		doomhash = new HashMap<String, Integer>(numlumps);
 
 		//for (int i = 0; i < numlumps; i++)
 		//	lumpinfo[i].index = -1; // mark slots empty
@@ -1124,51 +1151,57 @@ public class WadLoader implements IWadLoader {
 		// lump order, so that the last lump of a given name appears first
 		// in any chain, observing pwad ordering rules. killough
 
-		for (int i = 0; i < numlumps; i++) { // hash function:
-			doomhash.put(lumpinfo[i].name.toUpperCase(), new Integer(i));
-		    }
-	}
+        for (int i = 0; i < numlumps; i++) { // hash function:
+            doomhash.put(lumpinfo[i].name.toUpperCase(), new Integer(i));
+        }
+    }
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see w.IWadLoader#CheckNumForName(java.lang.String)
 	 */
-	public int CheckNumForName(String name/* , int namespace */)
-
-	{
-		Integer r = doomhash.get(name);
+    @Override
+    @SourceCode.Compatible
+    @W_Wad.C(W_CheckNumForName)
+	public int CheckNumForName(String name/* , int namespace */) {
+		final Integer r = doomhash.get(name);
 		// System.out.print("Found "+r);
 
-		if (r != null)
-			return r.intValue();
+		if (r != null) {
+			return r;
+		}
 
 		// System.out.print(" found "+lumpinfo[i]+"\n" );
 		return -1;
 	}
 
-	   /* (non-Javadoc)
-     * @see w.IWadLoader#CheckNumForName(java.lang.String)
-     */
-    public int[] CheckNumsForName(String name)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see w.IWadLoader#CheckNumForName(java.lang.String)
+	 */
+    @Override
+	public int[] CheckNumsForName(String name) {
+		list.clear();
 
-    {
-        
-        list.clear();
-        
-        // Dumb search, no chained hashtables I'm afraid :-/
-        // Move backwards, so list is compiled with more recent ones first.
-        for (int i=numlumps-1;i>=0;i--){
-            if (name.compareToIgnoreCase(lumpinfo[i].name)==0) list.add(i);
-        }
-        
-        final int num=list.size();
-        int[] result=new int[num];
-        for (int i=0;i<num;i++){
-            result[i]=list.get(i);
-        }
-    
-        // Might be empty/null, so check that out.
-        return result;
-    }
+		// Dumb search, no chained hashtables I'm afraid :-/
+		// Move backwards, so list is compiled with more recent ones first.
+		for (int i = numlumps - 1; i >= 0; i--) {
+			if (name.compareToIgnoreCase(lumpinfo[i].name) == 0) {
+				list.add(i);
+			}
+		}
+
+		final int num = list.size();
+		int[] result = new int[num];
+		for (int i = 0; i < num; i++) {
+			result[i] = list.get(i);
+		}
+
+		// Might be empty/null, so check that out.
+		return result;
+	}
     
     private final ArrayList<Integer> list=new ArrayList<Integer>();
 	
@@ -1333,7 +1366,7 @@ public class WadLoader implements IWadLoader {
 	
 	//// Merged remnants from LumpZone here.
 
-	Hashtable<CacheableDoomObject, Integer> zone;
+    HashMap<CacheableDoomObject, Integer> zone;
 
 	/** Add a lump to the tracking */
 

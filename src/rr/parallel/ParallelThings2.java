@@ -3,13 +3,11 @@ package rr.parallel;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
-
-import rr.AbstractThings;
 import rr.IMaskedDrawer;
 import rr.ISpriteManager;
 import rr.IVisSpriteManagement;
-import rr.Renderer;
-import v.IVideoScale;
+import rr.SceneRenderer;
+import v.scale.VideoScale;
 
 /**  Alternate parallel sprite renderer using a split-screen strategy.
  *  For N threads, each thread gets to render only the sprites that are entirely
@@ -30,17 +28,17 @@ import v.IVideoScale;
  *
  */
 
-public final class ParallelThings2<T,V>
-        implements IMaskedDrawer<T,V> {
+public final class ParallelThings2<T,V> implements IMaskedDrawer<T,V> {
 
     MaskedWorker<T,V>[] maskedworkers;
     CyclicBarrier maskedbarrier;
     Executor tp;
     protected final IVisSpriteManagement<V> VIS;
+    protected final VideoScale vs;
     
-    public ParallelThings2(Renderer<T,V> R) {
+    public ParallelThings2(VideoScale vs, SceneRenderer<T,V> R) {
         this.VIS=R.getVisSpriteManager();
-
+        this.vs = vs;
     }
 
     @Override
@@ -79,19 +77,6 @@ public final class ParallelThings2<T,V>
     public void setPspriteIscale(int scale) {
         for (int i = 0; i < maskedworkers.length; i++)
             maskedworkers[i].setPspriteIscale(scale);
-    }
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        for (int i = 0; i < maskedworkers.length; i++)
-            maskedworkers[i].setVideoScale(vs);
-    }
-
-    @Override
-    public void initScaling() {
-        for (int i = 0; i < maskedworkers.length; i++)
-            maskedworkers[i].initScaling();
-        
     }
 
     @Override

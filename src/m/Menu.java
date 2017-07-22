@@ -1,17 +1,30 @@
 package m;
 
-import defines.*;
 import static data.Defines.HU_FONTSIZE;
 import static data.Defines.HU_FONTSTART;
-import static g.Keys.*;
 import static data.Defines.PU_CACHE;
 import static data.Defines.SAVESTRINGSIZE;
 import static data.dstrings.NUM_QUITMESSAGES;
 import static data.dstrings.SAVEGAMENAME;
 import static data.dstrings.endmsg;
+import data.sounds.sfxenum_t;
+import defines.*;
+import doom.CommandVariable;
+import doom.DoomMain;
+import doom.SourceCode;
+import doom.SourceCode.M_Menu;
+import static doom.SourceCode.M_Menu.M_Responder;
+import static doom.SourceCode.M_Menu.M_StartControlPanel;
+import static doom.SourceCode.M_Menu.M_Ticker;
+import doom.englsh;
 import static doom.englsh.DOSY;
 import static doom.englsh.EMPTYSTRING;
 import static doom.englsh.ENDGAME;
+import static doom.englsh.GAMMALVL0;
+import static doom.englsh.GAMMALVL1;
+import static doom.englsh.GAMMALVL2;
+import static doom.englsh.GAMMALVL3;
+import static doom.englsh.GAMMALVL4;
 import static doom.englsh.LOADNET;
 import static doom.englsh.MSGOFF;
 import static doom.englsh.MSGON;
@@ -24,33 +37,26 @@ import static doom.englsh.QSAVESPOT;
 import static doom.englsh.QSPROMPT;
 import static doom.englsh.SAVEDEAD;
 import static doom.englsh.SWSTRING;
-import static doom.englsh.GAMMALVL0;
-import static doom.englsh.GAMMALVL1;
-import static doom.englsh.GAMMALVL2;
-import static doom.englsh.GAMMALVL3;
-import static doom.englsh.GAMMALVL4;
-
+import doom.event_t;
+import doom.evtype_t;
+import g.Signals.ScanCode;
+import static g.Signals.ScanCode.*;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-
 import rr.patch_t;
+import timing.DelegateTicker;
 import utils.C2JUtils;
-import v.IVideoScale;
+import static v.renderers.DoomScreen.*;
 import w.DoomIO;
-import data.sounds.sfxenum_t;
-import doom.DoomStatus;
-import doom.englsh;
-import doom.event_t;
-import doom.evtype_t;
 
-public class Menu extends AbstractDoomMenu {
+public class Menu<T, V> extends AbstractDoomMenu<T, V> {
 
 	////////////////// CONSTRUCTOR ////////////////
     
-    public Menu(DoomStatus DS){
-    	this.updateStatus(DS);
+    public Menu(DoomMain<T, V> DOOM){
+    	super(DOOM);
     }
 
     /** The fonts  ... must "peg" them to those from HU */
@@ -179,10 +185,6 @@ public class Menu extends AbstractDoomMenu {
     /** Initialize menu routines first */
     
     private void initMenuRoutines() {
-
-
-
-
         ChangeMessages = new M_ChangeMessages();
         ChangeDetail = new M_ChangeDetail();
         ChangeSensitivity = new M_ChangeSensitivity();
@@ -237,30 +239,30 @@ public class Menu extends AbstractDoomMenu {
     /** First initialize those */
     
     private void initMenuItems(){
-    
-    MainMenu = new menuitem_t[]
-        { new menuitem_t( 1, "M_NGAME", NewGame, 'n'),
-                new menuitem_t(1, "M_OPTION", Options, 'o'),
-                new menuitem_t(1, "M_LOADG", LoadGame, 'l'),
-                new menuitem_t(1, "M_SAVEG", SaveGame, 's'),
-                // Another hickup with Special edition.
-                new menuitem_t(1, "M_RDTHIS", ReadThis, 'r'),
-                new menuitem_t(1, "M_QUITG", QuitDOOM, 'q') };
+        MainMenu = new menuitem_t[] {
+            new menuitem_t(1, "M_NGAME", NewGame, SC_N),
+            new menuitem_t(1, "M_OPTION", Options, SC_O),
+            new menuitem_t(1, "M_LOADG", LoadGame, SC_L),
+            new menuitem_t(1, "M_SAVEG", SaveGame, SC_S),
+            // Another hickup with Special edition.
+            new menuitem_t(1, "M_RDTHIS", ReadThis, SC_R),
+            new menuitem_t(1, "M_QUITG", QuitDOOM, SC_Q)
+        };
 
-    MainDef =
-        new menu_t(main_end, null, MainMenu, DrawMainMenu, 97, 64, 0);
+        MainDef = new menu_t(main_end, null, MainMenu, DrawMainMenu, 97, 64, 0);
 
-    //
-    // EPISODE SELECT
-    //
+        //
+        // EPISODE SELECT
+        //
+        EpisodeMenu = new menuitem_t[] {
+            new menuitem_t(1, "M_EPI1", Episode, SC_K),
+            new menuitem_t(1, "M_EPI2", Episode, SC_T),
+            new menuitem_t(1, "M_EPI3", Episode, SC_I),
+            new menuitem_t(1, "M_EPI4", Episode, SC_T)
+        };
 
-    EpisodeMenu = new menuitem_t[]
-        { new menuitem_t(1, "M_EPI1", Episode, 'k'),
-                new menuitem_t(1, "M_EPI2", Episode, 't'),
-                new menuitem_t(1, "M_EPI3", Episode, 'i'),
-                new menuitem_t(1, "M_EPI4", Episode, 't') };
-
-    EpiDef = new menu_t(ep_end, // # of menu items
+        EpiDef = new menu_t(
+            ep_end, // # of menu items
             MainDef, // previous menu
             EpisodeMenu, // menuitem_t ->
             DrawEpisode, // drawing routine ->
@@ -268,19 +270,19 @@ public class Menu extends AbstractDoomMenu {
             ep1 // lastOn
         );
 
-    //
-    // NEW GAME
-    //
+        //
+        // NEW GAME
+        //
+        NewGameMenu = new menuitem_t[] {
+            new menuitem_t(1, "M_JKILL", ChooseSkill, SC_I),
+            new menuitem_t(1, "M_ROUGH", ChooseSkill, SC_H),
+            new menuitem_t(1, "M_HURT", ChooseSkill, SC_H),
+            new menuitem_t(1, "M_ULTRA", ChooseSkill, SC_U),
+            new menuitem_t(1, "M_NMARE", ChooseSkill, SC_N)
+        };
 
-
-     NewGameMenu  = new menuitem_t[]
-        { new menuitem_t(1, "M_JKILL", ChooseSkill, 'i'),
-                new menuitem_t(1, "M_ROUGH", ChooseSkill, 'h'),
-                new menuitem_t(1, "M_HURT", ChooseSkill, 'h'),
-                new menuitem_t(1, "M_ULTRA", ChooseSkill, 'u'),
-                new menuitem_t(1, "M_NMARE", ChooseSkill, 'n') };
-
-     NewDef = new menu_t(newg_end, // # of menu items
+        NewDef = new menu_t(
+            newg_end, // # of menu items
             EpiDef, // previous menu
             NewGameMenu, // menuitem_t ->
             DrawNewGame, // drawing routine ->
@@ -288,81 +290,70 @@ public class Menu extends AbstractDoomMenu {
             hurtme // lastOn
         );
 
-    //
-    // OPTIONS MENU
-    //
+        //
+        // OPTIONS MENU
+        //
+        OptionsMenu = new menuitem_t[] {
+            new menuitem_t(1, "M_ENDGAM", EndGame, SC_3),
+            new menuitem_t(1, "M_MESSG", ChangeMessages, SC_M),
+            new menuitem_t(1, "M_DETAIL", ChangeDetail, SC_G),
+            new menuitem_t(2, "M_SCRNSZ", SizeDisplay, SC_S),
+            new menuitem_t(-1, "", null),
+            new menuitem_t(2, "M_MSENS", ChangeSensitivity, SC_M),
+            new menuitem_t(-1, "", null),
+            new menuitem_t(1, "M_SVOL", Sound, SC_S)
+        };
 
-    OptionsMenu = new  menuitem_t[]
-        { new menuitem_t(1, "M_ENDGAM", EndGame, 'e'),
-                new menuitem_t(1, "M_MESSG", ChangeMessages, 'm'),
-                new menuitem_t(1, "M_DETAIL", ChangeDetail, 'g'),
-                new menuitem_t(2, "M_SCRNSZ", SizeDisplay, 's'),
-                new menuitem_t(-1, "", null),
-                new menuitem_t(2, "M_MSENS", ChangeSensitivity, 'm'),
-                new menuitem_t(-1, "", null),
-                new menuitem_t(1, "M_SVOL", Sound, 's') };
+        OptionsDef = new menu_t(opt_end, this.MainDef, OptionsMenu, DrawOptions, 60, 37, 0);
 
-    OptionsDef =
-        new menu_t(opt_end, this.MainDef, OptionsMenu, DrawOptions, 60, 37, 0);
+        // Read This! MENU 1 
+        ReadMenu1 = new menuitem_t[]{new menuitem_t(1, "", ReadThis2, SC_0)};
 
-    // Read This! MENU 1 
+        ReadDef1 = new menu_t(read1_end, MainDef, ReadMenu1, DrawReadThis1, 280, 185, 0);
 
-    ReadMenu1 = new menuitem_t[] { new menuitem_t(1, "", ReadThis2, (char) 0) };
+        // Read This! MENU 2
+        ReadMenu2 = new menuitem_t[]{new menuitem_t(1, "", FinishReadThis, SC_0)};
 
-    ReadDef1 =
-        new menu_t(read1_end, MainDef, ReadMenu1, DrawReadThis1, 280, 185, 0);
+        ReadDef2 = new menu_t(read2_end, ReadDef1, ReadMenu2, DrawReadThis2, 330, 175, 0);
 
-    // Read This! MENU 2
+        //
+        // SOUND VOLUME MENU
+        //
+        SoundMenu = new menuitem_t[] {
+            new menuitem_t(2, "M_SFXVOL", SfxVol, SC_S),
+            new menuitem_t(-1, "", null),
+            new menuitem_t(2, "M_MUSVOL", MusicVol, SC_M),
+            new menuitem_t(-1, "", null)
+        };
 
-    ReadMenu2 = new menuitem_t[] 
-        { new menuitem_t(1, "", FinishReadThis, (char) 0) };
+        SoundDef = new menu_t(sound_end, OptionsDef, SoundMenu, DrawSound, 80, 64, 0);
 
-    ReadDef2 =
-        new menu_t(read2_end, ReadDef1, ReadMenu2, DrawReadThis2, 330, 175, 0);
+        //
+        // LOAD GAME MENU
+        //
+        LoadMenu = new menuitem_t[]{new menuitem_t(1, "", LoadSelect, SC_1),
+            new menuitem_t(1, "", LoadSelect, SC_2),
+            new menuitem_t(1, "", LoadSelect, SC_3),
+            new menuitem_t(1, "", LoadSelect, SC_4),
+            new menuitem_t(1, "", LoadSelect, SC_5),
+            new menuitem_t(1, "", LoadSelect, SC_6)};
 
-    //
-    // SOUND VOLUME MENU
-    //
+        LoadDef
+                = new menu_t(load_end, MainDef, LoadMenu, DrawLoad, 80, 54, 0);
 
+        //
+        // SAVE GAME MENU
+        //
+        SaveMenu = new menuitem_t[] {
+            new menuitem_t(1, "", SaveSelect, SC_1),
+            new menuitem_t(1, "", SaveSelect, SC_2),
+            new menuitem_t(1, "", SaveSelect, SC_3),
+            new menuitem_t(1, "", SaveSelect, SC_4),
+            new menuitem_t(1, "", SaveSelect, SC_5),
+            new menuitem_t(1, "", SaveSelect, SC_6)
+        };
 
-
-    SoundMenu = new menuitem_t[]
-        { new menuitem_t(2, "M_SFXVOL", SfxVol, 's'),
-                new menuitem_t(-1, "", null),
-                new menuitem_t(2, "M_MUSVOL", MusicVol, 'm'),
-                new menuitem_t(-1, "", null) };
-
-    SoundDef =
-        new menu_t(sound_end, OptionsDef, SoundMenu, DrawSound, 80, 64, 0);
-
-    //
-    // LOAD GAME MENU
-    //
-
-    LoadMenu =new menuitem_t[]
-        { new menuitem_t(1, "", LoadSelect, '1'),
-                new menuitem_t(1, "", LoadSelect, '2'),
-                new menuitem_t(1, "", LoadSelect, '3'),
-                new menuitem_t(1, "", LoadSelect, '4'),
-                new menuitem_t(1, "", LoadSelect, '5'),
-                new menuitem_t(1, "", LoadSelect, '6') };
-
-    LoadDef =
-        new menu_t(load_end, MainDef, LoadMenu, DrawLoad, 80, 54, 0);
-
-    //
-    // SAVE GAME MENU
-    //
-    SaveMenu = new menuitem_t[]
-        { new menuitem_t(1, "", SaveSelect, '1'),
-                new menuitem_t(1, "", SaveSelect, '2'),
-                new menuitem_t(1, "", SaveSelect, '3'),
-                new menuitem_t(1, "", SaveSelect, '4'),
-                new menuitem_t(1, "", SaveSelect, '5'),
-                new menuitem_t(1, "", SaveSelect, '6') };
-
-    SaveDef =
-        new menu_t(load_end, MainDef, SaveMenu, DrawSave, 80, 54, 0);
+        SaveDef = new menu_t(load_end, MainDef, SaveMenu, DrawSave, 80, 54, 0);
     }
     
     /**
@@ -377,7 +368,7 @@ public class Menu extends AbstractDoomMenu {
         String name;
 
         for (i = 0; i < load_end; i++) {
-            if (DM.CM.CheckParm("-cdrom") != 0)
+            if (DOOM.cVarManager.bool(CommandVariable.CDROM))
                 name = "c:\\doomdata\\" + SAVEGAMENAME + (i) + ".dsg";
             else
                 name = SAVEGAMENAME + (i) + ".dsg";
@@ -404,14 +395,14 @@ public class Menu extends AbstractDoomMenu {
     private void DrawSaveLoadBorder(int x, int y) {
         int i;
 
-        V.DrawScaledPatch(x - 8, y + 7, 0, vs,W.CachePatchName("M_LSLEFT"));
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_LSLEFT"), DOOM.vs, x - 8, y + 7);
 
         for (i = 0; i < 24; i++) {
-            V.DrawScaledPatch(x, y + 7, 0, vs,W.CachePatchName("M_LSCNTR"));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_LSCNTR"), DOOM.vs, x, y + 7);
             x += 8;
         }
 
-        V.DrawScaledPatch(x, y + 7, 0, vs,W.CachePatchName("M_LSRGHT"));
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_LSRGHT"), DOOM.vs, x, y + 7);
     }
 
     /** Draws slider rail of a specified width (each notch is 8 base units wide)
@@ -424,30 +415,23 @@ public class Menu extends AbstractDoomMenu {
      */
     
     public void DrawThermo(int x, int y, int thermWidth, int thermDot) {
-        int xx;
-        int i;
-
-        xx = x;
-        V.DrawScaledPatch(xx, y, 0, vs,W.CachePatchName("M_THERML"));
+        int xx = x;
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_THERML"), DOOM.vs, xx, y);
         xx += 8;
-        for (i = 0; i < thermWidth; i++) {
-            V.DrawScaledPatch(xx, y, 0, vs,W.CachePatchName("M_THERMM"));
+        for (int i = 0; i < thermWidth; i++) {
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_THERMM"), DOOM.vs, xx, y);
             xx += 8;
         }
-        V.DrawScaledPatch(xx, y, 0,vs, W.CachePatchName("M_THERMR"));
-
-        V.DrawScaledPatch((x + 8) + thermDot * 8, y, 0,vs, W
-                .CachePatchName("M_THERMO"));
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_THERMR"), DOOM.vs, xx, y);
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_THERMO"), DOOM.vs, (x + 8) + thermDot * 8, y);
     }
 
     public void DrawEmptyCell(menu_t menu, int item) {
-        V.DrawScaledPatch(menu.x - 10, menu.y + item * LINEHEIGHT - 1, 0,vs,
-            (patch_t) W.CacheLumpName("M_CELL1", PU_CACHE, patch_t.class));
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CacheLumpName("M_CELL1", PU_CACHE, patch_t.class), DOOM.vs, menu.x - 10, menu.y + item * LINEHEIGHT - 1);
     }
 
     public void DrawSelCell(menu_t menu, int item) {
-        V.DrawScaledPatch(menu.x - 10, menu.y + item * LINEHEIGHT - 1, 0,vs,
-            (patch_t) W.CacheLumpName("M_CELL2", PU_CACHE, patch_t.class));
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CacheLumpName("M_CELL2", PU_CACHE, patch_t.class), DOOM.vs, menu.x - 10, menu.y + item * LINEHEIGHT - 1);
     }
 
     //
@@ -457,7 +441,7 @@ public class Menu extends AbstractDoomMenu {
     	@Override
     	public void invoke(){
         int i;
-        V.DrawScaledPatch(72, 28, 0, vs,W.CachePatchName("M_SAVEG"));
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_SAVEG"), DOOM.vs, 72, 28);
         for (i = 0; i < load_end; i++) {
             DrawSaveLoadBorder(LoadDef.x, LoadDef.y + LINEHEIGHT * i);
             WriteText(LoadDef.x, LoadDef.y + LINEHEIGHT * i, savegamestrings[i]);
@@ -477,7 +461,7 @@ public class Menu extends AbstractDoomMenu {
      */
 
     public void DoSave(int slot) {
-        DG.SaveGame(slot, new String(savegamestrings[slot]));
+        DOOM.SaveGame(slot, new String(savegamestrings[slot]));
         ClearMenus();
 
         // PICK QUICKSAVE SLOT YET?
@@ -489,8 +473,7 @@ public class Menu extends AbstractDoomMenu {
      * User wants to save. Start string input for M_Responder
      */
 
-    class M_SaveSelect
-            implements MenuRoutine {
+    class M_SaveSelect implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             // we are going to be intercepting all chars
@@ -508,16 +491,15 @@ public class Menu extends AbstractDoomMenu {
     /**
      * Selected from DOOM menu
      */
-    class M_SaveGame
-            implements MenuRoutine {
+    class M_SaveGame implements MenuRoutine {
         @Override
         public void invoke(int choice) {
-            if (!DM.usergame) {
+            if (!DOOM.usergame) {
                 StartMessage(SAVEDEAD, null, false);
                 return;
             }
 
-            if (DM.gamestate != gamestate_t.GS_LEVEL)
+            if (DOOM.gamestate != gamestate_t.GS_LEVEL)
                 return;
 
             SetupNextMenu(SaveDef);
@@ -530,24 +512,23 @@ public class Menu extends AbstractDoomMenu {
     //
     private String tempstring;
 
-    class M_QuickSaveResponse
-            implements MenuRoutine {
+    class M_QuickSaveResponse implements MenuRoutine {
         @Override
         public void invoke(int ch) {
             if (ch == 'y') {
                 DoSave(quickSaveSlot);
-                S.StartSound(null, sfxenum_t.sfx_swtchx);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchx);
             }
         }
     }
 
     private void QuickSave() {
-        if (!DM.usergame) {
-            S.StartSound(null, sfxenum_t.sfx_oof);
+        if (!DOOM.usergame) {
+            DOOM.doomSound.StartSound(null, sfxenum_t.sfx_oof);
             return;
         }
 
-        if (DM.gamestate != gamestate_t.GS_LEVEL)
+        if (DOOM.gamestate != gamestate_t.GS_LEVEL)
             return;
 
         if (quickSaveSlot < 0) {
@@ -564,36 +545,34 @@ public class Menu extends AbstractDoomMenu {
     //
     // M_QuickLoad
     //
-    class M_QuickLoadResponse
-            implements MenuRoutine {
+    class M_QuickLoadResponse implements MenuRoutine {
         @Override
         public void invoke(int ch) {
             if (ch == 'y') {
                 LoadSelect.invoke(quickSaveSlot);
-                S.StartSound(null, sfxenum_t.sfx_swtchx);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchx);
             }
         }
     }
 
-    class M_QuitResponse
-            implements MenuRoutine {
+    class M_QuitResponse implements MenuRoutine {
         @Override
         public void invoke(int ch) {
             if (ch != 'y')
                 return;
-            if (!DM.netgame) {
-                if (DM.isCommercial())
-                    S.StartSound(null, quitsounds2[(DM.gametic >> 2) & 7]);
+            if (!DOOM.netgame) {
+                if (DOOM.isCommercial())
+                    DOOM.doomSound.StartSound(null, quitsounds2[(DOOM.gametic >> 2) & 7]);
                 else
-                    S.StartSound(null, quitsounds[(DM.gametic >> 2) & 7]);
+                    DOOM.doomSound.StartSound(null, quitsounds[(DOOM.gametic >> 2) & 7]);
                 // TI.WaitVBL(105);
             }
-            I.Quit();
+            DOOM.doomSystem.Quit();
         }
     }
 
     public void QuickLoad() {
-        if (DM.netgame) {
+        if (DOOM.netgame) {
             StartMessage(QLOADNET, null, false);
             return;
         }
@@ -606,53 +585,46 @@ public class Menu extends AbstractDoomMenu {
         StartMessage(tempstring, QuickLoadResponse, true);
     }
 
-    class M_Sound
-            implements MenuRoutine {
-
+    class M_Sound implements MenuRoutine {
         @Override
         public void invoke(int choice) {
-
             SetupNextMenu(SoundDef);
         }
     }
 
-    class M_SfxVol
-            implements MenuRoutine {
-
+    class M_SfxVol implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             switch (choice) {
             case 0:
-                if (DM.snd_SfxVolume != 0)
-                    DM.snd_SfxVolume--;
+                if (DOOM.snd_SfxVolume != 0)
+                    DOOM.snd_SfxVolume--;
                 break;
             case 1:
-                if (DM.snd_SfxVolume < 15)
-                    DM.snd_SfxVolume++;
+                if (DOOM.snd_SfxVolume < 15)
+                    DOOM.snd_SfxVolume++;
                 break;
             }
 
-           S.SetSfxVolume(DM.snd_SfxVolume *8);
+           DOOM.doomSound.SetSfxVolume(DOOM.snd_SfxVolume *8);
         }
     }
 
-    class M_MusicVol
-            implements MenuRoutine {
-
+    class M_MusicVol implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             switch (choice) {
             case 0:
-                if (DM.snd_MusicVolume != 0)
-                    DM.snd_MusicVolume--;
+                if (DOOM.snd_MusicVolume != 0)
+                    DOOM.snd_MusicVolume--;
                 break;
             case 1:
-                if (DM.snd_MusicVolume < 15)
-                    DM.snd_MusicVolume++;
+                if (DOOM.snd_MusicVolume < 15)
+                    DOOM.snd_MusicVolume++;
                 break;
             }
 
-            S.SetMusicVolume(DM.snd_MusicVolume*8);
+            DOOM.doomSound.SetMusicVolume(DOOM.snd_MusicVolume*8);
         }
     }
 
@@ -661,15 +633,13 @@ public class Menu extends AbstractDoomMenu {
     //
     private int epi;
 
-    class M_VerifyNightmare
-            implements MenuRoutine {
-
+    class M_VerifyNightmare implements MenuRoutine {
         @Override
         public void invoke(int ch) {
             if (ch != 'y')
                 return;
 
-            DG.DeferedInitNew(skill_t.sk_nightmare, epi + 1, 1);
+            DOOM.DeferedInitNew(skill_t.sk_nightmare, epi + 1, 1);
             ClearMenus();
         }
     }
@@ -678,9 +648,7 @@ public class Menu extends AbstractDoomMenu {
      * M_ReadThis
      */
 
-    class M_ReadThis
-            implements MenuRoutine {
-
+    class M_ReadThis implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             choice = 0;
@@ -688,9 +656,7 @@ public class Menu extends AbstractDoomMenu {
         }
     }
 
-    class M_ReadThis2
-            implements MenuRoutine {
-
+    class M_ReadThis2 implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             choice = 0;
@@ -698,9 +664,7 @@ public class Menu extends AbstractDoomMenu {
         }
     }
 
-    class M_FinishReadThis
-            implements MenuRoutine {
-
+    class M_FinishReadThis implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             choice = 0;
@@ -712,43 +676,38 @@ public class Menu extends AbstractDoomMenu {
     // M_QuitDOOM
     //
 
-    class M_QuitDOOM
-            implements MenuRoutine {
+    class M_QuitDOOM implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             // We pick index 0 which is language sensitive,
             // or one at random, between 1 and maximum number.
-            if (DM.language != Language_t.english)
+            if (DOOM.language != Language_t.english)
                 endstring = endmsg[0] + "\n\n" + DOSY;
             else
                 endstring =
-                    endmsg[(DM.gametic % (NUM_QUITMESSAGES - 2)) + 1] + "\n\n"
+                    endmsg[(DOOM.gametic % (NUM_QUITMESSAGES - 2)) + 1] + "\n\n"
                             + DOSY;
             StartMessage(endstring, QuitResponse, true);
         }
     }
 
-    class M_QuitGame
-            implements MenuRoutine {
-
+    class M_QuitGame implements MenuRoutine {
         @Override
         public void invoke(int ch) {
             if (ch != 'y')
                 return;
-            if (!DM.netgame) {
-                if (DM.isCommercial())
-                S.StartSound(null,quitsounds2[(DM.gametic>>2)&7]);
+            if (!DOOM.netgame) {
+                if (DOOM.isCommercial())
+                DOOM.doomSound.StartSound(null,quitsounds2[(DOOM.gametic>>2)&7]);
                 else
-                S.StartSound(null,quitsounds[(DM.gametic>>2)&7]);
-                I.WaitVBL(105);
+                DOOM.doomSound.StartSound(null,quitsounds[(DOOM.gametic>>2)&7]);
+                DOOM.doomSystem.WaitVBL(105);
             }
-           I.Quit ();
+           DOOM.doomSystem.Quit ();
         }
     }
 
-    class M_SizeDisplay
-            implements MenuRoutine {
-
+    class M_SizeDisplay implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             switch (choice) {
@@ -766,14 +725,12 @@ public class Menu extends AbstractDoomMenu {
                 break;
             }
 
-            R.SetViewSize (screenblocks, detailLevel);
+            DOOM.sceneRenderer.SetViewSize (screenblocks, detailLevel);
         }
 
     }
 
-    class M_Options
-            implements MenuRoutine {
-
+    class M_Options implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             SetupNextMenu(OptionsDef);
@@ -781,17 +738,15 @@ public class Menu extends AbstractDoomMenu {
 
     }
 
-    class M_NewGame
-            implements MenuRoutine {
-
+    class M_NewGame implements MenuRoutine {
         @Override
         public void invoke(int choice) {
-            if (DM.netgame && !DM.demoplayback) {
+            if (DOOM.netgame && !DOOM.demoplayback) {
                 StartMessage(NEWGAME, null, false);
                 return;
             }
 
-            if (DM.isCommercial())
+            if (DOOM.isCommercial())
                 SetupNextMenu(NewDef);
             else
                 SetupNextMenu(EpiDef);
@@ -800,17 +755,16 @@ public class Menu extends AbstractDoomMenu {
     }
 
     public void StartMessage(String string, MenuRoutine routine, boolean input) {
-        messageLastMenuActive = DM.menuactive;
+        messageLastMenuActive = DOOM.menuactive;
         messageToPrint = true;
-        messageString = new String(string);
+        messageString = string;
         messageRoutine = routine;
         messageNeedsInput = input;
-        DM.menuactive = true; // "true"
-        return;
+        DOOM.menuactive = true; // "true"
     }
 
     public void StopMessage() {
-        DM.menuactive = messageLastMenuActive;
+        DOOM.menuactive = messageLastMenuActive;
         messageToPrint = false;
     }
 
@@ -892,10 +846,10 @@ public class Menu extends AbstractDoomMenu {
             }
 
             w = hu_font[c].width;
-            if (cx + w > SCREENWIDTH)
+            if (cx + w > DOOM.vs.getScreenWidth())
                 break;
             
-            V.DrawScaledPatch(cx, cy, 0,vs, hu_font[c]);
+            DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, cx, cy);
             cx += w;
         }
 
@@ -932,9 +886,9 @@ public class Menu extends AbstractDoomMenu {
             }
 
             w = hu_font[c].width;
-            if (cx + w > SCREENWIDTH)
+            if (cx + w > DOOM.vs.getScreenWidth())
                 break;
-            V.DrawScaledPatch(cx, cy, 0,vs, hu_font[c]);
+            DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, cx, cy);
             cx += w;
         }
 
@@ -954,329 +908,333 @@ public class Menu extends AbstractDoomMenu {
 
     private int lastx = 0;
 
+    @Override
+    @SourceCode.Compatible
+    @M_Menu.C(M_Responder)
     public boolean Responder(event_t ev) {
-
-        char ch;
-        int i;
-        ch = 0xFFFF;
-
-        //System.out.println("Processing keyevent:" +(ev.type==evtype_t.ev_keydown || ev.type==evtype_t.ev_keyup)+ " value = "+(char)ev.data1);
+        final ScanCode sc;
         
-        // Joystick input
-        
-        if (ev.type == evtype_t.ev_joystick && joywait < TICK.GetTime()) {
-            if (ev.data3 == -1) {
-                ch = KEY_UPARROW;
-                joywait = TICK.GetTime() + 5;
-            } else if (ev.data3 == 1) {
-                ch = KEY_DOWNARROW;
-                joywait = TICK.GetTime() + 5;
-            }
+        if (ev.isType(evtype_t.ev_joystick) && joywait < DOOM.ticker.GetTime()) {
+            // Joystick input
+            sc = ev.mapByJoy(joyEvent -> {
+                ScanCode r = SC_NULL;
+                if (joyEvent.y == -1) {
+                    r = SC_UP;
+                    joywait = DOOM.ticker.GetTime() + 5;
+                } else if (joyEvent.y == 1) {
+                    r = SC_DOWN;
+                    joywait = DOOM.ticker.GetTime() + 5;
+                }
 
-            if (ev.data2 == -1) {
-                ch = KEY_LEFTARROW;
-                joywait = TICK.GetTime() + 2;
-            } else if (ev.data2 == 1) {
-                ch = KEY_RIGHTARROW;
-                joywait = TICK.GetTime() + 2;
-            }
+                if (joyEvent.x == -1) {
+                    r = SC_LEFT;
+                    joywait = DOOM.ticker.GetTime() + 2;
+                } else if (joyEvent.x == 1) {
+                    r = SC_RIGHT;
+                    joywait = DOOM.ticker.GetTime() + 2;
+                }
 
-            if ((ev.data1 & 1) != 0) {
-                ch = KEY_ENTER;
-                joywait = TICK.GetTime() + 5;
-            }
-            if ((ev.data1 & 2) != 0) {
-                ch = KEY_BACKSPACE;
-                joywait = TICK.GetTime() + 5;
-            }
-        } else 
-        // Mouse input 
-        {
-            if (ev.type == evtype_t.ev_mouse && mousewait < TICK.GetTime()) {
-                mousey += ev.data3;
+                if (joyEvent.isJoy(event_t.JOY_2)) {
+                    r = SC_BACKSPACE;
+                    joywait = DOOM.ticker.GetTime() + 5;
+                } else if (joyEvent.isJoy(event_t.JOY_1)) {
+                    r = SC_ENTER;
+                    joywait = DOOM.ticker.GetTime() + 5;
+                }
+                return r;
+            });
+        } else if (ev.isType(evtype_t.ev_mouse) && mousewait < DOOM.ticker.GetTime()) {
+            // Mouse input 
+            if ((sc = ev.mapByMouse(mouseEvent -> {
+                ScanCode r = SC_NULL;
+                mousey += mouseEvent.y;
                 if (mousey < lasty - 30) {
-                    ch = KEY_DOWNARROW;
-                    mousewait = TICK.GetTime() + 5;
+                    r = SC_DOWN;
+                    mousewait = DOOM.ticker.GetTime() + 5;
                     mousey = lasty -= 30;
                 } else if (mousey > lasty + 30) {
-                    ch = KEY_UPARROW;
-                    mousewait = TICK.GetTime() + 5;
+                    r = SC_UP;
+                    mousewait = DOOM.ticker.GetTime() + 5;
                     mousey = lasty += 30;
                 }
 
-                mousex += ev.data2;
+                mousex += mouseEvent.x;
                 if (mousex < lastx - 30) {
-                    ch = KEY_LEFTARROW;
-                    mousewait = TICK.GetTime() + 5;
+                    r = SC_LEFT;
+                    mousewait = DOOM.ticker.GetTime() + 5;
                     mousex = lastx -= 30;
                 } else if (mousex > lastx + 30) {
-                    ch = KEY_RIGHTARROW;
-                    mousewait = TICK.GetTime() + 5;
+                    r = SC_RIGHT;
+                    mousewait = DOOM.ticker.GetTime() + 5;
                     mousex = lastx += 30;
                 }
 
-                if ((ev.data1 & 1) != 0) {
-                    ch = KEY_ENTER;
-                    mousewait = TICK.GetTime() + 15;
+                if (mouseEvent.isMouse(event_t.MOUSE_RIGHT)) {
+                    r = SC_BACKSPACE;
+                    mousewait = DOOM.ticker.GetTime() + 15;
+                } else if (mouseEvent.isMouse(event_t.MOUSE_LEFT)) {
+                    r = SC_ENTER;
+                    mousewait = DOOM.ticker.GetTime() + 15;
                 }
-
-                if ((ev.data1 & 2) != 0) {
-                    ch = KEY_BACKSPACE;
-                    mousewait = TICK.GetTime() + 15;
-                }
-            } else if (ev.type == evtype_t.ev_keydown) {
-                ch = (char) ev.data1;
-            }
-        }
-
-        if (ch == 0xFFFF)
-            return false;
+                return r;
+            })) == SC_NULL) { return false; }
+        } else if (ev.isType(evtype_t.ev_keydown)) {
+            sc = ev.getSC();
+        } else return false;
 
         // Save Game string input
         if (saveStringEnter) {
-
-            switch (ch) {
-            case KEY_BACKSPACE:
-                if (saveCharIndex > 0) {
-                    saveCharIndex--;
-                    savegamestrings[saveSlot][saveCharIndex] = 0;
-                }
-                break;
-
-            case KEY_ESCAPE:
-                saveStringEnter = false;
-                C2JUtils.strcpy(savegamestrings[saveSlot], saveOldString);
-                break;
-
-            case KEY_ENTER:            	
-                saveStringEnter = false;
-                if (savegamestrings[saveSlot][0] != 0)
-                    DoSave(saveSlot);
-                break;
-
-            default:
-                ch = Character.toUpperCase(ch);
-            	if (ch != 32)
-                    if (ch - HU_FONTSTART < 0
-                            || ch - HU_FONTSTART >= HU_FONTSIZE)
-                        break;
-                if (ch >= 32
-                        && ch <= 127
-                        && saveCharIndex < SAVESTRINGSIZE - 1
-                        && StringWidth(savegamestrings[saveSlot]) < (SAVESTRINGSIZE - 2) * 8) {
-                    savegamestrings[saveSlot][saveCharIndex++] = ch;
-                    savegamestrings[saveSlot][saveCharIndex] = 0;
-                }
-                break;
+            switch (sc) {
+                case SC_BACKSPACE:
+                    if (saveCharIndex > 0) {
+                        saveCharIndex--;
+                        savegamestrings[saveSlot][saveCharIndex] = 0;
+                    }
+                    break;
+                case SC_ESCAPE:
+                    saveStringEnter = false;
+                    C2JUtils.strcpy(savegamestrings[saveSlot], saveOldString);
+                    break;
+                case SC_ENTER:            	
+                    saveStringEnter = false;
+                    if (savegamestrings[saveSlot][0] != 0)
+                        DoSave(saveSlot);
+                    break;
+                default:
+                    char ch = Character.toUpperCase(sc.c);
+                    if (ch != ' ') {
+                        if (ch - HU_FONTSTART < 0 || ch - HU_FONTSTART >= HU_FONTSIZE) {
+                            break;
+                        }
+                    }
+                    
+                    if (ch >= ' ' && ch <= 0x7F && saveCharIndex < SAVESTRINGSIZE - 1
+                        && StringWidth(savegamestrings[saveSlot]) < (SAVESTRINGSIZE - 2) * 8)
+                    {
+                        savegamestrings[saveSlot][saveCharIndex++] = ch;
+                        savegamestrings[saveSlot][saveCharIndex] = 0;
+                    }
+                    break;
             }
             return true;
         }
 
         // Take care of any messages that need input
         if (messageToPrint) {
-            if (messageNeedsInput == true
-                    && !(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE))
+            if (messageNeedsInput == true && !(sc == SC_SPACE || sc == SC_N || sc == SC_Y || sc == SC_ESCAPE)) {
                 return false;
+            }
 
-            DM.menuactive = messageLastMenuActive;
+            DOOM.menuactive = messageLastMenuActive;
             messageToPrint = false;
             if (messageRoutine != null)
-                messageRoutine.invoke(ch);
+                messageRoutine.invoke(sc.c);
 
-            DM.menuactive = false; // "false"
-            S.StartSound(null, sfxenum_t.sfx_swtchx);
+            DOOM.menuactive = false; // "false"
+            DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchx);
             return true;
         }
 
-        if (DM.devparm && ch == KEY_F1) {
-            DG.ScreenShot();
+        if ((DOOM.devparm && sc == SC_F1) || sc == SC_PRTSCRN) {
+            DOOM.ScreenShot();
             return true;
         }
 
         // F-Keys
-        if (!DM.menuactive){
-            switch (ch) {
-            case KEY_MINUS: // Screen size down
-                if (DM.automapactive || HU.chat_on[0])
+        if (!DOOM.menuactive){
+            switch (sc) {
+            case SC_MINUS: // Screen size down
+                if (DOOM.automapactive || DOOM.headsUp.chat_on[0])
                     return false;
                 SizeDisplay.invoke(0);
-                S.StartSound(null, sfxenum_t.sfx_stnmov);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
                 return true;
 
-            case KEY_EQUALS: // Screen size up
-                if (DM.automapactive || HU.chat_on[0])
+            case SC_EQUALS: // Screen size up
+                if (DOOM.automapactive || DOOM.headsUp.chat_on[0])
                     return false;
                 SizeDisplay.invoke(1);
-                S.StartSound(null, sfxenum_t.sfx_stnmov);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
                 return true;
 
-            case KEY_F1: // Help key
+            case SC_F1: // Help key
                 StartControlPanel();
 
-                if (DM.isRetail() || currentMenu==ReadDef1)
+                if (DOOM.isRegistered() || DOOM.isShareware())
                     currentMenu = ReadDef2;
                 else
                     currentMenu = ReadDef1;
                 itemOn = 0;
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
-            case KEY_F2: // Save
+            case SC_F2: // Save
                 StartControlPanel();
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 SaveGame.invoke(0);
                 return true;
 
-            case KEY_F3: // Load
+            case SC_F3: // Load
                 StartControlPanel();
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 LoadGame.invoke(0);
                 return true;
 
-            case KEY_F4: // Sound Volume
+            case SC_F4: // Sound Volume
                 StartControlPanel();
                 currentMenu = SoundDef;
                 itemOn = (short) sfx_vol;
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
-            case KEY_F5: // Detail toggle
+            case SC_F5: // Detail toggle
                 ChangeDetail.invoke(0);
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
-            case KEY_F6: // Quicksave
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+            case SC_F6: // Quicksave
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 QuickSave();
                 return true;
 
-            case KEY_F7: // End game
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+            case SC_F7: // End game
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 EndGame.invoke(0);
                 return true;
 
-            case KEY_F8: // Toggle messages
+            case SC_F8: // Toggle messages
                 ChangeMessages.invoke(0);
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
-            case KEY_F9: // Quickload
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+            case SC_F9: // Quickload
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 QuickLoad();
                 return true;
 
-            case KEY_F10: // Quit DOOM
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+            case SC_F10: // Quit DOOM
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 QuitDOOM.invoke(0);
                 return true;
 
-            case KEY_F11: // gamma toggle
-                int usegamma = V.getUsegamma();
+            case SC_F11: // gamma toggle
+                int usegamma = DOOM.graphicSystem.getUsegamma();
                 usegamma++;
                 if (usegamma > 4)
                     usegamma = 0;
-                DM.players[DM.consoleplayer].message = gammamsg[usegamma];
-                // FIXME: it's pointless to reload the same palette.
-                //I.SetPalette (W.CacheLumpName ("PLAYPAL",PU_CACHE));
-                DM.VI.SetPalette(0);
-                DM.VI.SetGamma(usegamma);
+                DOOM.players[DOOM.consoleplayer].message = gammamsg[usegamma];
+                DOOM.graphicSystem.setUsegamma(usegamma);
+                DOOM.autoMap.Repalette();
                 return true;
+                
+            default:
+            	break;
 
             }
-    }
+        } else if (sc == SC_F5 && DOOM.ticker instanceof DelegateTicker) { // Toggle ticker
+            ((DelegateTicker) DOOM.ticker).changeTicker();
+            System.err.println("Warning! Ticker changed; time reset");
+            DOOM.doomSound.StartSound(null, sfxenum_t.sfx_radio);
+            return true;
+        }
+        
         // Pop-up menu?
-        if (!DM.menuactive) {
-            if (ch == KEY_ESCAPE) {
+        if (!DOOM.menuactive) {
+            if (sc == SC_ESCAPE) {
                 StartControlPanel();
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
             }
             return false;
         }
 
         // Keys usable within menu
-        switch (ch) {
-        case KEY_DOWNARROW:
-            do {
-                if (itemOn + 1 > currentMenu.numitems - 1)
-                    itemOn = 0;
-                else
-                    itemOn++;
-                S.StartSound(null, sfxenum_t.sfx_pstop);
-            } while (currentMenu.menuitems[itemOn].status == -1);
-            return true;
+        switch (sc) {
+            case SC_DOWN:
+                do {
+                    if (itemOn + 1 > currentMenu.numitems - 1) {
+                        itemOn = 0;
+                    } else {
+                        itemOn++;
+                    }
+                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pstop);
+                } while (currentMenu.menuitems[itemOn].status == -1);
+                return true;
 
-        case KEY_UPARROW:
-            do {
-                if (itemOn == 0)
-                    itemOn = (short) (currentMenu.numitems - 1);
-                else
-                    itemOn--;
-              S.StartSound(null, sfxenum_t.sfx_pstop);
-            } while (currentMenu.menuitems[itemOn].status == -1);
-            return true;
+            case SC_UP:
+                do {
+                    if (itemOn == 0) {
+                        itemOn = (short) (currentMenu.numitems - 1);
+                    } else {
+                        itemOn--;
+                    }
+                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pstop);
+                } while (currentMenu.menuitems[itemOn].status == -1);
+                return true;
 
-        case KEY_LEFTARROW:
-            if ((currentMenu.menuitems[itemOn].routine != null)
-                    && (currentMenu.menuitems[itemOn].status == 2)) {
-                S.StartSound(null, sfxenum_t.sfx_stnmov);
-                currentMenu.menuitems[itemOn].routine.invoke(0);
+            case SC_LEFT:
+                if ((currentMenu.menuitems[itemOn].routine != null)
+                        && (currentMenu.menuitems[itemOn].status == 2)) {
+                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
+                    currentMenu.menuitems[itemOn].routine.invoke(0);
+                }
+                return true;
+
+            case SC_RIGHT:
+                if ((currentMenu.menuitems[itemOn].routine != null)
+                        && (currentMenu.menuitems[itemOn].status == 2)) {
+                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
+                    currentMenu.menuitems[itemOn].routine.invoke(1);
+                }
+                return true;
+
+            case SC_NPENTER:
+            case SC_ENTER: {
+                if ((currentMenu.menuitems[itemOn].routine != null) && currentMenu.menuitems[itemOn].status != 0) {
+                    currentMenu.lastOn = itemOn;
+                    if (currentMenu.menuitems[itemOn].status == 2) {
+                        currentMenu.menuitems[itemOn].routine.invoke(1); // right
+                        // arrow
+                        DOOM.doomSound.StartSound(null, sfxenum_t.sfx_stnmov);
+                    } else {
+                        currentMenu.menuitems[itemOn].routine.invoke(itemOn);
+                        DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pistol);
+                    }
+                }
+                return true;
             }
-            return true;
 
-        case KEY_RIGHTARROW:
-            if ((currentMenu.menuitems[itemOn].routine != null)
-                    && (currentMenu.menuitems[itemOn].status == 2)) {
-            	S.StartSound(null, sfxenum_t.sfx_stnmov);
-                currentMenu.menuitems[itemOn].routine.invoke(1);
-            }
-            return true;
-
-        case KEY_ENTER: {
-            if ((currentMenu.menuitems[itemOn].routine != null)
-                    && currentMenu.menuitems[itemOn].status != 0) {
+            case SC_ESCAPE:
                 currentMenu.lastOn = itemOn;
-                if (currentMenu.menuitems[itemOn].status == 2) {
-                    currentMenu.menuitems[itemOn].routine.invoke(1); // right
-                    // arrow
-                    S.StartSound(null, sfxenum_t.sfx_stnmov);
-                } else {
-                    currentMenu.menuitems[itemOn].routine.invoke(itemOn);
-                    S.StartSound(null, sfxenum_t.sfx_pistol);
-                }
-            }
-        }
-            return true;
+                ClearMenus();
+                DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchx);
+                return true;
 
-        case KEY_ESCAPE:
-            currentMenu.lastOn = itemOn;
-            ClearMenus();
-            S.StartSound(null, sfxenum_t.sfx_swtchx);
-            return true;
-
-        case KEY_BACKSPACE:
-            currentMenu.lastOn = itemOn;
-            if (currentMenu.prevMenu != null) {
-                currentMenu = currentMenu.prevMenu;
-                itemOn = (short) currentMenu.lastOn;
-                 S.StartSound(null, sfxenum_t.sfx_swtchn);
-            }
-            return true;
-
-        default:
-            for (i = itemOn + 1; i < currentMenu.numitems; i++)
-                if (currentMenu.menuitems[i].alphaKey == ch) {
-                    itemOn = (short) i;
-                    S.StartSound(null, sfxenum_t.sfx_pstop);
-                    return true;
+            case SC_BACKSPACE:
+                currentMenu.lastOn = itemOn;
+                if (currentMenu.prevMenu != null) {
+                    currentMenu = currentMenu.prevMenu;
+                    itemOn = (short) currentMenu.lastOn;
+                    DOOM.doomSound.StartSound(null, sfxenum_t.sfx_swtchn);
                 }
-            for (i = 0; i <= itemOn; i++)
-                if (currentMenu.menuitems[i].alphaKey == ch) {
-                    itemOn = (short) i;
-                    S.StartSound(null, sfxenum_t.sfx_pstop);
-                    return true;
+                return true;
+
+            default:
+                for (int i = itemOn + 1; i < currentMenu.numitems; i++) {
+                    if (currentMenu.menuitems[i].alphaKey == sc) {
+                        itemOn = (short) i;
+                        DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pstop);
+                        return true;
+                    }
                 }
-            break;
+                for (int i = 0; i <= itemOn; i++) {
+                    if (currentMenu.menuitems[i].alphaKey == sc) {
+                        itemOn = (short) i;
+                        DOOM.doomSound.StartSound(null, sfxenum_t.sfx_pstop);
+                        return true;
+                    }
+                }
+                break;
 
         }
 
@@ -1286,12 +1244,16 @@ public class Menu extends AbstractDoomMenu {
     /**
      * M_StartControlPanel
      */
+    @Override
+    @SourceCode.Exact
+    @M_Menu.C(M_StartControlPanel)
     public void StartControlPanel() {
         // intro might call this repeatedly
-        if (DM.menuactive)
+        if (DOOM.menuactive) {
             return;
+        }
 
-        DM.menuactive = true;
+        DOOM.menuactive = true;
         currentMenu = MainDef; // JDC
         itemOn = (short) currentMenu.lastOn; // JDC
     }
@@ -1314,54 +1276,59 @@ public class Menu extends AbstractDoomMenu {
             start = 0;
             y = 100 - this.StringHeight(messageString) / 2;
             msstring = messageString.toCharArray();
-            while(start<messageString.length()) {
-                int i=0;
-                for ( i = 0; i < messageString.length() - start; i++) 
+            while (start < messageString.length()) {
+                int i = 0;
+                for (i = 0; i < messageString.length() - start; i++) {
                     if (msstring[start + i] == '\n') {
                         C2JUtils.memset(string, (char) 0, 40);
                         C2JUtils.strcpy(string, msstring, start, i);
                         start += i + 1;
                         break;
                     }
-                
-                    if (i == (messageString.length() - start)) {
-                        C2JUtils.strcpy(string, msstring,start);
-                        start += i;
-                    }
-                    x = 160 - this.StringWidth(string) / 2;
-                    this.WriteText(x, y, string);
-                    y += hu_font[0].height;
                 }
-                return;
-            }
-            if (!DM.menuactive)
-                return;
-            if (currentMenu.routine != null){
-                currentMenu.routine.invoke(); // call Draw routine
-            }
-            // DRAW MENU
-            x = currentMenu.x;
-            y = currentMenu.y;
-            max = currentMenu.numitems;
-            for (int i = 0; i < max; i++) {
-                if (currentMenu.menuitems[i].name != null && currentMenu.menuitems[i].name!="")
-                    V.DrawScaledPatch(x, y, 0,vs, W.CachePatchName(
-                        currentMenu.menuitems[i].name, PU_CACHE));
-                y += LINEHEIGHT;
-            }
 
-            // DRAW SKULL
-            V.DrawScaledPatch(x + SKULLXOFF, currentMenu.y - 5 + itemOn
-                    * LINEHEIGHT, 0, vs,W.CachePatchName(skullName[whichSkull],
-                PU_CACHE));
+                if (i == (messageString.length() - start)) {
+                    C2JUtils.strcpy(string, msstring, start);
+                    start += i;
+                }
+                x = 160 - this.StringWidth(string) / 2;
+                this.WriteText(x, y, string);
+                y += hu_font[0].height;
+            }
+            return;
+        }
+        if (!DOOM.menuactive) {
+            return;
+        }
+        if (currentMenu.routine != null) {
+            currentMenu.routine.invoke(); // call Draw routine
+        }
+        // DRAW MENU
+        x = currentMenu.x;
+        y = currentMenu.y;
+        max = currentMenu.numitems;
+        for (int i = 0; i < max; i++) {
+            if (currentMenu.menuitems[i].name != null && !"".equals(currentMenu.menuitems[i].name)) {
+                DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(
+                        currentMenu.menuitems[i].name, PU_CACHE), DOOM.vs, x, y);
+            }
+            y += LINEHEIGHT;
+        }
+
+        // DRAW SKULL
+        DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(skullName[whichSkull],
+                PU_CACHE), DOOM.vs, x + SKULLXOFF, currentMenu.y - 5 + itemOn
+                * LINEHEIGHT);
     }
 
     //
     // M_ClearMenus
     //
     public void ClearMenus() {
-        DM.menuactive = false;
-        V.clearCaches();
+        DOOM.menuactive = false;
+        //Engine.getEngine().window.setMouseCaptured();
+        DOOM.graphicSystem.forcePalette();
+        
         // MAES: was commented out :-/
         //if (!DM.netgame && DM.usergame && DM.paused)
         //    DM.setPaused(true);
@@ -1378,6 +1345,9 @@ public class Menu extends AbstractDoomMenu {
     /**
      * M_Ticker
      */
+    @Override
+    @SourceCode.Exact
+    @M_Menu.C(M_Ticker)
     public void Ticker() {
         if (--skullAnimCounter <= 0) {
             whichSkull ^= 1;
@@ -1394,23 +1364,25 @@ public class Menu extends AbstractDoomMenu {
         this.initMenuRoutines();
         this.initDrawRoutines();
         this.initMenuItems();
-        this.hu_font=HU.getHUFonts();
+        this.hu_font=DOOM.headsUp.getHUFonts();
 
         currentMenu = MainDef;
-        DM.menuactive = false;
+        DOOM.menuactive = false;
         itemOn = (short) currentMenu.lastOn;
         whichSkull = 0;
         skullAnimCounter = 10;
         screenSize = screenblocks - 3;
         messageToPrint = false;
         messageString = null;
-        messageLastMenuActive = DM.menuactive;
+        messageLastMenuActive = DOOM.menuactive;
         quickSaveSlot = -1;
 
         // Here we could catch other version dependencies,
         // like HELP1/2, and four episodes.
 
-        switch (DM.getGameMode()) {
+        switch (DOOM.getGameMode()) {
+        case freedm:
+        case freedoom2:
         case commercial:
         case pack_plut:
         case pack_tnt:
@@ -1429,10 +1401,11 @@ public class Menu extends AbstractDoomMenu {
         case shareware:
             // Episode 2 and 3 are handled,
             // branching to an ad screen.
-        case registered:
             // We need to remove the fourth episode.
+        case registered:
             EpiDef.numitems--;
             break;
+        case freedoom1:
         case retail:
             // We are fine.
         default:
@@ -1468,12 +1441,12 @@ public class Menu extends AbstractDoomMenu {
             }
 
             w = hu_font[c].width;
-            if (x + w > SCREENWIDTH)
+            if (x + w > DOOM.vs.getScreenWidth())
                 break;
             if (direct)
-                V.DrawScaledPatch(x, y, 0,vs, hu_font[c]);
+                DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, x, y);
             else
-                V.DrawScaledPatch(x, y, 0,vs, hu_font[c]);
+                DOOM.graphicSystem.DrawPatchScaled(FG, hu_font[c], DOOM.vs, x, y);
             x += w;
         }
 
@@ -1490,7 +1463,7 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            V.DrawScaledPatch(54, 38, 0,vs, W.CachePatchName("M_EPISOD"));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_EPISOD"), DOOM.vs, 54, 38);
         }
 
     }
@@ -1505,7 +1478,7 @@ public class Menu extends AbstractDoomMenu {
         public void invoke() {
             int i;
 
-            V.DrawScaledPatch(72, 28, 0,vs, W.CachePatchName("M_LOADG"));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_LOADG"), DOOM.vs, 72, 28);
             for (i = 0; i < load_end; i++) {
                 DrawSaveLoadBorder(LoadDef.x, LoadDef.y + LINEHEIGHT * i);
                 WriteText(LoadDef.x, LoadDef.y + LINEHEIGHT * i,
@@ -1519,7 +1492,7 @@ public class Menu extends AbstractDoomMenu {
             implements DrawRoutine {
         @Override
         public void invoke() {
-            V.DrawScaledPatch(94, 2, 0,vs, (patch_t) (W.CachePatchName("M_DOOM")));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_DOOM"), DOOM.vs, 94, 2);
         }
     }
 
@@ -1528,30 +1501,25 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            V.DrawScaledPatch(96, 14, 0, vs,(patch_t) W.CachePatchName("M_NEWG"));
-            V.DrawScaledPatch(54, 38, 0, vs,(patch_t) W.CachePatchName("M_SKILL"));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_NEWG"), DOOM.vs, 96, 14);
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_SKILL"), DOOM.vs, 54, 38);
         }
     }
 
     class M_DrawOptions
             implements DrawRoutine {
 
-        private String detailNames[] = { "M_GDHIGH", "M_GDLOW" };
-
-        private String msgNames[] = { "M_MSGOFF", "M_MSGON" };
+        private final String detailNames[] = { "M_GDHIGH", "M_GDLOW" };
+        private final String msgNames[] = { "M_MSGOFF", "M_MSGON" };
 
         @Override
         public void invoke() {
-            V.DrawScaledPatch(108, 15, 0, vs,W.CachePatchName("M_OPTTTL"));
-
-            V.DrawScaledPatch(OptionsDef.x + 175, OptionsDef.y + LINEHEIGHT
-                    * detail, 0,vs, W.CachePatchName(detailNames[detailLevel]));
-
-            V.DrawScaledPatch(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT
-                    * messages, 0,vs, W.CachePatchName(msgNames[showMessages?1:0]));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName("M_OPTTTL"), DOOM.vs, 108, 15);
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(detailNames[detailLevel]), DOOM.vs, OptionsDef.x + 175, OptionsDef.y + LINEHEIGHT * detail);
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(msgNames[showMessages?1:0]), DOOM.vs, OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT * messages);
 
             DrawThermo(OptionsDef.x, OptionsDef.y + LINEHEIGHT
-                    * (mousesens + 1), 10, DM.mouseSensitivity);
+                    * (mousesens + 1), 10, DOOM.mouseSensitivity);
 
             DrawThermo(OptionsDef.x,
                 OptionsDef.y + LINEHEIGHT * (scrnsize + 1), 9, screenSize);
@@ -1561,60 +1529,68 @@ public class Menu extends AbstractDoomMenu {
     }
 
     /**
-     * Read This Menus Had a "quick hack to fix romero bug"
+     * Read This Menus
+     * Had a "quick hack to fix romero bug"
      */
 
-    class M_DrawReadThis1
-            implements DrawRoutine {
+    class M_DrawReadThis1 implements DrawRoutine {
 
         @Override
         public void invoke() {
+            String lumpname;
+            int skullx, skully;
             inhelpscreens = true;
-            switch (DM.getGameMode()) {
-            case commercial:
-                V.DrawPatchSolidScaled(0, 0, 0, vs,W.CachePatchName("HELP"));
-                break;
-            case shareware:
-            case registered:
-            case retail:
-                V.DrawPatchSolidScaled(0, 0, 0,vs, W.CachePatchName("HELP1"));
-                break;
-            default:
-                break;
+
+            switch (DOOM.getGameMode()) {
+                case commercial:
+                case freedm:
+                case freedoom2:
+                case pack_plut:
+                case pack_tnt:
+                    skullx = 330;
+                    skully = 165;
+                    lumpname = "HELP";
+                    break;
+                case shareware:
+                    lumpname = "HELP2";
+                    skullx = 280;
+                    skully = 185;
+                    break;
+                default:
+                    lumpname = "CREDIT";
+                    skullx = 330;
+                    skully = 165;
+                    break;
             }
-            
+
+            ReadDef1.x = skullx;
+            ReadDef1.y = skully;
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(lumpname), DOOM.vs, 0, 0);
             // Maes: we need to do this here, otherwide the status bar appears "dirty"
-            DM.ST.forceRefresh();
-            return;
+            DOOM.statusBar.forceRefresh();
         }
     }
 
     /**
      * Read This Menus - optional second page.
      */
-    class M_DrawReadThis2
-            implements DrawRoutine {
+    class M_DrawReadThis2 implements DrawRoutine {
 
         @Override
         public void invoke() {
+            String lumpname;
+            int skullx, skully;
             inhelpscreens = true;
-            switch (DM.getGameMode()) {
-            case retail:
-            case commercial:
-                // This hack keeps us from having to change menus.
-                V.DrawPatchSolidScaled(0, 0, 0, vs,W.CachePatchName("CREDIT"));
-                break;
-            case shareware:
-            case registered:
-                V.DrawPatchSolidScaled(0, 0, 0, vs,W.CachePatchName("HELP2"));
-                break;
-            default:
-                break;
-            }
-            
+
+            lumpname = "HELP1";
+            skullx = 330;
+            skully = 175;
+
+            ReadDef2.x = skullx;
+            ReadDef2.y = skully;
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CachePatchName(lumpname), DOOM.vs, 0, 0);
             // Maes: we need to do this here, otherwide the status bar appears "dirty"
-            DM.ST.forceRefresh();
-            return;
+            DOOM.statusBar.forceRefresh();
         }
     }
 
@@ -1625,23 +1601,20 @@ public class Menu extends AbstractDoomMenu {
             implements DrawRoutine {
 
         public void invoke() {
-            V.DrawScaledPatch(60, 38, 0,vs, (patch_t) W.CacheLumpName("M_SVOL",
-                PU_CACHE, patch_t.class));
+            DOOM.graphicSystem.DrawPatchScaled(FG, DOOM.wadLoader.CacheLumpName("M_SVOL", PU_CACHE, patch_t.class), DOOM.vs, 60, 38);
 
             DrawThermo(SoundDef.x, SoundDef.y + LINEHEIGHT * (sfx_vol + 1), 16,
-                DM.snd_SfxVolume);
+                DOOM.snd_SfxVolume);
 
             DrawThermo(SoundDef.x, SoundDef.y + LINEHEIGHT * (music_vol + 1),
-                16, DM.snd_MusicVolume);
+                16, DOOM.snd_MusicVolume);
         }
     }
 
     // /////////////////////////// MENU ROUTINES
     // ///////////////////////////////////
 
-    class M_ChangeDetail
-            implements MenuRoutine {
-
+    class M_ChangeDetail implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             choice = 0;
@@ -1652,9 +1625,9 @@ public class Menu extends AbstractDoomMenu {
 
             //return;
 
-            R.SetViewSize (screenblocks, detailLevel); 
-            if (detailLevel==0) DM.players[DM.consoleplayer].message = englsh.DETAILHI;
-             else DM.players[DM.consoleplayer].message = englsh.DETAILLO;
+            DOOM.sceneRenderer.SetViewSize (screenblocks, detailLevel); 
+            if (detailLevel==0) DOOM.players[DOOM.consoleplayer].message = englsh.DETAILHI;
+             else DOOM.players[DOOM.consoleplayer].message = englsh.DETAILLO;
              
 
         }
@@ -1663,9 +1636,7 @@ public class Menu extends AbstractDoomMenu {
     /**
      * Toggle messages on/off
      */
-    class M_ChangeMessages
-            implements MenuRoutine {
-
+    class M_ChangeMessages implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             // warning: unused parameter `int choice'
@@ -1673,34 +1644,31 @@ public class Menu extends AbstractDoomMenu {
             showMessages = !showMessages;
 
             if (!showMessages)
-                DM.players[DM.consoleplayer].message = MSGOFF;
+                DOOM.players[DOOM.consoleplayer].message = MSGOFF;
             else
-                DM.players[DM.consoleplayer].message = MSGON;
+                DOOM.players[DOOM.consoleplayer].message = MSGON;
 
             message_dontfuckwithme = true;
         }
     }
 
-    class M_ChangeSensitivity
-            implements MenuRoutine {
+    class M_ChangeSensitivity implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             switch (choice) {
             case 0:
-                if (DM.mouseSensitivity != 0)
-                	DM.mouseSensitivity--;
+                if (DOOM.mouseSensitivity != 0)
+                	DOOM.mouseSensitivity--;
                 break;
             case 1:
-                if (DM.mouseSensitivity < 9)
-                	DM.mouseSensitivity++;
+                if (DOOM.mouseSensitivity < 9)
+                	DOOM.mouseSensitivity++;
                 break;
             }
         }
     }
 
-    class M_ChooseSkill
-            implements MenuRoutine {
-
+    class M_ChooseSkill implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             if (choice == nightmare) {
@@ -1708,7 +1676,7 @@ public class Menu extends AbstractDoomMenu {
                 return;
             }
 
-            DG.DeferedInitNew(skill_t.values()[choice], epi + 1, 1);
+            DOOM.DeferedInitNew(skill_t.values()[choice], epi + 1, 1);
             ClearMenus();
         }
 
@@ -1718,18 +1686,16 @@ public class Menu extends AbstractDoomMenu {
      * M_EndGame
      */
 
-    class M_EndGame
-            implements MenuRoutine {
-
+    class M_EndGame implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             choice = 0;
-            if (!DM.usergame) {
-                 S.StartSound(null, sfxenum_t.sfx_oof);
+            if (!DOOM.usergame) {
+                 DOOM.doomSound.StartSound(null, sfxenum_t.sfx_oof);
                 return;
             }
 
-            if (DM.netgame) {
+            if (DOOM.netgame) {
                 StartMessage(NETEND, null, false);
                 return;
             }
@@ -1738,9 +1704,7 @@ public class Menu extends AbstractDoomMenu {
         }
     }
 
-    class M_EndGameResponse
-            implements MenuRoutine {
-
+    class M_EndGameResponse implements MenuRoutine {
         @Override
         public void invoke(int ch) {
             if (ch != 'y')
@@ -1748,24 +1712,22 @@ public class Menu extends AbstractDoomMenu {
 
             currentMenu.lastOn = itemOn;
             ClearMenus();
-            DG.StartTitle();
+            DOOM.StartTitle();
         }
     }
 
-    class M_Episode
-            implements MenuRoutine {
-
+    class M_Episode implements MenuRoutine {
         @Override
         public void invoke(int choice) {
 
-            if (DM.isShareware() && (choice != 0)) {
+            if (DOOM.isShareware() && (choice != 0)) {
                 StartMessage(SWSTRING, null, false);
                 SetupNextMenu(ReadDef2);
                 return;
             }
 
             // Yet another hack...
-            if (!DM.isRetail() && (choice > 2)) {
+            if (!DOOM.isRetail() && (choice > 2)) {
                 System.err
                         .print("M_Episode: 4th episode requires UltimateDOOM\n");
                 choice = 0;
@@ -1780,17 +1742,16 @@ public class Menu extends AbstractDoomMenu {
     /**
      * User wants to load this game
      */
-    class M_LoadSelect
-            implements MenuRoutine {
+    class M_LoadSelect implements MenuRoutine {
         @Override
         public void invoke(int choice) {
             String name;
 
-            if (DM.CM.CheckParm("-cdrom") != 0)
+            if (DOOM.cVarManager.bool(CommandVariable.CDROM))
                 name = ("c:\\doomdata\\" + SAVEGAMENAME + (choice) + ".dsg");
             else
                 name = (SAVEGAMENAME + (choice) + ".dsg");
-            DG.LoadGame(name);
+            DOOM.LoadGame(name);
             ClearMenus();
         }
     }
@@ -1798,12 +1759,11 @@ public class Menu extends AbstractDoomMenu {
     /**
      * Selected from DOOM menu
      */
-    class M_LoadGame
-            implements MenuRoutine {
+    class M_LoadGame implements MenuRoutine {
         @Override
         public void invoke(int choice) {
 
-            if (DM.netgame) {
+            if (DOOM.netgame) {
                 StartMessage(LOADNET, null, false);
                 return;
             }
@@ -1874,26 +1834,4 @@ public class Menu extends AbstractDoomMenu {
 	public int getDetailLevel() {
 		return this.detailLevel;
 	}
-	
-////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
-
-	protected int SCREENWIDTH;
-	protected int SCREENHEIGHT;
-	protected IVideoScale vs;
-
-
-	@Override
-	public void setVideoScale(IVideoScale vs) {
-	    this.vs=vs;
-	}
-
-	@Override
-	public void initScaling() {
-	    this.SCREENHEIGHT=vs.getScreenHeight();
-	    this.SCREENWIDTH=vs.getScreenWidth();
-	}
-
-
-
-
 }

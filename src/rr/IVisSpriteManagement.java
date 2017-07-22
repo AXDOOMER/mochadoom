@@ -26,6 +26,4 @@ public interface IVisSpriteManagement<V> extends ILimitResettable {
 
     void ClearSprites();
     
-    void updateStatus(RendererState<?,V> R);
-    
 }

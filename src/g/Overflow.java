@@ -1,11 +1,6 @@
 package g;
 
-import java.lang.reflect.Array;
-
-import p.intercept_t;
 import rr.line_t;
-import data.mapthing_t;
-import doom.DoomStatus;
 
 /* Emacs style mode select   -*- C++ -*-
  *-----------------------------------------------------------------------------
@@ -222,7 +217,7 @@ public class Overflow {
     // it detects and emulates overflows on vex6d.wad\bug_wald(toke).lmp, etc.
     // http://www.doom2.net/doom2/research/runningbody.zip
 
-    static boolean PlayeringameOverrun(final mapthing_t mthing, DoomStatus DS)
+    /*static boolean PlayeringameOverrun(final mapthing_t mthing, DoomStatus DS)
     {
       if (mthing.type == 0 && PROCESS(OVERFLOW_PLYERINGAME))
       {
@@ -234,7 +229,7 @@ public class Overflow {
         }
       }
       return false;
-    }
+    }*/
 
  //
  // spechit overrun emulation
@@ -386,7 +381,7 @@ public class Overflow {
     // No more desync on teeth-32.wad\teeth-32.lmp.
     // http://www.doomworld.com/vb/showthread.php?s=&threadid=35214
 
-    public static byte[] RejectOverrun(int rejectlump, final byte[] rejectmatrix, int totallines, int numsectors)
+    /*public static byte[] RejectOverrun(int rejectlump, final byte[] rejectmatrix, int totallines, int numsectors)
     {
       int required;
       byte []newreject;
@@ -417,7 +412,7 @@ public class Overflow {
         //W_UnlockLumpNum(rejectlump);
         rejectlump = -1;
 
-        if (demo_compatibility && PROCESS(OVERFLOW_REJECT))
+        /*if (demo_compatibility && PROCESS(OVERFLOW_REJECT))
         {
           ShowOverflowWarning(OVERFLOW_REJECT, (required - length > 16) || (length%4 != 0), "");
 
@@ -448,7 +443,7 @@ public class Overflow {
 
         lprintf(LO_WARN, "P_LoadReject: REJECT too short (%u<%u) - padded\n", length, required);
       }
-    }
+    }*/
 
     //
     // Read Access Violation emulation.
@@ -466,7 +461,7 @@ public class Overflow {
     // DOSBox under XP:
     // 0000:0000  (00 00 00 F1) ?? ?? ?? 00-(07 00)
 
-    #define DOS_MEM_DUMP_SIZE 10
+    /*#define DOS_MEM_DUMP_SIZE 10
 
     unsigned char mem_dump_dos622[DOS_MEM_DUMP_SIZE] = {
       0x57, 0x92, 0x19, 0x00, 0xF4, 0x06, 0x70, 0x00, 0x16, 0x00};
@@ -589,6 +584,6 @@ public class Overflow {
       }
 
       return false;
-    }
+    }*/
 
 }

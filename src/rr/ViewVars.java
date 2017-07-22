@@ -5,10 +5,20 @@ import static data.Tables.ANG270;
 import static data.Tables.ANG90;
 import static data.Tables.SlopeDiv;
 import static data.Tables.tantoangle;
-import utils.C2JUtils;
 import doom.player_t;
+import utils.C2JUtils;
+import v.scale.VideoScale;
 
 public class ViewVars {
+
+    public ViewVars(VideoScale vs) {
+         negonearray = new short[vs.getScreenWidth()]; // MAES: in scaling
+         screenheightarray = new short[vs.getScreenWidth()];// MAES: in scaling
+         xtoviewangle = new long[vs.getScreenWidth() + 1];
+         C2JUtils.memset(negonearray, (short)-1, negonearray.length);
+    }
+    
+    
     
     // Found in draw_c. Only ever used in renderer.
     public int windowx;
@@ -54,16 +64,12 @@ public class ViewVars {
 	/**
 	 * constant arrays used for psprite clipping and initializing clipping
 	 */
-    public short[] negonearray; // MAES: in scaling
+    public final short[] negonearray; // MAES: in scaling
     public short[] screenheightarray;// MAES: in scaling
     
     /** Mirrors the one in renderer... */
     public long[] xtoviewangle;
 	
-    public final void initNegOneArray(int screenwidth){
-	       C2JUtils.memset(negonearray, (short)-1,screenwidth);
-		}
-    
     public final long PointToAngle(int x, int y) {
         // MAES: note how we don't use &BITS32 here. That is because
         // we know that the maximum possible value of tantoangle is angle

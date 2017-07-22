@@ -2,7 +2,9 @@ package s;
 
 import data.sfxinfo_t;
 import data.sounds.sfxenum_t;
-import static data.Defines.TICRATE;
+import doom.CVarManager;
+import doom.CommandVariable;
+import doom.DoomMain;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -73,6 +75,32 @@ public interface ISoundDriver {
 	 */
 	public static final int AUDIOLINE_BUFFER=2*BUFFER_CHUNKS*MIXBUFFERSIZE;
 	public static final int SOUND_PERIOD = 1000/SND_FRAME_RATE; // in ms
+
+    public static ISoundDriver chooseModule(DoomMain<?, ?> DM, CVarManager CVM) {
+        final ISoundDriver driver;
+        if (CVM.bool(CommandVariable.NOSFX) || CVM.bool(CommandVariable.NOSOUND)) {
+            driver = new DummySFX();
+        } else {
+            // Switch between possible sound drivers.
+            if (CVM.bool(CommandVariable.AUDIOLINES)) { // Crudish.
+                driver = new DavidSFXModule(DM, DM.numChannels);
+            } else  if (CVM.bool(CommandVariable.SPEAKERSOUND)) { // PC Speaker emulation
+                driver = new SpeakerDoomSoundDriver(DM, DM.numChannels);
+            } else if (CVM.bool(CommandVariable.CLIPSOUND)) {
+                driver = new ClipSFXModule(DM, DM.numChannels);
+            } else if (CVM.bool(CommandVariable.CLASSICSOUND)) { // This is the default
+                driver = new ClassicDoomSoundDriver(DM, DM.numChannels);
+            } else { // This is the default
+                driver = new SuperDoomSoundDriver(DM, DM.numChannels);
+            }
+        }
+        // Check for sound init failure and revert to dummy
+        if (!driver.InitSound()) {
+            System.err.println("S_InitSound: failed. Reverting to dummy...\n");
+            return new DummySFX();
+        }
+        return driver;
+    }
 	
 	/** Init at program start. Return false if device invalid,
 	 *  so that caller can decide best course of action. 

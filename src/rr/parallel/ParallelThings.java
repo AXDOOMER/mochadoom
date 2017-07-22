@@ -4,13 +4,14 @@ import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
-
 import rr.AbstractThings;
 import rr.IDetailAware;
-import rr.Renderer;
+import rr.SceneRenderer;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
 import utils.C2JUtils;
+import v.scale.VideoScale;
+import v.tables.BlurryTable;
 
 /**
  * Parallel Things drawing class, column based, using RMI pipeline.
@@ -35,8 +36,7 @@ import utils.C2JUtils;
  * @author velktron
  */
 
-public abstract class ParallelThings<T,V>
-        extends AbstractThings<T,V> {
+public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
     
     // stuff to get from container
     
@@ -59,8 +59,8 @@ public abstract class ParallelThings<T,V>
     protected final CyclicBarrier maskedbarrier;
     protected final Executor tp;
     
-    public ParallelThings(Renderer<T,V> R,Executor tp, int numthreads){
-        super(R);
+    public ParallelThings(VideoScale vs, SceneRenderer<T, V> R, Executor tp, int numthreads) {
+        super(vs, R);
         this.tp=tp;
         this.NUMMASKEDTHREADS=numthreads;
         this.maskedbarrier=new CyclicBarrier(NUMMASKEDTHREADS+1);
@@ -110,8 +110,8 @@ public abstract class ParallelThings<T,V>
 
         for (int i = 0; i < NUMMASKEDTHREADS; i++) {
 
-            RMIExec[i].setRange((i * this.SCREENWIDTH) / NUMMASKEDTHREADS,
-                ((i + 1) * this.SCREENWIDTH) / NUMMASKEDTHREADS);
+            RMIExec[i].setRange((i * this.vs.getScreenWidth()) / NUMMASKEDTHREADS,
+                ((i + 1) * this.vs.getScreenWidth()) / NUMMASKEDTHREADS);
             RMIExec[i].setRMIEnd(RMIcount);
             // RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
             tp.execute(RMIExec[i]);
@@ -138,19 +138,19 @@ public abstract class ParallelThings<T,V>
     }
     
     protected abstract void InitRMISubsystem(int[] columnofs, int[] ylookup,V screen, CyclicBarrier
-            maskedbarrier,V BLURRY_MAP, List<IDetailAware> detailaware);
+            maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware);
     
     public static class Indexed extends ParallelThings<byte[],byte[]>{
 
-    public Indexed(Renderer<byte[], byte[]> R, Executor tp, int numthreads) {
-            super(R, tp, numthreads);
+    public Indexed(VideoScale vs, SceneRenderer<byte[], byte[]> R, Executor tp, int numthreads) {
+            super(vs, R, tp, numthreads);
         }
 
     protected void InitRMISubsystem(int[] columnofs, int[] ylookup,byte[] screen, CyclicBarrier
-            maskedbarrier,byte[] BLURRY_MAP, List<IDetailAware> detailaware)    {
+            maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware)    {
         for (int i = 0; i < NUMMASKEDTHREADS; i++) {
             RMIExec[i] =
-                new RenderMaskedExecutor.Indexed(SCREENWIDTH, SCREENHEIGHT, columnofs,
+                new RenderMaskedExecutor.Indexed(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
                         ylookup, screen, RMI, maskedbarrier,I,BLURRY_MAP);
                 
             detailaware.add(RMIExec[i]);
@@ -161,16 +161,16 @@ public abstract class ParallelThings<T,V>
     public static class HiColor extends ParallelThings<byte[],short[]>{
         
 
-        public HiColor(Renderer<byte[], short[]> R, Executor tp, int numthreads) {
-            super(R, tp, numthreads);
+        public HiColor(VideoScale vs, SceneRenderer<byte[], short[]> R, Executor tp, int numthreads) {
+            super(vs, R, tp, numthreads);
         }
 
         protected void InitRMISubsystem(int[] columnofs, int[] ylookup,short[] screen, CyclicBarrier
-                maskedbarrier,short[] BLURRY_MAP, List<IDetailAware> detailaware)    {
+                maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware)    {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 RMIExec[i] =
-                    new RenderMaskedExecutor.HiColor(SCREENWIDTH, SCREENHEIGHT, columnofs,
-                            ylookup, screen, RMI, maskedbarrier,I);
+                    new RenderMaskedExecutor.HiColor(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
+                            ylookup, screen, RMI, maskedbarrier,I, BLURRY_MAP);
                     
                 detailaware.add(RMIExec[i]);
                 }
@@ -180,16 +180,16 @@ public abstract class ParallelThings<T,V>
 public static class TrueColor extends ParallelThings<byte[],int[]>{
 
 
-        public TrueColor(Renderer<byte[], int[]> R, Executor tp, int numthreads) {
-        super(R, tp, numthreads);
+        public TrueColor(VideoScale vs, SceneRenderer<byte[], int[]> R, Executor tp, int numthreads) {
+        super(vs, R, tp, numthreads);
     }
 
         protected void InitRMISubsystem(int[] columnofs, int[] ylookup,int[] screen, CyclicBarrier
-                maskedbarrier,int[] BLURRY_MAP, List<IDetailAware> detailaware)    {
+                maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware)    {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 RMIExec[i] =
-                    new RenderMaskedExecutor.TrueColor(SCREENWIDTH, SCREENHEIGHT, columnofs,
-                            ylookup, screen, RMI, maskedbarrier,I);
+                    new RenderMaskedExecutor.TrueColor(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
+                            ylookup, screen, RMI, maskedbarrier,I, BLURRY_MAP);
                     
                 detailaware.add(RMIExec[i]);
                 }

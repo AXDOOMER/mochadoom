@@ -1,0 +1,11 @@
+.settings
+.classpath
+.project
+/nbproject/private/
+/build/
+/dist/
+*.wad
+*.dsg
+*.jar
+build.xml
+/nbproject/

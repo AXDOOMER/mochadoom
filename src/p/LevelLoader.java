@@ -1,30 +1,8 @@
 package p;
 
-import static rr.line_t.ML_TWOSIDED;
 import static data.Defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
-import static m.BBox.BOXBOTTOM;
-import static m.BBox.BOXLEFT;
-import static m.BBox.BOXRIGHT;
-import static m.BBox.BOXTOP;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FixedDiv;
-import static utils.C2JUtils.flags;
-import java.io.IOException;
-import java.nio.ByteOrder;
-
-import m.BBox;
-import rr.line_t;
-import rr.node_t;
-import rr.sector_t;
-import rr.seg_t;
-import rr.side_t;
-import rr.subsector_t;
-import rr.vertex_t;
-import s.degenmobj_t;
-import utils.C2JUtils;
-import w.DoomBuffer;
 import data.maplinedef_t;
 import data.mapnode_t;
 import data.mapsector_t;
@@ -34,7 +12,29 @@ import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
 import defines.*;
-import doom.DoomStatus;
+import doom.CommandVariable;
+import doom.DoomMain;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import m.BBox;
+import static m.BBox.BOXBOTTOM;
+import static m.BBox.BOXLEFT;
+import static m.BBox.BOXRIGHT;
+import static m.BBox.BOXTOP;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedDiv;
+import rr.line_t;
+import static rr.line_t.ML_TWOSIDED;
+import rr.node_t;
+import rr.sector_t;
+import rr.seg_t;
+import rr.side_t;
+import rr.subsector_t;
+import rr.vertex_t;
+import s.degenmobj_t;
+import static utils.C2JUtils.flags;
+import static utils.GenericCopy.malloc;
+import w.DoomBuffer;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -58,552 +58,515 @@ import doom.DoomStatus;
 //  set up initial state and misc. LUTs.
 //
 //-----------------------------------------------------------------------------
+public class LevelLoader extends AbstractLevelLoader {
 
-public class LevelLoader extends AbstractLevelLoader{
+    public static final String rcsid = "$Id: LevelLoader.java,v 1.44 2012/09/24 17:16:23 velktron Exp $";
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.44 2012/09/24 17:16:23 velktron Exp $";
+    public LevelLoader(DoomMain<?, ?> DM) {
+        super(DM);
+        // Traditional loader sets limit.
+        deathmatchstarts = new mapthing_t[MAX_DEATHMATCH_STARTS];
+    }
 
+    /**
+     * P_LoadVertexes
+     *
+     * @throws IOException
+     */
+    public void LoadVertexes(int lump) throws IOException {
+        // Make a lame-ass attempt at loading some vertexes.
 
-public LevelLoader(DoomStatus<?,?> DC) {
-		super(DC);
-		// Traditional loader sets limit.
-		deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
-	}
+        // Determine number of lumps:
+        //  total lump length / vertex record length.
+        numvertexes = DOOM.wadLoader.LumpLength(lump) / mapvertex_t.sizeOf();
 
-  /**
-  * P_LoadVertexes
- * @throws IOException 
-  */
-  public void LoadVertexes (int lump) throws IOException
-  {
-      // Make a lame-ass attempt at loading some vertexes.
-      
-      // Determine number of lumps:
-      //  total lump length / vertex record length.
-      numvertexes = W.LumpLength (lump) / mapvertex_t.sizeOf();
+        // Load data into cache.
+        // MAES: we now have a mismatch between memory/disk: in memory, we need an array.
+        // On disk, we have a single lump/blob. Thus, we need to find a way to deserialize this...
+        vertexes = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numvertexes, vertex_t::new, vertex_t[]::new);
 
-      // Load data into cache.
-      // MAES: we now have a mismatch between memory/disk: in memory, we need an array.
-      // On disk, we have a single lump/blob. Thus, we need to find a way to deserialize this...
-      vertexes=W.CacheLumpNumIntoArray(lump,numvertexes,vertex_t.class);
-      
-     // Copy and convert vertex coordinates,
-     // MAES: not needed. Intermediate mapvertex_t struct skipped.
-       
-  }
+        // Copy and convert vertex coordinates,
+        // MAES: not needed. Intermediate mapvertex_t struct skipped.
+    }
 
+    /**
+     * P_LoadSegs
+     *
+     * @throws IOException
+     */
+    public void LoadSegs(int lump) throws IOException {
 
+        mapseg_t[] data;
+        mapseg_t ml;
+        seg_t li;
+        line_t ldef;
+        int linedef;
+        int side;
 
-  /**
-  * P_LoadSegs
- * @throws IOException 
-  */
-  public void LoadSegs (int lump) throws IOException
-  {
-   
-      mapseg_t[] data;
-      mapseg_t       ml;
-      seg_t li;
-      line_t     ldef;
-      int         linedef;
-      int         side;
-      
-      // Another disparity between disk/memory. Treat it the same as VERTEXES.
-      numsegs = W.LumpLength (lump) / mapseg_t.sizeOf();
-      segs = C2JUtils.createArrayOfObjects(seg_t.class,numsegs);
-      data = W.CacheLumpNumIntoArray(lump,numsegs,mapseg_t.class);
-      
+        // Another disparity between disk/memory. Treat it the same as VERTEXES.
+        numsegs = DOOM.wadLoader.LumpLength(lump) / mapseg_t.sizeOf();
+        segs = malloc(seg_t::new, seg_t[]::new, numsegs);
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsegs, mapseg_t::new, mapseg_t[]::new);
 
-      // We're not done yet!
-      for (int i=0 ; i<numsegs ; i++)
-      {
-          li=segs[i];
-          ml=data[i];
-      li.v1 = vertexes[ml.v1];
-      li.v2 = vertexes[ml.v2];
-      li.assignVertexValues();
-      
-      li.angle = ((ml.angle)<<16)&0xFFFFFFFFL;
-      li.offset = (ml.offset)<<16;
-      linedef = ml.linedef;
-      li.linedef = ldef= lines[linedef];
-      side = ml.side;
-      li.sidedef = sides[ldef.sidenum[side]];
-      li.frontsector = sides[ldef.sidenum[side]].sector;
-      if (flags(ldef.flags,ML_TWOSIDED)){
-    	  // MAES: Fix double sided without back side. E.g. Linedef 16103 in Europe.wad
-    	  if (ldef.sidenum[side^1]!=line_t.NO_INDEX)
-          li.backsector = sides[ldef.sidenum[side^1]].sector;
-          // Fix two-sided with no back side.
-    	  //else {
-    	  //li.backsector=null;
-    	  //ldef.flags^=ML_TWOSIDED;
-    	  //}
-      	}
-      else {
-          li.backsector = null;
-      		}
-      }
-      
-  }
+        // We're not done yet!
+        for (int i = 0; i < numsegs; i++) {
+            li = segs[i];
+            ml = data[i];
+            li.v1 = vertexes[ml.v1];
+            li.v2 = vertexes[ml.v2];
+            li.assignVertexValues();
 
+            li.angle = ((ml.angle) << 16) & 0xFFFFFFFFL;
+            li.offset = (ml.offset) << 16;
+            linedef = ml.linedef;
+            li.linedef = ldef = lines[linedef];
+            side = ml.side;
+            li.sidedef = sides[ldef.sidenum[side]];
+            li.frontsector = sides[ldef.sidenum[side]].sector;
+            if (flags(ldef.flags, ML_TWOSIDED)) {
+                // MAES: Fix double sided without back side. E.g. Linedef 16103 in Europe.wad
+                if (ldef.sidenum[side ^ 1] != line_t.NO_INDEX) {
+                    li.backsector = sides[ldef.sidenum[side ^ 1]].sector;
+                }
+                // Fix two-sided with no back side.
+                //else {
+                //li.backsector=null;
+                //ldef.flags^=ML_TWOSIDED;
+                //}
+            } else {
+                li.backsector = null;
+            }
+        }
 
-  /**
-  * P_LoadSubsectors
- * @throws IOException 
-  */
-  public void LoadSubsectors (int lump) throws IOException
-  {
-      mapsubsector_t ms;
-      subsector_t    ss;
-      mapsubsector_t[] data;
-      
-      numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();      
-      subsectors = C2JUtils.createArrayOfObjects(subsector_t.class,numsubsectors);
+    }
 
-      // Read "mapsubsectors"
-      data=W.CacheLumpNumIntoArray(lump,numsubsectors, mapsubsector_t.class);
-      
-      for (int i=0 ; i<numsubsectors ; i++)
-      {
-          ms=data[i];
-          ss=subsectors[i];
-      ss.numlines = ms.numsegs;
-      ss.firstline = ms.firstseg;
-      }
+    /**
+     * P_LoadSubsectors
+     *
+     * @throws IOException
+     */
+    public void LoadSubsectors(int lump) throws IOException {
+        mapsubsector_t ms;
+        subsector_t ss;
+        mapsubsector_t[] data;
 
-  }
-  
-  /**
-   * P_LoadSectors
- * @throws IOException 
-   */
-  public void LoadSectors (int lump) throws IOException
-  {
-      mapsector_t[]       data;
-      mapsector_t    ms;
-      sector_t       ss;
-      
-      numsectors = W.LumpLength (lump) / mapsector_t.sizeOf();
-      sectors = C2JUtils.createArrayOfObjects(sector_t.class,numsectors);
-     
-      // Read "mapsectors"
-      data=W.CacheLumpNumIntoArray(lump,numsectors,mapsector_t.class);
+        numsubsectors = DOOM.wadLoader.LumpLength(lump) / mapsubsector_t.sizeOf();
+        subsectors = malloc(subsector_t::new, subsector_t[]::new, numsubsectors);
 
-      for (int i=0 ; i<numsectors ; i++)
-      {
-          ms = data[i];
-          ss = sectors[i];
-      ss.floorheight = ms.floorheight<<FRACBITS;
-      ss.ceilingheight = ms.ceilingheight<<FRACBITS;
-      ss.floorpic = (short) TM.FlatNumForName(ms.floorpic);
-      ss.ceilingpic = (short) TM.FlatNumForName(ms.ceilingpic);
-      ss.lightlevel = ms.lightlevel;
-      ss.special = ms.special;
-      ss.tag = ms.tag;
-      ss.thinglist = null;
-      ss.id=i;
-      ss.TL=this.P;
-      ss.RND=this.DM.RND;
-      }
+        // Read "mapsubsectors"
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsubsectors, mapsubsector_t::new, mapsubsector_t[]::new);
 
-  }
+        for (int i = 0; i < numsubsectors; i++) {
+            ms = data[i];
+            ss = subsectors[i];
+            ss.numlines = ms.numsegs;
+            ss.firstline = ms.firstseg;
+        }
 
+    }
 
-  /**
-  * P_LoadNodes
- * @throws IOException 
-  */
-  
-  public void LoadNodes (int lump) throws IOException
-  {
-      mapnode_t[]   data;
-      int     i;
-      int     j;
-      int     k;
-      mapnode_t  mn;
-      node_t no;
-      
-      numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
-      nodes = C2JUtils.createArrayOfObjects(node_t.class,numnodes);
+    /**
+     * P_LoadSectors
+     *
+     * @throws IOException
+     */
+    public void LoadSectors(int lump) throws IOException {
+        mapsector_t[] data;
+        mapsector_t ms;
+        sector_t ss;
 
-      // Read "mapnodes"
-      data = W.CacheLumpNumIntoArray(lump,numnodes,mapnode_t.class);
-      
-      for (i=0 ; i<numnodes ; i++)
-      {
-          mn=data[i];
-          no=nodes[i];
-          
-      no.x = mn.x<<FRACBITS;
-      no.y = mn.y<<FRACBITS;
-      no.dx = mn.dx<<FRACBITS;
-      no.dy = mn.dy<<FRACBITS;
-      for (j=0 ; j<2 ; j++)
-      {
-       // e6y: support for extended nodes
-          no.children[j] = (char) mn.children[j];
+        numsectors = DOOM.wadLoader.LumpLength(lump) / mapsector_t.sizeOf();
+        sectors = malloc(sector_t::new, sector_t[]::new, numsectors);
 
-          // e6y: support for extended nodes
-          if (no.children[j] == 0xFFFF) {
-              no.children[j] = 0xFFFFFFFF;
-          } else if (flags(no.children[j], NF_SUBSECTOR_CLASSIC)) {
-              // Convert to extended type
-              no.children[j] &= ~NF_SUBSECTOR_CLASSIC;
+        // Read "mapsectors"
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsectors, mapsector_t::new, mapsector_t[]::new);
 
-              // haleyjd 11/06/10: check for invalid subsector reference
-              if (no.children[j] >= numsubsectors) {
-                  System.err
-                          .printf(
-                              "P_LoadNodes: BSP tree references invalid subsector %d.\n",
-                              no.children[j]);
-                  no.children[j] = 0;
-              }
+        for (int i = 0; i < numsectors; i++) {
+            ms = data[i];
+            ss = sectors[i];
+            ss.floorheight = ms.floorheight << FRACBITS;
+            ss.ceilingheight = ms.ceilingheight << FRACBITS;
+            ss.floorpic = (short) DOOM.textureManager.FlatNumForName(ms.floorpic);
+            ss.ceilingpic = (short) DOOM.textureManager.FlatNumForName(ms.ceilingpic);
+            ss.lightlevel = ms.lightlevel;
+            ss.special = ms.special;
+            ss.tag = ms.tag;
+            ss.thinglist = null;
+            ss.id = i;
+            ss.TL = this.DOOM.actions;
+            ss.RND = this.DOOM.random;
+        }
 
-              no.children[j] |= NF_SUBSECTOR;
-          }
+    }
 
-          
-          for (k=0 ; k<4 ; k++)
-          no.bbox[j].set(k, mn.bbox[j][k]<<FRACBITS);
-      }
-      }
-      
-  }
+    /**
+     * P_LoadNodes
+     *
+     * @throws IOException
+     */
+    public void LoadNodes(int lump) throws IOException {
+        mapnode_t[] data;
+        int i;
+        int j;
+        int k;
+        mapnode_t mn;
+        node_t no;
 
+        numnodes = DOOM.wadLoader.LumpLength(lump) / mapnode_t.sizeOf();
+        nodes = malloc(node_t::new, node_t[]::new, numnodes);
 
-  /**
-   * P_LoadThings
- * @throws IOException 
-   */
-  public void LoadThings (int lump) throws IOException
-  {
-      mapthing_t[]       data;
-      mapthing_t     mt;
-      int         numthings;
-      boolean     spawn;      
-      
-      numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
-      // VERY IMPORTANT: since now caching is near-absolute,
-      // the mapthing_t instances must be CLONED rather than just
-      // referenced, otherwise missing mobj bugs start  happening.
-      
-      data=W.CacheLumpNumIntoArray(lump,numthings,mapthing_t.class);
-      
-      for (int i=0 ; i<numthings ; i++)
-      {
-          mt = data[i];
-      spawn = true;
+        // Read "mapnodes"
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numnodes, mapnode_t::new, mapnode_t[]::new);
 
-      // Do not spawn cool, new monsters if !commercial
-      if ( !DM.isCommercial())
-      {
-          switch(mt.type)
-          {
-            case 68:  // Arachnotron
-            case 64:  // Archvile
-            case 88:  // Boss Brain
-            case 89:  // Boss Shooter
-            case 69:  // Hell Knight
-            case 67:  // Mancubus
-            case 71:  // Pain Elemental
-            case 65:  // Former Human Commando
-            case 66:  // Revenant
-            case 84:  // Wolf SS
-          spawn = false;
-          break;
-          }
-      }
-      if (spawn == false)
-          break;
+        for (i = 0; i < numnodes; i++) {
+            mn = data[i];
+            no = nodes[i];
 
-      // Do spawn all other stuff.
-      // MAES: we have loaded the shit with the proper endianness, so no fucking around, bitch.
-      /*mt.x = SHORT(mt.x);
+            no.x = mn.x << FRACBITS;
+            no.y = mn.y << FRACBITS;
+            no.dx = mn.dx << FRACBITS;
+            no.dy = mn.dy << FRACBITS;
+            for (j = 0; j < 2; j++) {
+                // e6y: support for extended nodes
+                no.children[j] = (char) mn.children[j];
+
+                // e6y: support for extended nodes
+                if (no.children[j] == 0xFFFF) {
+                    no.children[j] = 0xFFFFFFFF;
+                } else if (flags(no.children[j], NF_SUBSECTOR_CLASSIC)) {
+                    // Convert to extended type
+                    no.children[j] &= ~NF_SUBSECTOR_CLASSIC;
+
+                    // haleyjd 11/06/10: check for invalid subsector reference
+                    if (no.children[j] >= numsubsectors) {
+                        System.err
+                            .printf(
+                                "P_LoadNodes: BSP tree references invalid subsector %d.\n",
+                                no.children[j]);
+                        no.children[j] = 0;
+                    }
+
+                    no.children[j] |= NF_SUBSECTOR;
+                }
+
+                for (k = 0; k < 4; k++) {
+                    no.bbox[j].set(k, mn.bbox[j][k] << FRACBITS);
+                }
+            }
+        }
+
+    }
+
+    /**
+     * P_LoadThings
+     *
+     * @throws IOException
+     */
+    public void LoadThings(int lump) throws IOException {
+        mapthing_t[] data;
+        mapthing_t mt;
+        int numthings;
+        boolean spawn;
+
+        numthings = DOOM.wadLoader.LumpLength(lump) / mapthing_t.sizeOf();
+        // VERY IMPORTANT: since now caching is near-absolute,
+        // the mapthing_t instances must be CLONED rather than just
+        // referenced, otherwise missing mobj bugs start  happening.
+
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numthings, mapthing_t::new, mapthing_t[]::new);
+
+        for (int i = 0; i < numthings; i++) {
+            mt = data[i];
+            spawn = true;
+
+            // Do not spawn cool, new monsters if !commercial
+            if (!DOOM.isCommercial()) {
+                switch (mt.type) {
+                    case 68:  // Arachnotron
+                    case 64:  // Archvile
+                    case 88:  // Boss Brain
+                    case 89:  // Boss Shooter
+                    case 69:  // Hell Knight
+                    case 67:  // Mancubus
+                    case 71:  // Pain Elemental
+                    case 65:  // Former Human Commando
+                    case 66:  // Revenant
+                    case 84: // Wolf SS
+                        spawn = false;
+                        break;
+                }
+            }
+            if (spawn == false) {
+                break;
+            }
+
+            // Do spawn all other stuff.
+            // MAES: we have loaded the shit with the proper endianness, so no fucking around, bitch.
+            /*mt.x = SHORT(mt.x);
       mt.y = SHORT(mt.y);
       mt.angle = SHORT(mt.angle);
       mt.type = SHORT(mt.type);
       mt.options = SHORT(mt.options);*/
-      
-      //System.out.printf("Spawning %d %s\n",i,mt.type);
-      
-      P.SpawnMapThing (mt);
-      }
-      
-      // Status may have changed. It's better to release the resources anyway
-      //W.UnlockLumpNum(lump);
-      
-  }
+            //System.out.printf("Spawning %d %s\n",i,mt.type);
+            DOOM.actions.SpawnMapThing(mt);
+        }
 
+        // Status may have changed. It's better to release the resources anyway
+        //W.UnlockLumpNum(lump);
+    }
 
-  /**
-   * P_LoadLineDefs
-   * Also counts secret lines for intermissions.
- * @throws IOException 
-   */
-  public void LoadLineDefs (int lump) throws IOException
-  {
-      maplinedef_t[]       data;
-      maplinedef_t   mld;
-      line_t     ld;
-      vertex_t       v1;
-      vertex_t       v2;
-      
-      numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
-      lines = C2JUtils.createArrayOfObjects(line_t.class,numlines);
-      // Check those actually used in sectors, later on.
-      used_lines=new boolean[numlines]; 
+    /**
+     * P_LoadLineDefs
+     * Also counts secret lines for intermissions.
+     *
+     * @throws IOException
+     */
+    public void LoadLineDefs(int lump) throws IOException {
+        maplinedef_t[] data;
+        maplinedef_t mld;
+        line_t ld;
+        vertex_t v1;
+        vertex_t v2;
 
-      // read "maplinedefs"
-      data = W.CacheLumpNumIntoArray(lump,numlines,maplinedef_t.class);
-      
-      for (int i=0 ; i<numlines ; i++)
-      {
-          mld = data[i];
-          ld = lines[i];
-    
-      ld.flags = mld.flags;
-      ld.special = mld.special;
-      ld.tag = mld.tag;
-      v1 = ld.v1 = vertexes[(char)mld.v1];
-      v2 = ld.v2 = vertexes[(char)mld.v2];
-      ld.dx = v2.x - v1.x;
-      ld.dy = v2.y - v1.y;
-      // Map value semantics.
-      ld.assignVertexValues();
-      
-      if (ld.dx==0)
-          ld.slopetype = slopetype_t.ST_VERTICAL;
-      else if (ld.dy==0)
-          ld.slopetype = slopetype_t.ST_HORIZONTAL;
-      else
-      {
-          if (FixedDiv (ld.dy , ld.dx) > 0)
-          ld.slopetype = slopetype_t.ST_POSITIVE;
-          else
-          ld.slopetype = slopetype_t.ST_NEGATIVE;
-      }
-          
-      if (v1.x < v2.x)
-      {
-          ld.bbox[BOXLEFT] = v1.x;
-          ld.bbox[BOXRIGHT] = v2.x;
-      }
-      else
-      {
-          ld.bbox[BOXLEFT] = v2.x;
-          ld.bbox[BOXRIGHT] = v1.x;
-      }
+        numlines = DOOM.wadLoader.LumpLength(lump) / maplinedef_t.sizeOf();
+        lines = malloc(line_t::new, line_t[]::new, numlines);
 
-      if (v1.y < v2.y)
-      {
-          ld.bbox[BOXBOTTOM] = v1.y;
-          ld.bbox[BOXTOP] = v2.y;
-      }
-      else
-      {
-          ld.bbox[BOXBOTTOM] = v2.y;
-          ld.bbox[BOXTOP] = v1.y;
-      }
+        // Check those actually used in sectors, later on.
+        used_lines = new boolean[numlines];
 
-      ld.sidenum[0] = mld.sidenum[0];
-      ld.sidenum[1] = mld.sidenum[1];
-      
-      // Sanity check for two-sided without two valid sides.      
-      if (flags(ld.flags,ML_TWOSIDED)) {
-    	  if ((ld.sidenum[0] == line_t.NO_INDEX) || (ld.sidenum[1] == line_t.NO_INDEX)){
-    	  // Well, dat ain't so tu-sided now, ey esse?
-    	  ld.flags^=ML_TWOSIDED; 
-    	  }
-      }
+        // read "maplinedefs"
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numlines, maplinedef_t::new, maplinedef_t[]::new);
 
-      // Front side defined without a valid frontsector.
-      if (ld.sidenum[0] != line_t.NO_INDEX){
-          ld.frontsector = sides[ld.sidenum[0]].sector;
-          if (ld.frontsector==null){ // // Still null? Bad map. Map to dummy.
-        	  ld.frontsector=dummy_sector;
-          }
-          
-      }
-      else
-          ld.frontsector = null;
+        for (int i = 0; i < numlines; i++) {
+            mld = data[i];
+            ld = lines[i];
 
-      // back side defined without a valid backsector.
-      if (ld.sidenum[1] != line_t.NO_INDEX){
-          ld.backsector = sides[ld.sidenum[1]].sector;
-          if (ld.backsector==null){ // Still null? Bad map. Map to dummy.
-        	  ld.backsector=dummy_sector;
-          }
-      }
-      else
-          ld.backsector = null;
-      
-      // If at least one valid sector is defined, then it's not null.
-      if (ld.frontsector!=null || ld.backsector!=null) {
-          this.used_lines[i]=true;
-          }
-      
-      }
-      
+            ld.flags = mld.flags;
+            ld.special = mld.special;
+            ld.tag = mld.tag;
+            v1 = ld.v1 = vertexes[(char) mld.v1];
+            v2 = ld.v2 = vertexes[(char) mld.v2];
+            ld.dx = v2.x - v1.x;
+            ld.dy = v2.y - v1.y;
+            // Map value semantics.
+            ld.assignVertexValues();
 
-   }
+            if (ld.dx == 0) {
+                ld.slopetype = slopetype_t.ST_VERTICAL;
+            } else if (ld.dy == 0) {
+                ld.slopetype = slopetype_t.ST_HORIZONTAL;
+            } else {
+                if (FixedDiv(ld.dy, ld.dx) > 0) {
+                    ld.slopetype = slopetype_t.ST_POSITIVE;
+                } else {
+                    ld.slopetype = slopetype_t.ST_NEGATIVE;
+                }
+            }
 
+            if (v1.x < v2.x) {
+                ld.bbox[BOXLEFT] = v1.x;
+                ld.bbox[BOXRIGHT] = v2.x;
+            } else {
+                ld.bbox[BOXLEFT] = v2.x;
+                ld.bbox[BOXRIGHT] = v1.x;
+            }
 
-  /**
-  * P_LoadSideDefs
-  */
-  public void LoadSideDefs (int lump) throws IOException
-  {
-      mapsidedef_t[]       data;
-      mapsidedef_t   msd;
-      side_t     sd;
-      
-      numsides = W.LumpLength (lump) / mapsidedef_t.sizeOf();
-      sides = C2JUtils.createArrayOfObjects(side_t.class,numsides);
-      
-      data= W.CacheLumpNumIntoArray(lump,numsides,mapsidedef_t.class);
-      
-      for (int i=0 ; i<numsides ; i++)
-      {
-          msd = data[i];
-          sd = sides[i];
-          
-      sd.textureoffset = (msd.textureoffset)<<FRACBITS;
-      sd.rowoffset = (msd.rowoffset)<<FRACBITS;
-      sd.toptexture = (short) TM.TextureNumForName(msd.toptexture);
-      sd.bottomtexture = (short) TM.TextureNumForName(msd.bottomtexture);
-      sd.midtexture = (short) TM.TextureNumForName(msd.midtexture);
-      if (msd.sector<0) sd.sector=dummy_sector;
-      else
-      sd.sector = sectors[msd.sector];
-      }
-  }
+            if (v1.y < v2.y) {
+                ld.bbox[BOXBOTTOM] = v1.y;
+                ld.bbox[BOXTOP] = v2.y;
+            } else {
+                ld.bbox[BOXBOTTOM] = v2.y;
+                ld.bbox[BOXTOP] = v1.y;
+            }
 
-  // MAES 22/5/2011 This hack added for PHOBOS2.WAD, in order to
-  // accomodate for some linedefs having a sector number of "-1".
-  // Any negative sector will get rewired to this dummy sector.
-  // PROBABLY, this will handle unused sector/linedefes cleanly?
-  sector_t dummy_sector=new sector_t(); 
-  
-  /**
-   * P_LoadBlockMap
-   * @throws IOException
-   * 
-   *  TODO: generate BLOCKMAP dynamically to
-   *  handle missing cases and increase accuracy.
-   *  
-   */
-  public void LoadBlockMap (int lump) throws IOException
-  {
-      int     count=0;
-      
-      if (DM.CM.CheckParmBool("-blockmap") || W.LumpLength(lump) < 8
-              || (count = W.LumpLength(lump) / 2) >= 0x10000) // e6y
-          CreateBlockMap();
-      else {
-      
-      DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
-      count=W.LumpLength(lump)/2;
-      blockmaplump=new int[count];
+            ld.sidenum[0] = mld.sidenum[0];
+            ld.sidenum[1] = mld.sidenum[1];
 
-      data.setOrder(ByteOrder.LITTLE_ENDIAN);
-      data.rewind();
-      data.readCharArray(blockmaplump, count);
-      
-      // Maes: first four shorts are header data.
-          
-      bmaporgx = blockmaplump[0]<<FRACBITS;
-      bmaporgy = blockmaplump[1]<<FRACBITS;
-      bmapwidth = blockmaplump[2];
-      bmapheight = blockmaplump[3];
-      
-      // MAES: use killough's code to convert terminators to -1 beforehand
-      for (int i = 4; i < count; i++) {
-          short t = (short) blockmaplump[i]; // killough 3/1/98
-          blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);
-      }
-      
-      // haleyjd 03/04/10: check for blockmap problems
-      // http://www.doomworld.com/idgames/index.php?id=12935
-      if (!VerifyBlockMap(count)) {
-          System.err
-                  .printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-          System.err
-                  .printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
-      }
-      
-      }
-     count = bmapwidth*bmapheight;
-      
-     // IMPORTANT MODIFICATION: no need to have both blockmaplump AND blockmap.
-     // If the offsets in the lump are OK, then we can modify them (remove 4)
-     // and copy the rest of the data in one single data array. This avoids
-     // reserving memory for two arrays (we can't simply alias one in Java)
-      
-      blockmap=new int[blockmaplump.length-4];
-      
-      // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
-      for (int i=0;i<blockmaplump.length-4;i++){
-    	  // Modify indexes so that we don't need two different lumps.
-    	  // Can probably be further optimized if we simply shift everything backwards.
-    	  // and reuse the same memory space.
-    	  if (i<count)
-    		  blockmaplump[i]=blockmaplump[i+4]-4;
-    	  else{
-    		  // Make terminators definitively -1, different that 0xffff
-  	          short t = (short) blockmaplump[i+4];          // killough 3/1/98
-  	          blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);  	          
-    	  	}
-      	}
-      
-      // clear out mobj chains
-      // ATTENTION! BUG!!!
-      // If blocklinks are "cleared" to void -but instantiated- objects,
-      // very bad bugs happen, especially the second time a level is re-instantiated.
-      // Probably caused other bugs as well, as an extra object would appear in iterators.
-      
-       if (blocklinks!=null && blocklinks.length==count)
-          for (int i=0;i<count;i++)
-              blocklinks[i]=null;
-       else 
-           blocklinks = new mobj_t[count];
-       
-       // Bye bye. Not needed.
-       blockmap=blockmaplump;
-  }
+            // Sanity check for two-sided without two valid sides.      
+            if (flags(ld.flags, ML_TWOSIDED)) {
+                if ((ld.sidenum[0] == line_t.NO_INDEX) || (ld.sidenum[1] == line_t.NO_INDEX)) {
+                    // Well, dat ain't so tu-sided now, ey esse?
+                    ld.flags ^= ML_TWOSIDED;
+                }
+            }
 
+            // Front side defined without a valid frontsector.
+            if (ld.sidenum[0] != line_t.NO_INDEX) {
+                ld.frontsector = sides[ld.sidenum[0]].sector;
+                if (ld.frontsector == null) { // // Still null? Bad map. Map to dummy.
+                    ld.frontsector = dummy_sector;
+                }
 
-  /**
-   * P_GroupLines
-   * Builds sector line lists and subsector sector numbers.
-   * Finds block bounding boxes for sectors.
-  */
+            } else {
+                ld.frontsector = null;
+            }
 
-  
-  public void GroupLines ()
-  {
-      int         total;
-      line_t     li;
-      sector_t       sector;
-      subsector_t    ss;
-      seg_t      seg;
-      int[]     bbox=new int[4];
-      int         block;
-      
-      // look up sector number for each subsector
-      
-      for (int i=0 ; i<numsubsectors ; i++)
-      {
-      ss = subsectors[i];
-      seg = segs[ss.firstline];
-      ss.sector = seg.sidedef.sector;
-      }
+            // back side defined without a valid backsector.
+            if (ld.sidenum[1] != line_t.NO_INDEX) {
+                ld.backsector = sides[ld.sidenum[1]].sector;
+                if (ld.backsector == null) { // Still null? Bad map. Map to dummy.
+                    ld.backsector = dummy_sector;
+                }
+            } else {
+                ld.backsector = null;
+            }
 
-      //linebuffer=new line_t[numsectors][0];
-      // count number of lines in each sector
-      
-      
-      total = 0;
+            // If at least one valid sector is defined, then it's not null.
+            if (ld.frontsector != null || ld.backsector != null) {
+                this.used_lines[i] = true;
+            }
+
+        }
+
+    }
+
+    /**
+     * P_LoadSideDefs
+     */
+    public void LoadSideDefs(int lump) throws IOException {
+        mapsidedef_t[] data;
+        mapsidedef_t msd;
+        side_t sd;
+
+        numsides = DOOM.wadLoader.LumpLength(lump) / mapsidedef_t.sizeOf();
+        sides = malloc(side_t::new, side_t[]::new, numsides);
+
+        data = DOOM.wadLoader.CacheLumpNumIntoArray(lump, numsides, mapsidedef_t::new, mapsidedef_t[]::new);
+
+        for (int i = 0; i < numsides; i++) {
+            msd = data[i];
+            sd = sides[i];
+
+            sd.textureoffset = (msd.textureoffset) << FRACBITS;
+            sd.rowoffset = (msd.rowoffset) << FRACBITS;
+            sd.toptexture = (short) DOOM.textureManager.TextureNumForName(msd.toptexture);
+            sd.bottomtexture = (short) DOOM.textureManager.TextureNumForName(msd.bottomtexture);
+            sd.midtexture = (short) DOOM.textureManager.TextureNumForName(msd.midtexture);
+            if (msd.sector < 0) {
+                sd.sector = dummy_sector;
+            } else {
+                sd.sector = sectors[msd.sector];
+            }
+        }
+    }
+
+    // MAES 22/5/2011 This hack added for PHOBOS2.WAD, in order to
+    // accomodate for some linedefs having a sector number of "-1".
+    // Any negative sector will get rewired to this dummy sector.
+    // PROBABLY, this will handle unused sector/linedefes cleanly?
+    sector_t dummy_sector = new sector_t();
+
+    /**
+     * P_LoadBlockMap
+     *
+     * @throws IOException
+     *
+     * TODO: generate BLOCKMAP dynamically to
+     * handle missing cases and increase accuracy.
+     *
+     */
+    public void LoadBlockMap(int lump) throws IOException {
+        int count = 0;
+
+        if (DOOM.cVarManager.bool(CommandVariable.BLOCKMAP) || DOOM.wadLoader.LumpLength(lump) < 8
+            || (count = DOOM.wadLoader.LumpLength(lump) / 2) >= 0x10000) // e6y
+        {
+            CreateBlockMap();
+        } else {
+
+            DoomBuffer data = (DoomBuffer) DOOM.wadLoader.CacheLumpNum(lump, PU_LEVEL, DoomBuffer.class);
+            count = DOOM.wadLoader.LumpLength(lump) / 2;
+            blockmaplump = new int[count];
+
+            data.setOrder(ByteOrder.LITTLE_ENDIAN);
+            data.rewind();
+            data.readCharArray(blockmaplump, count);
+
+            // Maes: first four shorts are header data.
+            bmaporgx = blockmaplump[0] << FRACBITS;
+            bmaporgy = blockmaplump[1] << FRACBITS;
+            bmapwidth = blockmaplump[2];
+            bmapheight = blockmaplump[3];
+
+            // MAES: use killough's code to convert terminators to -1 beforehand
+            for (int i = 4; i < count; i++) {
+                short t = (short) blockmaplump[i]; // killough 3/1/98
+                blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);
+            }
+
+            // haleyjd 03/04/10: check for blockmap problems
+            // http://www.doomworld.com/idgames/index.php?id=12935
+            if (!VerifyBlockMap(count)) {
+                System.err
+                    .printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+                System.err
+                    .printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+            }
+
+        }
+        count = bmapwidth * bmapheight;
+
+        // IMPORTANT MODIFICATION: no need to have both blockmaplump AND blockmap.
+        // If the offsets in the lump are OK, then we can modify them (remove 4)
+        // and copy the rest of the data in one single data array. This avoids
+        // reserving memory for two arrays (we can't simply alias one in Java)
+        blockmap = new int[blockmaplump.length - 4];
+
+        // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
+        for (int i = 0; i < blockmaplump.length - 4; i++) {
+            // Modify indexes so that we don't need two different lumps.
+            // Can probably be further optimized if we simply shift everything backwards.
+            // and reuse the same memory space.
+            if (i < count) {
+                blockmaplump[i] = blockmaplump[i + 4] - 4;
+            } else {
+                // Make terminators definitively -1, different that 0xffff
+                short t = (short) blockmaplump[i + 4];          // killough 3/1/98
+                blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);
+            }
+        }
+
+        // clear out mobj chains
+        // ATTENTION! BUG!!!
+        // If blocklinks are "cleared" to void -but instantiated- objects,
+        // very bad bugs happen, especially the second time a level is re-instantiated.
+        // Probably caused other bugs as well, as an extra object would appear in iterators.
+        if (blocklinks != null && blocklinks.length == count) {
+            for (int i = 0; i < count; i++) {
+                blocklinks[i] = null;
+            }
+        } else {
+            blocklinks = new mobj_t[count];
+        }
+
+        // Bye bye. Not needed.
+        blockmap = blockmaplump;
+    }
+
+    /**
+     * P_GroupLines
+     * Builds sector line lists and subsector sector numbers.
+     * Finds block bounding boxes for sectors.
+     */
+    public void GroupLines() {
+        int total;
+        line_t li;
+        sector_t sector;
+        subsector_t ss;
+        seg_t seg;
+        int[] bbox = new int[4];
+        int block;
+
+        // look up sector number for each subsector
+        for (int i = 0; i < numsubsectors; i++) {
+            ss = subsectors[i];
+            seg = segs[ss.firstline];
+            ss.sector = seg.sidedef.sector;
+        }
+
+        //linebuffer=new line_t[numsectors][0];
+        // count number of lines in each sector
+        total = 0;
 
         for (int i = 0; i < numlines; i++) {
             li = lines[i];
@@ -616,116 +579,106 @@ public LevelLoader(DoomStatus<?,?> DC) {
             }
 
         }
-      
-      // build line tables for each sector    
-      // MAES: we don't really need this in Java.
-      // linebuffer = new line_t[total];
-      // int linebuffercount=0;
-      
-      // We scan through ALL sectors.
-      for (int i=0 ; i<numsectors ; i++)
-      {
-          sector = sectors[i];
-          BBox.ClearBox(bbox);
-          //sector->lines = linebuffer;
-          // We can just construct line tables of the correct size
-          // for each sector.
-          int countlines=0;
-      // We scan through ALL lines....
-          
-         // System.out.println(i+ ": looking for sector -> "+sector);
-      for (int j=0 ; j<numlines ; j++)
-      {
-          li=lines[j];
-          
-          //System.out.println(j+ " front "+li.frontsector+ " back "+li.backsector);
-          
-          if (li.frontsector == sector || li.backsector == sector)
-          {
-              // This sector will have one more line.
-              countlines++;
-          // Expand bounding box...
-          BBox.AddToBox(bbox, li.v1.x, li.v1.y);
-          BBox.AddToBox (bbox, li.v2.x, li.v2.y);
-          }
-      }
-      
-      // So, this sector must have that many lines.
-      sector.lines=new line_t[countlines];
 
-      int addedlines=0;
-      int pointline=0;
-      
-      // Add actual lines into sectors.
-      for (int j=0 ; j<numlines ; j++)
-      {
-          li=lines[j];
-          // If
-          if (li.frontsector == sector || li.backsector == sector)
-          {
-              // This sector will have one more line.
-              sectors[i].lines[pointline++]=lines[j];
-              addedlines++;
-          }
-      }
-      
-      if (addedlines != sector.linecount)
-    	  I.Error ("P_GroupLines: miscounted");
-              
-      // set the degenmobj_t to the middle of the bounding box
-      sector.soundorg=new degenmobj_t(((bbox[BOXRIGHT]+bbox[BOXLEFT])/2),
-    		  						  ((bbox[BOXTOP]+bbox[BOXBOTTOM])/2),(sector.ceilingheight-sector.floorheight)/2);
-          
-      // adjust bounding box to map blocks
-      block = (bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-      block = block >= bmapheight ? bmapheight-1 : block;
-      sector.blockbox[BOXTOP]=block;
+        // build line tables for each sector    
+        // MAES: we don't really need this in Java.
+        // linebuffer = new line_t[total];
+        // int linebuffercount=0;
+        // We scan through ALL sectors.
+        for (int i = 0; i < numsectors; i++) {
+            sector = sectors[i];
+            BBox.ClearBox(bbox);
+            //sector->lines = linebuffer;
+            // We can just construct line tables of the correct size
+            // for each sector.
+            int countlines = 0;
+            // We scan through ALL lines....
 
-      block = (bbox[BOXBOTTOM]-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
-      block = block < 0 ? 0 : block;
-      sector.blockbox[BOXBOTTOM]=block;
+            // System.out.println(i+ ": looking for sector -> "+sector);
+            for (int j = 0; j < numlines; j++) {
+                li = lines[j];
 
-      block = (bbox[BOXRIGHT]-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
-      block = block >= bmapwidth ? bmapwidth-1 : block;
-      sector.blockbox[BOXRIGHT]=block;
+                //System.out.println(j+ " front "+li.frontsector+ " back "+li.backsector);
+                if (li.frontsector == sector || li.backsector == sector) {
+                    // This sector will have one more line.
+                    countlines++;
+                    // Expand bounding box...
+                    BBox.AddToBox(bbox, li.v1.x, li.v1.y);
+                    BBox.AddToBox(bbox, li.v2.x, li.v2.y);
+                }
+            }
 
-      block = (bbox[BOXLEFT]-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-      block = block < 0 ? 0 : block;
-      sector.blockbox[BOXLEFT]=block;
-      }
-      
-  }
-  
-  
-  @Override
-  public void
-  SetupLevel
-  ( int       episode,
-    int       map,
-    int       playermask,
-    skill_t   skill) 
-  {
-      int     i;
-      String    lumpname;
-      int     lumpnum;
-   
-      try{
-      DM.totalkills = DM.totalitems = DM.totalsecret = DM.wminfo.maxfrags = 0;
-      DM.wminfo.partime = 180;
-      for (i=0 ; i<MAXPLAYERS ; i++)
-      {
-      DM.players[i].killcount = DM.players[i].secretcount 
-          = DM.players[i].itemcount = 0;
-      }
+            // So, this sector must have that many lines.
+            sector.lines = new line_t[countlines];
 
-      // Initial height of PointOfView
-      // will be set by player think.
-      DM.players[DM.consoleplayer].viewz = 1; 
+            int addedlines = 0;
+            int pointline = 0;
 
-      // Make sure all sounds are stopped before Z_FreeTags.
-      S.Start ();         
+            // Add actual lines into sectors.
+            for (int j = 0; j < numlines; j++) {
+                li = lines[j];
+                // If
+                if (li.frontsector == sector || li.backsector == sector) {
+                    // This sector will have one more line.
+                    sectors[i].lines[pointline++] = lines[j];
+                    addedlines++;
+                }
+            }
 
-  /*    
+            if (addedlines != sector.linecount) {
+                DOOM.doomSystem.Error("P_GroupLines: miscounted");
+            }
+
+            // set the degenmobj_t to the middle of the bounding box
+            sector.soundorg = new degenmobj_t(((bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2),
+                ((bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2), (sector.ceilingheight - sector.floorheight) / 2);
+
+            // adjust bounding box to map blocks
+            block = (bbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+            block = block >= bmapheight ? bmapheight - 1 : block;
+            sector.blockbox[BOXTOP] = block;
+
+            block = (bbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
+            block = block < 0 ? 0 : block;
+            sector.blockbox[BOXBOTTOM] = block;
+
+            block = (bbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
+            block = block >= bmapwidth ? bmapwidth - 1 : block;
+            sector.blockbox[BOXRIGHT] = block;
+
+            block = (bbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
+            block = block < 0 ? 0 : block;
+            sector.blockbox[BOXLEFT] = block;
+        }
+
+    }
+
+    @Override
+    public void
+        SetupLevel(int episode,
+            int map,
+            int playermask,
+            skill_t skill) {
+        int i;
+        String lumpname;
+        int lumpnum;
+
+        try {
+            DOOM.totalkills = DOOM.totalitems = DOOM.totalsecret = DOOM.wminfo.maxfrags = 0;
+            DOOM.wminfo.partime = 180;
+            for (i = 0; i < MAXPLAYERS; i++) {
+                DOOM.players[i].killcount = DOOM.players[i].secretcount
+                    = DOOM.players[i].itemcount = 0;
+            }
+
+            // Initial height of PointOfView
+            // will be set by player think.
+            DOOM.players[DOOM.consoleplayer].viewz = 1;
+
+            // Make sure all sounds are stopped before Z_FreeTags.
+            DOOM.doomSound.Start();
+
+            /*    
   #if 0 // UNUSED
       if (debugfile)
       {
@@ -734,99 +687,91 @@ public LevelLoader(DoomStatus<?,?> DC) {
       }
       else
   #endif
-  */
-    //  Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+             */
+            //  Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+            // UNUSED W_Profile ();
+            DOOM.actions.InitThinkers();
 
+            // if working with a development map, reload it
+            DOOM.wadLoader.Reload();
 
-      // UNUSED W_Profile ();
-      P.InitThinkers ();
+            // find map name
+            if (DOOM.isCommercial()) {
+                if (map < 10) {
+                    lumpname = "MAP0" + map;
+                } else {
+                    lumpname = "MAP" + map;
+                }
+            } else {
+                lumpname = ("E"
+                    + (char) ('0' + episode)
+                    + "M"
+                    + (char) ('0' + map));
+            }
 
-      // if working with a development map, reload it
-      W.Reload ();            
-         
-      // find map name
-      if ( DM.isCommercial())
-      {
-      if (map<10)
-          lumpname="MAP0"+map;
-      else
-          lumpname="MAP"+map;
-      }
-      else
-      {
-      lumpname = ("E"+
-     (char)( '0' + episode)+
-     "M"+
-      (char)( '0' + map)
-      );
-      }
+            lumpnum = DOOM.wadLoader.GetNumForName(lumpname);
 
-      lumpnum = W.GetNumForName (lumpname);
-      
-      DM.leveltime = 0;
-      
-      if (!W.verifyLumpName(lumpnum+ML_BLOCKMAP, LABELS[ML_BLOCKMAP]))
-          System.err.println("Blockmap missing!");
-      
-      // note: most of this ordering is important
-      
+            DOOM.leveltime = 0;
 
-      this.LoadVertexes (lumpnum+ML_VERTEXES);      
-      this.LoadSectors (lumpnum+ML_SECTORS);
-      this.LoadSideDefs (lumpnum+ML_SIDEDEFS);
-      this.LoadLineDefs (lumpnum+ML_LINEDEFS);
-      this.LoadSubsectors (lumpnum+ML_SSECTORS);
-      this.LoadNodes (lumpnum+ML_NODES);
-      this.LoadSegs (lumpnum+ML_SEGS);
-      
-      // MAES: in order to apply optimizations and rebuilding, order must be changed.
-      this.LoadBlockMap (lumpnum+ML_BLOCKMAP);
-      //this.SanitizeBlockmap();
-      //this.getMapBoundingBox();
-      
-      this.LoadReject(lumpnum+ML_REJECT);
-      
-      this.GroupLines ();
+            if (!DOOM.wadLoader.verifyLumpName(lumpnum + ML_BLOCKMAP, LABELS[ML_BLOCKMAP])) {
+                System.err.println("Blockmap missing!");
+            }
 
-      DM.bodyqueslot = 0;
-      // Reset to "deathmatch starts"
-      DM.deathmatch_p = 0;
-      this.LoadThings (lumpnum+ML_THINGS);
-      
-      // if deathmatch, randomly spawn the active players
-      if (DM.deathmatch)
-      {
-      for (i=0 ; i<MAXPLAYERS ; i++)
-          if (DM.playeringame[i])
-          {
-          DM.players[i].mo = null;
-       //   DM.DeathMatchSpawnPlayer (i);
-          }
-              
-      }
+            // note: most of this ordering is important
+            this.LoadVertexes(lumpnum + ML_VERTEXES);
+            this.LoadSectors(lumpnum + ML_SECTORS);
+            this.LoadSideDefs(lumpnum + ML_SIDEDEFS);
+            this.LoadLineDefs(lumpnum + ML_LINEDEFS);
+            this.LoadSubsectors(lumpnum + ML_SSECTORS);
+            this.LoadNodes(lumpnum + ML_NODES);
+            this.LoadSegs(lumpnum + ML_SEGS);
 
-      // clear special respawning que
-      P.iquehead = P.iquetail = 0;        
-      
-      // set up world state
-      P.SpawnSpecials ();
-      
-      // build subsector connect matrix
-      //  UNUSED P_ConnectSubsectors ();
+            // MAES: in order to apply optimizations and rebuilding, order must be changed.
+            this.LoadBlockMap(lumpnum + ML_BLOCKMAP);
+            //this.SanitizeBlockmap();
+            //this.getMapBoundingBox();
 
-      // preload graphics
-      if (DM.precache){
-      TM.PrecacheLevel ();
-      // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
-      R.PreCacheThinkers();
-      
-      }
+            this.LoadReject(lumpnum + ML_REJECT);
 
-      } catch (Exception e){
-          System.err.println("Error while loading level");
-          e.printStackTrace();
-      }
-  }
+            this.GroupLines();
+
+            DOOM.bodyqueslot = 0;
+            // Reset to "deathmatch starts"
+            DOOM.deathmatch_p = 0;
+            this.LoadThings(lumpnum + ML_THINGS);
+
+            // if deathmatch, randomly spawn the active players
+            if (DOOM.deathmatch) {
+                for (i = 0; i < MAXPLAYERS; i++) {
+                    if (DOOM.playeringame[i]) {
+                        DOOM.players[i].mo = null;
+                        DOOM.DeathMatchSpawnPlayer(i);
+                    }
+                }
+
+            }
+
+            // clear special respawning que
+            DOOM.actions.ClearRespawnQueue();
+
+            // set up world state
+            DOOM.actions.SpawnSpecials();
+
+            // build subsector connect matrix
+            //  UNUSED P_ConnectSubsectors ();
+            // preload graphics
+            if (DOOM.precache) {
+                DOOM.textureManager.PrecacheLevel();
+                // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
+                DOOM.sceneRenderer.PreCacheThinkers();
+
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error while loading level");
+            e.printStackTrace();
+        }
+    }
 
 }
 

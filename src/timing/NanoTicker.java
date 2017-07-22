@@ -11,23 +11,23 @@ public class NanoTicker
      */
    
     @Override
-    public int GetTime ()
-    {
-        long    tp;
+    public int GetTime() {
+        long tp;
         //struct timezone   tzp;
-        int         newtics;
-        
+        int newtics;
+
         // Attention: System.nanoTime() might not be consistent across multicore CPUs.
         // To avoid the core getting back to the past,
-        tp=System.nanoTime();
-        if (basetime==0)
-        basetime = tp;
-        newtics = (int) (((tp-basetime)*TICRATE)/1000000000);// + tp.tv_usec*TICRATE/1000000;
-        if (newtics<oldtics) {
-            System.err.printf("Timer discrepancies detected : %d",(++discrepancies));
+        tp = System.nanoTime();
+        if (basetime == 0) {
+            basetime = tp;
+        }
+        newtics = (int) (((tp - basetime) * TICRATE) / 1000000000);// + tp.tv_usec*TICRATE/1000000;
+        if (newtics < oldtics) {
+            System.err.printf("Timer discrepancies detected : %d", (++discrepancies));
             return oldtics;
         }
-        return (oldtics=newtics);
+        return (oldtics = newtics);
     }
 
     protected volatile long basetime=0;

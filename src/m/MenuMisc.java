@@ -1,7 +1,6 @@
 package m;
 
 import i.DoomSystem;
-
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
@@ -18,7 +17,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import javax.imageio.ImageIO;
-
 import w.IWritableDoomObject;
 
 // Emacs style mode select   -*- C++ -*- 
@@ -214,56 +212,41 @@ public abstract class MenuMisc{
 
     public abstract void setShowMessages(boolean val);
 
-	public static void WritePNGfile(String imagename, short[] linear,
-			int width, int height) {
-		
-		BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_USHORT_555_RGB);
-		DataBufferUShort sh=(DataBufferUShort) buf.getRaster().getDataBuffer();
-		short[] shd=sh.getData();
-		System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
-		try {
-			ImageIO.write(buf, "PNG",new File(imagename));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// TODO Auto-generated method stub
-		
-	}
+    public static void WritePNGfile(String imagename, short[] linear, int width, int height) {
+        BufferedImage buf = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_555_RGB);
+        DataBufferUShort sh = (DataBufferUShort) buf.getRaster().getDataBuffer();
+        short[] shd = sh.getData();
+        System.arraycopy(linear, 0, shd, 0, Math.min(linear.length, shd.length));
+        try {
+            ImageIO.write(buf, "PNG", new File(imagename));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	public static void WritePNGfile(String imagename, int[] linear,
-            int width, int height) {
-        
-        BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
-        DataBufferInt sh=(DataBufferInt) buf.getRaster().getDataBuffer();
-        int[] shd=sh.getData();
-        System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
+    public static void WritePNGfile(String imagename, int[] linear, int width, int height) {
+        BufferedImage buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        DataBufferInt sh = (DataBufferInt) buf.getRaster().getDataBuffer();
+        int[] shd = sh.getData();
+        System.arraycopy(linear, 0, shd, 0, Math.min(linear.length, shd.length));
         try {
-            ImageIO.write(buf, "PNG",new File(imagename));
+            ImageIO.write(buf, "PNG", new File(imagename));
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        // TODO Auto-generated method stub
-        
     }
-	
-	public static void WritePNGfile(String imagename, byte[] linear,
-            int width, int height,IndexColorModel icm) {
-        BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,icm);
-        DataBufferByte sh=(DataBufferByte) buf.getRaster().getDataBuffer();
-        byte[] shd=sh.getData();
-        System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
+
+    public static void WritePNGfile(String imagename, byte[] linear, int width, int height, IndexColorModel icm) {
+        BufferedImage buf = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED, icm);
+        DataBufferByte sh = (DataBufferByte) buf.getRaster().getDataBuffer();
+        byte[] shd = sh.getData();
+        System.arraycopy(linear, 0, shd, 0, Math.min(linear.length, shd.length));
         try {
-            ImageIO.write(buf, "PNG",new File(imagename));
+            ImageIO.write(buf, "PNG", new File(imagename));
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        // TODO Auto-generated method stub
-        
     }
-	
 }
 
 // $Log: MenuMisc.java,v $

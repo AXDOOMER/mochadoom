@@ -1,6 +1,5 @@
 package p;
 
-import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.MAPFRACUNIT;
 
 public final class DoorDefines {

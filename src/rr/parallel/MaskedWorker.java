@@ -1,19 +1,17 @@
 package rr.parallel;
 
+import static data.Defines.FF_FRAMEMASK;
+import static data.Defines.FF_FULLBRIGHT;
+import static data.Defines.pw_invisibility;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-
+import static m.fixed_t.*;
+import static p.mobj_t.MF_TRANSLATION;
 import p.pspdef_t;
-import static rr.LightsAndColors.*;
 import rr.AbstractThings;
 import rr.IDetailAware;
-import rr.Renderer;
+import rr.SceneRenderer;
 import rr.column_t;
-import rr.drawseg_t;
-import rr.patch_t;
-import rr.spritedef_t;
-import rr.spriteframe_t;
-import rr.vissprite_t;
 import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.R_DrawColumnBoom;
@@ -22,13 +20,15 @@ import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
-import static p.mobj_t.MF_TRANSLATION;
-import static p.mobj_t.MF_TRANSSHIFT;
-import static m.fixed_t.*;
+import rr.drawseg_t;
 import static rr.line_t.*;
-import static data.Defines.FF_FRAMEMASK;
-import static data.Defines.FF_FULLBRIGHT;
-import static data.Defines.pw_invisibility;
+import rr.patch_t;
+import rr.spritedef_t;
+import rr.spriteframe_t;
+import rr.vissprite_t;
+import v.graphics.Palettes;
+import v.scale.VideoScale;
+import v.tables.BlurryTable;
 
 /** A "Masked Worker" draws sprites in a split-screen strategy. Used by 
  * ParallelRenderer2. Each Masked Worker is essentially a complete Things
@@ -49,41 +49,42 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
     protected final int id;
     protected final int numthreads;
     
-    protected ColVars<T,V> maskedcvars;
+    //protected ColVars<T,V> maskedcvars;
    
-	public MaskedWorker(Renderer<T,V> R,int id,int SCREENWIDTH, int SCREENHEIGHT,int numthreads,CyclicBarrier barrier){
-	    super(R);
+    public MaskedWorker(VideoScale vs, SceneRenderer<T, V> R, int id, int numthreads, CyclicBarrier barrier) {
+	    super(vs, R);
 	    // Workers have their own set, not a "pegged" one.
-	    this.colfuncshi=new ColFuncs<T,V>();
-	    this.colfuncslow=new ColFuncs<T,V>();
-	    this.maskedcvars=new ColVars<T,V>();
+	    this.colfuncshi=new ColFuncs<>();
+	    this.colfuncslow=new ColFuncs<>();
+	    this.maskedcvars=new ColVars<>();
 	    this.id=id;
         this.numthreads=numthreads;
         this.barrier=barrier;        
-        }
+    }
 	
+    @Override
 	public final void completeColumn(){
 	    // Does nothing. Shuts up inheritance
 	}
     
     public static final class HiColor extends MaskedWorker<byte[],short[]>{
 
-		public HiColor(Renderer<byte[],short[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
+		public HiColor(VideoScale vs, SceneRenderer<byte[],short[]> R,int id,
 				int[] ylookup, int[] columnofs, int numthreads, short[] screen,
-				CyclicBarrier barrier) {
-			super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
+                CyclicBarrier barrier, BlurryTable BLURRY_MAP) {
+			super(vs, R,id,numthreads, barrier);
 
 	        // Non-optimized stuff for masked.
-			colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        colfuncslow.masked=new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+			colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.HiColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncslow.masked=new R_DrawColumnBoomLow.HiColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
 
 	        // Fuzzy columns. These are also masked.
-	        colfuncshi.fuzz=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        colfuncslow.fuzz=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncshi.fuzz=new R_DrawFuzzColumn.HiColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+	        colfuncslow.fuzz=new R_DrawFuzzColumnLow.HiColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
 
 	        // Translated columns are usually sprites-only.
-	        colfuncshi.trans=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        colfuncslow.trans=new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncshi.trans=new R_DrawTranslatedColumn.HiColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncslow.trans=new R_DrawTranslatedColumnLow.HiColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
 	        
 	        colfuncs=colfuncshi;
 
@@ -93,20 +94,20 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
     
     public static final class Indexed extends MaskedWorker<byte[],byte[]>{
 
-        public Indexed(Renderer<byte[],byte[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
+        public Indexed(VideoScale vs, SceneRenderer<byte[],byte[]> R,int id,
                 int[] ylookup, int[] columnofs, int numthreads, byte[] screen,
-                CyclicBarrier barrier,byte[] BLURRY_MAP) {
-            super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
-            colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            colfuncslow.masked=new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+                CyclicBarrier barrier, BlurryTable BLURRY_MAP) {
+            super(vs, R,id,numthreads, barrier);
+            colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.Indexed(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.masked=new R_DrawColumnBoomLow.Indexed(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
 
             // Fuzzy columns. These are also masked.
-            colfuncshi.fuzz=new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
-            colfuncslow.fuzz=new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            colfuncshi.fuzz=new R_DrawFuzzColumn.Indexed(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            colfuncslow.fuzz=new R_DrawFuzzColumnLow.Indexed(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
 
             // Translated columns are usually sprites-only.
-            colfuncshi.trans=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            colfuncslow.trans=new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncshi.trans=new R_DrawTranslatedColumn.Indexed(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.trans=new R_DrawTranslatedColumnLow.Indexed(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
             
             colfuncs=colfuncshi;
         }
@@ -115,22 +116,22 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
     
     public static final class TrueColor extends MaskedWorker<byte[],int[]>{
 
-        public TrueColor(Renderer<byte[],int[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
+        public TrueColor(VideoScale vs, SceneRenderer<byte[],int[]> R,int id,
                 int[] ylookup, int[] columnofs, int numthreads, int[] screen,
-                CyclicBarrier barrier) {
-            super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
+                CyclicBarrier barrier, BlurryTable BLURRY_MAP) {
+            super(vs, R,id,numthreads, barrier);
 
             // Non-optimized stuff for masked.
-            colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            colfuncslow.masked=new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.TrueColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.masked=new R_DrawColumnBoomLow.TrueColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
 
             // Fuzzy columns. These are also masked.
-            colfuncshi.fuzz=new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            colfuncslow.fuzz=new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncshi.fuzz=new R_DrawFuzzColumn.TrueColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            colfuncslow.fuzz=new R_DrawFuzzColumnLow.TrueColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
 
             // Translated columns are usually sprites-only.
-            colfuncshi.trans=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            colfuncslow.trans=new R_DrawTranslatedColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncshi.trans=new R_DrawTranslatedColumn.TrueColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.trans=new R_DrawTranslatedColumnLow.TrueColor(vs.getScreenWidth(),vs.getScreenHeight(),ylookup,columnofs,maskedcvars,screen,I);
             
             colfuncs=colfuncshi;
 
@@ -148,6 +149,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
      * 
      * 
      */
+    @Override
     protected final void DrawVisSprite(vissprite_t<V> vis) {
         column_t column;
         int texturecolumn;
@@ -173,8 +175,9 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             colfunc = colfuncs.fuzz;
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
             colfunc = colfuncs.trans;
-            maskedcvars.dc_translation = (T) colormaps.getTranslationTable(vis.mobjflags);
-
+            @SuppressWarnings("unchecked")
+            final T translation = (T) colormaps.getTranslationTable(vis.mobjflags);
+            maskedcvars.dc_translation = translation;
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
@@ -191,15 +194,17 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         for (maskedcvars.dc_x = x1; maskedcvars.dc_x <= x2; maskedcvars.dc_x++, frac += vis.xiscale) {
             texturecolumn = frac >> FRACBITS;
             if (true) {
-                if (texturecolumn < 0 || texturecolumn >= patch.width)
-                    I.Error("R_DrawSpriteRange: bad texturecolumn %d vs %d %d %d",texturecolumn,patch.width,x1,x2);
+                if (texturecolumn < 0 || texturecolumn >= patch.width) {
+                    I.Error("R_DrawSpriteRange: bad texturecolumn %d vs %d %d %d", texturecolumn, patch.width, x1, x2);
+                }
             }
             column = patch.columns[texturecolumn];
             
-            if (column==null)
-                System.err.printf("Null column for texturecolumn %d\n",texturecolumn,x1,x2);
-            else
-            DrawMaskedColumn(column);
+            if (column == null) {
+                System.err.printf("Null column for texturecolumn %d\n", texturecolumn, x1, x2);
+            } else {
+                DrawMaskedColumn(column);
+            }
         }
 
         colfunc = colfuncs.masked;
@@ -213,6 +218,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
      * @param x2
      */
     
+    @Override
     protected final void RenderMaskedSegRange(drawseg_t ds, int x1, int x2) {
     	
     	// Trivial rejection
@@ -227,8 +233,9 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         int lightnum;
         int texnum;
         int bias=startx-ds.x1; // Correct for starting outside
-        if (bias<0) bias=0; // nope, it ain't.
-        
+        if (bias < 0) {
+            bias = 0; // nope, it ain't.
+        }        
         // System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
 
         // Calculate light table.
@@ -240,7 +247,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         backsector = MyBSP.curline.backsector;
         texnum = TexMan.getTextureTranslation(MyBSP.curline.sidedef.midtexture);
         // System.out.print(" for texture "+textures[texnum].name+"\n:");
-        lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT) + colormaps.extralight;
+        lightnum = (frontsector.lightlevel >> colormaps.lightSegShift()) + colormaps.extralight;
 
         if (MyBSP.curline.v1y == MyBSP.curline.v2y)
             lightnum--;
@@ -248,7 +255,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             lightnum++;
 
         // Killough code.
-        colormaps.walllights = lightnum >= LIGHTLEVELS ? colormaps.scalelight[LIGHTLEVELS - 1]
+        colormaps.walllights = lightnum >= colormaps.lightLevels() ? colormaps.scalelight[colormaps.lightLevels() - 1]
                 : lightnum < 0 ? colormaps.scalelight[0] : colormaps.scalelight[lightnum];
 
         // Get the list
@@ -271,9 +278,11 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             maskedcvars.dc_texturemid = maskedcvars.dc_texturemid + TexMan.getTextureheight(texnum)
                     - view.z;
         } else {
-            maskedcvars.dc_texturemid = frontsector.ceilingheight < backsector.ceilingheight ? frontsector.ceilingheight
-                    : backsector.ceilingheight;
-            maskedcvars.dc_texturemid = maskedcvars.dc_texturemid - view.z;
+            maskedcvars.dc_texturemid = frontsector.ceilingheight < backsector.ceilingheight
+                ? frontsector.ceilingheight
+                : backsector.ceilingheight;
+            
+            maskedcvars.dc_texturemid -= view.z;
         }
         maskedcvars.dc_texturemid += MyBSP.curline.sidedef.rowoffset;
 
@@ -289,10 +298,10 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             // calculate lighting
             if (maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x] != Short.MAX_VALUE) {
                 if (colormaps.fixedcolormap == null) {
-                    index = spryscale >>> LIGHTSCALESHIFT;
+                    index = spryscale >>> colormaps.lightScaleShift();
 
-                    if (index >= MAXLIGHTSCALE)
-                        index = MAXLIGHTSCALE - 1;
+                    if (index >= colormaps.maxLightScale())
+                        index = colormaps.maxLightScale() - 1;
 
                     maskedcvars.dc_colormap = colormaps.walllights[index];
                 }
@@ -323,6 +332,7 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
      * 
      */
 
+    @Override
     protected final void DrawPSprite(pspdef_t psp) {
 
         int tx;
@@ -338,17 +348,17 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
 
         // decide which patch to use (in terms of angle?)
         if (RANGECHECK) {
-            if (psp.state.sprite.ordinal() >= SM.getNumSprites())
-                I.Error("R_ProjectSprite: invalid sprite number %d ",
-                        psp.state.sprite);
+            if (psp.state.sprite.ordinal() >= SM.getNumSprites()) {
+                I.Error("R_ProjectSprite: invalid sprite number %d ", psp.state.sprite);
+            }
         }
 
         sprdef = SM.getSprite(psp.state.sprite.ordinal());
         
         if (RANGECHECK) {
-            if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
-                I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
-                        psp.state.sprite, psp.state.frame);
+            if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes) {
+                I.Error("R_ProjectSprite: invalid sprite frame %d : %d ", psp.state.sprite, psp.state.frame);
+            }
         }
         
         sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK];
@@ -356,10 +366,10 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         // Base frame for "angle 0" aka viewed from dead-front.
         lump = sprframe.lump[0];
         // Q: where can this be set? A: at sprite loadtime.
-        flip = (boolean) (sprframe.flip[0] != 0);
+        flip = sprframe.flip[0] != 0;
 
         // calculate edges of the shape. tx is expressed in "view units".
-        tx = (int) (FixedMul(psp.sx, view.BOBADJUST) - view.WEAPONADJUST);
+        tx = FixedMul(psp.sx, view.BOBADJUST) - view.WEAPONADJUST;
 
         tx -= spriteoffset[lump];
 
@@ -411,11 +421,11 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             // vis.pcolormap=0;
         } else if ((psp.state.frame & FF_FULLBRIGHT) != 0) {
             // full bright
-            vis.colormap = colormaps.colormaps[0];
+            vis.colormap = colormaps.colormaps[Palettes.COLORMAP_FIXED];
             // vis.pcolormap=0;
         } else {
             // local light
-            vis.colormap = colormaps.spritelights[MAXLIGHTSCALE - 1];
+            vis.colormap = colormaps.spritelights[colormaps.maxLightScale() - 1];
         }
 
         //System.out.printf("Weapon draw from %d to %d\n",vis.x1,vis.x2);
@@ -484,14 +494,11 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
         
         try {
             barrier.await();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
+        } catch (InterruptedException | BrokenBarrierException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+        // TODO Auto-generated catch block
     }
     
 }

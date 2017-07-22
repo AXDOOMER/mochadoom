@@ -3,8 +3,7 @@ package rr;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import utils.C2JUtils;
+import static utils.GenericCopy.malloc;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 
@@ -28,24 +27,20 @@ public class maptexture_t implements CacheableDoomObject{
     
     
     @Override
-    public void unpack(ByteBuffer buf)
-            throws IOException {
+    public void unpack(ByteBuffer buf) throws IOException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        name=DoomBuffer.getNullTerminatedString(buf,8);
-        masked=(buf.getInt()!=0);
-        width=buf.getShort();
-        height=buf.getShort();
+        name = DoomBuffer.getNullTerminatedString(buf, 8);
+        masked = (buf.getInt() != 0);
+        width = buf.getShort();
+        height = buf.getShort();
         buf.getInt(); // read a dummy integer for obsolete columndirectory.
-        patchcount=buf.getShort();        
-        
+        patchcount = buf.getShort();
+
         // Simple sanity check. Do not attempt reading more patches than there
         // are left in the TEXTURE lump.
-        patchcount=(short) Math.min(patchcount,(buf.capacity()-buf.position())/mappatch_t.size());
-        
-        patches=new mappatch_t[patchcount];
-        C2JUtils.initArrayOfObjects(patches,mappatch_t.class);
+        patchcount = (short) Math.min(patchcount, (buf.capacity() - buf.position()) / mappatch_t.size());
+
+        patches = malloc(mappatch_t::new, mappatch_t[]::new, patchcount);
         DoomBuffer.readObjectArray(buf, patches, patchcount);
-        
-    }
-    
+    }  
 };

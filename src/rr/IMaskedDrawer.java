@@ -1,10 +1,8 @@
 package rr;
-import v.IVideoScaleAware;
 
 /** Draws any masked stuff -sprites, textures, or special 3D floors */
 
-public interface IMaskedDrawer<T,V>
-        extends IVideoScaleAware,IDetailAware {
+public interface IMaskedDrawer<T,V> extends IDetailAware {
 
     public static final int BASEYCENTER = 100;
     

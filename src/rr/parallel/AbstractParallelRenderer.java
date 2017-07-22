@@ -1,22 +1,18 @@
 package rr.parallel;
 
+import data.Tables;
 import static data.Tables.finetangent;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FixedMul;
+import doom.DoomMain;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
-import data.Tables;
-import doom.DoomStatus;
-
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedMul;
 import rr.PlaneDrawer;
-import rr.Renderer;
 import rr.RendererState;
+import rr.SceneRenderer;
 import rr.drawfuns.ColVars;
 import utils.C2JUtils;
 
@@ -26,12 +22,10 @@ import utils.C2JUtils;
  * @author velktron
  */
 
-public abstract class AbstractParallelRenderer<T, V>
-        extends RendererState<T, V> implements RWI.Init<T, V>{
+public abstract class AbstractParallelRenderer<T, V> extends RendererState<T, V> implements RWI.Init<T, V> {
 
-    public AbstractParallelRenderer(DoomStatus<T, V> DS, int wallthread,
-            int floorthreads, int nummaskedthreads) {
-        super(DS);
+    public AbstractParallelRenderer(DoomMain<T, V> DM, int wallthread, int floorthreads, int nummaskedthreads) {
+        super(DM);
         this.NUMWALLTHREADS = wallthread;
         this.NUMFLOORTHREADS = floorthreads;
         this.NUMMASKEDTHREADS = nummaskedthreads;
@@ -40,12 +34,11 @@ public abstract class AbstractParallelRenderer<T, V>
         visplanebarrier = new CyclicBarrier(NUMFLOORTHREADS + 1);        
         maskedbarrier = new CyclicBarrier(NUMMASKEDTHREADS + 1);
         tp = Executors.newCachedThreadPool();
-
     }
 
-    public AbstractParallelRenderer(DoomStatus<T, V> DS, int wallthread,
+    public AbstractParallelRenderer(DoomMain<T, V> DM, int wallthread,
             int floorthreads) {
-        super(DS);
+        super(DM);
         this.NUMWALLTHREADS = wallthread;
         this.NUMFLOORTHREADS = floorthreads;
         this.NUMMASKEDTHREADS = 1;
@@ -77,11 +70,12 @@ public abstract class AbstractParallelRenderer<T, V>
 
     protected static final boolean DEBUG = false;
 
-    protected final class ParallelSegs
-            extends SegDrawer implements RWI.Get<T,V>{
+    protected final class ParallelSegs extends SegDrawer implements RWI.Get<T, V> {
 
-        public ParallelSegs(Renderer<?, ?> R) {
+        ParallelSegs(SceneRenderer<?, ?> R) {
             super(R);
+            ColVars<T, V> fake = new ColVars<>();
+            RWI = C2JUtils.createArrayOfObjects(fake, 3 * DOOM.vs.getScreenWidth());
         }
 
         /**
@@ -94,7 +88,7 @@ public abstract class AbstractParallelRenderer<T, V>
          */
 
         @Override
-        protected final void CompleteColumn() {
+        protected void CompleteColumn() {
 
             // Don't wait to go over
             if (RWIcount >= RWI.length) {
@@ -142,18 +136,18 @@ public abstract class AbstractParallelRenderer<T, V>
          * need to look into visplanes ugh...
          */
 
-        protected RenderWallExecutor<T, V>[] RWIExec;
+        RenderWallExecutor<T, V>[] RWIExec;
 
         /** Array of "wall" (actually, column) instructions */
 
-        protected ColVars<T, V>[] RWI;
+        ColVars<T, V>[] RWI;
 
         /**
          * Increment this as you submit RWIs to the "queue". Remember to reset
          * to 0 when you have drawn everything!
          */
 
-        protected int RWIcount = 0;
+        int RWIcount = 0;
 
         /**
          * Resizes RWI buffer, updates executors. Sorry for the hackish
@@ -161,8 +155,8 @@ public abstract class AbstractParallelRenderer<T, V>
          * Collections is way too slow for what we're trying to accomplish.
          */
 
-        protected final void ResizeRWIBuffer() {
-            ColVars<T, V> fake = new ColVars<T, V>();
+        void ResizeRWIBuffer() {
+            ColVars<T, V> fake = new ColVars<>();
 
             // Bye bye, old RWI.
             RWI = C2JUtils.resize(fake, RWI, RWI.length * 2);
@@ -172,18 +166,6 @@ public abstract class AbstractParallelRenderer<T, V>
             }
             // System.err.println("RWI Buffer resized. Actual capacity " +
             // RWI.length);
-        }
-        
-        /**
-         * R_InitRWISubsystem Initialize RWIs and RWI Executors. Pegs them to
-         * the RWI, ylookup and screen[0].
-         */
-
-        public void initScaling() {
-        	super.initScaling();
-        	ColVars<T,V> fake=new ColVars<T,V>();
-        	RWI=C2JUtils.createArrayOfObjects(fake, 3*SCREENWIDTH);
-
         }
 
 		@Override
@@ -197,24 +179,22 @@ public abstract class AbstractParallelRenderer<T, V>
 			
 		}
 		
+        @Override
 		public void sync(){
 			try {
 				drawsegsbarrier.await();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (BrokenBarrierException e) {
+			} catch (InterruptedException | BrokenBarrierException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+            // TODO Auto-generated catch block
 		}
     }
 
-    protected final class ParallelPlanes<T, V>
-            extends PlaneDrawer<T, V> {
+    protected final class ParallelPlanes<T, V> extends PlaneDrawer<T, V> {
 
-        protected ParallelPlanes(Renderer<T, V> R) {
-            super(R);
+        protected ParallelPlanes(DoomMain<T, V> DOOM, SceneRenderer<T, V> R) {
+            super(DOOM, R);
         }
 
         /**
@@ -239,8 +219,7 @@ public abstract class AbstractParallelRenderer<T, V>
 
     } // End Plane class
 
-    protected final class ParallelSegs2
-            extends SegDrawer {
+    protected final class ParallelSegs2<T, V> extends SegDrawer {
 
         /**
          * RenderSeg subsystem. Similar concept to RWI, but stores
@@ -249,18 +228,21 @@ public abstract class AbstractParallelRenderer<T, V>
          * per-wall, rather than per-screen portion. Requires careful
          * concurrency considerations.
          */
-        protected RenderSegInstruction<V>[] RSI;
+        RenderSegInstruction<V>[] RSI;
 
         /**
          * Increment this as you submit RSIs to the "queue". Remember to reset
          * to 0 when you have drawn everything!
          */
-        protected int RSIcount = 0;
+        int RSIcount = 0;
 
-        protected RenderSegExecutor<byte[], V>[] RSIExec;
+        RenderSegExecutor<byte[], V>[] RSIExec;
 
-        public ParallelSegs2(Renderer<?, ?> R) {
-            super(R);
+        final AbstractParallelRenderer<T, V> APR;
+        
+        ParallelSegs2(AbstractParallelRenderer<T, V> APR) {
+            super(APR);
+            this.APR = APR;
         }
 
         @Override
@@ -325,7 +307,7 @@ public abstract class AbstractParallelRenderer<T, V>
 
                     angle =
                         Tables.toBAMIndex(rw_centerangle
-                                + (int) xtoviewangle[rw_x]);
+                                + (int) APR.view.xtoviewangle[rw_x]);
                     texturecolumn =
                         rw_offset - FixedMul(finetangent[angle], rw_distance);
                     texturecolumn >>= FRACBITS;
@@ -334,11 +316,10 @@ public abstract class AbstractParallelRenderer<T, V>
                 // Don't to any drawing, only compute bounds.
                 if (midtexture != 0) {
 
-                    dcvars.dc_source =
-                        TexMan.GetCachedColumn(midtexture, texturecolumn);
+                    APR.dcvars.dc_source = APR.TexMan.GetCachedColumn(midtexture, texturecolumn);
                     // dc_m=dcvars.dc_source_ofs;
                     // single sided line
-                    ceilingclip[rw_x] = (short) view.height;
+                    ceilingclip[rw_x] = (short) APR.view.height;
                     floorclip[rw_x] = -1;
                 } else {
                     // two sided line
@@ -351,9 +332,7 @@ public abstract class AbstractParallelRenderer<T, V>
                             mid = floorclip[rw_x] - 1;
 
                         if (mid >= yl) {
-                            dcvars.dc_source =
-                                TexMan.GetCachedColumn(toptexture,
-                                    texturecolumn);
+                            APR.dcvars.dc_source = APR.TexMan.GetCachedColumn(toptexture, texturecolumn);
                             ceilingclip[rw_x] = (short) mid;
                         } else
                             ceilingclip[rw_x] = (short) (yl - 1);
@@ -373,9 +352,7 @@ public abstract class AbstractParallelRenderer<T, V>
                             mid = ceilingclip[rw_x] + 1;
 
                         if (mid <= yh) {
-                            dcvars.dc_source =
-                                TexMan.GetCachedColumn(bottomtexture,
-                                    texturecolumn);
+                            APR.dcvars.dc_source = APR.TexMan.GetCachedColumn(bottomtexture, texturecolumn);
                             floorclip[rw_x] = (short) mid;
                         } else
                             floorclip[rw_x] = (short) (yh + 1);
@@ -399,14 +376,13 @@ public abstract class AbstractParallelRenderer<T, V>
             }
         }
 
-        protected final void GenerateRSI() {
-
+        void GenerateRSI() {
             if (RSIcount >= RSI.length) {
                 ResizeRSIBuffer();
             }
 
             RenderSegInstruction<V> rsi = RSI[RSIcount];
-            rsi.centery = view.centery;
+            rsi.centery = APR.view.centery;
             rsi.bottomfrac = bottomfrac;
             rsi.bottomstep = bottomstep;
             rsi.bottomtexture = bottomtexture;
@@ -431,8 +407,8 @@ public abstract class AbstractParallelRenderer<T, V>
             rsi.topfrac = topfrac;
             rsi.topstep = topstep;
             rsi.toptexture = toptexture;
-            rsi.walllights = colormaps.walllights;
-            rsi.viewheight = view.height;
+            rsi.walllights = APR.colormaps.walllights;
+            rsi.viewheight = APR.view.height;
             // rsi.floorplane=floorplane;
             // rsi.ceilingplane=ceilingplane;
             RSIcount++;
@@ -444,12 +420,11 @@ public abstract class AbstractParallelRenderer<T, V>
 
         }
 
-        protected void RenderRSIPipeline() {
-
-            for (int i = 0; i < NUMWALLTHREADS; i++) {
+        void RenderRSIPipeline() {
+            for (int i = 0; i < APR.NUMWALLTHREADS; i++) {
                 RSIExec[i].setRSIEnd(RSIcount);
                 // RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
-                tp.execute(RSIExec[i]);
+                APR.tp.execute(RSIExec[i]);
             }
 
             // System.out.println("RWI count"+RWIcount);
@@ -462,27 +437,23 @@ public abstract class AbstractParallelRenderer<T, V>
          * Collections is way too slow for what we're trying to accomplish.
          */
 
-        protected void ResizeRSIBuffer() {
-
-            RenderSegInstruction<V> fake = new RenderSegInstruction<V>();
+        void ResizeRSIBuffer() {
+            RenderSegInstruction<V> fake = new RenderSegInstruction<>();
             // Bye bye, old RSI.
             RSI = C2JUtils.resize(fake, RSI, RSI.length * 2);
 
-            for (int i = 0; i < NUMWALLTHREADS; i++) {
+            for (int i = 0; i < APR.NUMWALLTHREADS; i++) {
                 RSIExec[i].updateRSI(RSI);
             }
 
-            System.out.println("RWI Buffer resized. Actual capacity "
-                    + RSI.length);
+            System.out.println("RWI Buffer resized. Actual capacity " + RSI.length);
         }
-
     }
 
-    protected final class ParallelPlanes2<T, V>
-            extends PlaneDrawer<T, V> {
+    protected final class ParallelPlanes2<T, V> extends PlaneDrawer<T, V> {
 
-        protected ParallelPlanes2(Renderer<T, V> R) {
-            super(R);
+        protected ParallelPlanes2(DoomMain<T, V> DOOM, SceneRenderer<T, V> R) {
+            super(DOOM, R);
         }
 
         /**
@@ -492,6 +463,7 @@ public abstract class AbstractParallelRenderer<T, V>
          * 
          * @throws IOException
          */
+        @Override
         public void DrawPlanes() {
 
             if (RANGECHECK) {
@@ -500,11 +472,10 @@ public abstract class AbstractParallelRenderer<T, V>
 
             // vpw[0].setRange(0,lastvisplane/2);
             // vpw[1].setRange(lastvisplane/2,lastvisplane);
-
-            for (int i = 0; i < NUMFLOORTHREADS; i++)
+            for (int i = 0; i < NUMFLOORTHREADS; i++) {
                 tp.execute(vpw[i]);
+            }
         }
-
     } // End Plane class
 
     // / RWI SUBSYSTEM
@@ -563,6 +534,7 @@ public abstract class AbstractParallelRenderer<T, V>
      * } }
      */
 
+    @Override
     public void Init(){
     	super.Init();
     	InitParallelStuff();
@@ -578,9 +550,10 @@ public abstract class AbstractParallelRenderer<T, V>
     
     /** Override this in one of the final implementors, if you want it to work */
     
+    @Override
     public RenderWallExecutor<T,V>[] InitRWIExecutors(int num,ColVars<T,V>[] RWI){
     	return null;
     }
-    RWI.Get<T,V> RWIs;
     
+    RWI.Get<T,V> RWIs;
 }

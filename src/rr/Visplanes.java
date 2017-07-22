@@ -1,36 +1,37 @@
 package rr;
 
+import data.Limits;
+import data.Tables;
 import static data.Tables.ANG90;
 import static data.Tables.finecosine;
 import static data.Tables.finesine;
+import java.util.Arrays;
 import static m.fixed_t.FixedDiv;
-
-
 import utils.C2JUtils;
-import v.IVideoScale;
-import v.IVideoScaleAware;
-import data.Limits;
-import data.Tables;
+import v.scale.VideoScale;
 
 /** Actual visplane data and methods are isolate here.
  *  This allows more encapsulation and some neat hacks like sharing 
  *  visplane data among parallel renderers, without duplicating them.
  */
 
-public class Visplanes implements IVideoScaleAware{
+public class Visplanes {
 
     private static final boolean DEBUG2=false;
 
     protected final ViewVars view;
     protected final TextureManager<?> TexMan;
+    protected final VideoScale vs;
     
-    public Visplanes(ViewVars view,TextureManager<?> TexMan){
+    public Visplanes(VideoScale vs, ViewVars view, TextureManager<?> TexMan){
+        this.vs = vs;
         this.view=view;
         this.TexMan=TexMan;
+        MAXOPENINGS = vs.getScreenWidth() * 64;
+        openings = new short[MAXOPENINGS];
+        BLANKCACHEDHEIGHT = new int[vs.getScreenHeight()];
+        yslope = new int[vs.getScreenHeight()];
     }
-
-    protected int SCREENHEIGHT;
-    protected int SCREENWIDTH;
     
 
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
@@ -69,10 +70,9 @@ public class Visplanes implements IVideoScaleAware{
      */
 
     public void initVisplanes() {
-        cachedheight = new int[SCREENHEIGHT];
-        C2JUtils.initArrayOfObjects(visplanes);
-        
-        }
+        cachedheight = new int[vs.getScreenHeight()];
+        Arrays.setAll(visplanes, j -> new visplane_t());
+    }
     
     public int getBaseXScale(){
         return basexscale;
@@ -161,7 +161,7 @@ public class Visplanes implements IVideoScaleAware{
         chk.height = height;
         chk.picnum = picnum;
         chk.lightlevel = lightlevel;
-        chk.minx = SCREENWIDTH;
+        chk.minx = vs.getScreenWidth();
         chk.maxx = -1;
         // memset (chk.top,0xff,sizeof(chk.top));
         chk.clearTop();
@@ -201,7 +201,7 @@ public class Visplanes implements IVideoScaleAware{
         // 0xFFFFFFFFL.
         angle = (int) Tables.toBAMIndex(view.angle - ANG90);
 
-        // scale will be unit scale at SCREENWIDTH/2 distance
+        // scale will be unit scale at vs.getScreenWidth()/2 distance
         basexscale = FixedDiv(finecosine[angle], view.centerxfrac);
         baseyscale = -FixedDiv(finesine[angle], view.centerxfrac);
     }
@@ -323,20 +323,6 @@ public class Visplanes implements IVideoScaleAware{
         // System.out.println("New plane created: "+pl);
         return lastvisplane - 1;
     }
-
-    public void initScaling() {        
-        MAXOPENINGS = SCREENWIDTH * 64;
-        openings = new short[MAXOPENINGS];
-        BLANKCACHEDHEIGHT = new int[SCREENHEIGHT];
-        yslope = new int[SCREENHEIGHT];
-    }
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        this.SCREENHEIGHT=vs.getScreenHeight();
-        this.SCREENWIDTH=vs.getScreenWidth();
-        
-    }
     
     /*
      
@@ -400,7 +386,7 @@ public class Visplanes implements IVideoScaleAware{
         chk.height = height;
         chk.picnum = picnum;
         chk.lightlevel = lightlevel;
-        chk.minx = SCREENWIDTH;
+        chk.minx = vs.getScreenWidth();
         chk.maxx = -1;
         chk.updateHashCode();
         planehash.put(chk, checknum);

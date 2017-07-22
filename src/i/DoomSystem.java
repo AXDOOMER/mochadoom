@@ -103,207 +103,167 @@
 // DESCRIPTION:
 //
 //-----------------------------------------------------------------------------
-
 package i;
 
+import awt.MsgBox;
+import doom.DoomMain;
+import doom.ticcmd_t;
 import java.io.IOException;
 
-import sun.misc.VM;
+public class DoomSystem implements IDoomSystem {
 
-import awt.MsgBox;
-import m.MenuMisc;
-import doom.DoomMain;
-import doom.DoomStatus;
-import doom.ticcmd_t;
-import static data.Defines.TICRATE;
+    public static void MiscError(String error, Object... args) {
+        System.err.print("Error: ");
+        System.err.printf(error);
+        System.err.print("\n");
+    }
 
-public class DoomSystem implements IDoomSystem, DoomStatusAware{
- 
+    static int mb_used = 6;
 
+    // Even the SYSTEM needs to know about DOOM!!!!
+    private final DoomMain<?, ?> DM;
+    private final ticcmd_t emptycmd;
 
-static int	mb_used = 6;
+    public DoomSystem(DoomMain<?, ?> DM) {
+        this.DM = DM;
+        this.emptycmd = new ticcmd_t();
+    }
 
-// Even the SYSTEM needs to know about DOOM!!!!
-protected DoomMain<?,?> DM;
+    @Override
+    public void Tactile(int on, int off, int total) {
+        // UNUSED.
+        on = off = total = 0;
+    }
 
-@Override
-public void
-Tactile
-( int	on,
-  int	off,
-  int	total )
-{
-  // UNUSED.
-  on = off = total = 0;
-}
+    @Override
+    public ticcmd_t BaseTiccmd() {
+        return emptycmd;
+    }
 
+    @Override
+    public int GetHeapSize() {
+        return mb_used * 1024 * 1024;
+    }
 
-public ticcmd_t	emptycmd;
+    @Override
+    public byte[] ZoneBase(int size) {
+        return (new byte[mb_used * 1024 * 1024]);
+    }
 
-@Override
-public ticcmd_t	BaseTiccmd()
-{
-    return emptycmd;
-}
+    //
+    //I_Quit
+    //
+    @Override
+    public void Quit() {
+        //DM.CheckDemoStatus();
+        try {
+            DM.QuitNetGame();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        //DM.debugEnd();
+        /**
+         * In Java we are not locked for exit until everything is shut down
+         */
+        //DM.soundDriver.ShutdownSound();
+        //DM.music.ShutdownMusic();
+        DM.commit();
+        DM.CM.SaveDefaults();
+        System.exit(0);
+    }
 
+    /**
+     * I_Init
+     */
+    @Override
+    public void Init() {
+        //TODO: InitSound();
+        //TODO: InitGraphics();
+    }
 
-@Override
-public int  GetHeapSize ()
-{
-    return mb_used*1024*1024;
-}
+    @Override
+    public void WaitVBL(int count) {
+        try {
+            Thread.sleep(count * 1000 / 70);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-@Override
-public byte[] ZoneBase (int	size)
-{
-    return (new byte[mb_used*1024*1024]);
-}
+    @Override
+    public void BeginRead() {
+        if (DM.diskDrawer != null) {
+            if (!DM.diskDrawer.isReading()) {
+                // Set 8 tick reading time
+                DM.diskDrawer.setReading(8);
+            }
+        }
 
-//
-//I_Quit
-//
-@Override
-public void Quit ()
-{
+    }
 
- //DM.CheckDemoStatus();
- try {
-	DM.QuitNetGame ();
-} catch (IOException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-}
- //DM.debugEnd();
- DM.ISND.ShutdownSound();
- DM.IMUS.ShutdownMusic();
- DM.commit();
- DM.VM.SaveDefaults(DM.VM.getDefaultFile());
- DM.VI.ShutdownGraphics();
- System.exit(0);
-}
+    @Override
+    public void EndRead() {
+    }
 
+    @Override
+    public void AllocLow(int length) {
+        ; // Dummy
+    }
 
-/**
- * I_Init
- */
-@Override
-public void Init ()
-{
-    //TODO: InitSound();
-    //TODO: InitGraphics();
-}
+    //
+    // I_Error
+    //
+    @Override
+    public void Error(String error, Object... args) {
 
+        System.err.print("Error: ");
+        System.err.printf(error, args);
+        System.err.print("\n");
+        //va_end (argptr);
 
-@Override
-public void WaitVBL(int count)
-{
-    try {
-        Thread.sleep(count*1000/70);
-    } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    }                                
-}
-@Override
-public void BeginRead()
-{
-	if (DM.DD!=null)
-	   if (!DM.DD.isReading()) {
-		   // Set 8 tick reading time
-		   DM.DD.setReading(8);
-	   }
-	   	
-}
+        //fflush( stderr );
+        // Shutdown. Here might be other errors.
+        if (DM.demorecording) {
+            DM.CheckDemoStatus();
+        }
 
-@Override
-public void EndRead()
-{
-}
+        try {
+            DM.QuitNetGame();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        // DM.VI.ShutdownGraphics();
 
-@Override
-public void	AllocLow(int length)
-{
- ; // Dummy
-}
+        System.exit(-1);
+    }
 
-//
-// I_Error
-//
-@Override
-public void Error (String error, Object ... args)
-{
+    @Override
+    public void Error(String error) {
+        //va_list	argptr;
 
-    System.err.print("Error: ");
-    System.err.printf(error,args);
-    System.err.print("\n");
-    //va_end (argptr);
+        // Message first.
+        //va_start (argptr,error);
+        System.err.print("Error: ");
+        System.err.printf(error);
+        System.err.print("\n");
+        //va_end (argptr);
 
-    //fflush( stderr );
+        //fflush( stderr );
+        // Shutdown. Here might be other errors.
+        //if (demorecording)
+        //G_CheckDemoStatus();
+        //D_QuitNetGame ();
+        //I_ShutdownGraphics();
+        System.exit(-1);
+    }
 
-    // Shutdown. Here might be other errors.
-    if (DM.demorecording)
-	DM.DG.CheckDemoStatus();
-    if (DM.VI!=null)
-    	DM.VI.ShutdownGraphics();    
-    
-    try {
-		DM.QuitNetGame ();
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
-   // DM.VI.ShutdownGraphics();
-    
-    System.exit(-1);
-}
-
-@Override
-public void Error (String error)
-{
-    //va_list	argptr;
-
-    // Message first.
-    //va_start (argptr,error);
-    System.err.print("Error: ");
-    System.err.printf(error);
-    System.err.print("\n");
-    //va_end (argptr);
-
-    //fflush( stderr );
-
-    // Shutdown. Here might be other errors.
-    //if (demorecording)
-	//G_CheckDemoStatus();
-
-    //D_QuitNetGame ();
-    //I_ShutdownGraphics();
-    
-    System.exit(-1);
-}
-
-public DoomSystem(){
-emptycmd=new ticcmd_t();
-}
-
-public static void MiscError(String error, Object ... args) {
-    System.err.print("Error: ");
-    System.err.printf(error);
-    System.err.print("\n");    
-}
-
-
-@Override
-public void updateStatus(DoomStatus DS) {
-    this.DM=DS.DM;
-    
-}
-
-
-// This particular implementation will generate a popup box.// 
-@Override
-public boolean GenerateAlert(String title,String cause) {
-    MsgBox alert=new MsgBox(null, title, cause, true);
-      return alert.isOk();
-}
-
+    // This particular implementation will generate a popup box.// 
+    @Override
+    public boolean GenerateAlert(String title, String cause) {
+        MsgBox alert = new MsgBox(null, title, cause, true);
+        return alert.isOk();
+    }
 }

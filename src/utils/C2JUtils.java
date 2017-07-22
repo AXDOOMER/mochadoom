@@ -2,6 +2,7 @@ package utils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +11,6 @@ import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
-
 import p.Resettable;
 import w.InputStreamSugar;
 
@@ -23,28 +23,26 @@ import w.InputStreamSugar;
 
 public final class C2JUtils {
 
-    static public final char[] strcpy(char[] s1, final char[] s2) {
-        for (int i = 0; i < Math.min(s1.length, s2.length); i++) {
-            s1[i] = s2[i];
-        }
+    public static char[] strcpy(char[] s1, final char[] s2) {
+        System.arraycopy(s2, 0, s1, 0, Math.min(s1.length, s2.length));
         return s1;
     }
 
-    static public final char[] strcpy(char[] s1, final char[] s2, int off, int len) {
+    public static char[] strcpy(char[] s1, final char[] s2, int off, int len) {
         for (int i = 0; i < len; i++) {
             s1[i] = s2[i + off];
         }
         return s1;
     }
 
-    static public final char[] strcpy(char[] s1, final char[] s2, int off) {
+    public static char[] strcpy(char[] s1, final char[] s2, int off) {
         for (int i = 0; i < Math.min(s1.length, s2.length - off); i++) {
             s1[i] = s2[i + off];
         }
         return s1;
     }
 
-    static public final char[] strcpy(char[] s1, String s2) {
+    public static char[] strcpy(char[] s1, String s2) {
         for (int i = 0; i < Math.min(s1.length, s2.length()); i++) {
             s1[i] = s2.charAt(i);
         }
@@ -58,7 +56,7 @@ public final class C2JUtils {
      * @param str
      * @return
      */
-    public static final byte[] toByteArray(String str) {
+    public static byte[] toByteArray(String str) {
         byte[] retour = new byte[str.length()];
         for (int i = 0; i < str.length(); i++) {
             retour[i] = (byte) (str.charAt(i) & 0xFF);
@@ -102,7 +100,7 @@ public final class C2JUtils {
      * @return
      */
 
-    static public final boolean strcmp(char[] s1, final char[] s2) {
+    public static boolean strcmp(char[] s1, final char[] s2) {
         boolean match = true;
         for (int i = 0; i < Math.min(s1.length, s2.length); i++) {
             if (s1[i] != s2[i]) {
@@ -113,7 +111,7 @@ public final class C2JUtils {
         return match;
     }
 
-    static public final boolean strcmp(char[] s1, String s2) {
+    public static boolean strcmp(char[] s1, String s2) {
         return strcmp(s1, s2.toCharArray());
     }
 
@@ -123,7 +121,7 @@ public final class C2JUtils {
      * @param s1
      * @return
      */
-    static public final int strlen(char[] s1) {
+    public static int strlen(char[] s1) {
         if (s1 == null)
             return 0;
         int len = 0;
@@ -142,7 +140,7 @@ public final class C2JUtils {
      * @param s
      * @return
      */
-    static public final String nullTerminatedString(char[] s) {
+    public static String nullTerminatedString(char[] s) {
         if (s == null)
             return "";
         int len = 0;
@@ -166,12 +164,12 @@ public final class C2JUtils {
      * @throws
      */
 
-    public static final <T> void initArrayOfObjects(T[] os, Class<T> c) {
+    public static <T> void initArrayOfObjects(T[] os, Class<T> c) {
         try {
             for (int i = 0; i < os.length; i++) {
                 os[i] = c.newInstance();
             }
-        } catch (Exception e) {
+        } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + os.length
                     + " objects of class" + c.getName() + "!");
@@ -188,14 +186,15 @@ public final class C2JUtils {
      * @throws Exception
      * @throws
      */
-
-    public static final <T> void initArrayOfObjects(T[] os) {
+    @Deprecated
+    public static <T> void initArrayOfObjects(T[] os) {
+        @SuppressWarnings("unchecked")
         Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = (T) c.newInstance();
+                os[i] = c.newInstance();
             }
-        } catch (Exception e) {
+        } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + os.length
                     + " objects of class " + c.getName() + "!");
@@ -205,6 +204,14 @@ public final class C2JUtils {
     }
 
     /**
+     * Use of this method is very bad. It prevents refactoring measures. Also,
+     * the use of reflection is acceptable on initialization, but in runtime it
+     * causes performance loss. Use instead:
+     *  SomeType[] array = new SomeType[length];
+     *  Arrays.setAll(array, i -> new SomeType());
+     * 
+     * - Good Sign 2017/05/07
+     * 
      * Uses reflection to automatically create and initialize an array of
      * objects of the specified class. Does not require casting on "reception".
      * 
@@ -214,20 +221,19 @@ public final class C2JUtils {
      * @return
      * @return
      */
-
-    public static final <T> T[] createArrayOfObjects(Class<T> c, int num) {
-        T[] os = null;
+    @Deprecated
+    public static <T> T[] createArrayOfObjects(Class<T> c, int num) {
+        T[] os;
 
         os=getNewArray(c,num);
 
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = (T) c.newInstance();
+                os[i] = c.newInstance();
             }
-        } catch (Exception e) {
+        } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
-            System.err.println("Failure to instantiate " + os.length
-                    + " objects of class " + c.getName() + "!");
+            System.err.println("Failure to instantiate " + os.length + " objects of class " + c.getName() + "!");
             System.exit(-1);
         }
 
@@ -249,8 +255,8 @@ public final class C2JUtils {
      */
 
     @SuppressWarnings("unchecked")
-    public static final <T> T[] createArrayOfObjects(T instance, int num) {
-        T[] os = null;
+    public static <T> T[] createArrayOfObjects(T instance, int num) {
+        T[] os;
         
         Class<T> c=(Class<T>) instance.getClass();
 
@@ -258,9 +264,9 @@ public final class C2JUtils {
 
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = (T) c.newInstance();
+                os[i] = c.newInstance();
             }
-        } catch (Exception e) {
+        } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
             System.err.println("Failure to instantiate " + os.length
                     + " objects of class " + c.getName() + "!");
@@ -283,15 +289,14 @@ public final class C2JUtils {
      * @throws
      */
 
-    public static final<T> void initArrayOfObjects(T[] os, int startpos,
-            int endpos) {
+    public static <T> void initArrayOfObjects(T[] os, int startpos, int endpos) {
         @SuppressWarnings("unchecked")
 		Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = startpos; i < endpos; i++) {
                 os[i] = c.newInstance();
             }
-        } catch (Exception e) {
+        } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + os.length
                     + " objects of class " + c.getName() + "!");
@@ -302,53 +307,58 @@ public final class C2JUtils {
 
     /** This method gets eventually inlined, becoming very fast */
 
-    public static final int toUnsignedByte(byte b) {
+    public static int toUnsignedByte(byte b) {
         return (0x000000FF & b);
     }
 
     // Optimized array-fill methods designed to operate like C's memset.
 
-    public static final void memset(boolean[] array, boolean value, int len) {
+    public static void memset(boolean[] array, boolean value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
-            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i)
-                    : i);
+            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i) : i);
         }
     }
 
-    public static final void memset(char[] array, char value, int len) {
+    public static void memset(byte[] array, byte value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
-            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i)
-                    : i);
+            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i) : i);
         }
     }
 
-    public static final void memset(int[] array, int value, int len) {
+    public static void memset(char[] array, char value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
-            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i)
-                    : i);
+            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i) : i);
+        }
+    }
+
+    public static void memset(int[] array, int value, int len) {
+        if (len > 0)
+            array[0] = value;
+        for (int i = 1; i < len; i += i) {
+            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i) : i);
         }
     }
     
-    public static final void memset(short[] array, short value, int len) {
-        if (len > 0)
+    public static void memset(short[] array, short value, int len) {
+        if (len > 0) {
             array[0] = value;
+        }
         for (int i = 1; i < len; i += i) {
-            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i)
-                    : i);
+            System.arraycopy(array, 0, array, i, ((len - i) < i) ? (len - i) : i);
         }
     }
 
-    public static final long unsigned(int num) {
+    public static long unsigned(int num) {
         return 0xFFFFFFFFL & num;
     }
 
-    public static final char unsigned(short num) {
+    public static char unsigned(short num) {
         return (char) num;
     }
 
@@ -359,84 +369,89 @@ public final class C2JUtils {
      * @param src
      * @param length
      */
-    public static final void memcpy(Object dest, Object src, int length) {
+    @SuppressWarnings("SuspiciousSystemArraycopy")
+    public static void memcpy(Object dest, Object src, int length) {
         System.arraycopy(src, 0, dest, 0, length);
     }
 
-    public static final boolean testReadAccess(String URI) {
-    	InputStream in=null;
-    	
+    public static boolean testReadAccess(String URI) {
+        InputStream in;
+
         // This is bullshit.
-        if (URI == null)
+        if (URI == null) {
             return false;
-        if (URI.length() == 0)
+        }
+        if (URI.length() == 0) {
             return false;
+        }
 
         try {
-            in=new FileInputStream(URI);
-        } catch (Exception e) {
+            in = new FileInputStream(URI);
+        } catch (FileNotFoundException e) {
             // Not a file...
             URL u;
-			try {
-				u = new URL(URI);
-			} catch (MalformedURLException e1) {
-				return false;
-			}
             try {
-				in=u.openConnection().getInputStream();
-			} catch (IOException e1) {
-				return false;
-			}
+                u = new URL(URI);
+            } catch (MalformedURLException e1) {
+                return false;
+            }
+            try {
+                in = u.openConnection().getInputStream();
+            } catch (IOException e1) {
+                return false;
+            }
 
         }
-        
-        if (in!=null) {
-        	try {
-				in.close();
-			} catch (IOException e) {
 
-			}
-        	return true;
+        if (in != null) {
+            try {
+                in.close();
+            } catch (IOException e) {
+
+            }
+            return true;
         }
         // All is well. Go on...
         return true;
 
     }
     
-    public static final boolean testWriteAccess(String URI) {
-    	OutputStream out=null;
-    	
+    public static boolean testWriteAccess(String URI) {
+        OutputStream out;
+
         // This is bullshit.
-        if (URI == null)
+        if (URI == null) {
             return false;
-        if (URI.length() == 0)
+        }
+        if (URI.length() == 0) {
             return false;
+        }
 
         try {
-            out=new FileOutputStream(URI);
-        } catch (Exception e) {
+            out = new FileOutputStream(URI);
+        } catch (FileNotFoundException e) {
             // Not a file...
             URL u;
-			try {
-				u = new URL(URI);
-			} catch (MalformedURLException e1) {
-				return false;
-			}
             try {
-				out=u.openConnection().getOutputStream();
-			} catch (IOException e1) {
-				return false;
-			}
+                u = new URL(URI);
+            } catch (MalformedURLException e1) {
+                return false;
+            }
+            try {
+                out = u.openConnection().getOutputStream();
+            } catch (IOException e1) {
+                return false;
+            }
 
         }
 
-        if (out!=null) {
-        	try {
-				out.close();
-			} catch (IOException e) {
+        if (out != null) {
+            try {
+                out.close();
+            } catch (IOException e) {
 
-			}
-        	return true;
+            }
+            return true;
         }
         // All is well. Go on...
         return true;
@@ -450,11 +465,11 @@ public final class C2JUtils {
      * @param arg
      * @return
      */
-    public static final boolean flags(int flags, int arg) {
+    public static boolean flags(int flags, int arg) {
         return ((flags & arg) != 0);
     }
     
-    public static final boolean flags(long flags, long arg) {
+    public static boolean flags(long flags, long arg) {
         return ((flags & arg) != 0);
     }
 
@@ -467,7 +482,7 @@ public final class C2JUtils {
      * @param arg
      * @return
      */
-    public static final int eval(boolean expr) {
+    public static int eval(boolean expr) {
         return (expr ? 1 : 0);
     }
 
@@ -480,7 +495,7 @@ public final class C2JUtils {
      * @param arg
      * @return
      */
-    public static final boolean eval(Object expr) {
+    public static boolean eval(Object expr) {
         return (expr != null);
     }
 
@@ -491,7 +506,7 @@ public final class C2JUtils {
      * @param arg
      * @return
      */
-    public static final boolean eval(int expr) {
+    public static boolean eval(int expr) {
         return expr != 0;
     }
 
@@ -502,13 +517,13 @@ public final class C2JUtils {
      * @param arg
      * @return
      */
-    public static final boolean eval(long expr) {
+    public static boolean eval(long expr) {
         return expr != 0;
     }
 
-    public static final void resetAll(Resettable[] r) {
-        for (int i = 0; i < r.length; i++) {
-            r[i].reset();
+    public static void resetAll(final Resettable[] r) {
+        for (final Resettable r1 : r) {
+            r1.reset();
         }
     }
 
@@ -521,7 +536,7 @@ public final class C2JUtils {
      * @return
      */
 
-    public static final String unquote(String s, char c) {
+    public static String unquote(String s, char c) {
 
         int firstq = s.indexOf(c);
         int lastq = s.lastIndexOf(c);
@@ -532,7 +547,7 @@ public final class C2JUtils {
         return null;
     }
 
-    public static final boolean isQuoted(String s, char c) {
+    public static boolean isQuoted(String s, char c) {
 
         int q1 = s.indexOf(c);
         int q2 = s.lastIndexOf(c);
@@ -550,7 +565,7 @@ public final class C2JUtils {
         return false;
     }
     
-    public static final String unquoteIfQuoted(String s, char c) {
+    public static String unquoteIfQuoted(String s, char c) {
 
         String tmp = unquote(s, c);
         if (tmp != null)
@@ -558,11 +573,12 @@ public final class C2JUtils {
         return s;
     }
 
-    /** Return either 0 or a hashcode 
+    /**
+     * Return either 0 or a hashcode 
      * 
      * @param o 
      */
-    public static final int pointer(Object o) {
+    public static int pointer(Object o) {
         if (o == null)
             return 0;
         else
@@ -570,12 +586,14 @@ public final class C2JUtils {
     }
 
  
-    public static final boolean checkForExtension(String filename, String ext) {
+    public static boolean checkForExtension(String filename, String ext) {
         
         // Null filenames satisfy null extensions.
-        if ((filename == null || filename.isEmpty())
-                && (ext == null || ext.isEmpty()))
+        if ((filename == null || filename.isEmpty()) && (ext == null || ext.isEmpty())) {
             return true;
+        } else if (filename == null) { // avoid NPE - Good Sign 2017/05/07
+            filename = "";
+        }
         
         String separator = System.getProperty("file.separator");
 
@@ -585,7 +603,7 @@ public final class C2JUtils {
             filename = filename.substring(lastSeparatorIndex + 1);
         }
 
-        String realext = null;
+        String realext;
 
         // Get extension separator. It SHOULD be . on all platforms, right?
         int pos = filename.lastIndexOf('.');
@@ -597,9 +615,9 @@ public final class C2JUtils {
             
             realext = filename.substring(pos + 1);
             return realext.compareToIgnoreCase(ext) == 0;
-        } else // No extension, and null/empty comparator
-        if (ext == null || ext.isEmpty())
+        } else if (ext == null || ext.isEmpty()) { // No extension, and null/empty comparator
             return true;
+        }
 
         // No extension, and non-null/nonempty comparator.
         return false;
@@ -612,7 +630,7 @@ public final class C2JUtils {
      * @return
      */
     
-    public static final String removeExtension(String s) {
+    public static String removeExtension(String s) {
 
         String separator = System.getProperty("file.separator");
         String filename;
@@ -626,9 +644,10 @@ public final class C2JUtils {
         }
 
         // Remove the extension.
-        int extensionIndex = filename.lastIndexOf(".");
-        if (extensionIndex == -1)
+        int extensionIndex = filename.lastIndexOf('.');
+        if (extensionIndex == -1) {
             return filename;
+        }
 
         return filename.substring(0, extensionIndex);
     }
@@ -647,7 +666,7 @@ public final class C2JUtils {
      * @return
      */
 
-    public static final String extractFileBase(String path, int limit, boolean whole) {
+    public static String extractFileBase(String path, int limit, boolean whole) {
     	
     	if (path==null) return path;
     	
@@ -682,21 +701,20 @@ public final class C2JUtils {
     }
 
 	@SuppressWarnings("unchecked")
-	public static final <T> T[] resize(T[] oldarray, int newsize) {
-		
-		if (oldarray[0]!=null) return resize(oldarray[0],oldarray,newsize); 
-		
-		T cls=null;
-		try {
-			cls = (T) oldarray.getClass().getComponentType().newInstance();
-			return resize(cls,oldarray,newsize);
-		} catch (Exception e) {
-			System.err.println("Cannot autodetect type in resizeArray.\n");
-			return null;
-		}
+    public static <T> T[] resize(T[] oldarray, int newsize) {
+        if (oldarray[0] != null) {
+            return resize(oldarray[0], oldarray, newsize);
+        }
 
-
-	}
+        T cls;
+        try {
+            cls = (T) oldarray.getClass().getComponentType().newInstance();
+            return resize(cls, oldarray, newsize);
+        } catch (IllegalAccessException | InstantiationException e) {
+            System.err.println("Cannot autodetect type in resizeArray.\n");
+            return null;
+        }
+    }
     
 	/** Generic array resizing method. Calls Arrays.copyOf but then also
 	 *  uses initArrayOfObject for the "abundant" elements.
@@ -708,23 +726,21 @@ public final class C2JUtils {
 	 * @return
 	 */
 	
-	public static final <T> T[] resize(T instance,T[] oldarray, int newsize) {
-		
-		//  Hmm... nope.
-		if (newsize<=oldarray.length) return oldarray;
-		
-		// Copy old array with built-in stuff.
-		T[] tmp =Arrays.copyOf(oldarray,newsize);
-		
-		// Init the null portions as well
-		C2JUtils.initArrayOfObjects(tmp, oldarray.length,tmp.length);
+    public static <T> T[] resize(T instance, T[] oldarray, int newsize) {
+        //  Hmm... nope.
+        if (newsize <= oldarray.length) {
+            return oldarray;
+        }
 
-		System.out.printf("Old array of type %s resized. New capacity: %d\n"
-				,instance.getClass(),newsize);
-		
-		return tmp;
+        // Copy old array with built-in stuff.
+        T[] tmp = Arrays.copyOf(oldarray, newsize);
 
-	}
+        // Init the null portions as well
+        C2JUtils.initArrayOfObjects(tmp, oldarray.length, tmp.length);
+        System.out.printf("Old array of type %s resized. New capacity: %d\n", instance.getClass(), newsize);
+
+        return tmp;
+    }
 	
 	/** Resize an array without autoinitialization. Same as Arrays.copyOf(..), just
 	 * prints a message.
@@ -735,35 +751,31 @@ public final class C2JUtils {
 	 * @return
 	 */
 	
-	public static final <T> T[] resizeNoAutoInit(T[] oldarray, int newsize) {
-		
+	public static <T> T[] resizeNoAutoInit(T[] oldarray, int newsize) {
 		// For non-autoinit types, this is enough.
-		T[] tmp =Arrays.copyOf(oldarray,newsize);
+		T[] tmp = Arrays.copyOf(oldarray, newsize);
 		
-		System.out.printf("Old array of type %s resized without auto-init. New capacity: %d\n"
-				,tmp.getClass().getComponentType(),newsize);
+        System.out.printf("Old array of type %s resized without auto-init. New capacity: %d\n",
+            tmp.getClass().getComponentType(), newsize);
 		
 		return tmp;
-
 	}
 	
 	@SuppressWarnings("unchecked")
-	public final static<T> T[] getNewArray(T instance,int size){
-		
-		T[] os=null;
-		Class<T> c=(Class<T>) instance.getClass();
-		
+    public static <T> T[] getNewArray(T instance, int size) {
+        Class<T> c = (Class<T>) instance.getClass();
+
         try {
-            os = (T[]) Array.newInstance(c, size);
-        } catch (Exception e) {
+            return (T[]) Array.newInstance(c, size);
+        } catch (NegativeArraySizeException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + size
-                    + " objects of class " + c.getName() + "!");
+                + " objects of class " + c.getName() + "!");
             System.exit(-1);
         }
-        
-        return os;
-	}
+
+        return null;
+    }
 	
 	public final static<T> T[] getNewArray(int size,T instance){
 		@SuppressWarnings("unchecked")
@@ -773,17 +785,16 @@ public final class C2JUtils {
 	
 	@SuppressWarnings("unchecked")
 	public final static<T> T[] getNewArray(Class<T> c,int size){
-		T[] os=null;
         try {
-            os = (T[]) Array.newInstance(c, size);
-        } catch (Exception e) {
+            return (T[]) Array.newInstance(c, size);
+        } catch (NegativeArraySizeException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + size
                     + " objects of class " + c.getName() + "!");
             System.exit(-1);
         }
         
-        return os;
+        return null;
 	}
 
     /**
@@ -793,21 +804,21 @@ public final class C2JUtils {
      * @param URI
      * @return an int with flags set according to InputStreamSugar
      */
-
     public static int guessResourceType(String URI) {
 
         int result = 0;
-        InputStream in = null;
+        InputStream in;
 
         // This is bullshit.
-        if (URI == null || URI.length() == 0)
+        if (URI == null || URI.length() == 0) {
             return InputStreamSugar.BAD_URI;
+        }
 
         try {
             in = new FileInputStream(new File(URI));
             // It's a file
             result |= InputStreamSugar.FILE;
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
             // Not a file...
             URL u;
             try {
@@ -828,7 +839,6 @@ public final class C2JUtils {
         // TODO: add proper validation, and maybe MIME type checking
         // for network streams, for cases that we can't really
         // tell from extension alone.
-
         if (checkForExtension(URI, "zip")) {
             result |= InputStreamSugar.ZIP_FILE;
 
@@ -844,4 +854,5 @@ public final class C2JUtils {
         return result;
     }
 
+    private C2JUtils() {}
 }

@@ -23,38 +23,34 @@ package st;
 //
 //-----------------------------------------------------------------------------
 
-import i.DoomStatusAware;
-import v.IVideoScaleAware;
+import doom.SourceCode.ST_Stuff;
+import static doom.SourceCode.ST_Stuff.ST_Responder;
 import doom.event_t;
 
-public interface IDoomStatusBar extends IVideoScaleAware,DoomStatusAware{
-
-    
-    
-    /** Points to "screen 4" which is treated as a buffer */
-    static final int BG =4;
-
-    /** Points to "screen 0" which is what you actually see */
-     static final int FG =0;
-
+public interface IDoomStatusBar {
     //
     // STATUS BAR
     //
+    
+    public void NotifyAMEnter();
+
+    public void NotifyAMExit();
 
     /** Called by main loop. */
-    public boolean Responder (event_t ev);
+    @ST_Stuff.C(ST_Responder)
+    public boolean Responder(event_t ev);
 
     /** Called by main loop. */
-    public void Ticker ();
+    public void Ticker();
 
     /** Called by main loop.*/
-    public void Drawer (boolean fullscreen, boolean refresh);
+    public void Drawer(boolean fullscreen, boolean refresh);
 
     /** Called when the console player is spawned on each level. */
-    public void Start ();
+    public void Start();
 
     /** Called by startup code. */
-    public void Init ();
+    public void Init();
 
     /** Used externally to determine window scaling. 
      *  This means that drawing transparent status bars is possible, but

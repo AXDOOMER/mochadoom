@@ -1,25 +1,19 @@
 package rr.parallel;
 
+import data.Tables;
 import static data.Tables.finetangent;
-import static m.fixed_t.*;
-import static rr.LightsAndColors.*;
-
+import doom.DoomMain;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-
+import static m.fixed_t.*;
 import rr.IDetailAware;
-import rr.IGetColumn;
+import v.tables.LightsAndColors;
 import rr.TextureManager;
-import rr.visplane_t;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.R_DrawColumnBoomOpt;
 import rr.drawfuns.R_DrawColumnBoomOptLow;
-
-import data.Tables;
-
-import v.IVideoScale;
-import v.IVideoScaleAware;
+import rr.visplane_t;
 
 /** This is what actual executes the RenderSegInstructions.
  *   *  
@@ -46,11 +40,12 @@ import v.IVideoScaleAware;
  *
  */
 
-public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAware,IDetailAware {
+public abstract class RenderSegExecutor<T,V> implements Runnable, IDetailAware {
 
 	// This needs to be set by the partitioner.
     protected int rw_start, rw_end,rsiend;
 	// These need to be set on creation, and are unchangeable.
+    protected final LightsAndColors<V> colormaps;
 	protected final TextureManager<T> TexMan;
 	protected final CyclicBarrier barrier;
 	protected RenderSegInstruction<V>[] RSI;
@@ -68,8 +63,9 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	protected DoomColumnFunction<T,V> colfunchi,colfunclow;
 	protected DoomColumnFunction<T,V> colfunc;
 	protected ColVars<T,V> dcvars;
+    protected final DoomMain<T, V> DOOM;
 	
-	public RenderSegExecutor(int SCREENWIDTH, int SCREENHEIGHT,int id,V screen, 
+	public RenderSegExecutor(DoomMain<T, V> DOOM,int id,V screen, 
 			TextureManager<T> texman,
 			RenderSegInstruction<V>[] RSI,
 			short[] BLANKCEILINGCLIP,
@@ -80,7 +76,8 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 			long[] xtoviewangle,
 			int[] ylookup,
 			visplane_t[] visplanes,
-			CyclicBarrier barrier){
+			CyclicBarrier barrier,
+            LightsAndColors<V> colormaps){
 		this.id=id;
 		this.TexMan=texman;
 		this.RSI=RSI;
@@ -90,7 +87,8 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 		this.xtoviewangle=xtoviewangle;
 		this.BLANKCEILINGCLIP=BLANKCEILINGCLIP;
 		this.BLANKFLOORCLIP=BLANKFLOORCLIP;
-        
+        this.colormaps=colormaps;
+        this.DOOM=DOOM;
 	}
 
 	 protected final void ProcessRSI(RenderSegInstruction<V> rsi, int startx,int endx,boolean contained){
@@ -169,11 +167,11 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
                texturecolumn = rsi.rw_offset-FixedMul(finetangent[angle],rsi.rw_distance);
                 texturecolumn >>= FRACBITS;
                // calculate lighting
-               index = rw_scale>>LIGHTSCALESHIFT;
+               index = rw_scale>>colormaps.lightScaleShift();
        
 
-                 if (index >=  MAXLIGHTSCALE )
-                 index = MAXLIGHTSCALE-1;
+                 if (index >=  colormaps.maxLightScale() )
+                 index = colormaps.maxLightScale()-1;
 
                  dcvars.dc_colormap = rsi.walllights[index];
                  dcvars.dc_x = rw_x;
@@ -344,57 +342,58 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	
 
 	////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
-
-	protected int SCREENWIDTH;
-	protected int SCREENHEIGHT;
-	protected IVideoScale vs;
-
-	@Override
-	public void setVideoScale(IVideoScale vs) {
-		this.vs=vs;
-	}
-
-	@Override
-	public void initScaling() {
-		this.SCREENHEIGHT=vs.getScreenHeight();
-		this.SCREENWIDTH=vs.getScreenWidth();
-	}
-
 	public void updateRSI(RenderSegInstruction<V>[] rsi) {
 		this.RSI=rsi;
 		}
 	
+	public static final class TrueColor extends RenderSegExecutor<byte[],int[]>{
+
+        public TrueColor(DoomMain<byte[], int[]> DOOM, int id,
+                int[] screen, TextureManager<byte[]> texman,
+                RenderSegInstruction<int[]>[] RSI, short[] BLANKCEILINGCLIP,
+                short[] BLANKFLOORCLIP, short[] ceilingclip, short[] floorclip,
+                int[] columnofs, long[] xtoviewangle, int[] ylookup,
+                visplane_t[] visplanes, CyclicBarrier barrier, LightsAndColors<int[]> colormaps) {
+            super(DOOM, id, screen, texman, RSI, BLANKCEILINGCLIP,
+                    BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
+                    ylookup, visplanes, barrier, colormaps);
+            dcvars=new ColVars<>();
+            colfunc=colfunchi=new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+            colfunclow=new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+        }
+	}
+    
 	public static final class HiColor extends RenderSegExecutor<byte[],short[]>{
 
-        public HiColor(int SCREENWIDTH, int SCREENHEIGHT, int id,
+        public HiColor(DoomMain<byte[], short[]> DOOM, int id,
                 short[] screen, TextureManager<byte[]> texman,
                 RenderSegInstruction<short[]>[] RSI, short[] BLANKCEILINGCLIP,
                 short[] BLANKFLOORCLIP, short[] ceilingclip, short[] floorclip,
                 int[] columnofs, long[] xtoviewangle, int[] ylookup,
-                visplane_t[] visplanes, CyclicBarrier barrier) {
-            super(SCREENWIDTH, SCREENHEIGHT, id, screen, texman, RSI, BLANKCEILINGCLIP,
+                visplane_t[] visplanes, CyclicBarrier barrier, LightsAndColors<short[]> colormaps) {
+            super(DOOM, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
-                    ylookup, visplanes, barrier);
-            dcvars=new ColVars<byte[],short[]>();
-            colfunc=colfunchi=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
-            colfunclow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
+                    ylookup, visplanes, barrier, colormaps);
+            dcvars=new ColVars<>();
+            colfunc=colfunchi=new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+            colfunclow=new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
         }
 	}
 	
 	public static final class Indexed extends RenderSegExecutor<byte[],byte[]>{
 
-        public Indexed(int SCREENWIDTH, int SCREENHEIGHT, int id,
-                byte[] screen, IGetColumn<byte[]> gc, TextureManager<byte[]> texman,
+        public Indexed(DoomMain<byte[], byte[]> DOOM, int id,
+                byte[] screen, TextureManager<byte[]> texman,
                 RenderSegInstruction<byte[]>[] RSI, short[] BLANKCEILINGCLIP,
                 short[] BLANKFLOORCLIP, short[] ceilingclip, short[] floorclip,
                 int[] columnofs, long[] xtoviewangle, int[] ylookup,
-                visplane_t[] visplanes, CyclicBarrier barrier) {
-            super(SCREENWIDTH, SCREENHEIGHT, id, screen, texman, RSI, BLANKCEILINGCLIP,
+                visplane_t[] visplanes, CyclicBarrier barrier, LightsAndColors<byte[]> colormaps) {
+            super(DOOM, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
-                    ylookup, visplanes, barrier);
-            dcvars=new ColVars<byte[],byte[]>();
-            colfunc=colfunchi=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
-            colfunclow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
+                    ylookup, visplanes, barrier, colormaps);
+            dcvars=new ColVars<>();
+            colfunc=colfunchi=new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+            colfunclow=new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
         }
     }
 	

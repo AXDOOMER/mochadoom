@@ -36,6 +36,12 @@ public final static String  D_DEVSTR="Development mode ON.\n";
 public final static String  D_CDROM="CD-ROM Version: default.cfg from c:\\doomdata\n";
 
 //
+// M_Misc.C
+//
+
+public final static String SCREENSHOT ="screen shot";
+
+//
 //  M_Menu.C
 //
 public final static String  PRESSKEY ="press a key.";
