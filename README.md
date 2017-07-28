@@ -4,7 +4,7 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 # How to run
 
-1. Open the project with Eclispe or Net Beans
+1. Open the project with Eclipse or NetBeans
 2. Delete every file that has errors (if any)
 3. Build and run the project
 
