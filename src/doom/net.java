@@ -36,7 +36,7 @@ package doom;
 //
 // DESCRIPTION:
 //	DOOM Network game communication and protocol,
-//	all OS independend parts.
+//	all OS independent parts.
 //
 //-----------------------------------------------------------------------------
 
