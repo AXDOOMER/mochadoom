@@ -9,3 +9,8 @@
 *.jar
 build.xml
 /nbproject/
+
+# Intellij 
+*.iml
+.idea/
+/out/
