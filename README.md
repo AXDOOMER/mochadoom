@@ -1,5 +1,9 @@
 # Mocha Doom
 
+![Top Language](https://img.shields.io/github/languages/top/axdoomer/mochadoom.svg?style=flat)
+![Code Size](https://img.shields.io/github/languages/code-size/axdoomer/mochadoom.svg?style=flat)
+![License](https://img.shields.io/github/license/axdoomer/mochadoom.svg?style=flat&logo=gnu)
+
 Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doom to Java has already been done, thanks to Velktron (Maes), but he has stopped working on it in 2013. Although the port is almost complete, some work remains to do, most importantly the network code for the multiplayer is missing. Features like support for the Boom format would also be great. I have decided to continue the development in my free time and fix some bugs.
 
 # How to run
