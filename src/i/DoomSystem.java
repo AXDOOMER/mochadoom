@@ -114,7 +114,7 @@ public class DoomSystem implements IDoomSystem {
 
     public static void MiscError(String error, Object... args) {
         System.err.print("Error: ");
-        System.err.printf(error);
+        System.err.print(error);
         System.err.print("\n");
     }
 
