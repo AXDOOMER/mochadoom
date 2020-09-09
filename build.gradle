@@ -1,5 +1,6 @@
 plugins {
   id 'idea'
+  id 'jacoco'
   id 'java'
 }
 
@@ -9,3 +10,6 @@ repositories {
   mavenCentral()
 }
 
+jacoco {
+  toolVersion = '0.8.5'
+}
