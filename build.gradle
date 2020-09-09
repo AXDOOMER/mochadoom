@@ -1,0 +1,11 @@
+plugins {
+  id 'idea'
+  id 'java'
+}
+
+sourceCompatibility = '11'
+
+repositories {
+  mavenCentral()
+}
+
