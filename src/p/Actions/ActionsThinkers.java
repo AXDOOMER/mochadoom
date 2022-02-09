@@ -295,7 +295,7 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
                 thinker.next.prev = thinker.prev;
                 thinker.prev.next = thinker.next;
                 // Z_Free (currentthinker);
-            } else {
+            } else if(thinker.thinkerFunction != null) {
                 if (thinker.thinkerFunction.isParamType(MobjConsumer.class)) {
                     thinker.thinkerFunction.fun(MobjConsumer.class).accept(DOOM().actions, (mobj_t) thinker);
                 } else if (thinker.thinkerFunction.isParamType(ThinkerConsumer.class)) {
