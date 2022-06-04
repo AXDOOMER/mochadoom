@@ -29,6 +29,7 @@ import static m.fixed_t.FRACUNIT;
 import mochadoom.Engine;
 import mochadoom.Loggers;
 import p.AbstractLevelLoader;
+import static p.ActiveStates.NOP;
 import static p.ActiveStates.T_PlatRaise;
 import p.plat_e;
 import p.plat_t;
@@ -193,7 +194,7 @@ public interface ActionsPlats extends ActionsMoveEvents, ActionsUseEvents {
             if (activeplat != null && activeplat.status != plat_e.in_stasis && activeplat.tag == line.tag) {
                 activeplat.oldstatus = (activeplat).status;
                 activeplat.status = plat_e.in_stasis;
-                activeplat.thinkerFunction = null;
+                activeplat.thinkerFunction = NOP;
             }
         }
     }

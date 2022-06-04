@@ -275,7 +275,7 @@ public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
                 activeCeilings[i].olddirection = activeCeilings[i].direction;
                 // MAES: don't set it to NOP here, otherwise its thinker will be
                 // removed and it won't be possible to restart it.
-                activeCeilings[i].thinkerFunction = null;
+                activeCeilings[i].thinkerFunction = ActiveStates.NOP;
                 activeCeilings[i].direction = 0;       // in-stasis
                 rtn = 1;
             }
