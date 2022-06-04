@@ -35,16 +35,13 @@ import static doom.SourceCode.P_Spec.P_SpawnSpecials;
 import static doom.SourceCode.P_Tick.P_RemoveThinker;
 import doom.thinker_t;
 import static m.fixed_t.FRACBITS;
-import p.AbstractLevelLoader;
-import p.ActiveStates;
+
+import p.*;
 import p.ActiveStates.MobjConsumer;
 import static p.ActiveStates.NOP;
 import p.ActiveStates.ThinkerConsumer;
 import static p.DoorDefines.FASTDARK;
 import static p.DoorDefines.SLOWDARK;
-import p.ThinkerList;
-import p.UnifiedGameMap;
-import p.mobj_t;
 import static p.mobj_t.MF_SPAWNCEILING;
 import rr.sector_t;
 import rr.subsector_t;
@@ -68,7 +65,7 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
     @SourceCode.Compatible("thinker->function.acv = (actionf_v)(-1)")
     @SourceCode.P_Tick.C(P_RemoveThinker)
     default void RemoveThinker(thinker_t thinker) {
-        thinker.thinkerFunction = NOP;
+        thinker.thinkerFunction = RemoveState.REMOVE;
     }
 
     /**
@@ -290,16 +287,17 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
     default void RunThinkers() {
         thinker_t thinker = getThinkerCap().next;
         while (thinker != getThinkerCap()) {
-            if (thinker.thinkerFunction == ActiveStates.NOP) {
+            if (thinker.thinkerFunction == RemoveState.REMOVE) {
                 // time to remove it
                 thinker.next.prev = thinker.prev;
                 thinker.prev.next = thinker.next;
                 // Z_Free (currentthinker);
             } else {
-                if (thinker.thinkerFunction.isParamType(MobjConsumer.class)) {
-                    thinker.thinkerFunction.fun(MobjConsumer.class).accept(DOOM().actions, (mobj_t) thinker);
-                } else if (thinker.thinkerFunction.isParamType(ThinkerConsumer.class)) {
-                    thinker.thinkerFunction.fun(ThinkerConsumer.class).accept(DOOM().actions, thinker);
+                ActiveStates thinkerFunction = (ActiveStates)thinker.thinkerFunction;
+                if (thinkerFunction.isParamType(MobjConsumer.class)) {
+                    thinkerFunction.fun(MobjConsumer.class).accept(DOOM().actions, (mobj_t) thinker);
+                } else if (thinkerFunction.isParamType(ThinkerConsumer.class)) {
+                    thinkerFunction.fun(ThinkerConsumer.class).accept(DOOM().actions, thinker);
                 }
             }
             thinker = thinker.next;

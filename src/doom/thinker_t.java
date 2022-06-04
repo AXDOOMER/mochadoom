@@ -6,6 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import p.ActiveStates;
 import static utils.C2JUtils.pointer;
+
+import p.ThinkerStates;
 import w.CacheableDoomObject;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -14,7 +16,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
 
     public thinker_t prev;
     public thinker_t next;
-    public ActiveStates thinkerFunction;
+    public ThinkerStates thinkerFunction = ActiveStates.NOP;
 
     /**
      * killough's code for thinkers seems to be totally broken in M.D,

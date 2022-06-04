@@ -85,7 +85,7 @@ import mochadoom.Loggers;
  * Or otherwise be sector specials, flickering lights etc.
  * Those are atypical and need special handling.
  */
-public enum ActiveStates {
+public enum ActiveStates implements ThinkerStates{
     NOP(ActiveStates::nop, ThinkerConsumer.class),
     A_Light0(ActionFunctions::A_Light0, PlayerSpriteConsumer.class),
     A_WeaponReady(ActionFunctions::A_WeaponReady, PlayerSpriteConsumer.class),
@@ -201,7 +201,7 @@ public enum ActiveStates {
     public interface PlayerSpriteConsumer extends ParamClass<PlayerSpriteConsumer> {
     	void accept(ActionFunctions a, player_t p, pspdef_t s);
     }
-    
+
     private interface ParamClass<T extends ParamClass<T>> {}
     
     public boolean isParamType(final Class<?> paramType) {
