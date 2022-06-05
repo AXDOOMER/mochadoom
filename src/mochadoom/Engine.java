@@ -55,7 +55,12 @@ public class Engine {
         frame.addWindowFocusListener(listener);
         frame.addWindowListener(listener);*/
         // never returns
-        local.DOOM.setupLoop();
+        try {
+            local.DOOM.setupLoop();
+        } catch(Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }  
     
     public final CVarManager cvm;
