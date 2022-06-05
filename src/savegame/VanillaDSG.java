@@ -26,16 +26,11 @@ import java.util.logging.Level;
 import m.Settings;
 import mochadoom.Engine;
 import mochadoom.Loggers;
+import p.*;
 import p.Actions.ActionsLights.glow_t;
 import p.Actions.ActionsLights.lightflash_t;
 import static p.ActiveStates.*;
-import p.ThinkerList;
-import p.ceiling_t;
-import p.floormove_t;
-import p.mobj_t;
-import p.plat_t;
-import p.strobe_t;
-import p.vldoor_t;
+
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
@@ -390,7 +385,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
 
         // save off the current thinkers
         for (th = DOOM.actions.getThinkerCap().next; th != DOOM.actions.getThinkerCap(); th = th.next) {
-            if (th.thinkerFunction != null && th.thinkerFunction == P_MobjThinker) {
+            if (th.thinkerFunction == P_MobjThinker) {
                 // Indicate valid thinker
                 fo.writeByte(thinkerclass_t.tc_mobj.ordinal());
                 // Pad...
@@ -594,7 +589,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
             buffer.position(0);
 
             // So ceilings don't think?
-            if (th.thinkerFunction == null) {
+            if (th.thinkerFunction == NOP) {
                 // i maintains status between iterations
                 for (i = 0; i < DOOM.actions.getMaxCeilings(); i++) {
                     if ((th instanceof ceiling_t) && (DOOM.actions.getActiveCeilings()[i] == (ceiling_t) th)) {

@@ -220,17 +220,15 @@ public interface Ai extends Monsters, Sounds {
         if (mobj.momx != 0 || mobj.momy != 0 || (eval(mobj.flags & MF_SKULLFLY))) {
             getAttacks().XYMovement(mobj);
 
-            // FIXME: decent NOP/NULL/Nil function pointer please.
-            if (mobj.thinkerFunction == ActiveStates.NOP) {
-                return; // mobj was removed
+            if (mobj.thinkerFunction.ordinal() == 0) {
+                return; // mobj was removed or nop
             }
         }
         if ((mobj.z != mobj.floorz) || mobj.momz != 0) {
             mobj.ZMovement();
 
-            // FIXME: decent NOP/NULL/Nil function pointer please.
-            if (mobj.thinkerFunction == ActiveStates.NOP) {
-                return; // mobj was removed
+            if (mobj.thinkerFunction.ordinal() == 0) {
+                return; // mobj was removed or nop
             }
         }
 
