@@ -236,7 +236,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         byte[] compare = Arrays.copyOfRange(data, 0, 7);
 
         if (Arrays.equals(compare, DeepBSPNodesV4.DeepBSPHeader)) {
-            System.out.println("P_CheckForDeePBSPv4Nodes: DeePBSP v4 Extended nodes are detected\n");
+            System.out.println("P_CheckForDeePBSPv4Nodes: DeePBSP v4 Extended nodes are detected");
             result = true;
         }
 
@@ -261,7 +261,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         wrapper=ByteBuffer.wrap(data).getInt();
 
         if (wrapper==XNOD) {
-            System.out.println("P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected\n");
+            System.out.println("P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected");
             result = true;
         }
 
@@ -291,7 +291,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                     ver = 3;
                 } else {
                     nodesVersion = gNd2;
-                    System.out.println("P_GetNodesVersion: found version 2 nodes\n");
+                    System.out.println("P_GetNodesVersion: found version 2 nodes");
                 }
             }
             if (wrapper == gNd4) {
@@ -307,7 +307,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
             }
         } else {
             nodesVersion = 0;
-            System.out.println("P_GetNodesVersion: using normal BSP nodes\n");
+            System.out.println("P_GetNodesVersion: using normal BSP nodes");
             if (P_CheckForZDoomNodes(lumpnum, gl_lumpnum)) {
                 DOOM.doomSystem.Error("P_GetNodesVersion: ZDoom nodes not supported yet");
             }
