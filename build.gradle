@@ -1,0 +1,11 @@
+plugins {
+    id 'java'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'mochadoom.Engine'
+        )
+    }
+}

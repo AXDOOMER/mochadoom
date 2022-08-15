@@ -8,16 +8,9 @@ Mocha Doom is a pure Java Doom source port. Most of the hard work of porting Doo
 
 # How to run
 
-1. Open the project with Eclipse or NetBeans
-2. Delete every file that has errors (if any)
-3. Build and run the project
-
-## Advanced users
-
-On Linux, two different scripts can be used.
-
-1. `build-and-run.sh` which will build Mocha Doom and run it. You can use it as such: `./build-and-run.sh -iwad ~/DOOM2.WAD`. This is the preferred way to quickly test changes for developers.
-2. `build-jar.sh` which will build a JAR file. You can then run the JAR file as such: `java -jar mochadoom.jar -iwad ~/DOOM2.WAD`. This is the preferred way for distributing a Mocha Doom executable.
+1. Open a Terminal / Command Prompt window
+2. Run `./gradlew build`
+2. Run the jar located in `build/libs/mochadoom`
 
 # License
 
