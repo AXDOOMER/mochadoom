@@ -390,8 +390,8 @@ public abstract class DoomStatus<T,V> {
     protected byte[] savebuffer;
 
     /* TODO Proper reconfigurable controls. Defaults hardcoded for now. T3h h4x, d00d. */
-    public int key_right = SC_NUMKEY6.ordinal();
-    public int key_left = SC_NUMKEY4.ordinal();
+    public int key_right = SC_RIGHT.ordinal();
+    public int key_left = SC_LEFT.ordinal();
     public int key_up = SC_W.ordinal();
     public int key_down = SC_S.ordinal();
     public int key_strafeleft = SC_A.ordinal();

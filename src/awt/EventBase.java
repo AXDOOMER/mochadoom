@@ -60,6 +60,7 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
     
     @SafeVarargs
     static <H extends Enum<H> & EventBase<H>> Relation<H>[] Relate(H src, H... dests) {
+        @SuppressWarnings("unchecked")
         final IntFunction<Relation<H>[]> arrayer = Relation[]::new;
         return Arrays.stream(dests)
             .map(dest -> new Relation<>(src, dest))
@@ -166,6 +167,7 @@ public interface EventBase<Handler extends Enum<Handler> & EventBase<Handler>> e
     final class KeyStateHolder<Handler extends Enum<Handler> & EventBase<Handler>> {
         private final Set<Signals.ScanCode> holdingSet;
         private final LinkedHashSet<KeyStateInterest<Handler>> keyInterests;
+        @SuppressWarnings("unchecked")
         private final IntFunction<KeyStateInterest<Handler>[]> generator = KeyStateInterest[]::new;
 
         public KeyStateHolder() {

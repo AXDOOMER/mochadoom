@@ -82,6 +82,7 @@ public class Loggers {
         
         lastHandler = handler;
         
+        @SuppressWarnings("unchecked")
         final IntFunction<EventBase<EventHandler>[]> arrayGenerator = EventBase[]::new;
         final EventBase<EventHandler>[] depends = actionStateHolder
                 .cooperations(handler, RelationType.DEPEND)

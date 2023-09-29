@@ -239,7 +239,7 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         mtexture.unpack(maptex[texset]);
 
         // MAES: the HashTable only needs to know the correct names.
-        TextureCache.put(mtexture.name.toUpperCase(), new Integer(i));
+        TextureCache.put(mtexture.name.toUpperCase(), Integer.valueOf(i));
         
         // We don't need to manually copy trivial fields.
         textures[i]=new texture_t();
