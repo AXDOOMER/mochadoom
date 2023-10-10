@@ -30,6 +30,7 @@ import static doom.gameaction_t.*;
 import f.EndLevel;
 import f.Finale;
 import f.Wiper;
+import g.Signals;
 import static g.Signals.ScanCode.*;
 import hu.HU;
 import i.DiskDrawer;
@@ -1289,21 +1290,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 ev.withKey(sc -> {
                     gamekeydown[sc.ordinal()] = true;
                     if (vanillaKeyBehavior) {
-                        switch(sc) {
-                            case SC_LSHIFT:
-                            case SC_RSHIFT:
-                                gamekeydown[SC_RSHIFT.ordinal()] = gamekeydown[SC_LSHIFT.ordinal()] = true;
-                                break;
-                            case SC_LCTRL:
-                            case SC_RCTRL:
-                                gamekeydown[SC_RCTRL.ordinal()] = gamekeydown[SC_LCTRL.ordinal()] = true;
-                                break;
-                            case SC_LALT:
-                            case SC_RALT:
-                                gamekeydown[SC_RALT.ordinal()] = gamekeydown[SC_LALT.ordinal()] = true;
-                                break;
-                            default: break;
-                        }
+                        handleVanillaKeys(sc, true);
                     }
                 });
                 return true;    // eat key down events 
@@ -1318,21 +1305,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 ev.withKey(sc -> {
                     gamekeydown[sc.ordinal()] = false;
                     if (vanillaKeyBehavior) {
-                        switch(sc) {
-                            case SC_LSHIFT:
-                            case SC_RSHIFT:
-                                gamekeydown[SC_RSHIFT.ordinal()] = gamekeydown[SC_LSHIFT.ordinal()] = false;
-                                break;
-                            case SC_LCTRL:
-                            case SC_RCTRL:
-                                gamekeydown[SC_RCTRL.ordinal()] = gamekeydown[SC_LCTRL.ordinal()] = false;
-                                break;
-                            case SC_LALT:
-                            case SC_RALT:
-                                gamekeydown[SC_RALT.ordinal()] = gamekeydown[SC_LALT.ordinal()] = false;
-                                break;
-                            default: break;
-                        }
+                        handleVanillaKeys(sc, false);
                     }
                 });
                 return false;   // always let key up events filter down 
@@ -1366,6 +1339,36 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
 
         return false;
+    }
+
+    private void handleVanillaKeys(Signals.ScanCode sc, boolean keyDown) {
+        switch(sc) {
+            case SC_LSHIFT:
+            case SC_RSHIFT:
+                gamekeydown[SC_RSHIFT.ordinal()] = gamekeydown[SC_LSHIFT.ordinal()] = keyDown;
+                break;
+            case SC_LCTRL:
+            case SC_RCTRL:
+                gamekeydown[SC_RCTRL.ordinal()] = gamekeydown[SC_LCTRL.ordinal()] = keyDown;
+                break;
+            case SC_LALT:
+            case SC_RALT:
+                gamekeydown[SC_RALT.ordinal()] = gamekeydown[SC_LALT.ordinal()] = keyDown;
+                break;
+            case SC_UP:
+                gamekeydown[SC_NUMKEY8.ordinal()] = keyDown;
+                break;
+            case SC_DOWN:
+                gamekeydown[SC_NUMKEY2.ordinal()] = keyDown;
+                break;
+            case SC_LEFT:
+                gamekeydown[SC_NUMKEY4.ordinal()] = keyDown;
+                break;
+            case SC_RIGHT:
+                gamekeydown[SC_NUMKEY6.ordinal()] = keyDown;
+                break;
+            default: break;
+        }
     }
 
     private final String turbomessage="is turbo!"; 
