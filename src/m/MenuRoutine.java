@@ -8,5 +8,6 @@ package m;
  *
  */
 public interface MenuRoutine {
+
     public void invoke(int choice);
 }

@@ -1,7 +1,11 @@
 package m;
 
 import doom.SourceCode.M_Menu;
-import static doom.SourceCode.M_Menu.*;
+import static doom.SourceCode.M_Menu.M_Drawer;
+import static doom.SourceCode.M_Menu.M_Init;
+import static doom.SourceCode.M_Menu.M_Responder;
+import static doom.SourceCode.M_Menu.M_StartControlPanel;
+import static doom.SourceCode.M_Menu.M_Ticker;
 import doom.event_t;
 
 // Emacs style mode select -*- C++ -*-
@@ -25,17 +29,14 @@ import doom.event_t;
 // Menu widget stuff, episode selection and such.
 //    
 // -----------------------------------------------------------------------------
-
 /**
  * 
  */
-
 public interface IDoomMenu {
 
     //
     // MENUS
     //
-
     /**
      * Called by main loop, saves config file and calls I_Quit when user exits.
      * Even when the menu is not displayed, this can resize the view and change
@@ -72,13 +73,12 @@ public interface IDoomMenu {
     public boolean getShowMessages();
 
     public void setShowMessages(boolean val);
-    
+
     public int getScreenBlocks();
-    
+
     public void setScreenBlocks(int val);
-    
+
     public int getDetailLevel();
 
-	void ClearMenus();
+    void ClearMenus();
 }
-    

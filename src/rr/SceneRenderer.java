@@ -29,28 +29,47 @@ public interface SceneRenderer<T, V> {
     public static final long viewangleoffset = 0;
 
     public void Init();
+
     public void RenderPlayerView(player_t player);
+
     public void ExecuteSetViewSize();
+
     @R_Draw.C(R_FillBackScreen)
     public void FillBackScreen();
+
     public void DrawViewBorder();
+
     public void SetViewSize(int size, int detaillevel);
+
     public long PointToAngle2(int x1, int y1, int x2, int y2);
+
     public void PreCacheThinkers();
+
     public int getValidCount();
+
     public void increaseValidCount(int amount);
+
     public boolean isFullHeight();
+
     public void resetLimits();
+
     public boolean getSetSizeNeeded();
+
     public boolean isFullScreen();
 
     // Isolation methods
     public TextureManager<T> getTextureManager();
+
     public PlaneDrawer<T, V> getPlaneDrawer();
+
     public ViewVars getView();
+
     public SpanVars<T, V> getDSVars();
+
     public LightsAndColors<V> getColorMap();
+
     public IDoomSystem getDoomSystem();
+
     public IWadLoader getWadLoader();
 
     /**
@@ -60,12 +79,19 @@ public interface SceneRenderer<T, V> {
      * @return
      */
     public Visplanes getVPVars();
+
     public SegVars getSegVars();
+
     public ISpriteManager getSpriteManager();
+
     public BSPVars getBSPVars();
+
     public IVisSpriteManagement<V> getVisSpriteManager();
+
     public ColFuncs<T, V> getColFuncsHi();
+
     public ColFuncs<T, V> getColFuncsLow();
+
     public ColVars<T, V> getMaskedDCVars();
 
     //public subsector_t PointInSubsector(int x, int y);

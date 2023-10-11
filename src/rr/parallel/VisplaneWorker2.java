@@ -30,75 +30,74 @@ import v.graphics.Palettes;
  *
  * TODO: fix crashes
  */
-
-public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements Runnable, IDetailAware {
+public abstract class VisplaneWorker2<T, V> extends PlaneDrawer<T, V> implements Runnable, IDetailAware {
 
     protected final int id;
     protected final int NUMFLOORTHREADS;
-    protected int startvp;  
+    protected int startvp;
     protected int endvp;
     protected int vpw_planeheight;
     protected V[] vpw_planezlight;
-    protected int vpw_basexscale,vpw_baseyscale;
-    protected final SpanVars<T,V> vpw_dsvars;
-    protected final ColVars<T,V> vpw_dcvars;
-    protected DoomSpanFunction<T,V> vpw_spanfunc;
-    protected DoomColumnFunction<T,V> vpw_skyfunc;
-    protected DoomSpanFunction<T,V> vpw_spanfunchi;
-    protected DoomSpanFunction<T,V> vpw_spanfunclow;
-    protected DoomColumnFunction<T,V> vpw_skyfunchi;
-    protected DoomColumnFunction<T,V> vpw_skyfunclow;
+    protected int vpw_basexscale, vpw_baseyscale;
+    protected final SpanVars<T, V> vpw_dsvars;
+    protected final ColVars<T, V> vpw_dcvars;
+    protected DoomSpanFunction<T, V> vpw_spanfunc;
+    protected DoomColumnFunction<T, V> vpw_skyfunc;
+    protected DoomSpanFunction<T, V> vpw_spanfunchi;
+    protected DoomSpanFunction<T, V> vpw_spanfunclow;
+    protected DoomColumnFunction<T, V> vpw_skyfunchi;
+    protected DoomColumnFunction<T, V> vpw_skyfunclow;
     protected visplane_t pln;
-    
+
     public VisplaneWorker2(DoomMain<T, V> DOOM, SceneRenderer<T, V> R, int id, CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
         super(DOOM, R);
         this.barrier = visplanebarrier;
         this.id = id;
         // Alias to those of Planes.
-        vpw_dsvars = new SpanVars<T, V>();
-        vpw_dcvars = new ColVars<T, V>();
+        vpw_dsvars = new SpanVars<>();
+        vpw_dcvars = new ColVars<>();
         this.NUMFLOORTHREADS = NUMFLOORTHREADS;
     }
 
-    public static class HiColor extends VisplaneWorker2<byte[],short[]>{
+    public static class HiColor extends VisplaneWorker2<byte[], short[]> {
 
-        public HiColor(DoomMain<byte[], short[]> DOOM, SceneRenderer<byte[],short[]> R,int id,
+        public HiColor(DoomMain<byte[], short[]> DOOM, SceneRenderer<byte[], short[]> R, int id,
                 int[] columnofs, int[] ylookup, short[] screen,
                 CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
-            super(DOOM, R,id, visplanebarrier, NUMFLOORTHREADS);
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_spanfunclow=new R_DrawSpanLow.HiColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dcvars,screen,I);
+            super(DOOM, R, id, visplanebarrier, NUMFLOORTHREADS);
+            vpw_spanfunc = vpw_spanfunchi = new R_DrawSpanUnrolled.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_spanfunclow = new R_DrawSpanLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_skyfunc = vpw_skyfunchi = new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dcvars, screen, I);
+            vpw_skyfunclow = new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dcvars, screen, I);
         }
     }
-    
-    public static class Indexed extends VisplaneWorker2<byte[],byte[]>{
 
-        public Indexed(DoomMain<byte[], byte[]> DOOM, SceneRenderer<byte[],byte[]> R,int id,
+    public static class Indexed extends VisplaneWorker2<byte[], byte[]> {
+
+        public Indexed(DoomMain<byte[], byte[]> DOOM, SceneRenderer<byte[], byte[]> R, int id,
                 int[] columnofs, int[] ylookup, byte[] screen,
                 CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
-            super(DOOM,R,id, visplanebarrier, NUMFLOORTHREADS);
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.Indexed(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_spanfunclow=new R_DrawSpanLow.Indexed(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dcvars,screen,I);
+            super(DOOM, R, id, visplanebarrier, NUMFLOORTHREADS);
+            vpw_spanfunc = vpw_spanfunchi = new R_DrawSpanUnrolled.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_spanfunclow = new R_DrawSpanLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_skyfunc = vpw_skyfunchi = new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dcvars, screen, I);
+            vpw_skyfunclow = new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dcvars, screen, I);
         }
     }
-    
-    public static class TrueColor extends VisplaneWorker2<byte[],int[]>{
 
-        public TrueColor(DoomMain<byte[], int[]> DOOM, SceneRenderer<byte[],int[]> R,int id,
+    public static class TrueColor extends VisplaneWorker2<byte[], int[]> {
+
+        public TrueColor(DoomMain<byte[], int[]> DOOM, SceneRenderer<byte[], int[]> R, int id,
                 int[] columnofs, int[] ylookup, int[] screen,
                 CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
-            super(DOOM, R,id, visplanebarrier, NUMFLOORTHREADS);
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.TrueColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_spanfunclow=new R_DrawSpanLow.TrueColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(),DOOM.vs.getScreenHeight(),ylookup,columnofs,vpw_dcvars,screen,I);
-        }        
+            super(DOOM, R, id, visplanebarrier, NUMFLOORTHREADS);
+            vpw_spanfunc = vpw_spanfunchi = new R_DrawSpanUnrolled.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_spanfunclow = new R_DrawSpanLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dsvars, screen, I);
+            vpw_skyfunc = vpw_skyfunchi = new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dcvars, screen, I);
+            vpw_skyfunclow = new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, vpw_dcvars, screen, I);
+        }
     }
-    
+
     @Override
     public void run() {
         pln = null; //visplane_t
@@ -223,19 +222,19 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
         }
         // TODO Auto-generated catch block
     }
-        
+
     private boolean isMarker(int t1) {
         return ((t1 & visplane_t.SENTINEL) != 0);
     }
-    
+
     private int decodeID(int t1) {
         return (t1 & visplane_t.THREADIDBITS) >> visplane_t.THREADIDSHIFT;
     }
-    
+
     private int decodeValue(int t1) {
         return t1 & visplane_t.THREADVALUEBITS;
     }
-    
+
     @Override
     public void setDetail(int detailshift) {
         if (detailshift == 0) {
@@ -246,7 +245,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
             vpw_skyfunc = vpw_skyfunclow;
         }
     }
-    
+
     /**
      * R_MakeSpans
      * 
@@ -264,7 +263,6 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
      * @param b2 Bottom-right y coord ?
      * 
      */
-
     @Override
     protected final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
 
@@ -282,28 +280,28 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
                 t2 = decodeValue(t2);
             }
         }
-        
+
         super.MakeSpans(x, t1, b1, t2, b2);
     }
-      
-      /**
-       * R_MapPlane
-       *
-       * Called only by R_MakeSpans.
-       * 
-       * This is where the actual span drawing function is called.
-       * 
-       * Uses global vars:
-       * planeheight
-       *  ds_source -> flat data has already been set.
-       *  basexscale -> actual drawing angle and position is computed from these
-       *  baseyscale
-       *  viewx
-       *  viewy
-       *
-       * BASIC PRIMITIVE
-       */
-      /* TODO: entirely similar to serial version?
+
+    /**
+     * R_MapPlane
+     *
+     * Called only by R_MakeSpans.
+     * 
+     * This is where the actual span drawing function is called.
+     * 
+     * Uses global vars:
+     * planeheight
+     *  ds_source -> flat data has already been set.
+     *  basexscale -> actual drawing angle and position is computed from these
+     *  baseyscale
+     *  viewx
+     *  viewy
+     *
+     * BASIC PRIMITIVE
+     */
+    /* TODO: entirely similar to serial version?
       private void
       MapPlane
       ( int       y,
@@ -368,8 +366,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
           else
               vpw_spanfunclow.invoke();         
       }
-      */
-      
-      // Private to each thread.
-      CyclicBarrier barrier;
-  }
+     */
+    // Private to each thread.
+    CyclicBarrier barrier;
+}

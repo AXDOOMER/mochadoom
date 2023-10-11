@@ -968,5 +968,5 @@ public enum statenum_t {
     S_TECH2LAMP2,
     S_TECH2LAMP3,
     S_TECH2LAMP4,
-    NUMSTATES   
+    NUMSTATES
 }

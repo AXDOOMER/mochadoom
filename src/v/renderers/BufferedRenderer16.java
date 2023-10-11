@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.renderers;
 
 import java.awt.Graphics2D;
@@ -41,15 +40,16 @@ import static v.tables.ColorTint.NORMAL_TINTS;
  * - Good Sign 2017/04/12
  */
 class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> {
+
     protected final short[] raster;
-    
+
     // VolatileImage speeds up delivery to VRAM - it is 30-40 fps faster then directly rendering BufferedImage
     protected VolatileImage screen;
-    
+
     // indicated whether machine display in the same mode as this renderer
     protected final boolean compatible = checkConfigurationHicolor();
     protected final BlurryTable blurryTable;
-    
+
     /**
      * This implementation will "tie" a bufferedimage to the underlying byte raster.
      *
@@ -69,11 +69,11 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
         } else {
             currentscreen = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_555_RGB);
         }
-        
+
         // extract raster from the created image
         currentscreen.setAccelerationPriority(1.0f);
-        raster = ((DataBufferUShort)((BufferedImage) currentscreen).getRaster().getDataBuffer()).getData();
-        
+        raster = ((DataBufferUShort) ((BufferedImage) currentscreen).getRaster().getDataBuffer()).getData();
+
         blurryTable = new BlurryTable(liteColorMaps);
 
         /**
@@ -100,20 +100,22 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
         doWriteScreen();
         if (!compatible) {
             return currentscreen;
-        } else do {
-            if (screen.validate(GRAPHICS_CONF) == VolatileImage.IMAGE_INCOMPATIBLE) {
-                screen.flush();
-                // old vImg doesn't work with new GraphicsConfig; re-create it
-                screen = GRAPHICS_CONF.createCompatibleVolatileImage(width, height);
-            }
+        } else {
+            do {
+                if (screen.validate(GRAPHICS_CONF) == VolatileImage.IMAGE_INCOMPATIBLE) {
+                    screen.flush();
+                    // old vImg doesn't work with new GraphicsConfig; re-create it
+                    screen = GRAPHICS_CONF.createCompatibleVolatileImage(width, height);
+                }
 
-            final Graphics2D g = screen.createGraphics();
-            g.drawImage(currentscreen, 0, 0, null);
-            g.dispose();
-        } while (screen.contentsLost());
+                final Graphics2D g = screen.createGraphics();
+                g.drawImage(currentscreen, 0, 0, null);
+                g.dispose();
+            } while (screen.contentsLost());
+        }
         return screen;
     }
-    
+
     @Override
     void doWriteScreen() {
         for (int i = 0; i < PARALLELISM; i++) {
@@ -141,6 +143,7 @@ class BufferedRenderer16 extends SoftwareParallelVideoRenderer<byte[], short[]> 
      * - Good Sign 2017/04/12
      */
     private class ShortPaletteThread implements Runnable {
+
         private final short[] FG;
         private final int start;
         private final int stop;

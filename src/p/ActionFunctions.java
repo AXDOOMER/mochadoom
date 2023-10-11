@@ -40,15 +40,15 @@ import utils.TraitFactory;
 import utils.TraitFactory.SharedContext;
 
 public class ActionFunctions extends UnifiedGameMap implements
-    ActionsThinkers, ActionsEnemies, ActionsAttacks, Ai, Attacks, Thinkers, Weapons
-{
+        ActionsThinkers, ActionsEnemies, ActionsAttacks, Ai, Attacks, Thinkers, Weapons {
+
     private final SharedContext traitsSharedContext;
-    
+
     public ActionFunctions(final DoomMain<?, ?> DOOM) {
         super(DOOM);
         this.traitsSharedContext = buildContext();
     }
-    
+
     private SharedContext buildContext() {
         try {
             return TraitFactory.build(this, ACTION_KEY_CHAIN);
@@ -57,7 +57,7 @@ public class ActionFunctions extends UnifiedGameMap implements
             throw new RuntimeException(ex);
         }
     }
-    
+
     @Override
     public AbstractLevelLoader levelLoader() {
         return DOOM.levelLoader;

@@ -11,8 +11,7 @@ import java.io.IOException;
  * @author Velktron
  *
  */
-
 public interface IReadableDoomObject {
-    
-    public void read(DataInputStream f) throws IOException ;
+
+    public void read(DataInputStream f) throws IOException;
 }

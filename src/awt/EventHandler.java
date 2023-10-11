@@ -14,12 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package awt;
 
 import static awt.EventBase.Relate;
 import g.Signals;
-import static g.Signals.ScanCode.*;
+import static g.Signals.ScanCode.SC_PRTSCRN;
 import java.awt.Point;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
@@ -87,7 +86,6 @@ public enum EventHandler implements EventBase<EventHandler> {
             }
         });
     }, ActionMode.REVERT, ActionMode.PERFORM, ActionMode.DEPEND),
-    
     KEY_RELEASE(KeyEvent.KEY_RELEASED, mapper -> {
         mapper.map(ActionMode.PERFORM, EventObserver::sendKeyUps);
         /*mapper.map(ActionMode.DEPEND_BEFORE, (observer, event) -> {
@@ -97,11 +95,9 @@ public enum EventHandler implements EventBase<EventHandler> {
             }
         });*/
     }, ActionMode.PERFORM/*, ActionMode.DEPEND*/),
-    
     KEY_TYPE(KeyEvent.KEY_TYPED, mapper -> {
         mapper.map(ActionMode.PERFORM, EventObserver::sendKeyUps);
     }, ActionMode.PERFORM),
-    
     MOUSE_PRESS(MouseEvent.MOUSE_PRESSED, mapper -> {
         mapper.map(ActionMode.REVERT, EventObserver::cancelMouse);
         mapper.map(ActionMode.PERFORM, (observer, ev) -> {
@@ -113,8 +109,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             }
         });
     }, ActionMode.REVERT, ActionMode.PERFORM),
-    
-    MOUSE_RELEASE(MouseEvent.MOUSE_RELEASED, mapper ->  {
+    MOUSE_RELEASE(MouseEvent.MOUSE_RELEASED, mapper -> {
         mapper.map(ActionMode.PERFORM, (observer, ev) -> {
             observer.mouseEvent.buttonOff((MouseEvent) ev);
             observer.mouseEvent.x = observer.mouseEvent.y = 0;
@@ -124,46 +119,33 @@ public enum EventHandler implements EventBase<EventHandler> {
             }
         });
     }, ActionMode.PERFORM),
-    
     MOUSE_CLICK(MouseEvent.MOUSE_CLICKED, mapper -> {
         // Set input method and mouse cursor, move cursor to the centre
         mapper.map(ActionMode.PERFORM, EventObserver::centreCursor);
     }),
-    
     MOUSE_MOVE(MouseEvent.MOUSE_MOVED, mapper -> {
         mapper.map(ActionMode.PERFORM, mouseMoveAction(false));
     }, ActionMode.PERFORM),
-    
     MOUSE_DRAG(MouseEvent.MOUSE_DRAGGED, mapper -> {
         mapper.map(ActionMode.PERFORM, mouseMoveAction(true));
     }, ActionMode.PERFORM),
-    
     WINDOW_ACTIVATE(WindowEvent.WINDOW_ACTIVATED, ActionMode.PERFORM, ActionMode.CAUSE),
-    
     WINDOW_DEICONIFY(WindowEvent.WINDOW_DEICONIFIED, ActionMode.PERFORM),
-    
     COMPONENT_RESIZE(ComponentEvent.COMPONENT_RESIZED, ActionMode.PERFORM),
-    
     MOUSE_ENTER(MouseEvent.MOUSE_ENTERED, mapper -> {
         // Set input method and mouse cursor, move cursor to the centre
         mapper.map(ActionMode.PERFORM, EventObserver::centreCursor);
     }),
-    
     WINDOW_OPEN(WindowEvent.WINDOW_OPENED, mapper -> {
         // Set input method and mouse cursor
         mapper.map(ActionMode.PERFORM, EventObserver::centreCursor);
     }, ActionMode.PERFORM),
-    
     WINDOW_GAIN_FOCUS(WindowEvent.WINDOW_GAINED_FOCUS),
-    
     WINDOW_LOSE_FOCUS(WindowEvent.WINDOW_LOST_FOCUS, mapper -> {
         mapper.map(ActionMode.PERFORM, EventObserver::restoreCursor);
     }, ActionMode.PERFORM),
-    
     COMPONENT_MOVE(ComponentEvent.COMPONENT_MOVED, ActionMode.PERFORM),
-    
     MOUSE_EXIT(MouseEvent.MOUSE_EXITED, ActionMode.PERFORM),
-    
     /**
      * We need to take charge of various scenarios such as what to do with mouse and keys when the
      * window lose focus, how to enter/return from alt-tab/full-screen switch, how to behave
@@ -172,15 +154,15 @@ public enum EventHandler implements EventBase<EventHandler> {
     RELATIONS(relationMapper -> {
         // Add keyDown for Print Screen because he doesn't send one
         relationMapper.map(RelationType.DEPEND, Relate(KEY_RELEASE, KEY_PRESS));
-        
+
         /**
          * After the window is opened, it must disable its own event, but capture all the keyboard and mouse input
          */
         relationMapper.map(RelationType.DISABLE, Relate(WINDOW_OPEN, WINDOW_OPEN));
         relationMapper.map(RelationType.ENABLE, Relate(WINDOW_OPEN,
-            WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE
+                WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE
         ));
-        
+
         /**
          * On any activation/reconfiguration/resize/restore-from-something, request focus in window
          */
@@ -196,9 +178,9 @@ public enum EventHandler implements EventBase<EventHandler> {
          */
         relationMapper.map(RelationType.REVERT, Relate(WINDOW_LOSE_FOCUS, KEY_PRESS, MOUSE_PRESS));
         relationMapper.map(RelationType.DISABLE, Relate(WINDOW_LOSE_FOCUS, WINDOW_LOSE_FOCUS,
-            KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE, MOUSE_ENTER
+                KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE, MOUSE_ENTER
         ));
-        
+
         /**
          * The next set of rules is for active focus gain. It could be done in two ways:
          * natural, when window become visible topmost window with active borders,
@@ -208,28 +190,28 @@ public enum EventHandler implements EventBase<EventHandler> {
          * Enables back losing focus, disables itself and natural focus gain.
          */
         relationMapper.map(RelationType.ENABLE, Relate(WINDOW_LOSE_FOCUS,
-            WINDOW_GAIN_FOCUS, MOUSE_CLICK
+                WINDOW_GAIN_FOCUS, MOUSE_CLICK
         ));
         relationMapper.map(RelationType.ENABLE, Relate(MOUSE_CLICK,
-            WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE
+                WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE
         ));
         relationMapper.map(RelationType.DISABLE, Relate(MOUSE_CLICK, WINDOW_GAIN_FOCUS, MOUSE_CLICK));
-        
+
         /**
          * For natural way, focus gain *must not* capture the mouse immediately, only after it enters the window.
          * Enables back losing focus, disables itself and clicky way of capture.
          */
         relationMapper.map(RelationType.ENABLE, Relate(WINDOW_GAIN_FOCUS,
-            WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER
+                WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER
         ));
         relationMapper.map(RelationType.DISABLE, Relate(WINDOW_GAIN_FOCUS, WINDOW_GAIN_FOCUS));
-        
+
         /**
          * When the mouse returns to the window, it should be captured back, and the event disabled.
          */
         relationMapper.map(RelationType.ENABLE, Relate(MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE));
         relationMapper.map(RelationType.DISABLE, Relate(MOUSE_ENTER, MOUSE_ENTER));
-        
+
         /**
          * The last scenario is component move. Example of it - user drags the window by its head.
          * This way, first window is activated and gained focus, than component moved. Normally, the mouse would
@@ -237,11 +219,11 @@ public enum EventHandler implements EventBase<EventHandler> {
          * he then should manually click inside it to regain mouse capture - or alt-tab twice (regain window focus)
          */
         relationMapper.map(RelationType.DISABLE, Relate(COMPONENT_MOVE,
-            MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE, MOUSE_ENTER
+                MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE, MOUSE_ENTER
         ));
         relationMapper.map(RelationType.ENABLE, Relate(COMPONENT_MOVE, MOUSE_CLICK));
     });
-    
+
     public static void menuCaptureChanges(EventObserver<EventHandler> observer, boolean capture) {
         if (capture) {
             observer.enableAction(MOUSE_MOVE, ActionMode.PERFORM);
@@ -261,7 +243,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             observer.restoreCursor(null);
         }
     }
-    
+
     public static void fullscreenChanges(EventObserver<EventHandler> observer, boolean fullscreen) {
         /**
          * Clear any holding keys
@@ -273,9 +255,9 @@ public enum EventHandler implements EventBase<EventHandler> {
              * (immediately after switch, or after return from alt-tab)
              */
             observer.mapRelation(COMPONENT_RESIZE, RelationType.ENABLE, WINDOW_OPEN,
-                WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE
+                    WINDOW_LOSE_FOCUS, KEY_PRESS, KEY_RELEASE, KEY_TYPE, MOUSE_ENTER, MOUSE_MOVE, MOUSE_DRAG, MOUSE_PRESS, MOUSE_RELEASE
             );
-            
+
             /**
              * COMPONENT_MOVE is fired often in full-screen mode and does not mean that used did
              * something with the window frame, actually there is no frame, there is no sense - disable it
@@ -286,14 +268,14 @@ public enum EventHandler implements EventBase<EventHandler> {
              * Remove full-screen COMPONENT_RESIZE relations, if they was added earlier
              */
             observer.unmapRelation(COMPONENT_RESIZE, RelationType.ENABLE);
-            
+
             /**
              * Immediately after return from full-screen mode, a bunch of events will occur,
              * some of them will cause mouse capture to be lost. Disable them.
              */
             observer.disableAction(WINDOW_LOSE_FOCUS, ActionMode.PERFORM);
             observer.disableAction(COMPONENT_MOVE, ActionMode.PERFORM);
-            
+
             /**
              * The last of the bunch of events should be WINDOW_ACTIVATE, add a function to him
              * to restore the proper reaction on events we have switched off. It also should remove
@@ -306,7 +288,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             });
         }
     }
-    
+
     private static EventAction<EventHandler> mouseMoveAction(boolean isDrag) {
         return (observer, ev) -> {
             // Do not send robot-generated moves (centering) to the underlying DOOM's event engine
@@ -322,7 +304,7 @@ public enum EventHandler implements EventBase<EventHandler> {
             } else {
                 observer.mouseEvent.moveIn((MouseEvent) ev, centreX, centreY, isDrag);
             }
-            
+
             if (observer.mouseEvent.processed) {
                 observer.mouseEvent.resetNotify();
                 observer.feed(observer.mouseEvent);
@@ -335,26 +317,25 @@ public enum EventHandler implements EventBase<EventHandler> {
     final Map<ActionMode, EventAction<EventHandler>> actions;
     final Map<RelationType, Set<EventHandler>> adjustments;
     final Map<RelationType, Set<EventHandler>> cooperations;
-    
+
     private EventHandler(final Consumer<RelationMapper<EventHandler>> relationMapper) {
         this.eventId = -1;
         this.actions = Collections.emptyMap();
         this.adjustments = Collections.emptyMap();
         this.cooperations = Collections.emptyMap();
         this.enabled = Collections.emptySet();
-        relationMapper.accept((type, relations) -> 
-            Stream.of(relations).forEach(relation ->
-                (type.affection == RelationAffection.COOPERATES
-                    ? relation.sourceHandler.cooperations
-                    : relation.sourceHandler.adjustments
-                ).compute(type, (t, set) -> {
-                    (set == null ? (set = new HashSet<>()) : set).add(relation.targetHandler);
-                    return set;
-                })
-            )
+        relationMapper.accept((type, relations)
+                -> Stream.of(relations).forEach(relation
+                        -> (type.affection == RelationAffection.COOPERATES
+                        ? relation.sourceHandler.cooperations
+                        : relation.sourceHandler.adjustments).compute(type, (t, set) -> {
+                            (set == null ? (set = new HashSet<>()) : set).add(relation.targetHandler);
+                            return set;
+                        })
+                )
         );
     }
-    
+
     private EventHandler(final int eventId, final ActionMode... enableModes) {
         this(eventId, null, enableModes);
     }
@@ -364,22 +345,37 @@ public enum EventHandler implements EventBase<EventHandler> {
         this.actions = new EnumMap<>(ActionMode.class);
         this.enabled = EnumSet.noneOf(ActionMode.class);
         this.enabled.addAll(Arrays.asList(enableModes));
-        
+
         this.adjustments = new EnumMap<>(RelationType.class);
         this.cooperations = new EnumMap<>(RelationType.class);
-        
+
         if (actionMapper != null) {
             actionMapper.accept(actions::put);
         }
     }
-    
+
     /**
      * Interface implementation
      */
-    @Override public Set<ActionMode> defaultEnabledActions() { return enabled; }
-    @Override public Map<ActionMode, EventAction<EventHandler>> allActions() { return actions; }
-    @Override public Map<RelationType, Set<EventHandler>> cooperations() { return cooperations; }
-    @Override public Map<RelationType, Set<EventHandler>> adjustments() { return adjustments; }
+    @Override
+    public Set<ActionMode> defaultEnabledActions() {
+        return enabled;
+    }
+
+    @Override
+    public Map<ActionMode, EventAction<EventHandler>> allActions() {
+        return actions;
+    }
+
+    @Override
+    public Map<RelationType, Set<EventHandler>> cooperations() {
+        return cooperations;
+    }
+
+    @Override
+    public Map<RelationType, Set<EventHandler>> adjustments() {
+        return adjustments;
+    }
 
     /**
      * A hack to make this Enum implementation sortable by primitive integers in another way then by ordinal()

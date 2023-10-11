@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.graphics;
 
 import f.Wiper;
@@ -30,8 +29,9 @@ import v.graphics.Wipers.WipeFunc.WF;
  * SCREEN WIPE PACKAGE
  */
 public class Wipers implements ColorTransform, Melt {
+
     private static final Wipers instance = new Wipers();
-    
+
     /**
      * They are repeated thrice for a reason - they are overloads with different arguments
      * - Good Sign 2017/04/06
@@ -42,58 +42,59 @@ public class Wipers implements ColorTransform, Melt {
         doColorXFormB(instance::colorTransformB, byte[].class),
         doColorXFormS(instance::colorTransformS, short[].class),
         doColorXFormI(instance::colorTransformI, int[].class),
-        
         initColorXForm(instance::initTransform),
         doColorXForm(doColorXFormB, doColorXFormS, doColorXFormI),
         exitColorXForm(w -> false),
-
         initScaledMelt(instance::initMeltScaled),
         doScaledMelt(instance::doMeltScaled),
-
         initMelt(instance::initMelt),
         doMelt(instance::doMelt),
         exitMelt(instance::exitMelt);
-        
+
         private final Class<?> supportFor;
         private final WF<?> func;
-        
+
         WipeFunc(WF<?> func) {
             this.supportFor = null;
             this.func = func;
         }
-        
+
         <V> WipeFunc(WF<V> func, Class<V> supportFor) {
             this.supportFor = supportFor;
             this.func = func;
         }
-        
+
         WipeFunc(final WipeFunc... wf) {
             this.supportFor = null;
             this.func = wipeChoice(wf);
         }
-        
+
         private static <V> WF<V> wipeChoice(final WipeFunc[] wf) {
-        	return (WiperImpl<V, ?> wiper) -> {
-        		for (int i = 0; i < wf.length; ++i) {
-        			if (wiper.bufferType == wf[i].supportFor) {
-        				@SuppressWarnings("unchecked") // checked
-						final WF<V> supported = (WF<V>) wf[i].func;
-        				return supported.invoke(wiper);
-        			}
-        		}
-        		
-        		throw new UnsupportedOperationException("Do not have support for: " + wiper.bufferType);
-        	};
+            return (WiperImpl<V, ?> wiper) -> {
+                for (int i = 0; i < wf.length; ++i) {
+                    if (wiper.bufferType == wf[i].supportFor) {
+                        @SuppressWarnings("unchecked") // checked
+                        final WF<V> supported = (WF<V>) wf[i].func;
+                        return supported.invoke(wiper);
+                    }
+                }
+
+                throw new UnsupportedOperationException("Do not have support for: " + wiper.bufferType);
+            };
         }
-        
-        interface WF<V> { public boolean invoke(WiperImpl<V, ?> wiper); }
+
+        interface WF<V> {
+
+            public boolean invoke(WiperImpl<V, ?> wiper);
+        }
     }
-    
+
     public static <V, E extends Enum<E>> Wiper createWiper(IRandom rnd, Screens<V, E> screens, E ws, E we, E ms) {
         return new WiperImpl<>(rnd, screens, ws, we, ms);
     }
-    
+
     protected final static class WiperImpl<V, E extends Enum<E>> implements Wiper {
+
         private final Relocation relocation = new Relocation(0, 0, 1);
         final IRandom random;
         final Screens<V, E> screens;
@@ -127,7 +128,7 @@ public class Wipers implements ColorTransform, Melt {
             this.scaled_16 = dupy << 4;
             this.scaled_8 = dupy << 3;
         }
-        
+
         void startToScreen(int source, int destination) {
             screens.screenCopy(wipeStartScr, wipeScr, relocation.retarget(source, destination));
         }
@@ -156,10 +157,10 @@ public class Wipers implements ColorTransform, Melt {
             GenericCopy.memcpy(wipeStartScr, 0, wipeScr, 0, Array.getLength(wipeScr));
             return false;
         }
-        
+
         @SuppressWarnings("unchecked")
-		private boolean invokeCheckedFunc(WipeFunc f) {
-        	return ((WF<V>) f.func).invoke(this);
+        private boolean invokeCheckedFunc(WipeFunc f) {
+            return ((WF<V>) f.func).invoke(this);
         }
 
         @Override
@@ -168,7 +169,7 @@ public class Wipers implements ColorTransform, Melt {
 
             //System.out.println("Ticks do "+ticks);
             this.ticks = ticks;
-            
+
             // initial stuff
             if (!go) {
                 go = true;
@@ -190,12 +191,16 @@ public class Wipers implements ColorTransform, Melt {
             return !go;
         }
     }
-    
+
     public interface WipeType {
+
         WipeFunc getInitFunc();
+
         WipeFunc getDoFunc();
+
         WipeFunc getExitFunc();
     }
-    
-    private Wipers() {}
+
+    private Wipers() {
+    }
 }

@@ -35,7 +35,7 @@ public interface Palettes extends Lights {
      * Maximum number of colors in palette
      */
     static int PAL_NUM_COLORS = 256;
-    
+
     /**
      * There is 256 colors in standard PALYPAL lump, 3 bytes for each color (RGB value)
      * totaling 256 * 3 = 768 bytes
@@ -53,7 +53,6 @@ public interface Palettes extends Lights {
     /**
      * Methods to be used by implementor
      */
-    
     /** 
      * Perform any action necessary so that palettes get modified according to specified gamma.
      * Consider this a TIME CONSUMING operation, so don't call it unless really necessary.
@@ -61,14 +60,14 @@ public interface Palettes extends Lights {
      * @param gammalevel
      */
     void setUsegamma(int gammalevel);
-    
+
     /**
      * Getter for gamma level
      * 
      * @return 
      */
     int getUsegamma();
-    
+
     /** 
      * Perform any action necessary so that the screen output uses the specified palette
      * Consider this a TIME CONSUMING operation, so don't call it unless really necessary.
@@ -76,14 +75,14 @@ public interface Palettes extends Lights {
      * @param palette
      */
     void setPalette(int palette);
-    
+
     /**
      * Getter for palette
      * 
      * @return 
      */
     int getPalette();
-    
+
     /** 
      * Get the value corresponding to a base color (0-255).
      * Depending on the implementation this might be indexed,
@@ -93,8 +92,10 @@ public interface Palettes extends Lights {
      */
     int getBaseColor(byte color);
 
-    default int getBaseColor(int color) { return getBaseColor((byte) color); }
-    
+    default int getBaseColor(int color) {
+        return getBaseColor((byte) color);
+    }
+
     /**
      * Extracts RGB888 color from an index in the palette
      * @param byte[] pal proper playpal
@@ -104,7 +105,7 @@ public interface Palettes extends Lights {
     default int paletteToRGB888(byte[] pal, int index) {
         return toRGB888(pal[index], pal[index + 1], pal[index + 2]);
     }
-    
+
     /**
      * Extracts RGB555 color from an index in the palette
      * @param byte[] pal proper playpal
@@ -114,7 +115,7 @@ public interface Palettes extends Lights {
     default short paletteToRGB555(byte[] pal, int index) {
         return rgb888to555(pal[index], pal[index + 1], pal[index + 2]);
     }
-    
+
     /**
      * Extracts RGB888 color components from an index in the palette to the container
      * @param byte[] pal proper playpal
@@ -128,7 +129,7 @@ public interface Palettes extends Lights {
         container[2] = pal[index + 2] & 0xFF;
         return container;
     }
-    
+
     /**
      * ColorShiftPalette - lifted from dcolors.c Operates on RGB888 palettes in
      * separate bytes. at shift = 0, the colors are normal at shift = steps, the
@@ -156,16 +157,16 @@ public interface Palettes extends Lights {
      */
     default int[] paletteTrueColor(byte[] pal) {
         final int pal888[] = new int[PAL_NUM_COLORS];
-        
+
         // Initial palette can be neutral or based upon "gamma 0",
         // which is actually a bit biased and distorted
         for (int x = 0; x < PAL_NUM_COLORS; ++x) {
             pal888[x] = paletteToRGB888(pal, x * PAL_NUM_STRIDES);
         }
-        
+
         return pal888;
     }
-    
+
     /**
      * Given raw palette data, returns an array with proper HiColor data
      * @param byte[] pal proper palette
@@ -180,7 +181,7 @@ public interface Palettes extends Lights {
         for (int x = 0; x < PAL_NUM_COLORS; ++x) {
             pal555[x] = paletteToRGB555(pal, x * PAL_NUM_STRIDES);
         }
- 
+
         return pal555;
     }
 
@@ -190,10 +191,10 @@ public interface Palettes extends Lights {
      * @param IndexColorModel[][] cmaps preallocated array, as it is often reconstructed for gamma, do not reallocate it
      * @param byte[] pal proper palette
      * @return the same araay as input, but all values set to new IndexColorModels
-     */    
+     */
     default IndexColorModel[][] cmapIndexed(IndexColorModel icms[][], byte[] pal) {
         final int colorsXstride = PAL_NUM_COLORS * PAL_NUM_STRIDES;
-        
+
         // Now we have our palettes.
         for (int i = 0; i < icms[0].length; ++i) {
             //new IndexColorModel(8, PAL_NUM_COLORS, pal, i * colorsXstride, false);

@@ -20,7 +20,10 @@ import java.awt.DisplayMode;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.Image;
-import static java.awt.RenderingHints.*;
+import static java.awt.RenderingHints.KEY_INTERPOLATION;
+import static java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC;
+import static java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR;
+import static java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
 import java.awt.image.ImageObserver;
 import m.Settings;
 import mochadoom.Engine;
@@ -31,40 +34,41 @@ import mochadoom.Engine;
  * @author Good Sign
  */
 public interface FullscreenOptions {
+
     enum InterpolationMode {
         Nearest, Bilinear, Biqubic;
     }
-    
+
     enum StretchMode {
         Centre(
-            (w, defW, h, defH) -> Math.min(defW, w),
-            (w, defW, h, defH) -> Math.min(defH, h),
-            (w, defW, h, defH) -> Math.max(0, (w - defW) / 2),
-            (w, defW, h, defH) -> Math.max(0, (h - defH) / 2)
+                (w, defW, h, defH) -> Math.min(defW, w),
+                (w, defW, h, defH) -> Math.min(defH, h),
+                (w, defW, h, defH) -> Math.max(0, (w - defW) / 2),
+                (w, defW, h, defH) -> Math.max(0, (h - defH) / 2)
         ), Stretch(
-            (w, defW, h, defH) -> w,
-            (w, defW, h, defH) -> h,
-            (w, defW, h, defH) -> 0,
-            (w, defW, h, defH) -> 0
+                (w, defW, h, defH) -> w,
+                (w, defW, h, defH) -> h,
+                (w, defW, h, defH) -> 0,
+                (w, defW, h, defH) -> 0
         ), Fit(
-            (w, defW, h, defH) -> (int) (defW * minScale(w, defW, h, defH)),
-            (w, defW, h, defH) -> (int) (defH * minScale(w, defW, h, defH)),
-            (w, defW, h, defH) -> (w - (int) (defW * minScale(w, defW, h, defH))) / 2,
-            (w, defW, h, defH) -> (h - (int) (defH * minScale(w, defW, h, defH))) / 2
+                (w, defW, h, defH) -> (int) (defW * minScale(w, defW, h, defH)),
+                (w, defW, h, defH) -> (int) (defH * minScale(w, defW, h, defH)),
+                (w, defW, h, defH) -> (w - (int) (defW * minScale(w, defW, h, defH))) / 2,
+                (w, defW, h, defH) -> (h - (int) (defH * minScale(w, defW, h, defH))) / 2
         ), Aspect_4_3(
-            (w, defW, h, defH) -> Fit.widthFun.fit(w, defW, h, (int) (defH * 1.2f)),
-            (w, defW, h, defH) -> Fit.heightFun.fit(w, defW, h, (int) (defH * 1.2f)),
-            (w, defW, h, defH) -> Fit.offsXFun.fit(w, defW, h, (int) (defH * 1.2f)),
-            (w, defW, h, defH) -> Fit.offsYFun.fit(w, defW, h, (int) (defH * 1.2f))
+                (w, defW, h, defH) -> Fit.widthFun.fit(w, defW, h, (int) (defH * 1.2f)),
+                (w, defW, h, defH) -> Fit.heightFun.fit(w, defW, h, (int) (defH * 1.2f)),
+                (w, defW, h, defH) -> Fit.offsXFun.fit(w, defW, h, (int) (defH * 1.2f)),
+                (w, defW, h, defH) -> Fit.offsYFun.fit(w, defW, h, (int) (defH * 1.2f))
         );
-        
+
         final Fitter widthFun, heightFun, offsXFun, offsYFun;
 
         private StretchMode(
-            final Fitter widthFun,
-            final Fitter heightFun,
-            final Fitter offsXFun,
-            final Fitter offsYFun
+                final Fitter widthFun,
+                final Fitter heightFun,
+                final Fitter offsXFun,
+                final Fitter offsYFun
         ) {
             this.widthFun = widthFun;
             this.heightFun = heightFun;
@@ -78,44 +82,49 @@ public interface FullscreenOptions {
             return Math.min(scaleX, scaleY);
         }
     }
-    
+
     enum FullMode {
         Best, Native;
     }
-    
+
     static FullMode FULLMODE = Engine.getConfig().getValue(Settings.fullscreen_mode, FullMode.class);
     static StretchMode STRETCH = Engine.getConfig().getValue(Settings.fullscreen_stretch, StretchMode.class);
     static InterpolationMode INTERPOLATION = Engine.getConfig().getValue(Settings.fullscreen_interpolation, InterpolationMode.class);
-    
+
     interface Dimension {
+
         int width();
+
         int height();
+
         int defWidth();
+
         int defHeight();
-        
+
         default int fitX() {
             return STRETCH.widthFun.fit(width(), defWidth(), height(), defHeight());
         }
-        
+
         default int fitY() {
             return STRETCH.heightFun.fit(width(), defWidth(), height(), defHeight());
         }
-        
+
         default int offsX() {
             return STRETCH.offsXFun.fit(width(), defWidth(), height(), defHeight());
         }
-        
+
         default int offsY() {
             return STRETCH.offsYFun.fit(width(), defWidth(), height(), defHeight());
         }
     }
-    
+
     interface Fitter {
+
         int fit(int width, int defWidth, int height, int defHeight);
     }
-    
+
     default void options(Graphics2D graphics) {
-        switch(INTERPOLATION) {
+        switch (INTERPOLATION) {
             case Nearest:
                 graphics.setRenderingHint(KEY_INTERPOLATION, VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
                 break;
@@ -127,28 +136,30 @@ public interface FullscreenOptions {
                 break;
         }
     }
-    
+
     default void draw(Graphics2D graphics, Image image, Dimension dim, ImageObserver observer) {
         graphics.drawImage(image, dim.offsX(), dim.offsY(), dim.fitX(), dim.fitY(), observer);
     }
-    
+
     default FullscreenFunction createFullSwitcher(final GraphicsDevice device) {
-        switch(FULLMODE) {
+        switch (FULLMODE) {
             case Best:
                 return new FullscreenSwitch(device, new DisplayModePicker(device));
             case Native:
                 return (w, h) -> device.getDisplayMode();
         }
-        
+
         throw new Error("Enum reflection overuse?");
     }
-    
+
     @FunctionalInterface
     interface FullscreenFunction {
+
         DisplayMode get(int width, int height);
     }
-    
+
     static class FullscreenSwitch implements FullscreenFunction {
+
         private final GraphicsDevice dev;
         private final DisplayModePicker dmp;
         private DisplayMode oldDisplayMode;
@@ -171,7 +182,7 @@ public interface FullscreenOptions {
                 displayMode = oldDisplayMode;
                 oldDisplayMode = null;
             }
-            
+
             return displayMode;
         }
     }

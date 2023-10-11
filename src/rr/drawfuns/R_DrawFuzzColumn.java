@@ -32,18 +32,18 @@ import v.tables.BlurryTable;
 public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
 
     public R_DrawFuzzColumn(
-        int SCREENWIDTH, int SCREENHEIGHT,
-        int[] ylookup, int[] columnofs, ColVars<T, V> dcvars,
-        V screen, IDoomSystem I, BlurryTable BLURRY_MAP
+            int SCREENWIDTH, int SCREENHEIGHT,
+            int[] ylookup, int[] columnofs, ColVars<T, V> dcvars,
+            V screen, IDoomSystem I, BlurryTable BLURRY_MAP
     ) {
         this(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
         this.blurryTable = BLURRY_MAP;
     }
 
     public R_DrawFuzzColumn(
-        int SCREENWIDTH, int SCREENHEIGHT,
-        int[] ylookup, int[] columnofs, ColVars<T, V> dcvars,
-        V screen, IDoomSystem I
+            int SCREENWIDTH, int SCREENHEIGHT,
+            int[] ylookup, int[] columnofs, ColVars<T, V> dcvars,
+            V screen, IDoomSystem I
     ) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
         this.flags = DcFlags.FUZZY;
@@ -51,36 +51,33 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
         FUZZOFF = SCREENWIDTH;
 
         // Recompute fuzz table
-
-        fuzzoffset = new int[]{ FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF,
-                FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF,
-                FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF,
-                -FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF,
-                FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF,
-                FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF,
-                -FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF,
-                FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF };
+        fuzzoffset = new int[]{FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF,
+            FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF,
+            FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF,
+            -FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF,
+            FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF,
+            FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF,
+            -FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF,
+            FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF};
 
         FUZZTABLE = fuzzoffset.length;
     }
 
-    protected int fuzzpos;		
+    protected int fuzzpos;
     protected final int FUZZTABLE;
-
 
     //
     // Spectre/Invisibility.
     //
-
     protected final int FUZZOFF;
     protected final int[] fuzzoffset;
 
     public static final class Indexed extends R_DrawFuzzColumn<byte[], byte[]> {
 
         public Indexed(
-            int SCREENWIDTH, int SCREENHEIGHT, int[] ylookup,
-            int[] columnofs, ColVars<byte[], byte[]> dcvars,
-            byte[] screen, IDoomSystem I, BlurryTable BLURRY_MAP
+                int SCREENWIDTH, int SCREENHEIGHT, int[] ylookup,
+                int[] columnofs, ColVars<byte[], byte[]> dcvars,
+                byte[] screen, IDoomSystem I, BlurryTable BLURRY_MAP
         ) {
             super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I, BLURRY_MAP);
         }
@@ -91,18 +88,21 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
             int dest;
 
             // Adjust borders. Low...
-            if (dcvars.dc_yl == 0)
+            if (dcvars.dc_yl == 0) {
                 dcvars.dc_yl = 1;
+            }
 
             // .. and high.
-            if (dcvars.dc_yh == dcvars.viewheight - 1)
+            if (dcvars.dc_yh == dcvars.viewheight - 1) {
                 dcvars.dc_yh = dcvars.viewheight - 2;
+            }
 
             count = dcvars.dc_yh - dcvars.dc_yl;
 
             // Zero length.
-            if (count < 0)
+            if (count < 0) {
                 return;
+            }
 
             if (RANGECHECK) {
                 performRangeCheck();
@@ -123,24 +123,31 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
 
                     // Clamp table lookup index.
-                    if (++fuzzpos == FUZZTABLE)
+                    if (++fuzzpos == FUZZTABLE) {
                         fuzzpos = 0;
+                    }
 
-                    dest += SCREENWIDTH;				
-
-                    screen[dest] = blurryTable.computePixel(screen[dest+ fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                     dest += SCREENWIDTH;
 
-                    screen[dest] = blurryTable.computePixel(screen[dest+ fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
                     dest += SCREENWIDTH;
 
-                    screen[dest] = blurryTable.computePixel(screen[dest+ fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
                     dest += SCREENWIDTH;
 
-                } while ((count-=4) > 4);
+                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
+                    dest += SCREENWIDTH;
+
+                } while ((count -= 4) > 4);
             }
 
             if (count > 0) {
@@ -152,8 +159,9 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
 
                     // Clamp table lookup index.
-                    if (++fuzzpos == FUZZTABLE)
+                    if (++fuzzpos == FUZZTABLE) {
                         fuzzpos = 0;
+                    }
 
                     dest += SCREENWIDTH;
                 } while (count-- > 0);
@@ -164,9 +172,9 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
     public static final class HiColor extends R_DrawFuzzColumn<byte[], short[]> {
 
         public HiColor(
-            int SCREENWIDTH, int SCREENHEIGHT, int[] ylookup,
-            int[] columnofs, ColVars<byte[], short[]> dcvars,
-            short[] screen, IDoomSystem I, BlurryTable BLURRY_MAP
+                int SCREENWIDTH, int SCREENHEIGHT, int[] ylookup,
+                int[] columnofs, ColVars<byte[], short[]> dcvars,
+                short[] screen, IDoomSystem I, BlurryTable BLURRY_MAP
         ) {
             super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I, BLURRY_MAP);
             // TODO Auto-generated constructor stub
@@ -178,18 +186,21 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
             int dest;
 
             // Adjust borders. Low...
-            if (dcvars.dc_yl == 0)
+            if (dcvars.dc_yl == 0) {
                 dcvars.dc_yl = 1;
+            }
 
             // .. and high.
-            if (dcvars.dc_yh == dcvars.viewheight - 1)
+            if (dcvars.dc_yh == dcvars.viewheight - 1) {
                 dcvars.dc_yh = dcvars.viewheight - 2;
+            }
 
             count = dcvars.dc_yh - dcvars.dc_yl;
 
             // Zero length.
-            if (count < 0)
+            if (count < 0) {
                 return;
+            }
 
             if (RANGECHECK) {
                 super.performRangeCheck();
@@ -211,32 +222,40 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
 
                     // Clamp table lookup index.
-                    if (++fuzzpos == FUZZTABLE)
+                    if (++fuzzpos == FUZZTABLE) {
                         fuzzpos = 0;
+                    }
 
-                    dest += SCREENWIDTH;				
-
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                     dest += SCREENWIDTH;
 
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
                     dest += SCREENWIDTH;
 
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
                     dest += SCREENWIDTH;
 
-                } while ((count-=4) > 4);
+                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
+                    dest += SCREENWIDTH;
+
+                } while ((count -= 4) > 4);
 
                 if (count > 0) {
                     do {
                         screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
 
                         // Clamp table lookup index.
-                        if (++fuzzpos == FUZZTABLE)
+                        if (++fuzzpos == FUZZTABLE) {
                             fuzzpos = 0;
+                        }
 
                         dest += SCREENWIDTH;
                     } while (count-- > 0);
@@ -259,18 +278,21 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
             int dest;
 
             // Adjust borders. Low...
-            if (dcvars.dc_yl == 0)
+            if (dcvars.dc_yl == 0) {
                 dcvars.dc_yl = 1;
+            }
 
             // .. and high.
-            if (dcvars.dc_yh == dcvars.viewheight - 1)
+            if (dcvars.dc_yh == dcvars.viewheight - 1) {
                 dcvars.dc_yh = dcvars.viewheight - 2;
+            }
 
             count = dcvars.dc_yh - dcvars.dc_yl;
 
             // Zero length.
-            if (count < 0)
+            if (count < 0) {
                 return;
+            }
 
             if (RANGECHECK) {
                 performRangeCheck();
@@ -292,21 +314,28 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
 
                     // Clamp table lookup index.
-                    if (++fuzzpos == FUZZTABLE)
+                    if (++fuzzpos == FUZZTABLE) {
                         fuzzpos = 0;
+                    }
 
-                    dest += SCREENWIDTH;                
-
-                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                     dest += SCREENWIDTH;
 
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
                     dest += SCREENWIDTH;
 
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
-                    if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
+                    dest += SCREENWIDTH;
+
+                    screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
+                    if (++fuzzpos == FUZZTABLE) {
+                        fuzzpos = 0;
+                    }
                     dest += SCREENWIDTH;
 
                 } while ((count -= 4) > 4);
@@ -321,8 +350,9 @@ public abstract class R_DrawFuzzColumn<T, V> extends DoomColumnFunction<T, V> {
                     screen[dest] = blurryTable.computePixel(screen[dest + fuzzoffset[fuzzpos]]);
 
                     // Clamp table lookup index.
-                    if (++fuzzpos == FUZZTABLE)
+                    if (++fuzzpos == FUZZTABLE) {
                         fuzzpos = 0;
+                    }
 
                     dest += SCREENWIDTH;
                 } while (count-- > 0);

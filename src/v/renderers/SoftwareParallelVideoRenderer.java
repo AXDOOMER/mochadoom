@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.renderers;
 
 import doom.CommandVariable;
-import mochadoom.Engine;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.ColorModel;
@@ -29,6 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import m.MenuMisc;
 import m.Settings;
+import mochadoom.Engine;
 
 /**
  * Base for HiColor and TrueColor parallel renderers
@@ -37,13 +36,14 @@ import m.Settings;
  * @author velktron
  */
 abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSystem<T, V> {
+
     // How many threads it will use, but default it uses all avalable cores
     private static final int[] EMPTY_INT_PALETTED_BLOCK = new int[0];
     private static final short[] EMPTY_SHORT_PALETTED_BLOCK = new short[0];
     protected static final int PARALLELISM = Engine.getConfig().getValue(Settings.parallelism_realcolor_tint, Integer.class);
     protected static final GraphicsConfiguration GRAPHICS_CONF = GraphicsEnvironment.getLocalGraphicsEnvironment()
             .getDefaultScreenDevice().getDefaultConfiguration();
-    
+
     protected final boolean GRAYPAL_SET = Engine.getCVM().bool(CommandVariable.GREYPAL);
 
     /**
@@ -65,7 +65,7 @@ abstract class SoftwareParallelVideoRenderer<T, V> extends SoftwareGraphicsSyste
         final int cps = cm.getNumComponents();
         return cps == 3 && cm.getComponentSize(0) == 8 && cm.getComponentSize(1) == 8 && cm.getComponentSize(2) == 8;
     }
-    
+
     /**
      * We do not need to clear caches anymore - pallettes are applied on post-process
      *  - Good Sign 2017/04/12

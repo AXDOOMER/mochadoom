@@ -3,7 +3,6 @@ package rr;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 
 /**
@@ -14,28 +13,27 @@ import w.CacheableDoomObject;
  * into the rectangular texture space using origin
  * and possibly other attributes. 
  */
-
 public class mappatch_t implements CacheableDoomObject {
-     public short   originx;
-     public short   originy;
-     public short   patch;
-     public short   stepdir;
-     public short   colormap;
-     
+
+    public short originx;
+    public short originy;
+    public short patch;
+    public short stepdir;
+    public short colormap;
+
     @Override
     public void unpack(ByteBuffer buf)
             throws IOException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        originx=buf.getShort();
-        originy=buf.getShort();
-        patch=buf.getShort();
-        stepdir=buf.getShort();
-        colormap=buf.getShort();        
+        originx = buf.getShort();
+        originy = buf.getShort();
+        patch = buf.getShort();
+        stepdir = buf.getShort();
+        colormap = buf.getShort();
     }
 
     public static final int size() {
         return 10;
     }
-     
-     
- };
+
+};

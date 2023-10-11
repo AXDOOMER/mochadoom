@@ -46,7 +46,7 @@ public class state_t {
 
     public statenum_t nextstate;
     public int misc1, misc2;
-    
+
     /**
      * relative index in state array. Needed sometimes.
      */

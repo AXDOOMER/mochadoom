@@ -1,13 +1,11 @@
 package rr;
 
 /** Draws any masked stuff -sprites, textures, or special 3D floors */
-
-public interface IMaskedDrawer<T,V> extends IDetailAware {
+public interface IMaskedDrawer<T, V> extends IDetailAware {
 
     public static final int BASEYCENTER = 100;
-    
-    /** Cache the sprite manager, if possible */
 
+    /** Cache the sprite manager, if possible */
     void cacheSpriteManager(ISpriteManager SM);
 
     void DrawMasked();
@@ -21,6 +19,5 @@ public interface IMaskedDrawer<T,V> extends IDetailAware {
      * parallel version, store rendering instructions and execute later on.
      * HINT: you need to discern between masked and non-masked draws.
      */
-
     void completeColumn();
 }

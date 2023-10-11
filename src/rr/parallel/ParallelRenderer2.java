@@ -1,6 +1,6 @@
 package rr.parallel;
 
-import static data.Limits.*;
+import static data.Limits.MAXSEGS;
 import doom.DoomMain;
 import doom.player_t;
 import java.io.IOException;
@@ -28,14 +28,13 @@ import static utils.GenericCopy.malloc;
  * @author velktron
  *
  */
-
 public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T, V> {
-    
+
     @SuppressWarnings("unchecked")
     public ParallelRenderer2(DoomMain<T, V> DOOM, int wallthread, int floorthreads, int nummaskedthreads) {
         super(DOOM, wallthread, floorthreads, nummaskedthreads);
         System.out.println("Parallel Renderer 2 (Seg-based)");
-        
+
         this.MySegs = new ParallelSegs2<>(this);
         this.MyPlanes = new ParallelPlanes<>(DOOM, this);
         this.MyThings = new ParallelThings2<>(DOOM.vs, this);
@@ -44,15 +43,15 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         // Masked workers.
         ((ParallelThings2<T, V>) MyThings).maskedworkers = maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
         InitMaskedWorkers();
-        
+
         ((ParallelSegs2<T, V>) MySegs).RSI = malloc(RenderSegInstruction::new, RenderSegInstruction[]::new, MAXSEGS * 3);
     }
 
-	@Override
+    @Override
     @SuppressWarnings("unchecked")
-	protected void InitParallelStuff() {
-		// Prepare parallel stuff
-		((ParallelSegs2<T, V>) MySegs).RSIExec = new RenderSegExecutor[NUMWALLTHREADS];
+    protected void InitParallelStuff() {
+        // Prepare parallel stuff
+        ((ParallelSegs2<T, V>) MySegs).RSIExec = new RenderSegExecutor[NUMWALLTHREADS];
         tp = Executors.newFixedThreadPool(NUMWALLTHREADS + NUMFLOORTHREADS);
         // Prepare the barrier for MAXTHREADS + main thread.
         //wallbarrier=new CyclicBarrier(NUMWALLTHREADS+1);
@@ -67,28 +66,25 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
 
         // If using masked threads, set these too.
         TexMan.setSMPVars(NUMMASKEDTHREADS);
-	}
+    }
 
-	///////////////////////// The actual rendering calls ///////////////////////
-
-	/**
-	 * R_RenderView
-	 * 
-	 * As you can guess, this renders the player view of a particular player object.
-	 * In practice, it could render the view of any mobj too, provided you adapt the
-	 * SetupFrame method (where the viewing variables are set).
-	 * 
-	 */
-
+    ///////////////////////// The actual rendering calls ///////////////////////
+    /**
+     * R_RenderView
+     * 
+     * As you can guess, this renders the player view of a particular player object.
+     * In practice, it could render the view of any mobj too, provided you adapt the
+     * SetupFrame method (where the viewing variables are set).
+     * 
+     */
     @Override
     @SuppressWarnings("unchecked")
-	public void RenderPlayerView (player_t player)
-	{   
-		// Viewing variables are set according to the player's mobj. Interesting hacks like
-		// free cameras or monster views can be done.
-		SetupFrame (player);
+    public void RenderPlayerView(player_t player) {
+        // Viewing variables are set according to the player's mobj. Interesting hacks like
+        // free cameras or monster views can be done.
+        SetupFrame(player);
 
-		/* Uncommenting this will result in a very existential experience
+        /* Uncommenting this will result in a very existential experience
   if (Math.random()>0.999){
 	  thinker_t shit=P.getRandomThinker();
 	  try {
@@ -98,27 +94,25 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
 
 	  }
   	}*/
-
-		// Clear buffers. 
-		MyBSP.ClearClipSegs();
+        // Clear buffers. 
+        MyBSP.ClearClipSegs();
         seg_vars.ClearDrawSegs();
         vp_vars.ClearPlanes();
-		MySegs.ClearClips();
+        MySegs.ClearClips();
         VIS.ClearSprites();
 
         // Check for new console commands.
         DOOM.gameNetworking.NetUpdate();
 
-		// The head node is the last node output.
-		MyBSP.RenderBSPNode(DOOM.levelLoader.numnodes - 1);
-		
+        // The head node is the last node output.
+        MyBSP.RenderBSPNode(DOOM.levelLoader.numnodes - 1);
+
         // RenderRMIPipeline();
         /*
          * try { maskedbarrier.await(); } catch (Exception e) {
          * e.printStackTrace(); }
          */
-
-		((ParallelSegs2<T, V>) MySegs).RenderRSIPipeline();
+        ((ParallelSegs2<T, V>) MySegs).RenderRSIPipeline();
         // System.out.printf("Submitted %d RSIs\n",RSIcount);
 
         MySegs.CompleteRendering();
@@ -126,14 +120,14 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         // Check for new console commands.
         DOOM.gameNetworking.NetUpdate();
 
-		// "Warped floor" fixed, same-height visplane merging fixed.
-		MyPlanes.DrawPlanes ();
+        // "Warped floor" fixed, same-height visplane merging fixed.
+        MyPlanes.DrawPlanes();
 
-		try {
-			visplanebarrier.await();
-		} catch (InterruptedException | BrokenBarrierException e){
-			e.printStackTrace();
-		}
+        try {
+            visplanebarrier.await();
+        } catch (InterruptedException | BrokenBarrierException e) {
+            e.printStackTrace();
+        }
 
         // Check for new console commands.
         DOOM.gameNetworking.NetUpdate();
@@ -143,12 +137,11 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
 
 //            drawsegsbarrier.await();
 //            visplanebarrier.await();
-
-
         MyThings.DrawMasked();
-	}
+    }
 
     abstract protected void InitRSISubsystem();
+
     /*
      * { // CATCH: this must be executed AFTER screen is set, and // AFTER we
      * initialize the RWI themselves, // before V is set (right?) //offsets=new
@@ -166,15 +159,11 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
      * screen,visplanebarrier,NUMFLOORTHREADS); detailaware.add((IDetailAware)
      * vpw[i]); } }
      */
-
-
     /**
-	 * R_Init
-	 */
-
-	//public int  detailLevel;
-	//public int  screenblocks=9; // has defa7ult
-
+     * R_Init
+     */
+    //public int  detailLevel;
+    //public int  screenblocks=9; // has defa7ult
     protected abstract void InitMaskedWorkers();
 
     public static final class Indexed extends ParallelRenderer2<byte[], byte[]> {
@@ -186,7 +175,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             colormaps.scalelight = new byte[colormaps.lightLevels()][colormaps.maxLightScale()][];
             colormaps.scalelightfixed = new byte[colormaps.maxLightScale()][];
             colormaps.zlight = new byte[colormaps.lightLevels()][colormaps.maxLightZ()][];
-            
+
             completeInit();
         }
 
@@ -221,16 +210,16 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         protected void InitMaskedWorkers() {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] = new MaskedWorker.Indexed(
-                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
-                    screen, maskedbarrier, BLURRY_MAP
+                        DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
+                        screen, maskedbarrier, BLURRY_MAP
                 );
-                
+
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
                 maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
             }
         }
-        
+
         @Override
         protected void InitColormaps() throws IOException {
             // Load in the light tables,
@@ -240,7 +229,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
             // colormaps = (byte *)( ((int)colormaps + 255)&~0xff);     
         }
-        
+
         @Override
         protected void R_InitDrawingFunctions() {
 
@@ -276,7 +265,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             super.R_InitDrawingFunctions();
         }
     }
-    
+
     public static final class HiColor extends ParallelRenderer2<byte[], short[]> {
 
         public HiColor(DoomMain<byte[], short[]> DM, int wallthread, int floorthreads, int nummaskedthreads) {
@@ -321,16 +310,16 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         protected void InitMaskedWorkers() {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] = new MaskedWorker.HiColor(
-                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
-                    screen, maskedbarrier, BLURRY_MAP
+                        DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
+                        screen, maskedbarrier, BLURRY_MAP
                 );
-                
+
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
                 maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
             }
         }
-        
+
         @Override
         protected void InitColormaps() throws IOException {
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
@@ -341,7 +330,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             // processing works just fine.
             BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
         }
-        
+
         @Override
         protected void R_InitDrawingFunctions() {
 
@@ -377,7 +366,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             super.R_InitDrawingFunctions();
         }
     }
-    
+
     public static final class TrueColor extends ParallelRenderer2<byte[], int[]> {
 
         public TrueColor(DoomMain<byte[], int[]> DM, int wallthread, int floorthreads, int nummaskedthreads) {
@@ -422,16 +411,16 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         protected void InitMaskedWorkers() {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] = new MaskedWorker.TrueColor(
-                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS, screen,
-                    maskedbarrier, BLURRY_MAP
+                        DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS, screen,
+                        maskedbarrier, BLURRY_MAP
                 );
-                
+
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
                 maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
             }
         }
-        
+
         @Override
         protected void InitColormaps() throws IOException {
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
@@ -441,8 +430,8 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
             // Pointless, since we don't use indexes. Instead, a half-brite
             // processing works just fine.
             BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
-       }
-        
+        }
+
         @Override
         protected void R_InitDrawingFunctions() {
 

@@ -90,18 +90,16 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
     public int id;
 
     /** killough 1/30/98: improves searches for tags. */
-    public int nexttag,firsttag;  
+    public int nexttag, firsttag;
 
     @Override
     public String toString() {
-        String str =
-            String.format("Sector: %d %x %x %d %d %d %d %d", id, floorheight,
+        // needed?
+
+        return String.format("Sector: %d %x %x %d %d %d %d %d", id, floorheight,
                 ceilingheight, floorpic, ceilingpic, lightlevel, special, // needed?
-                tag); // needed?
-
-        return str;
+                tag);
     }
-
 
     //
     // P_FindLowestFloorSurrounding()
@@ -117,11 +115,13 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
             check = this.lines[i];
             other = check.getNextSector(this);
 
-            if (other == null)
+            if (other == null) {
                 continue;
+            }
 
-            if (other.floorheight < floor)
+            if (other.floorheight < floor) {
                 floor = other.floorheight;
+            }
         }
         return floor;
     }
@@ -136,7 +136,6 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
      * 
      * @param sec
      */
-
     public int FindHighestFloorSurrounding() {
         int i;
         line_t check;
@@ -150,11 +149,13 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
 
             // The compiler nagged about this being unreachable, with
             // some older 1.6 JDKs, but that's obviously not true.
-            if (other == null)
+            if (other == null) {
                 continue;
+            }
 
-            if (other.floorheight > floor)
+            if (other.floorheight > floor) {
                 floor = other.floorheight;
+            }
         }
         return floor;
     }
@@ -167,7 +168,6 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
      * @param currentheight
      * @return fixed
      */
-
     public int FindNextHighestFloor(int currentheight) {
         int i;
         int h;
@@ -182,30 +182,35 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
             check = this.lines[i];
             other = check.getNextSector(this);
 
-            if (other == null)
+            if (other == null) {
                 continue;
+            }
 
-            if (other.floorheight > height)
+            if (other.floorheight > height) {
                 heightlist[h++] = other.floorheight;
+            }
 
             // Check for overflow. Exit.
             if (h >= MAX_ADJOINING_SECTORS) {
                 Loggers.getLogger(sector_t.class.getName()).log(Level.WARNING,
-                    "Sector with more than 20 adjoining sectors\n");
+                        "Sector with more than 20 adjoining sectors\n");
                 break;
             }
         }
 
         // Find lowest height in list
-        if (h == 0)
+        if (h == 0) {
             return currentheight;
+        }
 
         min = heightlist[0];
 
         // Range checking?
-        for (i = 1; i < h; i++)
-            if (heightlist[i] < min)
+        for (i = 1; i < h; i++) {
+            if (heightlist[i] < min) {
                 min = heightlist[i];
+            }
+        }
 
         return min;
     }
@@ -215,14 +220,16 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
     //
     @SourceCode.Exact
     @P_Spec.C(P_FindLowestCeilingSurrounding)
-    public @fixed_t int FindLowestCeilingSurrounding() {
+    public @fixed_t
+    int FindLowestCeilingSurrounding() {
         line_t check;
         sector_t other;
         int height = MAXINT;
 
         for (int i = 0; i < this.linecount; i++) {
             check = this.lines[i];
-            getNextSector: {
+            getNextSector:
+            {
                 other = check.getNextSector(this);
             }
 
@@ -250,11 +257,13 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
             check = this.lines[i];
             other = check.getNextSector(this);
 
-            if (other == null)
+            if (other == null) {
                 continue;
+            }
 
-            if (other.ceilingheight > height)
+            if (other.ceilingheight > height) {
                 height = other.ceilingheight;
+            }
         }
         return height;
     }
@@ -267,7 +276,6 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
         // like to read memory-format sector_t's is from
         // savegames, and in vanilla savegames, not all info
         // is saved (or read) from disk.
-
         this.floorheight = DoomIO.readLEShort(f) << FRACBITS;
         this.ceilingheight = DoomIO.readLEShort(f) << FRACBITS;
         // MAES: it may be necessary to apply a hack in order to

@@ -2,9 +2,25 @@ package data;
 
 import data.sounds.sfxenum_t;
 import defines.statenum_t;
-import static m.fixed_t.*;
+import static m.fixed_t.FRACUNIT;
 import static p.ActiveStates.*;
-import static p.MobjFlags.*;
+import static p.MobjFlags.MF_COUNTITEM;
+import static p.MobjFlags.MF_COUNTKILL;
+import static p.MobjFlags.MF_DROPOFF;
+import static p.MobjFlags.MF_FLOAT;
+import static p.MobjFlags.MF_MISSILE;
+import static p.MobjFlags.MF_NOBLOCKMAP;
+import static p.MobjFlags.MF_NOBLOOD;
+import static p.MobjFlags.MF_NOCLIP;
+import static p.MobjFlags.MF_NOGRAVITY;
+import static p.MobjFlags.MF_NOSECTOR;
+import static p.MobjFlags.MF_NOTDMATCH;
+import static p.MobjFlags.MF_PICKUP;
+import static p.MobjFlags.MF_SHADOW;
+import static p.MobjFlags.MF_SHOOTABLE;
+import static p.MobjFlags.MF_SOLID;
+import static p.MobjFlags.MF_SPAWNCEILING;
+import static p.MobjFlags.MF_SPECIAL;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------

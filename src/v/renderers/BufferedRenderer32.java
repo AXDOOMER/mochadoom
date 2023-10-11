@@ -13,13 +13,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
-
+ */
 package v.renderers;
 
 import java.awt.Graphics2D;
 import java.awt.Image;
-import static java.awt.Transparency.*;
+import static java.awt.Transparency.TRANSLUCENT;
 import java.awt.image.BufferedImage;
 import static java.awt.image.BufferedImage.TYPE_INT_ARGB;
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
@@ -43,16 +42,17 @@ import static v.tables.ColorTint.NORMAL_TINTS;
  * - Good Sign 2017/04/12
  */
 class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
+
     protected final int[] raster;
-    
+
     // VolatileImage speeds up delivery to VRAM - it is 30-40 fps faster then directly rendering BufferedImage
     protected VolatileImage screen;
-    
+
     // indicated whether machine display in the same mode as this renderer
     protected final boolean compatible = checkConfigurationTruecolor();
     protected final int transparency;
     protected final BlurryTable blurryTable;
-    
+
     /**
      * This implementation will "tie" a BufferedImage to the underlying byte raster.
      *
@@ -61,7 +61,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
      */
     BufferedRenderer32(RendererFactory.WithWadLoader<byte[], int[]> rf) {
         super(rf, int[].class);
-        
+
         /**
          * Try to create as accelerated Images as possible - these would not lose
          * more performance from attempt (in contrast to 16-bit ones)
@@ -75,15 +75,15 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
          * still get accelerated
          */
         currentscreen = compatible
-            ? GRAPHICS_CONF.createCompatibleImage(width, height, transparency)
-            : new BufferedImage(width, height, transparency == TRANSLUCENT ? TYPE_INT_ARGB : TYPE_INT_RGB);
+                ? GRAPHICS_CONF.createCompatibleImage(width, height, transparency)
+                : new BufferedImage(width, height, transparency == TRANSLUCENT ? TYPE_INT_ARGB : TYPE_INT_RGB);
         currentscreen.setAccelerationPriority(1.0f);
-        
+
         // extract raster from the created image
-        raster = ((DataBufferInt)((BufferedImage) currentscreen).getRaster().getDataBuffer()).getData();
-        
+        raster = ((DataBufferInt) ((BufferedImage) currentscreen).getRaster().getDataBuffer()).getData();
+
         blurryTable = new BlurryTable(liteColorMaps);
-        
+
         /**
          * Create postprocess worker threads
          * 320 is dividable by 16, so any scale of it would
@@ -148,6 +148,7 @@ class BufferedRenderer32 extends SoftwareParallelVideoRenderer<byte[], int[]> {
      * - Good Sign 2017/04/12
      */
     private class IntPaletteThread implements Runnable {
+
         private final int[] FG;
         private final int start;
         private final int stop;

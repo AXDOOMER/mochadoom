@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package mochadoom;
 
 import awt.DoomWindow;
@@ -44,15 +43,16 @@ import v.graphics.Patches;
  * @author Good Sign
  */
 public class Loggers {
+
     private static final Level DEFAULT_LEVEL = Level.WARNING;
-    
+
     private static final Map<Level, Logger> PARENT_LOGGERS_MAP = Stream.of(
             Level.FINE, Level.FINER, Level.FINEST, Level.INFO, Level.SEVERE, Level.WARNING
-        ).collect(Collectors.toMap(l -> l, Loggers::newLoggerHandlingLevel));
-    
+    ).collect(Collectors.toMap(l -> l, Loggers::newLoggerHandlingLevel));
+
     private static final Logger DEFAULT_LOGGER = PARENT_LOGGERS_MAP.get(DEFAULT_LEVEL);
     private static final HashMap<String, Logger> INDIVIDUAL_CLASS_LOGGERS = new HashMap<>();
-    
+
     static {
         //INDIVIDUAL_CLASS_LOGGERS.put(EventObserver.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINE));
         //INDIVIDUAL_CLASS_LOGGERS.put(TraitFactory.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINER));
@@ -60,28 +60,28 @@ public class Loggers {
         INDIVIDUAL_CLASS_LOGGERS.put(DoomWindow.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINE));
         INDIVIDUAL_CLASS_LOGGERS.put(Patches.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
     }
-    
+
     public static Logger getLogger(final String className) {
         final Logger ret = Logger.getLogger(className);
         ret.setParent(INDIVIDUAL_CLASS_LOGGERS.getOrDefault(className, DEFAULT_LOGGER));
-        
+
         return ret;
     }
-    
+
     private static EventBase<?> lastHandler = null;
-    
+
     public static <EventHandler extends Enum<EventHandler> & EventBase<EventHandler>> void LogEvent(
-        final Logger logger,
-        final ActionStateHolder<EventHandler> actionStateHolder,
-        final EventHandler handler,
-        final AWTEvent event
+            final Logger logger,
+            final ActionStateHolder<EventHandler> actionStateHolder,
+            final EventHandler handler,
+            final AWTEvent event
     ) {
         if (!logger.isLoggable(Level.ALL) && lastHandler == handler) {
             return;
         }
-        
+
         lastHandler = handler;
-        
+
         @SuppressWarnings("unchecked")
         final IntFunction<EventBase<EventHandler>[]> arrayGenerator = EventBase[]::new;
         final EventBase<EventHandler>[] depends = actionStateHolder
@@ -92,7 +92,7 @@ public class Loggers {
 
         final Map<RelationType, Set<EventHandler>> adjusts = actionStateHolder
                 .adjustments(handler);
-        
+
         final EventBase<EventHandler>[] causes = actionStateHolder
                 .cooperations(handler, RelationType.CAUSE)
                 .stream()
@@ -104,36 +104,37 @@ public class Loggers {
                 .stream()
                 .filter(hdl -> actionStateHolder.hasActionsEnabled(hdl, ActionMode.DEPEND))
                 .toArray(arrayGenerator);
-        
-        if (logger.isLoggable(Level.FINEST))
+
+        if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, () -> String.format(
-                "\n\nENCOUNTERED EVENT: %s [%s] \n%s: %s \n%s \n%s: %s \n%s: %s \nOn event: %s",
-                handler, ActionMode.PERFORM,
-                RelationType.DEPEND, Arrays.toString(depends),
-                adjusts.entrySet().stream().collect(StringBuilder::new, (sb, e) -> sb.append(e.getKey()).append(' ').append(e.getValue()).append('\n'), StringBuilder::append),
-                RelationType.CAUSE, Arrays.toString(causes),
-                RelationType.REVERT, Arrays.toString(reverts),
-                event
+                    "\n\nENCOUNTERED EVENT: %s [%s] \n%s: %s \n%s \n%s: %s \n%s: %s \nOn event: %s",
+                    handler, ActionMode.PERFORM,
+                    RelationType.DEPEND, Arrays.toString(depends),
+                    adjusts.entrySet().stream().collect(StringBuilder::new, (sb, e) -> sb.append(e.getKey()).append(' ').append(e.getValue()).append('\n'), StringBuilder::append),
+                    RelationType.CAUSE, Arrays.toString(causes),
+                    RelationType.REVERT, Arrays.toString(reverts),
+                    event
             ));
-        else if (logger.isLoggable(Level.FINER)) {
+        } else if (logger.isLoggable(Level.FINER)) {
             logger.log(Level.FINER, () -> String.format(
-                "\n\nENCOUNTERED EVENT: %s [%s] \n%s: %s \n%s \n%s: %s \n%s: %s \n",
-                handler, ActionMode.PERFORM,
-                RelationType.DEPEND, Arrays.toString(depends),
-                adjusts.entrySet().stream().collect(StringBuilder::new, (sb, e) -> sb.append(e.getKey()).append(' ').append(e.getValue()).append('\n'), StringBuilder::append),
-                RelationType.CAUSE, Arrays.toString(causes),
-                RelationType.REVERT, Arrays.toString(reverts)
+                    "\n\nENCOUNTERED EVENT: %s [%s] \n%s: %s \n%s \n%s: %s \n%s: %s \n",
+                    handler, ActionMode.PERFORM,
+                    RelationType.DEPEND, Arrays.toString(depends),
+                    adjusts.entrySet().stream().collect(StringBuilder::new, (sb, e) -> sb.append(e.getKey()).append(' ').append(e.getValue()).append('\n'), StringBuilder::append),
+                    RelationType.CAUSE, Arrays.toString(causes),
+                    RelationType.REVERT, Arrays.toString(reverts)
             ));
         } else {
             logger.log(Level.FINE, () -> String.format(
-                "\nENCOUNTERED EVENT: %s [%s]",
-                handler, ActionMode.PERFORM
+                    "\nENCOUNTERED EVENT: %s [%s]",
+                    handler, ActionMode.PERFORM
             ));
         }
     }
-    
-    private Loggers() {}
-    
+
+    private Loggers() {
+    }
+
     private static Logger newLoggerHandlingLevel(final Level l) {
         final OutHandler h = new OutHandler();
         h.setLevel(l);
@@ -143,8 +144,9 @@ public class Loggers {
         ret.addHandler(h);
         return ret;
     }
-    
+
     private static final class OutHandler extends ConsoleHandler {
+
         @Override
         @SuppressWarnings("UseOfSystemOutOrSystemErr")
         protected synchronized void setOutputStream(final OutputStream out) throws SecurityException {

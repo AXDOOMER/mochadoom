@@ -184,7 +184,7 @@ public interface ActionsSight extends ActionsSectors {
 
             // no wall to block sight with?
             if (front.floorheight == back.floorheight
-                && front.ceilingheight == back.ceilingheight) {
+                    && front.ceilingheight == back.ceilingheight) {
                 continue;
             }
 

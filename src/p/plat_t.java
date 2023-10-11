@@ -12,7 +12,8 @@ import w.IReadableDoomObject;
 public class plat_t extends SectorAction implements IReadableDoomObject {
 
     public sector_t sector;
-    public @fixed_t int speed, low, high;
+    public @fixed_t
+    int speed, low, high;
     public int wait;
     public int count;
     public plat_e status;

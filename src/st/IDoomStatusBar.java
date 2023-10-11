@@ -31,7 +31,7 @@ public interface IDoomStatusBar {
     //
     // STATUS BAR
     //
-    
+
     public void NotifyAMEnter();
 
     public void NotifyAMExit();
@@ -58,12 +58,11 @@ public interface IDoomStatusBar {
      *  HOMS).
      */
     public int getHeight();
-    
+
     /** Forces a full refresh for reasons not handled otherwise, e.g. after full-page
      *  draws of help screens, which normally don't trigger a complete redraw even if
      *  they should, really.
      */
-    
     void forceRefresh();
 
 }

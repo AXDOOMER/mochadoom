@@ -62,48 +62,75 @@ import utils.TraitFactory.ContextKey;
 import utils.TraitFactory.Trait;
 
 public interface ActionTrait extends Trait, ThinkerList {
+
     TraitFactory.KeyChain ACTION_KEY_CHAIN = new TraitFactory.KeyChain();
 
     ContextKey<SlideMove> KEY_SLIDEMOVE = ACTION_KEY_CHAIN.newKey(ActionTrait.class, SlideMove::new);
     ContextKey<Spechits> KEY_SPECHITS = ACTION_KEY_CHAIN.newKey(ActionTrait.class, Spechits::new);
     ContextKey<Movement> KEY_MOVEMENT = ACTION_KEY_CHAIN.newKey(ActionTrait.class, Movement::new);
-    
+
     AbstractLevelLoader levelLoader();
+
     IHeadsUp headsUp();
+
     IDoomSystem doomSystem();
+
     IDoomStatusBar statusBar();
+
     IAutoMap<?, ?> autoMap();
+
     SceneRenderer<?, ?> sceneRenderer();
 
     UnifiedGameMap.Specials getSpecials();
+
     UnifiedGameMap.Switches getSwitches();
+
     ActionsThinkers getThinkers();
+
     ActionsEnemies getEnemies();
+
     ActionsAttacks getAttacks();
 
     void StopSound(ISoundOrigin origin); // DOOM.doomSound.StopSound
+
     void StartSound(ISoundOrigin origin, sounds.sfxenum_t s); // DOOM.doomSound.StartSound
+
     void StartSound(ISoundOrigin origin, int s); // DOOM.doomSound.StartSound
 
     player_t getPlayer(int number); //DOOM.players[]
+
     skill_t getGameSkill(); // DOOM.gameskill
+
     mobj_t createMobj(); // mobj_t.from(DOOM);
 
     int LevelTime(); // DOOM.leveltime
+
     int P_Random();
+
     int ConsolePlayerNumber(); // DOOM.consoleplayer
+
     int MapNumber(); // DOOM.gamemap
+
     boolean PlayerInGame(int number); // DOOM.palyeringame
+
     boolean IsFastParm(); // DOOM.fastparm
+
     boolean IsPaused(); // DOOM.paused
+
     boolean IsNetGame(); // DOOM.netgame
+
     boolean IsDemoPlayback(); // DOOM.demoplayback
+
     boolean IsDeathMatch(); // DOOM.deathmatch
+
     boolean IsAutoMapActive(); // DOOM.automapactive
+
     boolean IsMenuActive(); // DOOM.menuactive
+
     boolean CheckThing(mobj_t m);
+
     boolean StompThing(mobj_t m);
-        
+
     default void SetThingPosition(mobj_t mobj) {
         levelLoader().SetThingPosition(mobj);
     }
@@ -112,68 +139,70 @@ public interface ActionTrait extends Trait, ThinkerList {
      * Try to avoid.
      */
     DoomMain<?, ?> DOOM();
-    
+
     final class SlideMove {
+
         //
         // SLIDE MOVE
         // Allows the player to slide along any angled walls.
         //
         mobj_t slidemo;
-        
+
         @fixed_t
         int bestslidefrac, secondslidefrac;
-        
+
         line_t bestslideline, secondslideline;
-        
+
         @fixed_t
         int tmxmove, tmymove;
     }
-    
+
     final class Spechits {
+
         line_t[] spechit = new line_t[MAXSPECIALCROSS];
         int numspechit;
-        
+
         //
         // USE LINES
         //
         mobj_t usething;
     }
-    
+
     ///////////////// MOVEMENT'S ACTIONS ////////////////////////
     final class Movement {
+
         /**
          * If "floatok" true, move would be ok if within "tmfloorz - tmceilingz".
          */
         public boolean floatok;
-        
+
         @fixed_t
         public int tmfloorz,
-                   tmceilingz,
-                   tmdropoffz;
-        
+                tmceilingz,
+                tmdropoffz;
+
         // keep track of the line that lowers the ceiling,
         // so missiles don't explode against sky hack walls
         public line_t ceilingline;
         @fixed_t
         int[] tmbbox = new int[4];
-        
+
         mobj_t tmthing;
-        
+
         long tmflags;
-        
+
         @fixed_t
         int tmx, tmy;
-        
+
         ////////////////////// FROM p_maputl.c ////////////////////
         @fixed_t
         int opentop, openbottom, openrange, lowfloor;
     }
-    
+
     /**
      * P_LineOpening Sets opentop and openbottom to the window through a two
      * sided line. OPTIMIZE: keep this precalculated
      */
-
     default void LineOpening(line_t linedef) {
         final Movement ma = contextRequire(KEY_MOVEMENT);
         sector_t front;
@@ -239,7 +268,6 @@ public interface ActionTrait extends Trait, ThinkerList {
     //  the way it was and call P_ChangeSector again
     //  to undo the changes.
     //
-
     /**
      * P_BlockLinesIterator The validcount flags are used to avoid checking lines that are marked in multiple mapblocks,
      * so increment validcount before the first call to P_BlockLinesIterator, then make one or more calls to it.
@@ -267,10 +295,7 @@ public interface ActionTrait extends Trait, ThinkerList {
         final int validcount = sr.getValidCount();
 
         // [SYNC ISSUE]: don't skip offset+1 :-/
-        for (
-            @SourceCode.Compatible("list = blockmaplump+offset ; *list != -1 ; list++")
-            int list = offset; (lineinblock = ll.blockmap[list]) != -1; list++
-        ) {
+        for (@SourceCode.Compatible("list = blockmaplump+offset ; *list != -1 ; list++") int list = offset; (lineinblock = ll.blockmap[list]) != -1; list++) {
             ld = ll.lines[lineinblock];
             //System.out.println(ld);
             if (ld.validcount == validcount) {
@@ -290,20 +315,20 @@ public interface ActionTrait extends Trait, ThinkerList {
         final Spechits spechits = contextRequire(KEY_SPECHITS);
         spechits.spechit = C2JUtils.resize(spechits.spechit[0], spechits.spechit, spechits.spechit.length * 2);
     }
-    
+
     /**
      * PIT_CheckLine Adjusts tmfloorz and tmceilingz as lines are contacted
      *
      */
-    @P_Map.C(PIT_CheckLine) default boolean CheckLine(line_t ld) {
+    @P_Map.C(PIT_CheckLine)
+    default boolean CheckLine(line_t ld) {
         final Spechits spechits = contextRequire(KEY_SPECHITS);
         final Movement ma = contextRequire(KEY_MOVEMENT);
-        
+
         if (ma.tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
-        || ma.tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
-        || ma.tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]
-        || ma.tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP])
-        {
+                || ma.tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
+                || ma.tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]
+                || ma.tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP]) {
             return true;
         }
 
@@ -360,7 +385,9 @@ public interface ActionTrait extends Trait, ThinkerList {
         }
 
         return true;
-    };
+    }
+
+    ;
 
     //
     // MOVEMENT CLIPPING
@@ -404,7 +431,8 @@ public interface ActionTrait extends Trait, ThinkerList {
         ma.tmbbox[BOXRIGHT] = x + ma.tmthing.radius;
         ma.tmbbox[BOXLEFT] = x - ma.tmthing.radius;
 
-        R_PointInSubsector: {
+        R_PointInSubsector:
+        {
             newsubsec = levelLoader().PointInSubsector(x, y);
         }
         ma.ceilingline = null;
@@ -435,7 +463,8 @@ public interface ActionTrait extends Trait, ThinkerList {
 
         for (bx = xl; bx <= xh; bx++) {
             for (by = yl; by <= yh; by++) {
-                P_BlockThingsIterator: {
+                P_BlockThingsIterator:
+                {
                     if (!BlockThingsIterator(bx, by, this::CheckThing)) {
                         return false;
                     }
@@ -468,7 +497,8 @@ public interface ActionTrait extends Trait, ThinkerList {
         }
         for (bx = xl; bx <= xh; bx++) {
             for (by = yl; by <= yh; by++) {
-                P_BlockLinesIterator: {
+                P_BlockLinesIterator:
+                {
                     if (!this.BlockLinesIterator(bx, by, this::CheckLine)) {
                         return false;
                     }
@@ -478,7 +508,7 @@ public interface ActionTrait extends Trait, ThinkerList {
 
         return true;
     }
-    
+
     //
     // P_ThingHeightClip
     // Takes a valid thing and adjusts the thing.floorz,
@@ -513,7 +543,7 @@ public interface ActionTrait extends Trait, ThinkerList {
 
         return thing.ceilingz - thing.floorz >= thing.height;
     }
-    
+
     default boolean isblocking(intercept_t in, line_t li) {
         final SlideMove slideMove = contextRequire(KEY_SLIDEMOVE);
         // the line does block movement,

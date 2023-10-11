@@ -4,8 +4,7 @@ package doom;
  * including a marker indicating
  *  user has not changed weapon.
  */
-public enum weapontype_t
-{
+public enum weapontype_t {
     wp_fist,
     wp_pistol,
     wp_shotgun,
@@ -15,14 +14,12 @@ public enum weapontype_t
     wp_bfg,
     wp_chainsaw,
     wp_supershotgun,
-
     NUMWEAPONS,
-    
     // No pending weapon change.
     wp_nochange;
-    
-    public String toString(){
+
+    public String toString() {
         return this.name();
     }
-    
+
 }

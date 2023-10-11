@@ -4,14 +4,13 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 import w.IPackableDoomObject;
 import w.IWritableDoomObject;
 
 /** mapthing_t ... same on disk AND in memory, wow?! */
+public class mapthing_t implements CacheableDoomObject, IPackableDoomObject, IWritableDoomObject, Cloneable {
 
-public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IWritableDoomObject,Cloneable{
     public short x;
 
     public short y;
@@ -42,29 +41,29 @@ public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IWrit
         this.angle = buf.getShort();
         this.type = buf.getShort();
         this.options = buf.getShort();
-        
-    }
-    
-    public void copyFrom(mapthing_t source){
 
-        this.x=source.x;
-        this.y=source.y;
-        this.angle=source.angle;
-        this.options=source.options;
-        this.type=source.type;
+    }
+
+    public void copyFrom(mapthing_t source) {
+
+        this.x = source.x;
+        this.y = source.y;
+        this.angle = source.angle;
+        this.options = source.options;
+        this.type = source.type;
     }
 
     @Override
     public void write(DataOutputStream f)
             throws IOException {
-        
+
         // More efficient, avoids duplicating code and
         // handles little endian better.
         iobuffer.position(0);
         iobuffer.order(ByteOrder.LITTLE_ENDIAN);
         this.pack(iobuffer);
         f.write(iobuffer.array());
-        
+
     }
 
     public void pack(ByteBuffer b) {
@@ -75,6 +74,6 @@ public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IWrit
         b.putShort(type);
         b.putShort(options);
     }
-    
-    private static ByteBuffer iobuffer=ByteBuffer.allocate(10);
+
+    private static ByteBuffer iobuffer = ByteBuffer.allocate(10);
 }

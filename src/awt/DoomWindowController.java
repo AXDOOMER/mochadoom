@@ -36,6 +36,7 @@ import mochadoom.Loggers;
  * That sort of things.
  */
 public class DoomWindowController<E extends Component & DoomWindow<E>, H extends Enum<H> & EventBase<H>> implements FullscreenOptions {
+
     private static final long ALL_EVENTS_MASK = 0xFFFF_FFFF_FFFF_FFFFL;
 
     final GraphicsDevice device;
@@ -54,13 +55,13 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
     private boolean isFullScreen;
 
     DoomWindowController(
-        final Class<H> handlerClass,
-        final GraphicsDevice device,
-        final Supplier<Image> imageSource,
-        final Consumer<? super event_t> doomEventConsumer,
-        final E component,
-        final int defaultWidth,
-        final int defaultHeight
+            final Class<H> handlerClass,
+            final GraphicsDevice device,
+            final Supplier<Image> imageSource,
+            final Consumer<? super event_t> doomEventConsumer,
+            final E component,
+            final int defaultWidth,
+            final int defaultHeight
     ) {
         this.device = device;
         this.switcher = createFullSwitcher(device);
@@ -74,7 +75,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
         sizeInit();
         doomFrame.turnOn();
     }
-    
+
     private void sizeInit() {
         try {
             if (!(Engine.getConfig().equals(Settings.fullscreen, Boolean.TRUE) && switchToFullScreen())) {
@@ -86,7 +87,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
             throw e;
         }
     }
-    
+
     public void updateFrame() {
         doomFrame.update();
     }
@@ -149,10 +150,11 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
     public boolean isFullscreen() {
         return isFullScreen;
     }
-    
+
     private class DimensionImpl extends java.awt.Dimension implements Dimension {
-		private static final long serialVersionUID = 4598094740125688728L;
-		private int offsetX, offsetY;
+
+        private static final long serialVersionUID = 4598094740125688728L;
+        private int offsetX, offsetY;
         private int fitWidth, fitHeight;
 
         DimensionImpl(int width, int height) {
@@ -162,7 +164,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
             this.fitWidth = width;
             this.fitHeight = height;
         }
-        
+
         @Override
         public int width() {
             return width;
@@ -202,7 +204,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
         public int offsY() {
             return offsetY;
         }
-        
+
         private void setSize(DisplayMode mode) {
             if (isFullScreen) {
                 this.width = mode.getWidth();

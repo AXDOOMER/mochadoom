@@ -36,12 +36,11 @@
 // DESCRIPTION:
 //
 //-----------------------------------------------------------------------------
-
 package i;
 
-public class system{
-    
-/*
+public class system {
+
+    /*
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -63,45 +62,36 @@ public class system{
 #endif
 #include "i_system.h"
 
-*/
+     */
+    static int mb_used = 6;
 
+    public void
+            Tactile(int on,
+                    int off,
+                    int total) {
+        // UNUSED.
+        on = off = total = 0;
+    }
 
-static int	mb_used = 6;
-
-
-public void
-Tactile
-( int	on,
-  int	off,
-  int	total )
-{
-  // UNUSED.
-  on = off = total = 0;
-}
-
-/*
+    /*
 ticcmd_t	emptycmd;
 ticcmd_t*	I_BaseTiccmd(void)
 {
     return &emptycmd;
 }
 
-*/
+     */
+    public static int GetHeapSize() {
+        return mb_used * 1024 * 1024;
+    }
 
-public static int  GetHeapSize ()
-{
-    return mb_used*1024*1024;
-}
-
-/*
+    /*
 byte* I_ZoneBase (int*	size)
 {
     *size = mb_used*1024*1024;
     return (byte *) malloc (*size);
 }
-*/
-
-
+     */
 //
 // I_GetTime
 // returns time in 1/70th second tics
@@ -120,9 +110,7 @@ int  I_GetTime ()
     newtics = (tp.tv_sec-basetime)*TICRATE + tp.tv_usec*TICRATE/1000000;
     return newtics;
 }
-*/
-
-
+     */
 //
 // I_Init
 //
@@ -176,33 +164,28 @@ byte*	I_AllocLow(int length)
     return mem;
 }
 
-*/
-
+     */
 //
 // I_Error
 //
-public static boolean demorecording;
+    public static boolean demorecording;
 
-public static void Error (String error, Object ... args)
-{
-    //va_list	argptr;
+    public static void Error(String error, Object... args) {
+        //va_list	argptr;
 
-    // Message first.
-    //va_start (argptr,error);
-    System.err.print("Error: ");
-    System.err.printf(error,args);
-    System.err.print("\n");
-    //va_end (argptr);
+        // Message first.
+        //va_start (argptr,error);
+        System.err.print("Error: ");
+        System.err.printf(error, args);
+        System.err.print("\n");
+        //va_end (argptr);
 
-    //fflush( stderr );
-
-    // Shutdown. Here might be other errors.
-    //if (demorecording)
-	//G_CheckDemoStatus();
-
-    //D_QuitNetGame ();
-    //I_ShutdownGraphics();
-    
-    System.exit(-1);
-}
+        //fflush( stderr );
+        // Shutdown. Here might be other errors.
+        //if (demorecording)
+        //G_CheckDemoStatus();
+        //D_QuitNetGame ();
+        //I_ShutdownGraphics();
+        System.exit(-1);
+    }
 }

@@ -19,7 +19,8 @@ package v.graphics;
 import f.Wiper;
 import java.lang.reflect.Array;
 import m.IRandom;
-import static utils.GenericCopy.*;
+import static utils.GenericCopy.memcpy;
+import static utils.GenericCopy.memset;
 import v.renderers.DoomScreen;
 
 /**
@@ -28,19 +29,24 @@ import v.renderers.DoomScreen;
  * @author Good Sign
  */
 public interface Screens<V, E extends Enum<E>> {
+
     final int SCREENS_COUNT = DoomScreen.values().length;
-    
+
     V getScreen(E screenType);
+
     int getScalingX();
+
     int getScalingY();
+
     int getScreenWidth();
+
     int getScreenHeight();
+
     Wiper createWiper(IRandom random);
-    
+
     /**
      * memset-like methods for screen surfaces
      */
-    
     /**
      * Will fill destPortion on the screen with color of the specified point on it
      * The point argument IS NOT a color to fill, only a POINTER to the pixel on the screen
@@ -48,7 +54,7 @@ public interface Screens<V, E extends Enum<E>> {
     default void screenSet(V screen, int point, Horizontal destination) {
         memset(screen, destination.start, destination.length, screen, point, 1);
     }
-    
+
     /**
      * Will fill destPortion on the dstScreen by scrPortion pattern from srcScreen
      */
@@ -77,19 +83,25 @@ public interface Screens<V, E extends Enum<E>> {
     default void screenCopy(V srcScreen, V dstScreen, Relocation relocation) {
         memcpy(srcScreen, relocation.source, dstScreen, relocation.destination, relocation.length);
     }
-    
+
     default void screenCopy(E srcScreen, E dstScreen) {
         final Object dstScreenObj = getScreen(dstScreen);
         memcpy(getScreen(srcScreen), 0, dstScreenObj, 0, Array.getLength(dstScreenObj));
     }
-    
+
     default Plotter<V> createPlotter(E screen) {
         return new Plotter.Thin<>(getScreen(screen), getScreenWidth());
     }
-    
+
     class BadRangeException extends Exception {
-		private static final long serialVersionUID = 2903441181162189295L;
-		public BadRangeException(String m) { super(m);}
-        public BadRangeException() {}
+
+        private static final long serialVersionUID = 2903441181162189295L;
+
+        public BadRangeException(String m) {
+            super(m);
+        }
+
+        public BadRangeException() {
+        }
     }
 }

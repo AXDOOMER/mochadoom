@@ -35,13 +35,16 @@ import static doom.SourceCode.P_Spec.P_SpawnSpecials;
 import static doom.SourceCode.P_Tick.P_RemoveThinker;
 import doom.thinker_t;
 import static m.fixed_t.FRACBITS;
-
-import p.*;
+import p.AbstractLevelLoader;
+import p.ActiveStates;
 import p.ActiveStates.MobjConsumer;
-import static p.ActiveStates.NOP;
 import p.ActiveStates.ThinkerConsumer;
 import static p.DoorDefines.FASTDARK;
 import static p.DoorDefines.SLOWDARK;
+import p.RemoveState;
+import p.ThinkerList;
+import p.UnifiedGameMap;
+import p.mobj_t;
 import static p.mobj_t.MF_SPAWNCEILING;
 import rr.sector_t;
 import rr.subsector_t;
@@ -111,28 +114,32 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
             switch (sector.special) {
                 case 1:
                     // FLICKERING LIGHTS
-                    P_SpawnLightFlash: {
+                    P_SpawnLightFlash:
+                    {
                         SpawnLightFlash(sector);
                     }
                     break;
 
                 case 2:
                     // STROBE FAST
-                    P_SpawnStrobeFlash: {
+                    P_SpawnStrobeFlash:
+                    {
                         SpawnStrobeFlash(sector, FASTDARK, 0);
                     }
                     break;
 
                 case 3:
                     // STROBE SLOW
-                    P_SpawnStrobeFlash: {
+                    P_SpawnStrobeFlash:
+                    {
                         SpawnStrobeFlash(sector, SLOWDARK, 0);
                     }
                     break;
 
                 case 4:
                     // STROBE FAST/DEATH SLIME
-                    P_SpawnStrobeFlash: {
+                    P_SpawnStrobeFlash:
+                    {
                         SpawnStrobeFlash(sector, FASTDARK, 0);
                     }
                     sector.special = 4;
@@ -140,7 +147,8 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
 
                 case 8:
                     // GLOWING LIGHT
-                    P_SpawnGlowingLight: {
+                    P_SpawnGlowingLight:
+                    {
                         SpawnGlowingLight(sector);
                     }
                     break;
@@ -151,34 +159,39 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
 
                 case 10:
                     // DOOR CLOSE IN 30 SECONDS
-                    SpawnDoorCloseIn30: {
+                    SpawnDoorCloseIn30:
+                    {
                         SpawnDoorCloseIn30(sector);
                     }
                     break;
 
                 case 12:
                     // SYNC STROBE SLOW
-                    P_SpawnStrobeFlash: {
+                    P_SpawnStrobeFlash:
+                    {
                         SpawnStrobeFlash(sector, SLOWDARK, 1);
                     }
                     break;
 
                 case 13:
                     // SYNC STROBE FAST
-                    P_SpawnStrobeFlash: {
+                    P_SpawnStrobeFlash:
+                    {
                         SpawnStrobeFlash(sector, FASTDARK, 1);
                     }
                     break;
 
                 case 14:
                     // DOOR RAISE IN 5 MINUTES
-                    P_SpawnDoorRaiseIn5Mins: {
+                    P_SpawnDoorRaiseIn5Mins:
+                    {
                         SpawnDoorRaiseIn5Mins(sector, i);
                     }
                     break;
 
                 case 17:
-                    P_SpawnFireFlicker: {
+                    P_SpawnFireFlicker:
+                    {
                         SpawnFireFlicker(sector);
                     }
                     break;
@@ -205,7 +218,7 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
         for (int i = 0; i < this.getMaxCeilings(); i++) {
             this.getActiveCeilings()[i] = null;
         }
-        
+
         getSwitches().initButtonList();
 
         // UNUSED: no horizonal sliders.
@@ -293,7 +306,7 @@ public interface ActionsThinkers extends ActionsSectors, ThinkerList {
                 thinker.prev.next = thinker.next;
                 // Z_Free (currentthinker);
             } else {
-                ActiveStates thinkerFunction = (ActiveStates)thinker.thinkerFunction;
+                ActiveStates thinkerFunction = (ActiveStates) thinker.thinkerFunction;
                 if (thinkerFunction.isParamType(MobjConsumer.class)) {
                     thinkerFunction.fun(MobjConsumer.class).accept(DOOM().actions, (mobj_t) thinker);
                 } else if (thinkerFunction.isParamType(ThinkerConsumer.class)) {

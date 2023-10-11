@@ -47,6 +47,7 @@ public interface ActionsSlideDoors extends ActionTrait {
     };
 
     final class SlideDoors {
+
         slideframe_t[] slideFrames = malloc(slideframe_t::new, slideframe_t[]::new, MAXSLIDEDOORS);
     }
 
@@ -85,7 +86,7 @@ public interface ActionsSlideDoors extends ActionTrait {
                 if (door.timer-- == 0) {
                     // CAN DOOR CLOSE?
                     if (door.frontsector.thinglist != null
-                        || door.backsector.thinglist != null) {
+                            || door.backsector.thinglist != null) {
                         door.timer = ActionsSlideDoors.SDOORWAIT;
                         break;
                     }

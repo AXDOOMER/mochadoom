@@ -18,26 +18,40 @@ package v.graphics;
 
 import java.lang.reflect.Array;
 import java.util.Objects;
-import static utils.GenericCopy.*;
-import static v.graphics.Direction.*;
+import static utils.GenericCopy.memcpy;
+import static utils.GenericCopy.memset;
+import static v.graphics.Direction.CENTER;
 
 /**
  *
  * @author Good Sign
  */
 public interface Plotter<V> {
-    default Plotter<V> setColorSource(V colorSource) {return setColorSource(colorSource, 0);}
+
+    default Plotter<V> setColorSource(V colorSource) {
+        return setColorSource(colorSource, 0);
+    }
+
     Plotter<V> setColorSource(V colorSource, int colorPos);
+
     Plotter<V> setPosition(int x, int y);
+
     Plotter<V> setThickness(int dupX, int dupY);
+
     Plotter<V> plot();
+
     Plotter<V> shiftX(int shift);
+
     Plotter<V> shiftY(int shift);
+
     int getX();
+
     int getY();
-    
-    enum Style { Thin, Thick, Deep }
-    
+
+    enum Style {
+        Thin, Thick, Deep
+    }
+
     default Plotter<V> shift(int shiftX, int shiftY) {
         return shiftX(shiftX).shiftY(shiftY);
     }
@@ -46,6 +60,7 @@ public interface Plotter<V> {
      * Abstract plotter - without a Plot method
      */
     abstract class Abstract<V> implements Plotter<V> {
+
         protected final V screen;
         protected final int rowShift;
 
@@ -69,7 +84,7 @@ public interface Plotter<V> {
             memcpy(colorSource, colorPos, this.colorSource, 0, 1);
             return this;
         }
-        
+
         @Override
         public Plotter<V> setThickness(int dupX, int dupY) {
             return this;
@@ -113,19 +128,20 @@ public interface Plotter<V> {
             return y;
         }
     }
-    
+
     class Thin<V> extends Abstract<V> {
+
         public Thin(V screen, int rowShift) {
             super(screen, rowShift);
         }
-        
+
         @Override
         public Plotter<V> plot() {
             memcpy(colorSource, 0, screen, point, 1);
             return this;
         }
     }
-    
+
     static int getThickness(int dupX) {
         return Math.max(dupX >> 1, 1);
     }
@@ -134,14 +150,15 @@ public interface Plotter<V> {
      * You give it desired scaling level, it makes lines thicker
      */
     class Thick<V> extends Abstract<V> {
+
         protected final int height;
         protected int xThick;
         protected int yThick;
-        
+
         public Thick(V screen, int width, int height) {
             super(screen, width);
             this.height = height;
-            
+
             // can overflow!
             this.xThick = 1;//dupX >> 1;
             this.yThick = 1;//dupX >> 1;
@@ -153,7 +170,7 @@ public interface Plotter<V> {
             this.yThick = dupY;
             return this;
         }
-        
+
         @Override
         public Plotter<V> plot() {
             if (xThick == 0 || yThick == 0) {
@@ -162,17 +179,17 @@ public interface Plotter<V> {
             }
             return plotThick(xThick, yThick);
         }
-        
+
         protected Plotter<V> plotThick(int modThickX, int modThickY) {
             final int rows = y < modThickY ? y : (height < y + modThickY ? height - y : modThickY);
             final int spaceLeft = x < modThickX ? 0 : modThickX;
             final int spaceRight = rowShift < x + modThickX ? rowShift - x : modThickX;
-            
+
             for (int row = -rows; row < rows; ++row) {
                 // color = colorSource[Math.abs(row)]
                 memset(screen, point - spaceLeft + rowShift * row, spaceLeft + spaceRight, colorSource, 0, 1);
             }
-            
+
             return this;
         }
     }
@@ -181,8 +198,9 @@ public interface Plotter<V> {
      * Thick, but the direction of drawing is counted in - i.e., for round borders...
      */
     class Deep<V> extends Thick<V> {
+
         protected Direction direction;
-        
+
         public Deep(V screen, int width, int height) {
             super(screen, width, height);
         }
@@ -210,7 +228,7 @@ public interface Plotter<V> {
             direction = direction.rotation(shiftX, shiftY);
             return super.shift(shiftX, shiftY);
         }
-        
+
         @Override
         public Plotter<V> plot() {
             if (xThick <= 1 || yThick <= 1) {
@@ -227,7 +245,7 @@ public interface Plotter<V> {
             if (!direction.hasLeft && !direction.hasRight) {
                 modThickY >>= 1;
             }
-            
+
             return plotThick(modThickX, modThickY);
         }
     }

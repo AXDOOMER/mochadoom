@@ -2,7 +2,14 @@ package w;
 
 import data.Defines;
 import doom.SourceCode.W_Wad;
-import static doom.SourceCode.W_Wad.*;
+import static doom.SourceCode.W_Wad.W_CacheLumpName;
+import static doom.SourceCode.W_Wad.W_CacheLumpNum;
+import static doom.SourceCode.W_Wad.W_CheckNumForName;
+import static doom.SourceCode.W_Wad.W_GetNumForName;
+import static doom.SourceCode.W_Wad.W_InitMultipleFiles;
+import static doom.SourceCode.W_Wad.W_LumpLength;
+import static doom.SourceCode.W_Wad.W_ReadLump;
+import static doom.SourceCode.W_Wad.W_Reload;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.IntFunction;
@@ -106,13 +113,13 @@ public interface IWadLoader {
      */
     @W_Wad.C(W_CacheLumpNum)
     public abstract <T> T CacheLumpNum(int lump, int tag,
-        Class<T> what);
+            Class<T> what);
 
     // MAES 24/8/2011: superseded by auto-allocating version with proper 
     // container-based caching.
     @Deprecated
     public abstract void CacheLumpNumIntoArray(int lump, int tag,
-        Object[] array, Class<?> what) throws IOException;
+            Object[] array, Class<?> what) throws IOException;
 
     /**
      * Return a cached lump based on its name, as raw bytes, no matter what.
@@ -303,8 +310,8 @@ public interface IWadLoader {
         final int minLength = PAL_NUM_COLORS * PAL_NUM_STRIDES;
         if (playpal.length < minLength) {
             throw new IllegalArgumentException(String.format(
-                "Invalid PLAYPAL: has %d entries instead of %d. Try -noplaypal mode",
-                playpal.length, minLength));
+                    "Invalid PLAYPAL: has %d entries instead of %d. Try -noplaypal mode",
+                    playpal.length, minLength));
         }
 
         System.out.print("VI_Init: set palettes.\n");
@@ -329,8 +336,8 @@ public interface IWadLoader {
         final int minLength = Lights.COLORMAP_STD_LENGTH_15;
         if (colormap.length < minLength) {
             throw new IllegalArgumentException(String.format(
-                "Invalid COLORMAP: has %d entries, minimum is %d. Try -nocolormap mode",
-                colormap.length, minLength));
+                    "Invalid COLORMAP: has %d entries, minimum is %d. Try -nocolormap mode",
+                    colormap.length, minLength));
         }
 
         System.out.print("VI_Init: set colormaps.\n");

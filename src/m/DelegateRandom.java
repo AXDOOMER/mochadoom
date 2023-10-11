@@ -19,7 +19,9 @@ package m;
 import data.Defines;
 import data.mobjtype_t;
 import doom.SourceCode.M_Random;
-import static doom.SourceCode.M_Random.*;
+import static doom.SourceCode.M_Random.M_ClearRandom;
+import static doom.SourceCode.M_Random.M_Random;
+import static doom.SourceCode.M_Random.P_Random;
 import p.ActiveStates;
 import utils.C2JUtils;
 
@@ -39,7 +41,7 @@ import utils.C2JUtils;
  * @author Good Sign
  */
 public class DelegateRandom implements IRandom {
-    
+
     private IRandom random;
     private IRandom altRandom;
 
@@ -111,5 +113,5 @@ public class DelegateRandom implements IRandom {
     public int P_Random(ActiveStates caller, mobjtype_t type, int sequence) {
         return random.P_Random(caller, type, sequence);
     }
-    
+
 }

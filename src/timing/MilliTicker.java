@@ -9,7 +9,6 @@ public class MilliTicker
      * I_GetTime
      * returns time in 1/70th second tics
      */
-   
     @Override
     public int GetTime() {
         long tp;
@@ -23,9 +22,9 @@ public class MilliTicker
         newtics = (int) (((tp - basetime) * TICRATE) / 1000);
         return newtics;
     }
-    
-    protected volatile long basetime=0;
-    protected volatile int oldtics=0;
+
+    protected volatile long basetime = 0;
+    protected volatile int oldtics = 0;
     protected volatile int discrepancies;
-    
+
 }

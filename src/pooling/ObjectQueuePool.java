@@ -1,7 +1,6 @@
 package pooling;
 
 import java.util.Stack;
-
 import p.mobj_t;
 
 /** A convenient object pooling class, derived from the stock ObjectPool.
@@ -10,17 +9,13 @@ import p.mobj_t;
  *  because it doesn't do that bullshit object cleanup every so often.
  * 
  */
+public abstract class ObjectQueuePool<K> {
 
+    private static final boolean D = false;
 
-public abstract class ObjectQueuePool<K>
-{
+    public ObjectQueuePool(long expirationTime) {
+        locked = new Stack<>();
 
-	private static final boolean D=false;
-	
-    public ObjectQueuePool(long expirationTime)
-    {
-        locked = new Stack<K>();
-        
     }
 
     protected abstract K create();
@@ -29,17 +24,15 @@ public abstract class ObjectQueuePool<K>
 
     public abstract void expire(K obj);
 
-    public void drain(){
+    public void drain() {
         locked.clear();
-        }
-    
-    public K checkOut()
-    {
-        
+    }
+
+    public K checkOut() {
+
         K t;
-        if(!locked.isEmpty())
-        {
-            return locked.pop(); 
+        if (!locked.isEmpty()) {
+            return locked.pop();
 
         }
 
@@ -47,13 +40,15 @@ public abstract class ObjectQueuePool<K>
         return t;
     }
 
-    public void checkIn(K t)
-    {
-    	if (D) if (t instanceof mobj_t)
-    	System.out.printf("Object %s returned to the pool\n",t.toString());
+    public void checkIn(K t) {
+        if (D) {
+            if (t instanceof mobj_t) {
+                System.out.printf("Object %s returned to the pool\n", t.toString());
+            }
+        }
         locked.push(t);
     }
 
     protected Stack<K> locked;
-   // private Hashtable<K,Long> unlocked;
+    // private Hashtable<K,Long> unlocked;
 }

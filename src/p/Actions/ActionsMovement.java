@@ -71,6 +71,7 @@ public interface ActionsMovement extends ActionsPathTraverse {
     int FUDGE = 2048; ///(FRACUNIT/MAPFRACUNIT);
 
     void UnsetThingPosition(mobj_t thing);
+
     void ExplodeMissile(mobj_t mo);
 
     final class DirType {
@@ -570,7 +571,7 @@ public interface ActionsMovement extends ActionsPathTraverse {
                 } else if (eval(mo.flags & MF_MISSILE)) {
                     // explode a missile
                     if (mv.ceilingline != null && mv.ceilingline.backsector != null
-                        && mv.ceilingline.backsector.ceilingpic == DOOM().textureManager.getSkyFlatNum()) {
+                            && mv.ceilingline.backsector.ceilingpic == DOOM().textureManager.getSkyFlatNum()) {
                         // Hack to prevent missiles exploding
                         // against the sky.
                         // Does not handle sky floors.
@@ -601,9 +602,9 @@ public interface ActionsMovement extends ActionsPathTraverse {
             // do not stop sliding
             //  if halfway off a step with some momentum
             if (mo.momx > FRACUNIT / 4
-                || mo.momx < -FRACUNIT / 4
-                || mo.momy > FRACUNIT / 4
-                || mo.momy < -FRACUNIT / 4) {
+                    || mo.momx < -FRACUNIT / 4
+                    || mo.momy > FRACUNIT / 4
+                    || mo.momy < -FRACUNIT / 4) {
                 if (mo.floorz != mo.subsector.sector.floorheight) {
                     return;
                 }
@@ -611,7 +612,7 @@ public interface ActionsMovement extends ActionsPathTraverse {
         }
 
         if (mo.momx > -STOPSPEED && mo.momx < STOPSPEED && mo.momy > -STOPSPEED && mo.momy < STOPSPEED
-            && (player == null || (player.cmd.forwardmove == 0 && player.cmd.sidemove == 0))) {
+                && (player == null || (player.cmd.forwardmove == 0 && player.cmd.sidemove == 0))) {
             // if in a walking frame, stop moving
             // TODO: we need a way to get state indexed inside of states[], to sim pointer arithmetic.
             // FIX: added an "id" field.
@@ -659,10 +660,10 @@ public interface ActionsMovement extends ActionsPathTraverse {
         LineOpening(li);
 
         if ((ma.openrange < slideMove.slidemo.height)
-            || // doesn't fit
-            (ma.opentop - slideMove.slidemo.z < slideMove.slidemo.height)
-            || // mobj is too high
-            (ma.openbottom - slideMove.slidemo.z > 24 * FRACUNIT)) // too big a step up
+                || // doesn't fit
+                (ma.opentop - slideMove.slidemo.z < slideMove.slidemo.height)
+                || // mobj is too high
+                (ma.openbottom - slideMove.slidemo.z > 24 * FRACUNIT)) // too big a step up
         {
             if (in.frac < slideMove.bestslidefrac) {
                 slideMove.secondslidefrac = slideMove.bestslidefrac;

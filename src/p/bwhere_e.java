@@ -1,7 +1,7 @@
 package p;
 
 public enum bwhere_e {
-        top,
-        middle,
-        bottom
-        }
+    top,
+    middle,
+    bottom
+}

@@ -33,16 +33,16 @@ public enum SceneRendererMode {
     Serial(UnifiedRenderer.Indexed::new, UnifiedRenderer.HiColor::new, UnifiedRenderer.TrueColor::new),
     Parallel(SceneRendererMode::Parallel_8, SceneRendererMode::Parallel_16, SceneRendererMode::Parallel_32),
     Parallel2(SceneRendererMode::Parallel2_8, SceneRendererMode::Parallel2_16, SceneRendererMode::Parallel2_32);
-    
+
     private static final boolean cVarSerial = Engine.getCVM().bool(CommandVariable.SERIALRENDERER);
     private static final boolean cVarParallel = Engine.getCVM().present(CommandVariable.PARALLELRENDERER);
     private static final boolean cVarParallel2 = Engine.getCVM().present(CommandVariable.PARALLELRENDERER2);
     private static final int[] threads = cVarSerial ? null : cVarParallel
-        ? parseSwitchConfig(CommandVariable.PARALLELRENDERER)
-        : cVarParallel2
-            ? parseSwitchConfig(CommandVariable.PARALLELRENDERER2)
-            : new int[]{2, 2, 2};
-            
+            ? parseSwitchConfig(CommandVariable.PARALLELRENDERER)
+            : cVarParallel2
+                    ? parseSwitchConfig(CommandVariable.PARALLELRENDERER2)
+                    : new int[]{2, 2, 2};
+
     final SG<byte[], byte[]> indexedGen;
     final SG<byte[], short[]> hicolorGen;
     final SG<byte[], int[]> truecolorGen;
@@ -52,7 +52,7 @@ public enum SceneRendererMode {
         this.hicolorGen = hi;
         this.truecolorGen = truecolor;
     }
-    
+
     static int[] parseSwitchConfig(CommandVariable sw) {
         // Try parsing walls, or default to 1
         final int walls = Engine.getCVM().get(sw, Integer.class, 0).orElse(1);
@@ -62,7 +62,7 @@ public enum SceneRendererMode {
         final int masked = Engine.getCVM().get(sw, Integer.class, 2).orElse(2);
         return new int[]{walls, floors, masked};
     }
-    
+
     static SceneRendererMode getMode() {
         if (cVarSerial) {
             /**
@@ -88,30 +88,31 @@ public enum SceneRendererMode {
          */
         return Engine.getConfig().getValue(Settings.scene_renderer_mode, SceneRendererMode.class);
     }
-    
+
     private static SceneRenderer<byte[], byte[]> Parallel_8(DoomMain<byte[], byte[]> DOOM) {
         return new ParallelRenderer.Indexed(DOOM, threads[0], threads[1], threads[2]);
     }
-    
+
     private static SceneRenderer<byte[], short[]> Parallel_16(DoomMain<byte[], short[]> DOOM) {
         return new ParallelRenderer.HiColor(DOOM, threads[0], threads[1], threads[2]);
     }
-    
+
     private static SceneRenderer<byte[], int[]> Parallel_32(DoomMain<byte[], int[]> DOOM) {
         return new ParallelRenderer.TrueColor(DOOM, threads[0], threads[1], threads[2]);
     }
-    
+
     private static SceneRenderer<byte[], byte[]> Parallel2_8(DoomMain<byte[], byte[]> DOOM) {
         return new ParallelRenderer2.Indexed(DOOM, threads[0], threads[1], threads[2]);
     }
-    
+
     private static SceneRenderer<byte[], short[]> Parallel2_16(DoomMain<byte[], short[]> DOOM) {
         return new ParallelRenderer2.HiColor(DOOM, threads[0], threads[1], threads[2]);
     }
-    
+
     private static SceneRenderer<byte[], int[]> Parallel2_32(DoomMain<byte[], int[]> DOOM) {
         return new ParallelRenderer2.TrueColor(DOOM, threads[0], threads[1], threads[2]);
     }
-    
-    interface SG<T, V> extends Function<DoomMain<T, V>, SceneRenderer<T, V>> {}
+
+    interface SG<T, V> extends Function<DoomMain<T, V>, SceneRenderer<T, V>> {
+    }
 }

@@ -6,9 +6,8 @@ package rr;
  * @author Maes
  *
  */
-
 public interface IGetColumn<T> {
 
-	T GetColumn(int tex, int col);
+    T GetColumn(int tex, int col);
 
 }

@@ -3,7 +3,6 @@ package boom;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 

@@ -43,19 +43,17 @@ import w.IWritableDoomObject;
 //	PCX Screenshots.
 //
 //-----------------------------------------------------------------------------
-
-public abstract class MenuMisc{
+public abstract class MenuMisc {
 
     public static final String rcsid = "$Id: MenuMisc.java,v 1.29 2012/09/24 17:16:22 velktron Exp $";
-  
+
     //
     // SCREEN SHOTS
     //
-  
     public static boolean WriteFile(String name, byte[] source, int length) {
         OutputStream handle;
         try {
-            handle = new  FileOutputStream(name);
+            handle = new FileOutputStream(name);
             handle.write(source, 0, length);
             handle.close();
         } catch (Exception e) {
@@ -79,7 +77,6 @@ public abstract class MenuMisc{
 
         return true;
     }
-
 
     /** M_ReadFile 
      *  This version returns a variable-size ByteBuffer, so
@@ -107,7 +104,7 @@ public abstract class MenuMisc{
 
     /** M_ReadFile */
     public static int ReadFile(String name, byte[] buffer) {
-    	BufferedInputStream handle;
+        BufferedInputStream handle;
         int count, length;
         // struct stat fileinfo;
         byte[] buf;
@@ -118,96 +115,93 @@ public abstract class MenuMisc{
             count = handle.read(buf);
             handle.close();
 
-            if (count < length)
+            if (count < length) {
                 throw new Exception("Read only " + count + " bytes out of "
-                    + length);
+                        + length);
+            }
 
         } catch (Exception e) {
             DoomSystem.MiscError("Couldn't read file %s (%s)", name, e.getMessage());
             return -1;
         }
-        System.arraycopy(buf, 0, buffer, 0, Math.min(count,buffer.length));
+        System.arraycopy(buf, 0, buffer, 0, Math.min(count, buffer.length));
         return length;
     }
 
     //
- // WritePCXfile
- //
- public static void
- WritePCXfile
- ( String        filename,
-   byte[]     data,
-   int       width,
-   int       height,
-   byte[]     palette )
- {
-     int     length;
-     pcx_t  pcx;
-     byte[]   pack;
-     
-     pcx = new pcx_t();
-     pack=new byte[width*height*2]; // allocate that much data, just in case.
+    // WritePCXfile
+    //
+    public static void
+            WritePCXfile(String filename,
+                    byte[] data,
+                    int width,
+                    int height,
+                    byte[] palette) {
+        int length;
+        pcx_t pcx;
+        byte[] pack;
 
-     pcx.manufacturer = 0x0a;       // PCX id
-     pcx.version = 5;           // 256 color
-     pcx.encoding = 1;          // uncompressed
-     pcx.bits_per_pixel = 8;        // 256 color
-     pcx.xmin = 0;
-     pcx.ymin = 0;
-     pcx.xmax = (char) (width-1);
-     pcx.ymax = (char) (height-1);
-     pcx.hres = (char) width;
-     pcx.vres = (char) height;
-     // memset (pcx->palette,0,sizeof(pcx->palette));
-     pcx.color_planes = 1;      // chunky image
-     pcx.bytes_per_line = (char) width;
-     pcx.palette_type = 2;   // not a grey scale
-     //memset (pcx->filler,0,sizeof(pcx->filler));
+        pcx = new pcx_t();
+        pack = new byte[width * height * 2]; // allocate that much data, just in case.
 
+        pcx.manufacturer = 0x0a;       // PCX id
+        pcx.version = 5;           // 256 color
+        pcx.encoding = 1;          // uncompressed
+        pcx.bits_per_pixel = 8;        // 256 color
+        pcx.xmin = 0;
+        pcx.ymin = 0;
+        pcx.xmax = (char) (width - 1);
+        pcx.ymax = (char) (height - 1);
+        pcx.hres = (char) width;
+        pcx.vres = (char) height;
+        // memset (pcx->palette,0,sizeof(pcx->palette));
+        pcx.color_planes = 1;      // chunky image
+        pcx.bytes_per_line = (char) width;
+        pcx.palette_type = 2;   // not a grey scale
+        //memset (pcx->filler,0,sizeof(pcx->filler));
 
-     // pack the image
-     //pack = &pcx->data;
-     int p_pack=0;
-     
-     for (int i=0 ; i<width*height ; i++)
-     {
-     if ( (data[i] & 0xc0) != 0xc0)
-         pack[p_pack++] = data[i];
-     else
-     {
-         pack[p_pack++] = (byte) 0xc1;
-         pack[p_pack++] = data[i];
-     }
-     }
-     
-     // write the palette
-     pack[p_pack++] = 0x0c; // palette ID byte
-     for (int i=0 ; i<768 ; i++)
-         pack[p_pack++] = palette[i];
-     
-     // write output file
-     length = p_pack;
-     pcx.data=Arrays.copyOf(pack, length);
-     
-     DataOutputStream f=null;
-    try {
-        f = new DataOutputStream(new FileOutputStream(filename));
-        
-    } catch (FileNotFoundException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        // pack the image
+        //pack = &pcx->data;
+        int p_pack = 0;
+
+        for (int i = 0; i < width * height; i++) {
+            if ((data[i] & 0xc0) != 0xc0) {
+                pack[p_pack++] = data[i];
+            } else {
+                pack[p_pack++] = (byte) 0xc1;
+                pack[p_pack++] = data[i];
+            }
+        }
+
+        // write the palette
+        pack[p_pack++] = 0x0c; // palette ID byte
+        for (int i = 0; i < 768; i++) {
+            pack[p_pack++] = palette[i];
+        }
+
+        // write output file
+        length = p_pack;
+        pcx.data = Arrays.copyOf(pack, length);
+
+        DataOutputStream f = null;
+        try {
+            f = new DataOutputStream(new FileOutputStream(filename));
+
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        try {
+            //f.setLength(0);
+            pcx.write(f);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
     }
-     
-    try {
-        //f.setLength(0);
-        pcx.write(f);
-    } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    }
-    
-     }
-    
+
     public abstract boolean getShowMessages();
 
     public abstract void setShowMessages(boolean val);

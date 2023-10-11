@@ -9,12 +9,12 @@ import doom.event_t;
  * @author Maes
  *
  */
-
 public class DummyMenu<T, V> extends AbstractDoomMenu<T, V> {
+
     public DummyMenu(DoomMain<T, V> DOOM) {
         super(DOOM);
     }
-    
+
     @Override
     public boolean Responder(event_t ev) {
         // TODO Auto-generated method stub
@@ -75,10 +75,10 @@ public class DummyMenu<T, V> extends AbstractDoomMenu<T, V> {
         return 0;
     }
 
-	@Override
-	public void ClearMenus() {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void ClearMenus() {
+        // TODO Auto-generated method stub
+
+    }
 
 }

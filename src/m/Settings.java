@@ -15,7 +15,6 @@
 //
 // From m_misc.c
 //-----------------------------------------------------------------------------*/
-
 package m;
 
 import awt.FullscreenOptions;
@@ -23,8 +22,26 @@ import static doom.ConfigBase.FILE_DOOM;
 import static doom.ConfigBase.FILE_MOCHADOOM;
 import doom.ConfigBase.Files;
 import doom.ConfigManager;
-import static doom.englsh.*;
-import static g.Signals.ScanCode.*;
+import static doom.englsh.HUSTR_CHATMACRO0;
+import static doom.englsh.HUSTR_CHATMACRO1;
+import static doom.englsh.HUSTR_CHATMACRO2;
+import static doom.englsh.HUSTR_CHATMACRO3;
+import static doom.englsh.HUSTR_CHATMACRO4;
+import static doom.englsh.HUSTR_CHATMACRO5;
+import static doom.englsh.HUSTR_CHATMACRO6;
+import static doom.englsh.HUSTR_CHATMACRO7;
+import static doom.englsh.HUSTR_CHATMACRO8;
+import static doom.englsh.HUSTR_CHATMACRO9;
+import static g.Signals.ScanCode.SC_A;
+import static g.Signals.ScanCode.SC_D;
+import static g.Signals.ScanCode.SC_LALT;
+import static g.Signals.ScanCode.SC_LCTRL;
+import static g.Signals.ScanCode.SC_LEFT;
+import static g.Signals.ScanCode.SC_RIGHT;
+import static g.Signals.ScanCode.SC_RSHIFT;
+import static g.Signals.ScanCode.SC_S;
+import static g.Signals.ScanCode.SC_SPACE;
+import static g.Signals.ScanCode.SC_W;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -93,7 +110,6 @@ public enum Settings {
     chatmacro7(FILE_DOOM, HUSTR_CHATMACRO7),
     chatmacro8(FILE_DOOM, HUSTR_CHATMACRO8),
     chatmacro9(FILE_DOOM, HUSTR_CHATMACRO9),
-
     /**
      * Mocha Doom (mochadoom.cfg), these can be defined to anything and will be sorded by name
      */
@@ -127,9 +143,9 @@ public enum Settings {
     greyscale_filter(FILE_MOCHADOOM, GreyscaleFilter.Luminance), // Used for FUZZ effect or with -greypal comand line argument (for test)
     scene_renderer_mode(FILE_MOCHADOOM, SceneRendererMode.Serial), // In vanilla, scene renderer is serial. Parallel can be faster
     reconstruct_savegame_pointers(FILE_MOCHADOOM, true); // In vanilla, infighting targets are not restored on savegame load
-    
+
     public final static Map<Files, EnumSet<Settings>> SETTINGS_MAP = new HashMap<>();
-    
+
     static {
         Arrays.stream(values()).forEach(Settings::updateConfig);
     }
@@ -139,7 +155,7 @@ public enum Settings {
         this.valueType = defaultValue.getClass();
         this.configBase = config;
     }
-    
+
     Settings(Files config, final String defaultValue) {
         this.defaultValue = defaultValue;
         this.valueType = String.class;
@@ -179,11 +195,11 @@ public enum Settings {
     public final Class<?> valueType;
     public final Object defaultValue;
     private Files configBase;
-    
+
     public boolean is(Object obj) {
         return Engine.getConfig().equals(obj);
     }
-    
+
     public ConfigManager.UpdateStatus hasChange(boolean b) {
         configBase.changed = configBase.changed || b;
         return b ? ConfigManager.UpdateStatus.UPDATED : ConfigManager.UpdateStatus.UNCHANGED;
@@ -197,17 +213,20 @@ public enum Settings {
         configBase = newConfig;
         updateConfig();
     }
-        
+
     public Optional<QuoteType> quoteType() {
-        if (valueType == String.class)
+        if (valueType == String.class) {
             return Optional.of(QuoteType.DOUBLE);
-        else if (valueType == Character.class)
+        } else if (valueType == Character.class) {
             return Optional.of(QuoteType.SINGLE);
-        
+        }
+
         return Optional.empty();
     }
-    
-    public enum LOS {Vanilla, Boom}
+
+    public enum LOS {
+        Vanilla, Boom
+    }
 
     private void updateConfig() {
         SETTINGS_MAP.compute(configBase, (c, list) -> {
@@ -216,7 +235,7 @@ public enum Settings {
             } else {
                 list.add(this);
             }
-            
+
             return list;
         });
     }

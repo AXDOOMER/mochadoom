@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package defines;
 
 import doom.DoomMain;
@@ -36,20 +35,20 @@ public enum DoomVersion {
     FREEDM_WAD("freedm.wad"),
     FREEDOOM1_WAD("freedoom1.wad"),
     FREEDOOM2_WAD("freedoom2.wad");
-    
+
     public final String wadFileName;
 
     private DoomVersion(String wadFileName) {
         this.wadFileName = wadFileName;
     }
-	
-	/**
+
+    /**
      * Try all versions in given doomwaddir
      * 
      * @return full path to the wad of success
-	 */
+     */
     public static String tryAllWads(final DoomMain<?, ?> DOOM, final String doomwaddir) {
-        for (DoomVersion v: values()) {
+        for (DoomVersion v : values()) {
             final String vFullPath = doomwaddir + '/' + v.wadFileName;
             if (testReadAccess(vFullPath)) {
                 DOOM.setGameMode(GameMode.forVersion(v));
@@ -59,38 +58,38 @@ public enum DoomVersion {
                     DOOM.language = Language_t.french;
                     System.out.println("French version\n");
                 }
-                
+
                 return vFullPath;
             }
         }
-        
+
         return null;
     }
-	
-	/**
+
+    /**
      * Try only one IWAD. 
-	 * 
-	 * @param iwad
+     * 
+     * @param iwad
      * @param doomwaddir
-	 * @return game mode
-	 */
-	public static GameMode tryOnlyOne(String iwad, String doomwaddir) {
+     * @return game mode
+     */
+    public static GameMode tryOnlyOne(String iwad, String doomwaddir) {
         try {
             // Is it a known and valid version?
             final DoomVersion v = DoomVersion.valueOf(iwad.trim().toUpperCase().replace('.', '_'));
             final GameMode tmp = GameMode.forVersion(v);
-            
+
             // Can we read it?
             if (tmp != null && C2JUtils.testReadAccess(doomwaddir + iwad)) {
                 return tmp; // Yes, so communicate the gamemode back.
             }
-            
+
         } catch (IllegalArgumentException ex) {
             Loggers.getLogger(DoomVersion.class.getName()).log(Level.WARNING, iwad, ex);
         }
 
-		// It's either invalid or we can't read it.
-		// Fuck that.
-		return null;
-	}
+        // It's either invalid or we can't read it.
+        // Fuck that.
+        return null;
+    }
 }

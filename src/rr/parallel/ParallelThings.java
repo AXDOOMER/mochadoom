@@ -35,16 +35,12 @@ import v.tables.BlurryTable;
  * 
  * @author velktron
  */
+public abstract class ParallelThings<T, V> extends AbstractThings<T, V> {
 
-public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
-    
     // stuff to get from container
-    
-    
     /** Render Masked Instuction subsystem. Essentially, a way to split sprite work
      *  between threads on a column-basis.
      */
-
     protected ColVars<T, V>[] RMI;
 
     /**
@@ -53,22 +49,22 @@ public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
      */
     protected int RMIcount = 0;
 
-    protected RenderMaskedExecutor<T,V>[] RMIExec;
-    
+    protected RenderMaskedExecutor<T, V>[] RMIExec;
+
     protected final int NUMMASKEDTHREADS;
     protected final CyclicBarrier maskedbarrier;
     protected final Executor tp;
-    
+
     public ParallelThings(VideoScale vs, SceneRenderer<T, V> R, Executor tp, int numthreads) {
         super(vs, R);
-        this.tp=tp;
-        this.NUMMASKEDTHREADS=numthreads;
-        this.maskedbarrier=new CyclicBarrier(NUMMASKEDTHREADS+1);
+        this.tp = tp;
+        this.NUMMASKEDTHREADS = numthreads;
+        this.maskedbarrier = new CyclicBarrier(NUMMASKEDTHREADS + 1);
     }
 
     @Override
     public void DrawMasked() {
-        
+
         // This just generates the RMI instructions.
         super.DrawMasked();
         // This splits the work among threads and fires them up
@@ -77,20 +73,20 @@ public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
         try {
             // Wait for them to be done.
             maskedbarrier.await();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
+        } catch (InterruptedException | BrokenBarrierException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        // TODO Auto-generated catch block
+
     }
 
     @Override
     public void completeColumn() {
 
-        if (view.detailshift == 1)
+        if (view.detailshift == 1) {
             flags = DcFlags.LOW_DETAIL;
+        }
         // Don't wait to go over
         if (RMIcount >= RMI.length) {
             ResizeRMIBuffer();
@@ -104,14 +100,13 @@ public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
     }
 
     int flags;
-    
-   
+
     protected void RenderRMIPipeline() {
 
         for (int i = 0; i < NUMMASKEDTHREADS; i++) {
 
             RMIExec[i].setRange((i * this.vs.getScreenWidth()) / NUMMASKEDTHREADS,
-                ((i + 1) * this.vs.getScreenWidth()) / NUMMASKEDTHREADS);
+                    ((i + 1) * this.vs.getScreenWidth()) / NUMMASKEDTHREADS);
             RMIExec[i].setRMIEnd(RMIcount);
             // RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
             tp.execute(RMIExec[i]);
@@ -120,11 +115,12 @@ public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
         // System.out.println("RWI count"+RWIcount);
         RMIcount = 0;
     }
-    
+
     protected void ResizeRMIBuffer() {
-        ColVars<T, V> fake = new ColVars<T, V>();
-        ColVars<T, V>[] tmp =            // TODO Auto-generated constructor stub
-            C2JUtils.createArrayOfObjects(fake, RMI.length * 2);
+        ColVars<T, V> fake = new ColVars<>();
+        ColVars<T, V>[] tmp
+                = // TODO Auto-generated constructor stub
+                C2JUtils.createArrayOfObjects(fake, RMI.length * 2);
         System.arraycopy(RMI, 0, tmp, 0, RMI.length);
 
         // Bye bye, old RMI.
@@ -133,67 +129,61 @@ public abstract class ParallelThings<T,V> extends AbstractThings<T,V> {
         for (int i = 0; i < NUMMASKEDTHREADS; i++) {
             RMIExec[i].updateRMI(RMI);
         }
-        
+
         System.err.println("RMI Buffer resized. Actual capacity " + RMI.length);
     }
-    
-    protected abstract void InitRMISubsystem(int[] columnofs, int[] ylookup,V screen, CyclicBarrier
-            maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware);
-    
-    public static class Indexed extends ParallelThings<byte[],byte[]>{
 
-    public Indexed(VideoScale vs, SceneRenderer<byte[], byte[]> R, Executor tp, int numthreads) {
+    protected abstract void InitRMISubsystem(int[] columnofs, int[] ylookup, V screen, CyclicBarrier maskedbarrier, BlurryTable BLURRY_MAP, List<IDetailAware> detailaware);
+
+    public static class Indexed extends ParallelThings<byte[], byte[]> {
+
+        public Indexed(VideoScale vs, SceneRenderer<byte[], byte[]> R, Executor tp, int numthreads) {
             super(vs, R, tp, numthreads);
         }
 
-    protected void InitRMISubsystem(int[] columnofs, int[] ylookup,byte[] screen, CyclicBarrier
-            maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware)    {
-        for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-            RMIExec[i] =
-                new RenderMaskedExecutor.Indexed(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
-                        ylookup, screen, RMI, maskedbarrier,I,BLURRY_MAP);
-                
-            detailaware.add(RMIExec[i]);
+        protected void InitRMISubsystem(int[] columnofs, int[] ylookup, byte[] screen, CyclicBarrier maskedbarrier, BlurryTable BLURRY_MAP, List<IDetailAware> detailaware) {
+            for (int i = 0; i < NUMMASKEDTHREADS; i++) {
+                RMIExec[i]
+                        = new RenderMaskedExecutor.Indexed(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
+                                ylookup, screen, RMI, maskedbarrier, I, BLURRY_MAP);
+
+                detailaware.add(RMIExec[i]);
             }
         }
     }
-    
-    public static class HiColor extends ParallelThings<byte[],short[]>{
-        
+
+    public static class HiColor extends ParallelThings<byte[], short[]> {
 
         public HiColor(VideoScale vs, SceneRenderer<byte[], short[]> R, Executor tp, int numthreads) {
             super(vs, R, tp, numthreads);
         }
 
-        protected void InitRMISubsystem(int[] columnofs, int[] ylookup,short[] screen, CyclicBarrier
-                maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware)    {
+        protected void InitRMISubsystem(int[] columnofs, int[] ylookup, short[] screen, CyclicBarrier maskedbarrier, BlurryTable BLURRY_MAP, List<IDetailAware> detailaware) {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-                RMIExec[i] =
-                    new RenderMaskedExecutor.HiColor(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
-                            ylookup, screen, RMI, maskedbarrier,I, BLURRY_MAP);
-                    
+                RMIExec[i]
+                        = new RenderMaskedExecutor.HiColor(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
+                                ylookup, screen, RMI, maskedbarrier, I, BLURRY_MAP);
+
                 detailaware.add(RMIExec[i]);
-                }
             }
         }
-    
-public static class TrueColor extends ParallelThings<byte[],int[]>{
-
-
-        public TrueColor(VideoScale vs, SceneRenderer<byte[], int[]> R, Executor tp, int numthreads) {
-        super(vs, R, tp, numthreads);
     }
 
-        protected void InitRMISubsystem(int[] columnofs, int[] ylookup,int[] screen, CyclicBarrier
-                maskedbarrier,BlurryTable BLURRY_MAP, List<IDetailAware> detailaware)    {
+    public static class TrueColor extends ParallelThings<byte[], int[]> {
+
+        public TrueColor(VideoScale vs, SceneRenderer<byte[], int[]> R, Executor tp, int numthreads) {
+            super(vs, R, tp, numthreads);
+        }
+
+        protected void InitRMISubsystem(int[] columnofs, int[] ylookup, int[] screen, CyclicBarrier maskedbarrier, BlurryTable BLURRY_MAP, List<IDetailAware> detailaware) {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-                RMIExec[i] =
-                    new RenderMaskedExecutor.TrueColor(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
-                            ylookup, screen, RMI, maskedbarrier,I, BLURRY_MAP);
-                    
+                RMIExec[i]
+                        = new RenderMaskedExecutor.TrueColor(vs.getScreenWidth(), vs.getScreenHeight(), columnofs,
+                                ylookup, screen, RMI, maskedbarrier, I, BLURRY_MAP);
+
                 detailaware.add(RMIExec[i]);
-                }
             }
         }
+    }
 
 }

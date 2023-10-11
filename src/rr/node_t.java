@@ -2,7 +2,7 @@ package rr;
 
 import doom.SourceCode;
 import doom.SourceCode.R_Main;
-import static doom.SourceCode.R_Main.*;
+import static doom.SourceCode.R_Main.R_PointOnSide;
 import doom.SourceCode.fixed_t;
 import m.BBox;
 import m.ISyncLogger;
@@ -22,12 +22,12 @@ import static utils.C2JUtils.memset;
 public class node_t implements Resettable {
 
     public node_t() {
-        bbox = new BBox[] {new BBox(), new BBox()};
+        bbox = new BBox[]{new BBox(), new BBox()};
         children = new int[2];
     }
 
     public node_t(int x, int y, int dx, int dy, BBox[] bbox,
-        int[] children) {
+            int[] children) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -39,13 +39,15 @@ public class node_t implements Resettable {
     /**
      * Partition line.
      */
-    @fixed_t public int x, y, dx, dy;
+    @fixed_t
+    public int x, y, dx, dy;
 
     /**
      * Bounding box for each child.
      */
     // Maes: make this into two proper bboxes?
-    @fixed_t public BBox[] bbox;
+    @fixed_t
+    public BBox[] bbox;
 
     /**
      * If NF_SUBSECTOR its a subsector.
@@ -68,7 +70,8 @@ public class node_t implements Resettable {
     public static int PointOnSide(@fixed_t int x, @fixed_t int y, node_t node) {
         // MAES: These are used mainly as ints, no need to use fixed_t internally.
         // fixed_t will only be used as a "pass type", but calculations will be done with ints, preferably.
-        @fixed_t int dx, dy, left, right;
+        @fixed_t
+        int dx, dy, left, right;
 
         if (node.dx == 0) {
             if (x <= node.x) {
@@ -120,7 +123,8 @@ public class node_t implements Resettable {
     public int PointOnSide(@fixed_t int x, @fixed_t int y) {
         // MAES: These are used mainly as ints, no need to use fixed_t internally.
         // fixed_t will only be used as a "pass type", but calculations will be done with ints, preferably.
-        @fixed_t int lDx, lDy, left, right;
+        @fixed_t
+        int lDx, lDy, left, right;
 
         if (this.dx == 0) {
             if (x <= this.x) {
@@ -170,10 +174,10 @@ public class node_t implements Resettable {
     public int DivlineSide(int x, int y) {
         int left, right;
         return (this.dx == 0) ? x == this.x ? 2 : x <= this.x ? eval(this.dy > 0) : eval(this.dy < 0) : (this.dy == 0)
-            ? (OLDDEMO ? x : y) == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) : (this.dy == 0)
-            ? y == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0)
-            : (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS))
-            < (left = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 : right == left ? 2 : 1;
+                ? (OLDDEMO ? x : y) == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) : (this.dy == 0)
+                ? y == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0)
+                : (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS))
+                < (left = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 : right == left ? 2 : 1;
     }
 
     private static final boolean OLDDEMO = Engine.getConfig().equals(Settings.line_of_sight, Settings.LOS.Vanilla);

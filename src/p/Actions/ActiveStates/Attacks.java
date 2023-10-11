@@ -39,14 +39,14 @@ import p.pspdef_t;
 import static utils.C2JUtils.eval;
 
 public interface Attacks extends Monsters {
+
     // plasma cells for a bfg attack
     // IDEA: make action functions partially parametrizable?
     int BFGCELLS = 40;
-    
+
     //
     // A_FirePistol
     //
-
     default void A_FirePistol(player_t player, pspdef_t psp) {
         StartSound(player.mo, sounds.sfxenum_t.sfx_pistol);
 
@@ -54,8 +54,8 @@ public interface Attacks extends Monsters {
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
 
         player.SetPsprite(
-            ps_flash,
-            weaponinfo[player.readyweapon.ordinal()].flashstate);
+                ps_flash,
+                weaponinfo[player.readyweapon.ordinal()].flashstate);
 
         getAttacks().P_BulletSlope(player.mo);
         getAttacks().P_GunShot(player.mo, !eval(player.refire));
@@ -73,8 +73,8 @@ public interface Attacks extends Monsters {
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
 
         player.SetPsprite(
-            ps_flash,
-            weaponinfo[player.readyweapon.ordinal()].flashstate);
+                ps_flash,
+                weaponinfo[player.readyweapon.ordinal()].flashstate);
 
         getAttacks().P_BulletSlope(player.mo);
 
@@ -97,8 +97,8 @@ public interface Attacks extends Monsters {
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= 2;
 
         player.SetPsprite(
-            ps_flash,
-            weaponinfo[player.readyweapon.ordinal()].flashstate);
+                ps_flash,
+                weaponinfo[player.readyweapon.ordinal()].flashstate);
 
         getAttacks().P_BulletSlope(player.mo);
 
@@ -115,7 +115,8 @@ public interface Attacks extends Monsters {
     //
     default void A_Punch(player_t player, pspdef_t psp) {
         final Spawn sp = contextRequire(KEY_SPAWN);
-        @angle_t long angle;
+        @angle_t
+        long angle;
         int damage;
         int slope;
 
@@ -137,10 +138,10 @@ public interface Attacks extends Monsters {
         if (eval(sp.linetarget)) {
             StartSound(player.mo, sounds.sfxenum_t.sfx_punch);
             player.mo.angle = sceneRenderer().PointToAngle2(
-                player.mo.x,
-                player.mo.y,
-                sp.linetarget.x,
-                sp.linetarget.y
+                    player.mo.x,
+                    player.mo.y,
+                    sp.linetarget.x,
+                    sp.linetarget.y
             ) & BITS32;
         }
     }
@@ -150,7 +151,8 @@ public interface Attacks extends Monsters {
     //
     default void A_Saw(player_t player, pspdef_t psp) {
         final Spawn sp = contextRequire(KEY_SPAWN);
-        @angle_t long angle;
+        @angle_t
+        long angle;
         int damage;
         int slope;
 
@@ -171,7 +173,7 @@ public interface Attacks extends Monsters {
 
         // turn to face target
         angle = sceneRenderer().PointToAngle2(player.mo.x, player.mo.y,
-            sp.linetarget.x, sp.linetarget.y) & BITS32;
+                sp.linetarget.x, sp.linetarget.y) & BITS32;
         /* FIXME: this comparison is going to fail.... or not?
             If e.g. angle = 359 degrees (which will be mapped to a small negative number),
             and player.mo.angle = 160 degrees (a large, positive value), the result will be a
@@ -253,8 +255,8 @@ public interface Attacks extends Monsters {
         player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
 
         player.SetPsprite(
-            ps_flash,
-            weaponinfo[player.readyweapon.ordinal()].flashstate);
+                ps_flash,
+                weaponinfo[player.readyweapon.ordinal()].flashstate);
 
         getAttacks().SpawnPlayerMissile(player.mo, mobjtype_t.MT_PLASMA);
     }
@@ -275,7 +277,7 @@ public interface Attacks extends Monsters {
     default void A_Explode(mobj_t thingy) {
         getAttacks().RadiusAttack(thingy, thingy.target, 128);
     }
-    
+
     //
     // A_BFGSpray
     // Spawn a BFG explosion on every monster in view

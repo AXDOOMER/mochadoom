@@ -26,20 +26,21 @@ import v.scale.VideoScale;
  * @author Good Sign
  */
 public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
+
     /**
      * Converts a block of paletted pixels into screen format pixels
      * It is advised that implementation should both perform caching
      * and be additionally optimized for 1-value src arrays
      */
     V convertPalettedBlock(byte... src);
-    
+
     /**
      * Fills the whole dstScreen tiling the copies of block across it
      */
     default void TileScreen(E dstScreen, V block, Rectangle blockArea) {
         final int screenHeight = getScreenHeight();
         final int screenWidth = getScreenWidth();
-        
+
         for (int y = 0; y < screenHeight; y += blockArea.height) {
             // Draw whole blocks.
             for (int x = 0; x < screenWidth; x += blockArea.width) {
@@ -48,7 +49,7 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
             }
         }
     }
-    
+
     /**
      * Fills the rectangular part of dstScreen tiling the copies of block across it
      */
@@ -56,7 +57,7 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
         final int screenWidth = getScreenWidth();
         final int fiilLimitX = screenArea.x + screenArea.width;
         final int fiilLimitY = screenArea.y + screenArea.height;
-        
+
         for (int y = screenArea.y; y < fiilLimitY; y += blockArea.height) {
             // Draw whole blocks.
             for (int x = screenArea.x; x < fiilLimitX; x += blockArea.width) {
@@ -65,7 +66,7 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
             }
         }
     }
-    
+
     /**
      * Draws a linear block of pixels from the source buffer into screen buffer
      * V_DrawBlock
@@ -75,10 +76,10 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
         final int bufferLength = Array.getLength(screen);
         final int screenWidth = getScreenWidth();
         final Relocation rel = new Relocation(
-            point(sourceArea.x, sourceArea.y),
-            destinationPoint,
-            sourceArea.width);
-        
+                point(sourceArea.x, sourceArea.y),
+                destinationPoint,
+                sourceArea.width);
+
         for (int h = sourceArea.height; h > 0; --h, rel.source += sourceArea.width, rel.destination += screenWidth) {
             if (rel.destination + rel.length >= bufferLength) {
                 return;
@@ -86,18 +87,18 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
             screenCopy(block, screen, rel);
         }
     }
-    
+
     default V ScaleBlock(V block, VideoScale vs, int width, int height) {
         return ScaleBlock(block, width, height, vs.getScalingX(), vs.getScalingY());
     }
-    
+
     default V ScaleBlock(V block, int width, int height, int dupX, int dupY) {
         final int newWidth = width * dupX;
         final int newHeight = height * dupY;
         @SuppressWarnings("unchecked")
         final V newBlock = (V) Array.newInstance(block.getClass().getComponentType(), newWidth * newHeight);
         final Horizontal row = new Horizontal(0, dupX);
-        
+
         for (int i = 0; i < width; ++i) {
             for (int j = 0; j < height; ++j) {
                 final int pointSource = point(i, j, width);
@@ -109,7 +110,7 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
                 RepeatRow(newBlock, row, dupY - 1, newWidth);
             }
         }
-        
+
         return newBlock;
     }
 
@@ -119,7 +120,7 @@ public interface Blocks<V, E extends Enum<E>> extends Points<V, E>, Palettes {
     default void RepeatRow(V screen, final Horizontal row, int times) {
         RepeatRow(screen, row, times, getScreenWidth());
     }
-    
+
     /**
      * Given a row, repeats it down the screen
      */

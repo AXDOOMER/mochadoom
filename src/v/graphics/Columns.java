@@ -35,6 +35,7 @@ import rr.patch_t;
  * @author Good Sign
  */
 public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
+
     /**
      * We have to draw columns to the screen, not rows and is ineffective performance-wise because
      * System.arraycopy only speeds a lot row copying, where it only have to be called once
@@ -48,9 +49,8 @@ public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
          * is transparent, so if we have delta 0xFF, then we've done with column drawing.
          */
         for (int j = 0, delta = 0;
-             j < col.posts && col.postdeltas[j] != 0xFF;
-             ++j
-        ) {
+                j < col.posts && col.postdeltas[j] != 0xFF;
+                ++j) {
             // shift a row down by difference of current and previous delta with respect to scaling
             row.shift(point(0, (-delta + (delta = col.postdeltas[j])) * dupy, scrWidth));
             final int saveRowStart = row.start;
@@ -80,9 +80,9 @@ public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
             final int startPoint = point(x + i * dupx, y, scrWidth);
             final column_t column = flip ? patch.columns[patch.width - 1 - i] : patch.columns[i];
             DrawColumn(screen, column, new Horizontal(startPoint, dupx),
-                convertPalettedBlock(column.data), scrWidth, dupy);
+                    convertPalettedBlock(column.data), scrWidth, dupy);
         };
-        
+
         /**
          * As vanilla DOOM does not parallel column computation, we should have the option to turn off
          * the parallelism. Just set it to 0 in cfg:parallelism_patch_columns, and it will process columns in serial.
@@ -95,14 +95,19 @@ public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
             U.pool.submit(() -> IntStream.range(0, patch.width).parallel().forEach(task)).get();
         } catch (InterruptedException | ExecutionException ex) {
             Loggers.getLogger(Columns.class.getName()).log(Level.SEVERE, null, ex);
-        } else for (int i = 0; i < patch.width; ++i) {
-            task.accept(i);
+        } else {
+            for (int i = 0; i < patch.width; ++i) {
+                task.accept(i);
+            }
         }
     }
-    
+
     class U {
+
         static final int COLUMN_THREADS = Engine.getConfig().getValue(Settings.parallelism_patch_columns, Integer.class);
         private static final ForkJoinPool pool = COLUMN_THREADS > 0 ? new ForkJoinPool(COLUMN_THREADS) : null;
-        private U() {}
+
+        private U() {
+        }
     }
 }

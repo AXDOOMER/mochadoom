@@ -1,5 +1,5 @@
 package w;
 
-public interface IReadWriteDoomObject extends IReadableDoomObject, IWritableDoomObject{
+public interface IReadWriteDoomObject extends IReadableDoomObject, IWritableDoomObject {
 
 }

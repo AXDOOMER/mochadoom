@@ -209,7 +209,8 @@ public class DoomSystem implements IDoomSystem {
 
     @Override
     public void AllocLow(int length) {
-        ; // Dummy
+        // Dummy
+
     }
 
     //

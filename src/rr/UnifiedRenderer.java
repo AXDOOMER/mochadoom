@@ -57,7 +57,7 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
             final int LIGHTLEVELS = colormaps.lightLevels();
             final int MAXLIGHTSCALE = colormaps.maxLightScale();
             final int MAXLIGHTZ = colormaps.maxLightZ();
-            
+
             colormaps.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
             colormaps.scalelightfixed = new short[MAXLIGHTSCALE][];
             colormaps.zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
@@ -123,12 +123,12 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
 
         public Indexed(DoomMain<byte[], byte[]> DOOM) {
             super(DOOM);
-            
+
             // Init light levels
             final int LIGHTLEVELS = colormaps.lightLevels();
             final int MAXLIGHTSCALE = colormaps.maxLightScale();
             final int MAXLIGHTZ = colormaps.maxLightZ();
-            
+
             colormaps.scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
             colormaps.scalelightfixed = new byte[MAXLIGHTSCALE][];
             colormaps.zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
@@ -199,7 +199,7 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
             final int LIGHTLEVELS = colormaps.lightLevels();
             final int MAXLIGHTSCALE = colormaps.maxLightScale();
             final int MAXLIGHTZ = colormaps.maxLightZ();
-            
+
             colormaps.scalelight = new int[LIGHTLEVELS][MAXLIGHTSCALE][];
             colormaps.scalelightfixed = new int[MAXLIGHTSCALE][];
             colormaps.zlight = new int[LIGHTLEVELS][MAXLIGHTZ][];

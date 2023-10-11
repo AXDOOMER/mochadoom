@@ -1,6 +1,9 @@
 package p;
 
-import static data.Defines.*;
+import static data.Defines.MAPBLOCKSHIFT;
+import static data.Defines.NF_SUBSECTOR;
+import static data.Defines.NF_SUBSECTOR_CLASSIC;
+import static data.Defines.PU_LEVEL;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
 import data.maplinedef_t;
@@ -11,7 +14,8 @@ import data.mapsidedef_t;
 import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
-import defines.*;
+import defines.skill_t;
+import defines.slopetype_t;
 import doom.CommandVariable;
 import doom.DoomMain;
 import java.io.IOException;
@@ -240,9 +244,9 @@ public class LevelLoader extends AbstractLevelLoader {
                     // haleyjd 11/06/10: check for invalid subsector reference
                     if (no.children[j] >= numsubsectors) {
                         System.err
-                            .printf(
-                                "P_LoadNodes: BSP tree references invalid subsector %d.\n",
-                                no.children[j]);
+                                .printf(
+                                        "P_LoadNodes: BSP tree references invalid subsector %d.\n",
+                                        no.children[j]);
                         no.children[j] = 0;
                     }
 
@@ -469,7 +473,7 @@ public class LevelLoader extends AbstractLevelLoader {
         int count = 0;
 
         if (DOOM.cVarManager.bool(CommandVariable.BLOCKMAP) || DOOM.wadLoader.LumpLength(lump) < 8
-            || (count = DOOM.wadLoader.LumpLength(lump) / 2) >= 0x10000) // e6y
+                || (count = DOOM.wadLoader.LumpLength(lump) / 2) >= 0x10000) // e6y
         {
             CreateBlockMap();
         } else {
@@ -498,9 +502,9 @@ public class LevelLoader extends AbstractLevelLoader {
             // http://www.doomworld.com/idgames/index.php?id=12935
             if (!VerifyBlockMap(count)) {
                 System.err
-                    .printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+                        .printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
                 System.err
-                    .printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+                        .printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
             }
 
         }
@@ -631,7 +635,7 @@ public class LevelLoader extends AbstractLevelLoader {
 
             // set the degenmobj_t to the middle of the bounding box
             sector.soundorg = new degenmobj_t(((bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2),
-                ((bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2), (sector.ceilingheight - sector.floorheight) / 2);
+                    ((bbox[BOXTOP] + bbox[BOXBOTTOM]) / 2), (sector.ceilingheight - sector.floorheight) / 2);
 
             // adjust bounding box to map blocks
             block = (bbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
@@ -655,10 +659,10 @@ public class LevelLoader extends AbstractLevelLoader {
 
     @Override
     public void
-        SetupLevel(int episode,
-            int map,
-            int playermask,
-            skill_t skill) {
+            SetupLevel(int episode,
+                    int map,
+                    int playermask,
+                    skill_t skill) {
         int i;
         String lumpname;
         int lumpnum;
@@ -668,7 +672,7 @@ public class LevelLoader extends AbstractLevelLoader {
             DOOM.wminfo.partime = 180;
             for (i = 0; i < MAXPLAYERS; i++) {
                 DOOM.players[i].killcount = DOOM.players[i].secretcount
-                    = DOOM.players[i].itemcount = 0;
+                        = DOOM.players[i].itemcount = 0;
             }
 
             // Initial height of PointOfView
@@ -704,9 +708,9 @@ public class LevelLoader extends AbstractLevelLoader {
                 }
             } else {
                 lumpname = ("E"
-                    + (char) ('0' + episode)
-                    + "M"
-                    + (char) ('0' + map));
+                        + (char) ('0' + episode)
+                        + "M"
+                        + (char) ('0' + map));
             }
 
             lumpnum = DOOM.wadLoader.GetNumForName(lumpname);

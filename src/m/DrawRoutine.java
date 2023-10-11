@@ -8,6 +8,6 @@ package m;
  *
  */
 public interface DrawRoutine {
-	
-public void invoke();
+
+    public void invoke();
 }

@@ -5,15 +5,16 @@ import static data.Tables.finetangent;
 import doom.DoomMain;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import static m.fixed_t.*;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedMul;
 import rr.IDetailAware;
-import v.tables.LightsAndColors;
 import rr.TextureManager;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.R_DrawColumnBoomOpt;
 import rr.drawfuns.R_DrawColumnBoomOptLow;
 import rr.visplane_t;
+import v.tables.LightsAndColors;
 
 /** This is what actual executes the RenderSegInstructions.
  *   *  
@@ -39,314 +40,300 @@ import rr.visplane_t;
  * @author velktron
  *
  */
+public abstract class RenderSegExecutor<T, V> implements Runnable, IDetailAware {
 
-public abstract class RenderSegExecutor<T,V> implements Runnable, IDetailAware {
-
-	// This needs to be set by the partitioner.
-    protected int rw_start, rw_end,rsiend;
-	// These need to be set on creation, and are unchangeable.
+    // This needs to be set by the partitioner.
+    protected int rw_start, rw_end, rsiend;
+    // These need to be set on creation, and are unchangeable.
     protected final LightsAndColors<V> colormaps;
-	protected final TextureManager<T> TexMan;
-	protected final CyclicBarrier barrier;
-	protected RenderSegInstruction<V>[] RSI;
-	protected final long[] xtoviewangle;
-	protected final short[] ceilingclip, floorclip;
+    protected final TextureManager<T> TexMan;
+    protected final CyclicBarrier barrier;
+    protected RenderSegInstruction<V>[] RSI;
+    protected final long[] xtoviewangle;
+    protected final short[] ceilingclip, floorclip;
 
-	// Each thread should do its own ceiling/floor blanking
-	protected final short[] BLANKFLOORCLIP;
-	protected final short[] BLANKCEILINGCLIP;
+    // Each thread should do its own ceiling/floor blanking
+    protected final short[] BLANKFLOORCLIP;
+    protected final short[] BLANKCEILINGCLIP;
 
-    protected static final int HEIGHTBITS   =   12;
-	protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
-	protected final int id;
-	
-	protected DoomColumnFunction<T,V> colfunchi,colfunclow;
-	protected DoomColumnFunction<T,V> colfunc;
-	protected ColVars<T,V> dcvars;
+    protected static final int HEIGHTBITS = 12;
+    protected static final int HEIGHTUNIT = (1 << HEIGHTBITS);
+    protected final int id;
+
+    protected DoomColumnFunction<T, V> colfunchi, colfunclow;
+    protected DoomColumnFunction<T, V> colfunc;
+    protected ColVars<T, V> dcvars;
     protected final DoomMain<T, V> DOOM;
-	
-	public RenderSegExecutor(DoomMain<T, V> DOOM,int id,V screen, 
-			TextureManager<T> texman,
-			RenderSegInstruction<V>[] RSI,
-			short[] BLANKCEILINGCLIP,
-			short[] BLANKFLOORCLIP,
-			short[] ceilingclip,
-			short[] floorclip,
-			int[] columnofs,
-			long[] xtoviewangle,
-			int[] ylookup,
-			visplane_t[] visplanes,
-			CyclicBarrier barrier,
-            LightsAndColors<V> colormaps){
-		this.id=id;
-		this.TexMan=texman;
-		this.RSI=RSI;
-		this.barrier=barrier;		
-		this.ceilingclip=ceilingclip;
-		this.floorclip=floorclip;
-		this.xtoviewangle=xtoviewangle;
-		this.BLANKCEILINGCLIP=BLANKCEILINGCLIP;
-		this.BLANKFLOORCLIP=BLANKFLOORCLIP;
-        this.colormaps=colormaps;
-        this.DOOM=DOOM;
-	}
 
-	 protected final void ProcessRSI(RenderSegInstruction<V> rsi, int startx,int endx,boolean contained){
-         int     angle; // angle_t
-         int     index;
-         int     yl; // low
-         int     yh; // hight
-         int     mid;
-         int pixlow,pixhigh,pixhighstep,pixlowstep;
-         int rw_scale,topfrac,bottomfrac,bottomstep;
-         // These are going to be modified A LOT, so we cache them here.
-         pixhighstep=rsi.pixhighstep;
-         pixlowstep=rsi.pixlowstep;
-         bottomstep=rsi.bottomstep;
-         //  We must re-scale it.
-         int rw_scalestep= rsi.rw_scalestep; 
-         int topstep=rsi.topstep;
-         int     texturecolumn=0; // fixed_t
-         final int bias;
-         // Well is entirely contained in our screen zone 
-         // (or the very least it starts in it).
-         if (contained) bias=0; 
-             // We are continuing a wall that started in another 
-             // screen zone.
-             else bias=(startx-rsi.rw_x);
-         // PROBLEM: these must be pre-biased when multithreading.
-             rw_scale=rsi.rw_scale+bias*rw_scalestep;
-             topfrac = rsi.topfrac+bias*topstep;
-             bottomfrac = rsi.bottomfrac+ bias*bottomstep;
-             pixlow=rsi.pixlow+bias*pixlowstep;
-             pixhigh=rsi.pixhigh+bias*pixhighstep;
-
-         {
-            
-             for ( int rw_x=startx; rw_x < endx ; rw_x++)
-             {
-             // mark floor / ceiling areas
-             yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
-
-             // no space above wall?
-             if (yl < ceilingclip[rw_x]+1)
-                 yl = ceilingclip[rw_x]+1;
-                 
-             yh = bottomfrac>>HEIGHTBITS;
-
-             if (yh >= floorclip[rw_x])
-                 yh = floorclip[rw_x]-1;
-             
-           //  System.out.printf("Thread: rw %d yl %d yh %d\n",rw_x,yl,yh);
-
-             // A particular seg has been identified as a floor marker.
-             
-             
-             // texturecolumn and lighting are independent of wall tiers
-             if (rsi.segtextured)
-             {
-                 // calculate texture offset
-                
-                 
-               // CAREFUL: a VERY anomalous point in the code. Their sum is supposed
-               // to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
-               // If added with pure unsigned rules, this doesn't hold anymore,
-               // not even if accounting for overflow.
-                 angle = Tables.toBAMIndex(rsi.rw_centerangle + (int)xtoviewangle[rw_x]);
-               //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
-               //angle&=0x1FFF;
-                 
-               // FIXME: We are accessing finetangent here, the code seems pretty confident
-               // in that angle won't exceed 4K no matter what. But xtoviewangle
-               // alone can yield 8K when shifted.
-               // This usually only overflows if we idclip and look at certain directions 
-               // (probably angles get fucked up), however it seems rare enough to just 
-               // "swallow" the exception. You can eliminate it by anding with 0x1FFF
-               // if you're so inclined. 
-               
-               texturecolumn = rsi.rw_offset-FixedMul(finetangent[angle],rsi.rw_distance);
-                texturecolumn >>= FRACBITS;
-               // calculate lighting
-               index = rw_scale>>colormaps.lightScaleShift();
-       
-
-                 if (index >=  colormaps.maxLightScale() )
-                 index = colormaps.maxLightScale()-1;
-
-                 dcvars.dc_colormap = rsi.walllights[index];
-                 dcvars.dc_x = rw_x;
-                 dcvars.dc_iscale = (int) (0xffffffffL / rw_scale);
-             }
-             
-             // draw the wall tiers
-             if (rsi.midtexture!=0)
-             {
-                 // single sided line
-                 dcvars.dc_yl = yl;
-                 dcvars.dc_yh = yh;
-                 dcvars.dc_texheight = TexMan.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
-                 dcvars.dc_texturemid = rsi.rw_midtexturemid;    
-                 dcvars.dc_source = TexMan.GetCachedColumn(rsi.midtexture,texturecolumn);
-                 dcvars.dc_source_ofs=0;
-                 colfunc.invoke();
-                 ceilingclip[rw_x] = (short) rsi.viewheight;
-                 floorclip[rw_x] = -1;
-             }
-             else
-             {
-                 // two sided line
-                 if (rsi.toptexture!=0)
-                 {
-                     // top wall
-                     mid = pixhigh>>HEIGHTBITS;
-                     pixhigh += pixhighstep;
-
-                     if (mid >= floorclip[rw_x])
-                         mid = floorclip[rw_x]-1;
-
-                 if (mid >= yl)
-                 {
-                     dcvars.dc_yl = yl;
-                     dcvars.dc_yh = mid;
-                     dcvars.dc_texturemid = rsi.rw_toptexturemid;
-                     dcvars.dc_texheight=TexMan.getTextureheight(rsi.toptexture)>>FRACBITS;
-                     dcvars.dc_source = TexMan.GetCachedColumn(rsi.toptexture,texturecolumn);
-                     //dc_source_ofs=0;
-                     colfunc.invoke();
-                     ceilingclip[rw_x] = (short) mid;
-                 }
-                 else
-                     ceilingclip[rw_x] = (short) (yl-1);
-                 }  // if toptexture
-                 else
-                 {
-                     // no top wall
-                     if (rsi.markceiling)
-                         ceilingclip[rw_x] = (short) (yl-1);
-                 } 
-                     
-                 if (rsi.bottomtexture!=0)
-                 {
-                 // bottom wall
-                 mid = (pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
-                 pixlow += pixlowstep;
-
-                 // no space above wall?
-                 if (mid <= ceilingclip[rw_x])
-                     mid = ceilingclip[rw_x]+1;
-                 
-                 if (mid <= yh)
-                 {
-                     dcvars.dc_yl = mid;
-                     dcvars.dc_yh = yh;
-                     dcvars.dc_texturemid = rsi.rw_bottomtexturemid;
-                     dcvars.dc_texheight=TexMan.getTextureheight(rsi.bottomtexture)>>FRACBITS;
-                     dcvars.dc_source = TexMan.GetCachedColumn(rsi.bottomtexture,texturecolumn);
-                     // dc_source_ofs=0;
-                     colfunc.invoke();
-                     floorclip[rw_x] = (short) mid;
-                 }
-                 else
-                      floorclip[rw_x] = (short) (yh+1);
-
-             } // end-bottomtexture
-             else
-             {
-                 // no bottom wall
-                 if (rsi.markfloor)
-                     floorclip[rw_x] = (short) (yh+1);
-             }
-                 
-            } // end-else (two-sided line)
-                 rw_scale += rw_scalestep;
-                 topfrac += topstep;
-                 bottomfrac += bottomstep;
-             } // end-rw 
-         } // end-block
-     }
-	
-	@Override
-    public void setDetail(int detailshift) {
-        if (detailshift == 0)
-            colfunc = colfunchi;
-        else
-            colfunc = colfunclow;
+    public RenderSegExecutor(DoomMain<T, V> DOOM, int id, V screen,
+            TextureManager<T> texman,
+            RenderSegInstruction<V>[] RSI,
+            short[] BLANKCEILINGCLIP,
+            short[] BLANKFLOORCLIP,
+            short[] ceilingclip,
+            short[] floorclip,
+            int[] columnofs,
+            long[] xtoviewangle,
+            int[] ylookup,
+            visplane_t[] visplanes,
+            CyclicBarrier barrier,
+            LightsAndColors<V> colormaps) {
+        this.id = id;
+        this.TexMan = texman;
+        this.RSI = RSI;
+        this.barrier = barrier;
+        this.ceilingclip = ceilingclip;
+        this.floorclip = floorclip;
+        this.xtoviewangle = xtoviewangle;
+        this.BLANKCEILINGCLIP = BLANKCEILINGCLIP;
+        this.BLANKFLOORCLIP = BLANKFLOORCLIP;
+        this.colormaps = colormaps;
+        this.DOOM = DOOM;
     }
-	
-	/** Only called once per screen width change */
-	public void setScreenRange(int rwstart, int rwend){
-		this.rw_end=rwend;
-		this.rw_start=rwstart;
-	}
 
-	
-	/** How many instructions TOTAL are there to wade through.
-	 *  Not all will be executed on one thread, except in some rare
-	 *  circumstances. 
-	 *  
-	 * @param rsiend
-	 */
-	public void setRSIEnd(int rsiend){
-		this.rsiend=rsiend;
-	}
+    protected final void ProcessRSI(RenderSegInstruction<V> rsi, int startx, int endx, boolean contained) {
+        int angle; // angle_t
+        int index;
+        int yl; // low
+        int yh; // hight
+        int mid;
+        int pixlow, pixhigh, pixhighstep, pixlowstep;
+        int rw_scale, topfrac, bottomfrac, bottomstep;
+        // These are going to be modified A LOT, so we cache them here.
+        pixhighstep = rsi.pixhighstep;
+        pixlowstep = rsi.pixlowstep;
+        bottomstep = rsi.bottomstep;
+        //  We must re-scale it.
+        int rw_scalestep = rsi.rw_scalestep;
+        int topstep = rsi.topstep;
+        int texturecolumn = 0; // fixed_t
+        final int bias;
+        // Well is entirely contained in our screen zone 
+        // (or the very least it starts in it).
+        if (contained) {
+            bias = 0;
+        } // We are continuing a wall that started in another 
+        // screen zone.
+        else {
+            bias = (startx - rsi.rw_x);
+        }
+        // PROBLEM: these must be pre-biased when multithreading.
+        rw_scale = rsi.rw_scale + bias * rw_scalestep;
+        topfrac = rsi.topfrac + bias * topstep;
+        bottomfrac = rsi.bottomfrac + bias * bottomstep;
+        pixlow = rsi.pixlow + bias * pixlowstep;
+        pixhigh = rsi.pixhigh + bias * pixhighstep;
 
-	public void run()
-	{
+        {
 
-		RenderSegInstruction<V> rsi;
+            for (int rw_x = startx; rw_x < endx; rw_x++) {
+                // mark floor / ceiling areas
+                yl = (topfrac + HEIGHTUNIT - 1) >> HEIGHTBITS;
 
-		// Each worker blanks its own portion of the floor/ceiling clippers.
-		System.arraycopy(BLANKFLOORCLIP,rw_start,floorclip, rw_start,rw_end-rw_start);
-		System.arraycopy(BLANKCEILINGCLIP,rw_start,ceilingclip, rw_start,rw_end-rw_start);
+                // no space above wall?
+                if (yl < ceilingclip[rw_x] + 1) {
+                    yl = ceilingclip[rw_x] + 1;
+                }
 
-		// For each "SegDraw" instruction...
-		for (int i=0;i<rsiend;i++){
-			rsi=RSI[i];
-			dcvars.centery=RSI[i].centery;
-			int startx,endx;
-			// Does a wall actually start in our screen zone?
-			// If yes, we need no bias, since it was meant for it.
-			// If the wall started BEFORE our zone, then we
-			// will need to add a bias to it (see ProcessRSI).
-			// If its entirely non-contained, ProcessRSI won't be
-			// called anyway, so we don't need to check for the end.
-			
-			boolean contained=(rsi.rw_x>=rw_start);
-			// Keep to your part of the screen. It's possible that several
-			// threads will process the same RSI, but different parts of it.
-			
-				// Trim stuff that starts before our rw_start position.
-				startx=Math.max(rsi.rw_x,rw_start);
-				// Similarly, trim stuff after our rw_end position.
-				endx=Math.min(rsi.rw_stopx,rw_end);
-				// Is there anything to actually draw?
-				if ((endx-startx)>0) {
-					ProcessRSI(rsi,startx,endx,contained);
-					}
-		} // end-instruction
-	
-		try {
-			barrier.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (BrokenBarrierException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+                yh = bottomfrac >> HEIGHTBITS;
 
-	}
-	
-	//protected abstract void ProcessRSI(RenderSegInstruction<V> rsi, int startx,int endx,boolean contained);
+                if (yh >= floorclip[rw_x]) {
+                    yh = floorclip[rw_x] - 1;
+                }
 
-	
+                //  System.out.printf("Thread: rw %d yl %d yh %d\n",rw_x,yl,yh);
+                // A particular seg has been identified as a floor marker.
+                // texturecolumn and lighting are independent of wall tiers
+                if (rsi.segtextured) {
+                    // calculate texture offset
 
-	////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
-	public void updateRSI(RenderSegInstruction<V>[] rsi) {
-		this.RSI=rsi;
-		}
-	
-	public static final class TrueColor extends RenderSegExecutor<byte[],int[]>{
+                    // CAREFUL: a VERY anomalous point in the code. Their sum is supposed
+                    // to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
+                    // If added with pure unsigned rules, this doesn't hold anymore,
+                    // not even if accounting for overflow.
+                    angle = Tables.toBAMIndex(rsi.rw_centerangle + (int) xtoviewangle[rw_x]);
+                    //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
+                    //angle&=0x1FFF;
+
+                    // FIXME: We are accessing finetangent here, the code seems pretty confident
+                    // in that angle won't exceed 4K no matter what. But xtoviewangle
+                    // alone can yield 8K when shifted.
+                    // This usually only overflows if we idclip and look at certain directions 
+                    // (probably angles get fucked up), however it seems rare enough to just 
+                    // "swallow" the exception. You can eliminate it by anding with 0x1FFF
+                    // if you're so inclined. 
+                    texturecolumn = rsi.rw_offset - FixedMul(finetangent[angle], rsi.rw_distance);
+                    texturecolumn >>= FRACBITS;
+                    // calculate lighting
+                    index = rw_scale >> colormaps.lightScaleShift();
+
+                    if (index >= colormaps.maxLightScale()) {
+                        index = colormaps.maxLightScale() - 1;
+                    }
+
+                    dcvars.dc_colormap = rsi.walllights[index];
+                    dcvars.dc_x = rw_x;
+                    dcvars.dc_iscale = (int) (0xffffffffL / rw_scale);
+                }
+
+                // draw the wall tiers
+                if (rsi.midtexture != 0) {
+                    // single sided line
+                    dcvars.dc_yl = yl;
+                    dcvars.dc_yh = yh;
+                    dcvars.dc_texheight = TexMan.getTextureheight(rsi.midtexture) >> FRACBITS; // killough
+                    dcvars.dc_texturemid = rsi.rw_midtexturemid;
+                    dcvars.dc_source = TexMan.GetCachedColumn(rsi.midtexture, texturecolumn);
+                    dcvars.dc_source_ofs = 0;
+                    colfunc.invoke();
+                    ceilingclip[rw_x] = (short) rsi.viewheight;
+                    floorclip[rw_x] = -1;
+                } else {
+                    // two sided line
+                    if (rsi.toptexture != 0) {
+                        // top wall
+                        mid = pixhigh >> HEIGHTBITS;
+                        pixhigh += pixhighstep;
+
+                        if (mid >= floorclip[rw_x]) {
+                            mid = floorclip[rw_x] - 1;
+                        }
+
+                        if (mid >= yl) {
+                            dcvars.dc_yl = yl;
+                            dcvars.dc_yh = mid;
+                            dcvars.dc_texturemid = rsi.rw_toptexturemid;
+                            dcvars.dc_texheight = TexMan.getTextureheight(rsi.toptexture) >> FRACBITS;
+                            dcvars.dc_source = TexMan.GetCachedColumn(rsi.toptexture, texturecolumn);
+                            //dc_source_ofs=0;
+                            colfunc.invoke();
+                            ceilingclip[rw_x] = (short) mid;
+                        } else {
+                            ceilingclip[rw_x] = (short) (yl - 1);
+                        }
+                    } // if toptexture
+                    else {
+                        // no top wall
+                        if (rsi.markceiling) {
+                            ceilingclip[rw_x] = (short) (yl - 1);
+                        }
+                    }
+
+                    if (rsi.bottomtexture != 0) {
+                        // bottom wall
+                        mid = (pixlow + HEIGHTUNIT - 1) >> HEIGHTBITS;
+                        pixlow += pixlowstep;
+
+                        // no space above wall?
+                        if (mid <= ceilingclip[rw_x]) {
+                            mid = ceilingclip[rw_x] + 1;
+                        }
+
+                        if (mid <= yh) {
+                            dcvars.dc_yl = mid;
+                            dcvars.dc_yh = yh;
+                            dcvars.dc_texturemid = rsi.rw_bottomtexturemid;
+                            dcvars.dc_texheight = TexMan.getTextureheight(rsi.bottomtexture) >> FRACBITS;
+                            dcvars.dc_source = TexMan.GetCachedColumn(rsi.bottomtexture, texturecolumn);
+                            // dc_source_ofs=0;
+                            colfunc.invoke();
+                            floorclip[rw_x] = (short) mid;
+                        } else {
+                            floorclip[rw_x] = (short) (yh + 1);
+                        }
+
+                    } // end-bottomtexture
+                    else {
+                        // no bottom wall
+                        if (rsi.markfloor) {
+                            floorclip[rw_x] = (short) (yh + 1);
+                        }
+                    }
+
+                } // end-else (two-sided line)
+                rw_scale += rw_scalestep;
+                topfrac += topstep;
+                bottomfrac += bottomstep;
+            } // end-rw 
+        } // end-block
+    }
+
+    @Override
+    public void setDetail(int detailshift) {
+        if (detailshift == 0) {
+            colfunc = colfunchi;
+        } else {
+            colfunc = colfunclow;
+        }
+    }
+
+    /** Only called once per screen width change */
+    public void setScreenRange(int rwstart, int rwend) {
+        this.rw_end = rwend;
+        this.rw_start = rwstart;
+    }
+
+    /** How many instructions TOTAL are there to wade through.
+     *  Not all will be executed on one thread, except in some rare
+     *  circumstances. 
+     *  
+     * @param rsiend
+     */
+    public void setRSIEnd(int rsiend) {
+        this.rsiend = rsiend;
+    }
+
+    public void run() {
+
+        RenderSegInstruction<V> rsi;
+
+        // Each worker blanks its own portion of the floor/ceiling clippers.
+        System.arraycopy(BLANKFLOORCLIP, rw_start, floorclip, rw_start, rw_end - rw_start);
+        System.arraycopy(BLANKCEILINGCLIP, rw_start, ceilingclip, rw_start, rw_end - rw_start);
+
+        // For each "SegDraw" instruction...
+        for (int i = 0; i < rsiend; i++) {
+            rsi = RSI[i];
+            dcvars.centery = RSI[i].centery;
+            int startx, endx;
+            // Does a wall actually start in our screen zone?
+            // If yes, we need no bias, since it was meant for it.
+            // If the wall started BEFORE our zone, then we
+            // will need to add a bias to it (see ProcessRSI).
+            // If its entirely non-contained, ProcessRSI won't be
+            // called anyway, so we don't need to check for the end.
+
+            boolean contained = (rsi.rw_x >= rw_start);
+            // Keep to your part of the screen. It's possible that several
+            // threads will process the same RSI, but different parts of it.
+
+            // Trim stuff that starts before our rw_start position.
+            startx = Math.max(rsi.rw_x, rw_start);
+            // Similarly, trim stuff after our rw_end position.
+            endx = Math.min(rsi.rw_stopx, rw_end);
+            // Is there anything to actually draw?
+            if ((endx - startx) > 0) {
+                ProcessRSI(rsi, startx, endx, contained);
+            }
+        } // end-instruction
+
+        try {
+            barrier.await();
+        } catch (InterruptedException | BrokenBarrierException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        // TODO Auto-generated catch block
+
+    }
+
+    //protected abstract void ProcessRSI(RenderSegInstruction<V> rsi, int startx,int endx,boolean contained);
+    ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+    public void updateRSI(RenderSegInstruction<V>[] rsi) {
+        this.RSI = rsi;
+    }
+
+    public static final class TrueColor extends RenderSegExecutor<byte[], int[]> {
 
         public TrueColor(DoomMain<byte[], int[]> DOOM, int id,
                 int[] screen, TextureManager<byte[]> texman,
@@ -357,13 +344,13 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IDetailAware {
             super(DOOM, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
                     ylookup, visplanes, barrier, colormaps);
-            dcvars=new ColVars<>();
-            colfunc=colfunchi=new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
-            colfunclow=new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+            dcvars = new ColVars<>();
+            colfunc = colfunchi = new R_DrawColumnBoomOpt.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, null);
+            colfunclow = new R_DrawColumnBoomOptLow.TrueColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, null);
         }
-	}
-    
-	public static final class HiColor extends RenderSegExecutor<byte[],short[]>{
+    }
+
+    public static final class HiColor extends RenderSegExecutor<byte[], short[]> {
 
         public HiColor(DoomMain<byte[], short[]> DOOM, int id,
                 short[] screen, TextureManager<byte[]> texman,
@@ -374,13 +361,13 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IDetailAware {
             super(DOOM, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
                     ylookup, visplanes, barrier, colormaps);
-            dcvars=new ColVars<>();
-            colfunc=colfunchi=new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
-            colfunclow=new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+            dcvars = new ColVars<>();
+            colfunc = colfunchi = new R_DrawColumnBoomOpt.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, null);
+            colfunclow = new R_DrawColumnBoomOptLow.HiColor(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, null);
         }
-	}
-	
-	public static final class Indexed extends RenderSegExecutor<byte[],byte[]>{
+    }
+
+    public static final class Indexed extends RenderSegExecutor<byte[], byte[]> {
 
         public Indexed(DoomMain<byte[], byte[]> DOOM, int id,
                 byte[] screen, TextureManager<byte[]> texman,
@@ -391,12 +378,12 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IDetailAware {
             super(DOOM, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
                     ylookup, visplanes, barrier, colormaps);
-            dcvars=new ColVars<>();
-            colfunc=colfunchi=new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
-            colfunclow=new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(),ylookup,columnofs,dcvars,screen,null );
+            dcvars = new ColVars<>();
+            colfunc = colfunchi = new R_DrawColumnBoomOpt.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, null);
+            colfunclow = new R_DrawColumnBoomOptLow.Indexed(DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight(), ylookup, columnofs, dcvars, screen, null);
         }
     }
-	
+
 }
 
 // $Log: RenderSegExecutor.java,v $

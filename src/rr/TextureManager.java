@@ -12,48 +12,46 @@ import rr.parallel.IGetSmpColumn;
  * @author Velktron
  *
  */
+public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>, IGetSmpColumn {
 
-public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>,IGetSmpColumn{
+    public final static String[] texturelumps = {"TEXTURE1", "TEXTURE2"};
+    public final static int NUMTEXLUMPS = texturelumps.length;
+    public final static int TEXTURE1 = 0;
+    public final static int TEXTURE2 = 1;
 
-    public final static String[] texturelumps={"TEXTURE1","TEXTURE2"};
-    public final static int NUMTEXLUMPS=texturelumps.length;
-    public final static int TEXTURE1=0;
-    public final static int TEXTURE2=1;
-    
-	int TextureNumForName(String texname);
-	
-	
-	/**The "num" expected here is the internal flat number,
-	 * not the absolute lump number. So impement accordingly.
-	 * 
-	 * @param flatname
-	 * @return
-	 */
-	int FlatNumForName(String flatname);
-	
+    int TextureNumForName(String texname);
+
+    /**The "num" expected here is the internal flat number,
+     * not the absolute lump number. So impement accordingly.
+     * 
+     * @param flatname
+     * @return
+     */
+    int FlatNumForName(String flatname);
+
     @R_Data.C(R_PrecacheLevel)
-	void PrecacheLevel() throws IOException;
-	
-	void GenerateComposite(int tex);
-	
-	int getTextureheight(int texnum);	
-		
-	int getTextureTranslation(int texnum);
-	
-	int getFlatTranslation(int flatnum);
-	
-	void setTextureTranslation(int texnum, int amount);
-	
-	void setFlatTranslation(int flatnum,int amount);
+    void PrecacheLevel() throws IOException;
 
-	int CheckTextureNumForName(String texnamem);
+    void GenerateComposite(int tex);
 
-	String CheckTextureNameForNum(int texnum);
-	
+    int getTextureheight(int texnum);
+
+    int getTextureTranslation(int texnum);
+
+    int getFlatTranslation(int flatnum);
+
+    void setTextureTranslation(int texnum, int amount);
+
+    void setFlatTranslation(int flatnum, int amount);
+
+    int CheckTextureNumForName(String texnamem);
+
+    String CheckTextureNameForNum(int texnum);
+
     int getTexturewidthmask(int tex);
-   
+
     int getTextureColumnLump(int tex, int col);
-   
+
     char getTextureColumnOfs(int tex, int col);
 
     T[] getTextureComposite(int tex);
@@ -65,7 +63,6 @@ public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>,IG
     void InitTextures() throws IOException;
 
     //int getFirstFlat();
-
     int getSkyTextureMid();
 
     int getSkyFlatNum();
@@ -80,30 +77,25 @@ public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>,IG
 
     void GenerateLookup(int texnum)
             throws IOException;
-    
+
     int getFlatLumpNum(int flatnum);
 
-
-	T getRogueColumn(int lump, int column);
+    T getRogueColumn(int lump, int column);
 
     patch_t getMaskedComposite(int tex);
 
-
     void GenerateMaskedComposite(int texnum);
-    
+
     /** Return a "sanitized" patch. If data is insufficient, return
      *  a default patch or attempt a partial draw.
      * 
      * @param patchnum
      * @return
      */
-    
     public T getSafeFlat(int flatnum);
-
 
     column_t GetColumnStruct(int tex, int col);
 
-
     void setSMPVars(int nUMMASKEDTHREADS);
-    
-    }
+
+}

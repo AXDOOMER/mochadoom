@@ -36,60 +36,57 @@ import rr.line_t;
  *
  *---------------------------------------------------------------------
  */
-
 public class Overflow {
 
-    String[] overflow_cfgname =
-    {
-      "overrun_spechit_emulate",
-      "overrun_reject_emulate",
-      "overrun_intercept_emulate",
-      "overrun_playeringame_emulate",
-      "overrun_donut_emulate",
-      "overrun_missedbackside_emulate"
-    };
-    
-    class overrun_param_t{
-      boolean warn;
-      boolean emulate;
-      boolean tmp_emulate;
-      int promted;
-      int shit_happens;
+    String[] overflow_cfgname
+            = {
+                "overrun_spechit_emulate",
+                "overrun_reject_emulate",
+                "overrun_intercept_emulate",
+                "overrun_playeringame_emulate",
+                "overrun_donut_emulate",
+                "overrun_missedbackside_emulate"
+            };
+
+    class overrun_param_t {
+
+        boolean warn;
+        boolean emulate;
+        boolean tmp_emulate;
+        int promted;
+        int shit_happens;
     }
-    
-    class intercepts_overrun_t
-    {
+
+    class intercepts_overrun_t {
+
         int len;
         long addr;
         boolean int16_array;
-    } 
+    }
 
+    public static final int OVERFLOW_SPECHIT = 0;
+    public static final int OVERFLOW_REJECT = 1;
+    public static final int OVERFLOW_INTERCEPT = 2;
+    public static final int OVERFLOW_PLYERINGAME = 3;
+    public static final int OVERFLOW_DONUT = 4;
+    public static final int OVERFLOW_MISSEDBACKSIDE = 5;
+    public static final int OVERFLOW_MAX = 6;
 
-    public static final int OVERFLOW_SPECHIT=0;
-    public static final int OVERFLOW_REJECT=1;
-    public static final int OVERFLOW_INTERCEPT=2;
-    public static final int OVERFLOW_PLYERINGAME=3;
-    public static final int OVERFLOW_DONUT=4;
-    public static final int OVERFLOW_MISSEDBACKSIDE=5;
-    public static final int OVERFLOW_MAX=6;
-    
-    public static final int MAXINTERCEPTS_ORIGINAL=128;
+    public static final int MAXINTERCEPTS_ORIGINAL = 128;
 
-    
-    
     public static final boolean EMULATE(int overflow) {
         return (overflows[overflow].emulate || overflows[overflow].tmp_emulate);
     }
-    
+
     public static final boolean PROCESS(int overflow) {
         return (overflows[overflow].warn || EMULATE(overflow));
     }
 
-    static overrun_param_t[] overflows=new overrun_param_t[OVERFLOW_MAX];
-    
+    static overrun_param_t[] overflows = new overrun_param_t[OVERFLOW_MAX];
+
     public static intercepts_overrun_t[] intercepts_overrun;
 
-/*
+    /*
     static void ShowOverflowWarning(int overflow, int fatal, String ... params)
     {
       overflows[overflow].shit_happens = true;
@@ -129,7 +126,6 @@ public class Overflow {
         va_end(argptr);
       }
     } */
-
     // e6y
     //
     // Intercepts Overrun emulation
@@ -139,9 +135,7 @@ public class Overflow {
     // Thanks to Simon Howard (fraggle) for refactor the intercepts
     // overrun code so that it should work properly on big endian machines
     // as well as little endian machines.
-
     // Overwrite a specific memory location with a value.
-    
     /*
     static void InterceptsMemoryOverrun(int location, int value)
     {
@@ -185,9 +179,9 @@ public class Overflow {
         ++i;
       }
     }
-*/
+     */
 
-    /*
+ /*
     void InterceptsOverrun(int num_intercepts, intercept_t intercept)
     {
       if (num_intercepts > MAXINTERCEPTS_ORIGINAL && demo_compatibility && PROCESS(OVERFLOW_INTERCEPT))
@@ -211,7 +205,7 @@ public class Overflow {
         }
       }
     }
-*/
+     */
     // e6y
     // playeringame overrun emulation
     // it detects and emulates overflows on vex6d.wad\bug_wald(toke).lmp, etc.
@@ -230,28 +224,26 @@ public class Overflow {
       }
       return false;
     }*/
+    //
+    // spechit overrun emulation
+    //
+    // Spechit overrun magic value.
+    public static final int DEFAULT_SPECHIT_MAGIC = 0x01C09C98;
 
- //
- // spechit overrun emulation
- //
+    class spechit_overrun_param_t {
 
- // Spechit overrun magic value.
- public static final int DEFAULT_SPECHIT_MAGIC =0x01C09C98;
+        line_t line;
 
- class spechit_overrun_param_t
- {
-   line_t line;
+        line_t[] spechit;
+        int numspechit;
 
-   line_t[] spechit;
-   int numspechit;
+        int[] tmbbox;
+        int[] tmfloorz;
+        int[] tmceilingz;
 
-   int[] tmbbox;
-   int[] tmfloorz;
-   int[] tmceilingz;
-
-   boolean crushchange;
-   boolean nofit;
- }
+        boolean crushchange;
+        boolean nofit;
+    }
 
     long spechit_baseaddr = 0;
 
@@ -262,7 +254,6 @@ public class Overflow {
     // http://www.doomworld.com/vb/showthread.php?s=&threadid=35214
     // See more information on:
     // doomworld.com/vb/doom-speed-demos/35214-spechits-reject-and-intercepts-overflow-lists
-    
     /*
     static void SpechitOverrun(spechit_overrun_param_t params)
     {
@@ -365,12 +356,10 @@ public class Overflow {
         }
       }
     }
-    */
-
+     */
     //
     // reject overrun emulation
     //
-
     // padding the reject table if it is too short
     // totallines must be the number returned by P_GroupLines()
     // an underflow will be padded with zeroes, or a doom.exe z_zone header
@@ -444,11 +433,9 @@ public class Overflow {
         lprintf(LO_WARN, "P_LoadReject: REJECT too short (%u<%u) - padded\n", length, required);
       }
     }*/
-
     //
     // Read Access Violation emulation.
     //
-
     // C:\>debug
     // -d 0:0
     //
@@ -585,5 +572,4 @@ public class Overflow {
 
       return false;
     }*/
-
 }

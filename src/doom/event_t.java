@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package doom;
 
 // Event structure.
-
 import g.Signals.ScanCode;
 import java.awt.Point;
 import java.awt.Robot;
@@ -32,166 +30,248 @@ import utils.C2JUtils;
 
 @FunctionalInterface
 public interface event_t {
+
     int MOUSE_LEFT = 1;
     int MOUSE_RIGHT = 2;
     int MOUSE_MID = 4;
-    
+
     int JOY_1 = 1;
     int JOY_2 = 2;
     int JOY_3 = 4;
     int JOY_4 = 8;
-    
+
     // Special FORCED and PAINFUL key and mouse cancel event.
     event_t EMPTY_EVENT = () -> evtype_t.ev_null;
     event_t CANCEL_KEYS = () -> evtype_t.ev_clear;
     event_t CANCEL_MOUSE = new event_t.mouseevent_t(evtype_t.ev_mouse, 0, 0, 0);
 
-    default boolean hasData() { return false; }
-    default boolean isKey() { return false; }
-    default boolean isKey(ScanCode sc) { return false; }
-    default <T> T mapByKey(Function<? super ScanCode, ? extends T> scMapper) { return scMapper.apply(null); }
-    default boolean withKey(Consumer<? super ScanCode> scConsumer) { return false; }
-    default boolean ifKey(Predicate<? super ScanCode> scCondition) { return false; }
-    default boolean withKeyChar(IntConsumer scCharConsumer) { return false; }
-    default boolean ifKeyChar(IntPredicate scCharCondition) { return false; }
-    default boolean withKeyAsciiChar(IntConsumer scAsciiCharConsumer) { return false; }
-    default boolean ifKeyAsciiChar(IntPredicate scCharCondition) { return false; }
-    default <T> boolean withKey(Consumer<? super T> scConsumer, Function<? super ScanCode, ? extends T> extractor) { return false; }
-    default <T> boolean ifKey(Predicate<? super T> scCondition, Function<? super ScanCode, ? extends T> extractor) { return false; }
-    default ScanCode getSC() { return ScanCode.SC_NULL; }
-    default boolean isMouse() { return false; }
-    default boolean isMouse(int button) { return false; }
-    default <T> T mapByMouse(Function<? super mouseevent_t, ? extends T> mouseMapper) { return mouseMapper.apply(null); }
-    default boolean withMouse(Consumer<? super mouseevent_t> mouseConsumer) { return false; }
-    default boolean ifMouse(Predicate<? super mouseevent_t> mouseCondition) { return false; }
-    default <T> boolean withMouse(Consumer<? super T> mouseConsumer, Function<? super mouseevent_t, ? extends T> extractor) { return false; }
-    default <T> boolean ifMouse(Predicate<? super T> mouseCondition, Function<? super mouseevent_t, ? extends T> extractor) { return false; }
-    default boolean isJoy() { return false;  }
-    default boolean isJoy(int button) { return false; }
-    default <T> T mapByJoy(Function<? super joyevent_t, ? extends T> joyMapper) { return joyMapper.apply(null); }
-    default boolean withJoy(Consumer<? super joyevent_t> joyConsumer) { return false; }
-    default boolean ifJoy(Predicate<? super joyevent_t> joyCondition) { return false; }
-    default <T> boolean withJoy(Consumer<? super T> joyConsumer, Function<? super joyevent_t, ? extends T> extractor) { return false; }
-    default <T> boolean ifJoy(Predicate<? super T> joyCondition, Function<? super joyevent_t, ? extends T> extractor) { return false; }
+    default boolean hasData() {
+        return false;
+    }
+
+    default boolean isKey() {
+        return false;
+    }
+
+    default boolean isKey(ScanCode sc) {
+        return false;
+    }
+
+    default <T> T mapByKey(Function<? super ScanCode, ? extends T> scMapper) {
+        return scMapper.apply(null);
+    }
+
+    default boolean withKey(Consumer<? super ScanCode> scConsumer) {
+        return false;
+    }
+
+    default boolean ifKey(Predicate<? super ScanCode> scCondition) {
+        return false;
+    }
+
+    default boolean withKeyChar(IntConsumer scCharConsumer) {
+        return false;
+    }
+
+    default boolean ifKeyChar(IntPredicate scCharCondition) {
+        return false;
+    }
+
+    default boolean withKeyAsciiChar(IntConsumer scAsciiCharConsumer) {
+        return false;
+    }
+
+    default boolean ifKeyAsciiChar(IntPredicate scCharCondition) {
+        return false;
+    }
+
+    default <T> boolean withKey(Consumer<? super T> scConsumer, Function<? super ScanCode, ? extends T> extractor) {
+        return false;
+    }
+
+    default <T> boolean ifKey(Predicate<? super T> scCondition, Function<? super ScanCode, ? extends T> extractor) {
+        return false;
+    }
+
+    default ScanCode getSC() {
+        return ScanCode.SC_NULL;
+    }
+
+    default boolean isMouse() {
+        return false;
+    }
+
+    default boolean isMouse(int button) {
+        return false;
+    }
+
+    default <T> T mapByMouse(Function<? super mouseevent_t, ? extends T> mouseMapper) {
+        return mouseMapper.apply(null);
+    }
+
+    default boolean withMouse(Consumer<? super mouseevent_t> mouseConsumer) {
+        return false;
+    }
+
+    default boolean ifMouse(Predicate<? super mouseevent_t> mouseCondition) {
+        return false;
+    }
+
+    default <T> boolean withMouse(Consumer<? super T> mouseConsumer, Function<? super mouseevent_t, ? extends T> extractor) {
+        return false;
+    }
+
+    default <T> boolean ifMouse(Predicate<? super T> mouseCondition, Function<? super mouseevent_t, ? extends T> extractor) {
+        return false;
+    }
+
+    default boolean isJoy() {
+        return false;
+    }
+
+    default boolean isJoy(int button) {
+        return false;
+    }
+
+    default <T> T mapByJoy(Function<? super joyevent_t, ? extends T> joyMapper) {
+        return joyMapper.apply(null);
+    }
+
+    default boolean withJoy(Consumer<? super joyevent_t> joyConsumer) {
+        return false;
+    }
+
+    default boolean ifJoy(Predicate<? super joyevent_t> joyCondition) {
+        return false;
+    }
+
+    default <T> boolean withJoy(Consumer<? super T> joyConsumer, Function<? super joyevent_t, ? extends T> extractor) {
+        return false;
+    }
+
+    default <T> boolean ifJoy(Predicate<? super T> joyCondition, Function<? super joyevent_t, ? extends T> extractor) {
+        return false;
+    }
+
     evtype_t type();
-    
+
     default boolean isType(evtype_t type) {
         return type() == type;
     }
-    
+
     default boolean isKey(ScanCode sc, evtype_t type) {
         return type() == type && isKey(sc);
     }
-    
+
     default boolean ifKey(evtype_t type, Predicate<? super ScanCode> scCondition) {
         if (type() == type) {
             return ifKey(scCondition);
         }
-        
+
         return false;
     }
-    
+
     default boolean withKey(evtype_t type, Consumer<? super ScanCode> scConsumer) {
         if (type() == type) {
             return event_t.this.withKey(scConsumer);
         }
-        
+
         return false;
     }
-    
+
     default boolean withKey(ScanCode sc, evtype_t type, Runnable runnable) {
         if (type() == type) {
             return withKey(sc, runnable);
         }
-        
+
         return false;
     }
-    
+
     default boolean withKey(ScanCode sc, Runnable runnable) {
         if (isKey(sc)) {
             runnable.run();
             return true;
         }
-        
+
         return false;
     }
-    
+
     default boolean isMouse(int button, evtype_t type) {
         return type() == type && isMouse(button);
     }
-    
+
     default boolean ifMouse(evtype_t type, Predicate<? super mouseevent_t> mouseCondition) {
         if (type() == type) {
             return ifMouse(mouseCondition);
         }
-        
+
         return false;
     }
-    
+
     default boolean withMouse(evtype_t type, Consumer<? super mouseevent_t> mouseConsumer) {
         if (type() == type) {
             return event_t.this.withMouse(mouseConsumer);
         }
-        
+
         return false;
     }
-    
+
     default boolean withMouse(int button, evtype_t type, Runnable runnable) {
         if (type() == type) {
             return withMouse(button, runnable);
         }
-        
+
         return false;
     }
-    
+
     default boolean withMouse(int button, Runnable runnable) {
         if (isMouse(button)) {
             runnable.run();
             return true;
         }
-        
+
         return false;
     }
-    
+
     default boolean isJoy(int button, evtype_t type) {
         return type() == type && isJoy(button);
     }
-    
+
     default boolean ifJoy(evtype_t type, Predicate<? super joyevent_t> joyCondition) {
         if (type() == type) {
             return ifJoy(joyCondition);
         }
-        
+
         return false;
     }
-    
+
     default boolean withJoy(evtype_t type, Consumer<? super joyevent_t> joyConsumer) {
         if (type() == type) {
             return event_t.this.withJoy(joyConsumer);
         }
-        
+
         return false;
     }
-    
+
     default boolean withJoy(int button, evtype_t type, Runnable runnable) {
         if (type() == type) {
             return withJoy(button, runnable);
         }
-        
+
         return false;
     }
-    
+
     default boolean withJoy(int button, Runnable runnable) {
         if (isJoy(button)) {
             runnable.run();
             return true;
         }
-        
+
         return false;
     }
-    
+
     static int mouseBits(int button) {
-        switch(button) {
+        switch (button) {
             case MouseEvent.BUTTON1:
                 return MOUSE_LEFT;
             case MouseEvent.BUTTON2:
@@ -199,11 +279,12 @@ public interface event_t {
             case MouseEvent.BUTTON3:
                 return MOUSE_MID;
         }
-        
+
         return 0;
     }
-    
+
     final class keyevent_t implements event_t {
+
         public evtype_t type;
         public ScanCode sc;
 
@@ -263,7 +344,7 @@ public interface event_t {
         public boolean withKeyAsciiChar(IntConsumer scAsciiCharConsumer) {
             return sc.c > 255 ? false : withKeyChar(scAsciiCharConsumer);
         }
-        
+
         @Override
         public <T> boolean ifKey(Predicate<? super T> scCondition, Function<? super ScanCode, ? extends T> extractor) {
             return scCondition.test(extractor.apply(sc));
@@ -285,8 +366,9 @@ public interface event_t {
             return sc;
         }
     }
-    
+
     final class mouseevent_t implements event_t {
+
         public volatile evtype_t type;
         public volatile boolean robotMove;
         public volatile boolean processed = true;
@@ -304,7 +386,7 @@ public interface event_t {
         public boolean hasData() {
             return buttons != 0;
         }
-        
+
         public void buttonOn(MouseEvent ev) {
             buttons |= mouseBits(ev.getButton());
         }
@@ -312,23 +394,23 @@ public interface event_t {
         public void buttonOff(MouseEvent ev) {
             buttons ^= mouseBits(ev.getButton());
         }
-        
+
         public void processedNotify() {
             this.processed = true;
         }
-        
+
         public void resetNotify() {
             this.processed = false;
         }
-        
+
         public void moveIn(MouseEvent ev, int centreX, int centreY, boolean drag) {
             final int mouseX = ev.getX(), mouseY = ev.getY();
-            
+
             // Mouse haven't left centre of the window
             if (mouseX == centreX && mouseY == centreY) {
                 return;
             }
-            
+
             // A pure move has no buttons.
             if (!drag) {
                 buttons = 0;
@@ -360,7 +442,7 @@ public interface event_t {
                 this.y += (centreY - mouseY) << 2;
             }
         }
-        
+
         public void moveIn(MouseEvent ev, Robot robot, Point windowOffset, int centreX, int centreY, boolean drag) {
             moveIn(ev, centreX, centreY, drag);
             resetIn(robot, windowOffset, centreX, centreY);
@@ -373,7 +455,7 @@ public interface event_t {
             // Move the mouse to the window center
             robot.mouseMove(windowOffset.x + centreX, windowOffset.y + centreY);
         }
-        
+
         @Override
         public evtype_t type() {
             return type;
@@ -416,8 +498,9 @@ public interface event_t {
             return mouseMapper.apply(this);
         }
     }
-    
+
     final class joyevent_t implements event_t {
+
         public evtype_t type;
         public int buttons;
         public int x, y;
@@ -432,7 +515,7 @@ public interface event_t {
         @Override
         public boolean hasData() {
             return buttons != 0;
-        }        
+        }
 
         @Override
         public evtype_t type() {

@@ -23,6 +23,7 @@ import p.Actions.ActionTrait;
 import p.mobj_t;
 
 public interface Zombies extends ActionTrait {
+
     void A_FaceTarget(mobj_t actor);
 
     //

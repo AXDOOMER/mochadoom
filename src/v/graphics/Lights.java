@@ -29,12 +29,13 @@ import v.tables.GreyscaleFilter;
  * @author Velktron
  */
 public interface Lights extends Colors {
+
     /**
      * Light levels. Binded to the colormap subsystem
      */
     final int COLORMAP_LIGHTS_15 = 1 << 5;
     final int COLORMAP_LIGHTS_24 = 1 << 8;
-    
+
     /**
      * Standard lengths for colormaps
      */
@@ -52,7 +53,7 @@ public interface Lights extends Colors {
      *  - Good Sign 2017/04/15
      */
     final int COLORMAP_INVERSE = 32;
-    
+
     /**
      * An index of of the lighted palette in colormap used for FUZZ effect and partial invisibility
      */
@@ -85,7 +86,7 @@ public interface Lights extends Colors {
      *  - Good Sign 2017/04/17
      */
     final float LIGHT_INCREMENT_RATIO_24 = 1.0f / COLORMAP_LIGHTS_24;
-    
+
     /**
      * Builds TrueColor lights based on standard COLORMAP lump in DOOM format
      * Currently only supports lightmap manipulation, but does not change colors
@@ -100,15 +101,13 @@ public interface Lights extends Colors {
      * @author Good Sign
      */
     default int[][] BuildLights24(int[] palette, byte[][] colormap) {
-        final int[][] targetColormap = new int[
-            Math.max(colormap.length, COLORMAP_STD_LENGTH_15) - COLORMAP_LIGHTS_15 + COLORMAP_LIGHTS_24
-        ][PAL_NUM_COLORS];
-        
+        final int[][] targetColormap = new int[Math.max(colormap.length, COLORMAP_STD_LENGTH_15) - COLORMAP_LIGHTS_15 + COLORMAP_LIGHTS_24][PAL_NUM_COLORS];
+
         // init operation containers
         final int[] color0 = new int[3], color1 = new int[3], color2 = new int[3];
         final float[] ratio0 = new float[3];
         float weight = 0.0f;
-        
+
         /**
          * Fixed color map - just copy it, only translating palette to real color
          * It is presumably the brightest colormap, but maybe not: we shall check weight of color ratios
@@ -122,10 +121,10 @@ public interface Lights extends Colors {
             // add average ratio to the weight
             weight += GreyscaleFilter.component(ratio0[0], ratio0[1], ratio0[2]);
         }
-        
+
         // initialize ratio to relate weight with number of colors, with default PLAYPAL should always be 1.0f
         float currentLightRatio = Math.min(weight / PAL_NUM_COLORS, 1.0f);
-        
+
         // [1 .. 255]: all colormaps except 1 fixed, 1 inverse and 1 unused
         for (int i = 1; i < COLORMAP_LIGHTS_24; ++i) {
             // [1 .. 31] the index of the colormap to be target for gradations: max 31 of ceiling of i / 8
@@ -133,7 +132,7 @@ public interface Lights extends Colors {
             final int target = Math.min(div, COLORMAP_LIGHTS_15 - 1);
             final int remainder = div < COLORMAP_LIGHTS_15 ? i % 8 : 0;
             final float gradient = 1.0f - remainder * 0.125f;
-            
+
             // calculate weight again for each colormap
             weight = 0.0f;
             for (int j = 0; j < PAL_NUM_COLORS; ++j) {
@@ -147,28 +146,28 @@ public interface Lights extends Colors {
                 weight += GreyscaleFilter.component(ratio0[0], ratio0[1], ratio0[2]);
                 // to detect which color we will use, get the fixed colormap one
                 getRGB888(targetColormap[0][j], color2);
-                
+
                 /**
                  * set our color using smooth TrueColor formula: we well use the brighter color as a base
                  * since the brighter color simply have more information not omitted
                  * if we are going up in brightness, not down, it will be compensated by ratio
                  */
                 targetColormap[i][j] = toRGB888(
-                    sigmoidGradient(color1[0], (int) (Math.max(color2[0], color0[0]) * currentLightRatio + 0.5), gradient),
-                    sigmoidGradient(color1[1], (int) (Math.max(color2[1], color0[1]) * currentLightRatio + 0.5), gradient),
-                    sigmoidGradient(color1[2], (int) (Math.max(color2[2], color0[2]) * currentLightRatio + 0.5), gradient)
+                        sigmoidGradient(color1[0], (int) (Math.max(color2[0], color0[0]) * currentLightRatio + 0.5), gradient),
+                        sigmoidGradient(color1[1], (int) (Math.max(color2[1], color0[1]) * currentLightRatio + 0.5), gradient),
+                        sigmoidGradient(color1[2], (int) (Math.max(color2[2], color0[2]) * currentLightRatio + 0.5), gradient)
                 );
             }
-            
+
             // now detect if we are lightening or darkening
             currentLightRatio += weight > PAL_NUM_COLORS ? LIGHT_INCREMENT_RATIO_24 : -LIGHT_INCREMENT_RATIO_24;
         }
-        
+
         // copy all other parts of colormap
         for (int i = COLORMAP_LIGHTS_24, j = COLORMAP_LIGHTS_15; j < colormap.length; ++i, ++j) {
             CopyMap24(targetColormap[i], palette, colormap[j]);
         }
-        
+
         return targetColormap;
     }
 
@@ -186,23 +185,23 @@ public interface Lights extends Colors {
     default int[][] BuildLights24(int[] palette) {
         final int[][] targetColormap = new int[COLORMAP_STD_LENGTH_24][PAL_NUM_COLORS];
         final int[] palColor = new int[3];
-        
+
         // Don't repeat work more then necessary - loop first over colors, not lights
         for (int c = 0; c < PAL_NUM_COLORS; ++c) {
             getRGB888(palette[c], palColor);
             for (int l = 0; l < COLORMAP_LIGHTS_24; ++l) {
                 // Full-quality truecolor.
                 targetColormap[l][c] = toRGB888(
-                    AddLight8(palColor[0], l), // R
-                    AddLight8(palColor[1], l), // G
-                    AddLight8(palColor[2], l) // B
+                        AddLight8(palColor[0], l), // R
+                        AddLight8(palColor[1], l), // G
+                        AddLight8(palColor[2], l) // B
                 );
             }
-        
+
             // Special map for invulnerability. Do not waste time, build it right now
             BuildSpecials24(targetColormap[COLORMAP_LIGHTS_24], palColor, c);
         }
-        
+
         return targetColormap;
     }
 
@@ -220,14 +219,14 @@ public interface Lights extends Colors {
      */
     default short[][] BuildLights15(int[] palette, byte[][] colormaps) {
         final short[][] targetColormap = new short[Math.max(colormaps.length, COLORMAP_STD_LENGTH_15)][PAL_NUM_COLORS];
-        
+
         for (int c = 0; c < colormaps.length; ++c) {
             CopyMap15(targetColormap[c], palette, colormaps[c]);
         }
 
         return targetColormap;
     }
-    
+
     /**
      * RF_BuildLights lifted from dcolors.c
      *
@@ -240,16 +239,16 @@ public interface Lights extends Colors {
     default short[][] BuildLights15(int[] palette) {
         final short[][] targetColormap = new short[COLORMAP_STD_LENGTH_15][PAL_NUM_COLORS];
         final int[] palColor = new int[3];
-        
+
         // Don't repeat work more then necessary - loop first over colors, not lights
         for (int c = 0; c < PAL_NUM_COLORS; ++c) {
             getRGB888(palette[c], palColor);
             for (int l = 0; l < COLORMAP_LIGHTS_15; ++l) {
                 // RGB555 for HiColor, eight times less smooth then TrueColor version
                 targetColormap[l][c] = toRGB555(
-                    AddLight5(palColor[0], l), // R
-                    AddLight5(palColor[1], l), // G
-                    AddLight5(palColor[2], l) // B
+                        AddLight5(palColor[0], l), // R
+                        AddLight5(palColor[1], l), // G
+                        AddLight5(palColor[2], l) // B
                 );
             }
 
@@ -259,7 +258,7 @@ public interface Lights extends Colors {
 
         return targetColormap;
     }
-    
+
     /**
      * RF_BuildLights lifted from dcolors.c
      *
@@ -274,17 +273,17 @@ public interface Lights extends Colors {
     default byte[][] BuildLightsI(int[] palette) {
         final byte[][] targetColormap = new byte[COLORMAP_STD_LENGTH_15][PAL_NUM_COLORS];
         final int[] palColor = new int[3];
-        
+
         // Don't repeat work more then necessary - loop first over colors, not lights
         for (int c = 0; c < PAL_NUM_COLORS; ++c) {
             getRGB888(palette[c], palColor);
             for (int l = 0; l < COLORMAP_LIGHTS_15; ++l) {
                 // RGB555 for HiColor, eight times less smooth then TrueColor version
                 targetColormap[l][c] = (byte) BestColor(
-                    AddLightI(palColor[0], l), // R
-                    AddLightI(palColor[1], l), // G
-                    AddLightI(palColor[2], l), // B
-                    palette, 0, PAL_NUM_COLORS - 1
+                        AddLightI(palColor[0], l), // R
+                        AddLightI(palColor[1], l), // G
+                        AddLightI(palColor[2], l), // B
+                        palette, 0, PAL_NUM_COLORS - 1
                 );
             }
 
@@ -321,7 +320,7 @@ public interface Lights extends Colors {
     default int AddLightI(int c8, int light) {
         return (int) (c8 * (1 - (float) light / COLORMAP_LIGHTS_15) + 0.5);
     }
-    
+
     /**
      * Decides the size of array for colormap and creates it
      * @param hasColormap whether the array have lump-read colormap
@@ -331,13 +330,13 @@ public interface Lights extends Colors {
     default int[][] AllocateColormap24(final boolean hasColormap, byte[][][] colormap) {
         // if the lump-read COLORMAP is shorter, we must allocate enough
         final int targetLength = hasColormap
-            ? COLORMAP_STD_LENGTH_24 + Math.max(0, colormap[0].length - COLORMAP_STD_LENGTH_15)
-            : COLORMAP_STD_LENGTH_24;
-        
+                ? COLORMAP_STD_LENGTH_24 + Math.max(0, colormap[0].length - COLORMAP_STD_LENGTH_15)
+                : COLORMAP_STD_LENGTH_24;
+
         final int[][] targetColormap = new int[targetLength][PAL_NUM_COLORS];
         return targetColormap;
     }
-    
+
     /**
      * Decides the size of array for colormap and creates it
      * @param hasColormap whether the array have lump-read colormap
@@ -347,13 +346,13 @@ public interface Lights extends Colors {
     default short[][] AllocateColormap15(final boolean hasColormap, byte[][][] colormap) {
         // if the lump-read COLORMAP is shorter, we must allocate enough
         final int targetLength = hasColormap
-            ? Math.max(COLORMAP_STD_LENGTH_15, colormap[0].length)
-            : COLORMAP_STD_LENGTH_15;
-        
+                ? Math.max(COLORMAP_STD_LENGTH_15, colormap[0].length)
+                : COLORMAP_STD_LENGTH_15;
+
         final short[][] targetColormap = new short[targetLength][PAL_NUM_COLORS];
         return targetColormap;
     }
-    
+
     /**
      * Copy selected colormap from COLORMAP lump with respect to palette
      * @param int[] stuff a 256-entry part of target colormap

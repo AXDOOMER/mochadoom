@@ -13,35 +13,33 @@ import mochadoom.Engine;
  * @author Velktron
  *
  */
-
 public class DummyNetworkDriver<T, V> implements NetConsts, DoomSystemNetworking {
 
-	////////////// STATUS ///////////
-
+    ////////////// STATUS ///////////
     private final DoomMain<T, V> DOOM;
 
-	public DummyNetworkDriver(DoomMain<T, V> DOOM){
+    public DummyNetworkDriver(DoomMain<T, V> DOOM) {
         this.DOOM = DOOM;
-	}
+    }
 
-	@Override
-	public void InitNetwork() {
-		doomcom_t doomcom =new doomcom_t();
-		doomcom.id=DOOMCOM_ID;
-		doomcom.ticdup=1;
+    @Override
+    public void InitNetwork() {
+        doomcom_t doomcom = new doomcom_t();
+        doomcom.id = DOOMCOM_ID;
+        doomcom.ticdup = 1;
 
-		// single player game
+        // single player game
         DOOM.netgame = Engine.getCVM().present(CommandVariable.NET);
-		doomcom.id = DOOMCOM_ID;
-		doomcom.numplayers = doomcom.numnodes = 1;
-		doomcom.deathmatch = 0;
-		doomcom.consoleplayer = 0;
-		DOOM.gameNetworking.setDoomCom(doomcom);
-	}
+        doomcom.id = DOOMCOM_ID;
+        doomcom.numplayers = doomcom.numnodes = 1;
+        doomcom.deathmatch = 0;
+        doomcom.consoleplayer = 0;
+        DOOM.gameNetworking.setDoomCom(doomcom);
+    }
 
-	@Override
-	public void NetCmd() {
-		// TODO Auto-generated method stub
+    @Override
+    public void NetCmd() {
+        // TODO Auto-generated method stub
 
-	}
+    }
 }

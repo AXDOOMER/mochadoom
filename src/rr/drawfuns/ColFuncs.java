@@ -1,7 +1,7 @@
 package rr.drawfuns;
 
-public class ColFuncs<T,V> {
-    
+public class ColFuncs<T, V> {
+
     public DoomColumnFunction<T, V> main;
 
     public DoomColumnFunction<T, V> base;

@@ -21,5 +21,5 @@ package doom;
  * @author Good Sign
  */
 public class KeyboardManager {
-    
+
 }

@@ -9,7 +9,6 @@ public class NanoTicker
      * I_GetTime
      * returns time in 1/70th second tics
      */
-   
     @Override
     public int GetTime() {
         long tp;
@@ -30,8 +29,8 @@ public class NanoTicker
         return (oldtics = newtics);
     }
 
-    protected volatile long basetime=0;
-    protected volatile int oldtics=0;
+    protected volatile long basetime = 0;
+    protected volatile int oldtics = 0;
     protected volatile int discrepancies;
-    
+
 }

@@ -355,7 +355,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
         doomcom.numnodes = 1;  // this node for sure
 
         String[] hosts = DOOM.cVarManager.get(CommandVariable.NET, String[].class, 1).get();
-        for (String host: hosts) {
+        for (String host : hosts) {
             try {
                 InetAddress addr = InetAddress.getByName(host);
                 DatagramSocket ds = new DatagramSocket(null);

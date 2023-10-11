@@ -1,15 +1,13 @@
 package demo;
 
-import w.IWritableDoomObject;
 import defines.skill_t;
+import w.IWritableDoomObject;
 
-public interface IDoomDemo extends IWritableDoomObject{
-	
-    
+public interface IDoomDemo extends IWritableDoomObject {
+
     /** Vanilla end demo marker, to append at the end of recorded demos */
-    
-   public static final int DEMOMARKER =0x80;
-   
+    public static final int DEMOMARKER = 0x80;
+
     /** Get next demo command, in its raw format. Use
      * its own adapters if you need it converted to a 
      * standard ticcmd_t.
@@ -17,7 +15,7 @@ public interface IDoomDemo extends IWritableDoomObject{
      * @return
      */
     IDemoTicCmd getNextTic();
-    
+
     /** Record a demo command in the IDoomDemo's native format.
      * Use the IDemoTicCmd's objects adaptors to convert it.
      * 
@@ -46,13 +44,13 @@ public interface IDoomDemo extends IWritableDoomObject{
     void setDeathmatch(boolean deathmatch);
 
     boolean isRespawnparm();
-    
+
     void setRespawnparm(boolean respawnparm);
 
     boolean isFastparm();
 
     void setFastparm(boolean fastparm);
-    
+
     boolean isNomonsters();
 
     void setNomonsters(boolean nomonsters);
@@ -66,8 +64,5 @@ public interface IDoomDemo extends IWritableDoomObject{
     void setPlayeringame(boolean[] playeringame);
 
     void resetDemo();
-
-    
-
 
 }
