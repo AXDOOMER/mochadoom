@@ -1242,7 +1242,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 levelLoader.SetupLevel(gameepisode, gamemap, 0, gameskill);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failure loading level.", e);
             // Failure loading level.
             return false;
         }
@@ -2117,7 +2117,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 sceneRenderer.FillBackScreen();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failure loading game.", e);
         }
     }
 
@@ -2176,7 +2176,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failure saving game.", e);
         }
         // Saving is not as destructive as loading.
 
@@ -2367,7 +2367,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
     }
 
     protected void levelLoadFailure() {
-        boolean endgame = doomSystem.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE);
+        boolean endgame = doomSystem.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE, true);
 
         // Initiate endgame
         if (endgame) {
@@ -2706,8 +2706,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         try {
             wadLoader.InitMultipleFiles(wadfiles);
         } catch (Exception e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Could not init WAD files", e1);
         }
 
         // Video Renderer
@@ -2859,7 +2858,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         // Iff additonal PWAD files are used, print modified banner
         if (modifiedgame) // Generate WAD loading alert. Abort upon denial.
         {
-            if (!doomSystem.GenerateAlert(Strings.MODIFIED_GAME_TITLE, Strings.MODIFIED_GAME_DIALOG)) {
+            if (!doomSystem.GenerateAlert(Strings.MODIFIED_GAME_TITLE, Strings.MODIFIED_GAME_DIALOG, true)) {
                 wadLoader.CloseAllHandles();
                 System.exit(-2);
             }
@@ -2918,7 +2917,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             CheckForUltimateDoom(tmpwad);
         } catch (Exception e2) {
             // TODO Auto-generated catch block
-            e2.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failure reading CVars.", e2);
         } finally {
             tmpwad.CloseAllHandles();
         }
@@ -3478,7 +3477,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             debugfile.write(string);
         } catch (IOException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failure writing debug file.", e);
         }
     }
 
@@ -3696,7 +3695,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             ArbitrateNetStart();
         }
 
-        LOGGER.log(Level.FINE, String.format("D_CheckNetGame: startskill %s, deathmatch: %s, startmap: %d, startepisode: %d",
+        LOGGER.log(Level.FINE, String.format("startskill %s, deathmatch: %s, startmap: %d, startepisode: %d",
                 startskill.toString(), Boolean.toString(deathmatch), startmap, startepisode));
 
         // read values out of doomcom
@@ -3715,7 +3714,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             nodeingame[i] = true;
         }
 
-        LOGGER.log(Level.FINE, String.format("D_CheckNetGame: Player %d of %d (%d node(s))", (consoleplayer + 1), doomcom.numplayers, doomcom.numnodes));
+        LOGGER.log(Level.INFO, String.format("Player %d of %d (%d node(s))", (consoleplayer + 1), doomcom.numplayers, doomcom.numnodes));
     }
 
     /**
@@ -3729,7 +3728,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             try {
                 debugfile.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "Quit net game failure.", e);
             }
         }
 

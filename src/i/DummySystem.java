@@ -77,7 +77,7 @@ public class DummySystem implements IDoomSystem {
     }
 
     @Override
-    public boolean GenerateAlert(String title, String cause) {
+    public boolean GenerateAlert(String title, String cause, boolean showCancelButton) {
         // TODO Auto-generated method stub
         return false;
     }

@@ -44,7 +44,9 @@ public class MsgBox extends Dialog implements ActionListener {
         createFrame();
         pack();
         setVisible(true);
-        this.can.requestFocus();
+        if (this.can != null) {
+            this.can.requestFocus();
+        }
     }
 
     public MsgBox(Frame frame, String msg) {
@@ -80,7 +82,7 @@ public class MsgBox extends Dialog implements ActionListener {
         if (ae.getSource() == ok) {
             isOk = true;
             setVisible(false);
-        } else if (ae.getSource() == can) {
+        } else if (can != null && ae.getSource() == can) {
             setVisible(false);
         }
     }

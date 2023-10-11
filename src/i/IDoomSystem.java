@@ -36,6 +36,6 @@ public interface IDoomSystem {
      * @param cause Provide a clear string explaining why the alert was generated
      * @return true if we should continue, false if an alternate action should be taken.
      */
-    boolean GenerateAlert(String title, String cause);
+    boolean GenerateAlert(String title, String cause, boolean showCancelButton);
 
 }

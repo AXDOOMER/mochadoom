@@ -28,6 +28,7 @@ import static doom.SourceCode.W_Wad.W_CacheLumpName;
 import static doom.SourceCode.W_Wad.W_CheckNumForName;
 import i.DummySystem;
 import i.IDoomSystem;
+import i.Strings;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -420,6 +421,7 @@ public class WadLoader implements IWadLoader {
         }
 
         if (numlumps == 0) {
+            I.GenerateAlert(Strings.NO_WAD_FILE_FOUND_TITLE, Strings.NO_WAD_FILE_FOUND_NOTE, false);
             I.Error("W_InitFiles: no files found");
         }
 
