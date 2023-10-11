@@ -142,6 +142,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import m.DelegateRandom;
 import m.IDoomMenu;
 import m.Menu;
@@ -2726,7 +2728,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         this.finale = selectFinale();
 
         readCVars();
-        System.out.print("W_Init: Init WADfiles.\n");
+        System.out.printf("W_Init: Init WAD files: [%s]\n",
+                Arrays.stream(wadfiles).filter(Objects::nonNull).collect(Collectors.joining(", ")));
         try {
             wadLoader.InitMultipleFiles(wadfiles);
         } catch (Exception e1) {
@@ -2946,12 +2949,15 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         final WadLoader tmpwad = new WadLoader();
         try {
             tmpwad.InitFile(iwadfilename);
+            // Check using a reloadable hack.
+            CheckForUltimateDoom(tmpwad);
         } catch (Exception e2) {
             // TODO Auto-generated catch block
             e2.printStackTrace();
+        } finally {
+            tmpwad.CloseAllHandles();
         }
-        // Check using a reloadable hack.
-        CheckForUltimateDoom(tmpwad);
+
         // MAES: better extract a method for this.
         GenerateTitle();
         // Print ticker info. It has already been set at Init() though.

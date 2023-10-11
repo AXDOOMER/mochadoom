@@ -405,13 +405,13 @@ public class WadLoader implements IWadLoader {
                     } else {
                         this.AddFile(s, null, type);
                     }
-
-                    System.out.printf("\tadded %s (zipped: %s network: %s)\n", s,
-                            C2JUtils.flags(type, InputStreamSugar.ZIP_FILE),
-                            C2JUtils.flags(type, InputStreamSugar.NETWORK_FILE));
-
+                    Loggers.getLogger(WadLoader.class.getName()).log(Level.INFO,
+                            String.format("Added %s (zipped: %s network: %s)", s,
+                                    C2JUtils.flags(type, InputStreamSugar.ZIP_FILE),
+                                    C2JUtils.flags(type, InputStreamSugar.NETWORK_FILE)));
                 } else {
-                    System.err.printf("Couldn't open resource %s\n", s);
+                    Loggers.getLogger(WadLoader.class.getName()).log(Level.SEVERE,
+                            String.format("Couldn't open resource %s", s));
                 }
             }
         }
