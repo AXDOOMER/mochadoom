@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -167,9 +168,9 @@ public final class C2JUtils {
     public static <T> void initArrayOfObjects(T[] os, Class<T> c) {
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = c.newInstance();
+                os[i] = c.getDeclaredConstructor().newInstance();
             }
-        } catch (IllegalAccessException | InstantiationException e) {
+        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + os.length
                     + " objects of class" + c.getName() + "!");
@@ -192,9 +193,9 @@ public final class C2JUtils {
         Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = c.newInstance();
+                os[i] = c.getDeclaredConstructor().newInstance();
             }
-        } catch (IllegalAccessException | InstantiationException e) {
+        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + os.length
                     + " objects of class " + c.getName() + "!");
@@ -229,9 +230,9 @@ public final class C2JUtils {
 
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = c.newInstance();
+                os[i] = c.getDeclaredConstructor().newInstance();
             }
-        } catch (IllegalAccessException | InstantiationException e) {
+        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
             System.err.println("Failure to instantiate " + os.length + " objects of class " + c.getName() + "!");
             System.exit(-1);
@@ -264,9 +265,9 @@ public final class C2JUtils {
 
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = c.newInstance();
+                os[i] = c.getDeclaredConstructor().newInstance();
             }
-        } catch (IllegalAccessException | InstantiationException e) {
+        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
             System.err.println("Failure to instantiate " + os.length
                     + " objects of class " + c.getName() + "!");
@@ -294,9 +295,9 @@ public final class C2JUtils {
 		Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = startpos; i < endpos; i++) {
-                os[i] = c.newInstance();
+                os[i] = c.getDeclaredConstructor().newInstance();
             }
-        } catch (IllegalAccessException | InstantiationException e) {
+        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
             System.err.println("Failure to allocate " + os.length
                     + " objects of class " + c.getName() + "!");
@@ -708,9 +709,9 @@ public final class C2JUtils {
 
         T cls;
         try {
-            cls = (T) oldarray.getClass().getComponentType().newInstance();
+            cls = (T) oldarray.getClass().getComponentType().getDeclaredConstructor().newInstance();
             return resize(cls, oldarray, newsize);
-        } catch (IllegalAccessException | InstantiationException e) {
+        } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             System.err.println("Cannot autodetect type in resizeArray.\n");
             return null;
         }

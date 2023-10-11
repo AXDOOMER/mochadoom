@@ -64,8 +64,11 @@ public class WadLoader implements IWadLoader {
         zone = new HashMap<>();
         wadfiles = new ArrayList<>();
         this.I = new DummySystem();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            CloseAllHandles();
+        }));
     }
-	
 	
 	//// FIELDS
 
@@ -773,7 +776,7 @@ public class WadLoader implements IWadLoader {
 						// In case of sequential reads of similar objects, use 
 						// CacheLumpNumIntoArray instead.
 						thebuffer.rewind();
-						lumpcache[lump] = (CacheableDoomObject) what.newInstance();
+						lumpcache[lump] = (CacheableDoomObject) what.getDeclaredConstructor().newInstance();
 						lumpcache[lump].unpack(thebuffer);
 						
 						// Track it for freeing
@@ -1152,7 +1155,7 @@ public class WadLoader implements IWadLoader {
 		// in any chain, observing pwad ordering rules. killough
 
         for (int i = 0; i < numlumps; i++) { // hash function:
-            doomhash.put(lumpinfo[i].name.toUpperCase(), new Integer(i));
+            doomhash.put(lumpinfo[i].name.toUpperCase(), Integer.valueOf(i));
         }
     }
 
@@ -1235,10 +1238,11 @@ public class WadLoader implements IWadLoader {
 				
 	}
 	
-	@Override
-	public void finalize(){
-		CloseAllHandles();
-	}
+        // TODO: finalize is deprecated - CloseAllHandles() call is moved to shutdown hook
+	//@Override
+	//public void finalize(){
+	//	CloseAllHandles();
+	//}
 
 	public static final int ns_global=0;
 	public static final int ns_flats=1;

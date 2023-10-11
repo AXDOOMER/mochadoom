@@ -242,7 +242,7 @@ public class DoomIO  {
        Class<?> c=s.getClass().getComponentType();
        
        for (int i=0;i<Math.min(len,s.length);i++){
-           if (s[i]==null) s[i]=(IReadableDoomObject) c.newInstance();
+           if (s[i]==null) s[i]=(IReadableDoomObject) c.getDeclaredConstructor().newInstance();
            s[i].read(dis);
        }
    }
@@ -253,7 +253,7 @@ public class DoomIO  {
        
        for (int i=0;i<Math.min(len,s.length);i++){
            if (s[i]==null) {
-               s[i]=(IReadableDoomObject) c.newInstance();
+               s[i]=(IReadableDoomObject) c.getDeclaredConstructor().newInstance();
            }
            s[i].read(dis);
        }
