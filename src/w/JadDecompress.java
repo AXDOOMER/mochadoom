@@ -1,6 +1,12 @@
 package w;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
+
 public class JadDecompress {
+
+    private static final Logger LOGGER = Loggers.getLogger(JadDecompress.class.getName());
 
     public final static int WINDOW_SIZE = 4096;
 
@@ -52,7 +58,7 @@ public class JadDecompress {
 
         }
 
-        System.out.printf("Expanded %d to %d\n", input_ptr, output_ptr);
+        LOGGER.log(Level.INFO, String.format("Expanded %d to %d", input_ptr, output_ptr));
     }
 
 }

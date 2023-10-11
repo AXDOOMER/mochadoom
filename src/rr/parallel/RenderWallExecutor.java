@@ -2,6 +2,9 @@ package rr.parallel;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.IDetailAware;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
@@ -16,6 +19,8 @@ import rr.drawfuns.R_DrawColumnBoomOptLow;
  */
 public class RenderWallExecutor<T, V>
         implements Runnable, IDetailAware {
+
+    private static final Logger LOGGER = Loggers.getLogger(RenderWallExecutor.class.getName());
 
     protected CyclicBarrier barrier;
 
@@ -60,7 +65,7 @@ public class RenderWallExecutor<T, V>
         try {
             barrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "RenderWallExecutor run failure", e);
         }
     }
 

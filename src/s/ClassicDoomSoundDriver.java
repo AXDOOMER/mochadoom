@@ -6,10 +6,13 @@ import doom.DoomMain;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
+import mochadoom.Loggers;
 import pooling.AudioChunkPool;
 
 /**
@@ -27,6 +30,8 @@ import pooling.AudioChunkPool;
  * @author Maes
  */
 public class ClassicDoomSoundDriver extends AbstractSoundDriver {
+
+    private static final Logger LOGGER = Loggers.getLogger(ClassicDoomSoundDriver.class.getName());
 
     protected final Semaphore produce;
 
@@ -186,11 +191,10 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver {
                     if (channel_pointer >= channelsend[chan]) {
                         // Reset pointer for a channel.
                         if (D) {
-                            System.err
-                                    .printf(
-                                            "Channel %d handle %d pointer %d thus done, stopping\n",
-                                            chan, this.channelhandles[chan],
-                                            channel_pointer);
+                            LOGGER.log(Level.INFO, String.format(
+                                    "Channel %d handle %d pointer %d thus done, stopping",
+                                    chan, this.channelhandles[chan],
+                                    channel_pointer));
                         }
                         channels[chan] = null;
                         channel_pointer = 0;
@@ -278,7 +282,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver {
     public boolean InitSound() {
 
         // Secure and configure sound device first.
-        System.out.println("I_InitSound: ");
+        LOGGER.log(Level.INFO, "I_InitSound");
 
         // We only need a single data line.
         // PCM, signed, 16-bit, stereo, 22025 KHz, 2048 bytes per "frame",
@@ -292,16 +296,15 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver {
             line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
             line.open(format, AUDIOLINE_BUFFER);
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.print("Could not play signed 16 data\n");
+            LOGGER.log(Level.SEVERE, "Could not play signed 16 data", e);
             return false;
         }
 
         if (line != null) {
-            System.err.print(" configured audio device\n");
+            LOGGER.log(Level.INFO, "configured audio device");
             line.start();
         } else {
-            System.err.print(" could not configure audio device\n");
+            LOGGER.log(Level.SEVERE, "could not configure audio device");
             return false;
         }
 
@@ -316,17 +319,17 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver {
         SOUNDTHREAD.start();
 
         // Initialize external data (all sounds) at start, keep static.
-        System.err.print("I_InitSound: ");
+        LOGGER.log(Level.INFO, "I_InitSound");
 
         super.initSound8();
 
-        System.err.print(" pre-cached all sound data\n");
+        LOGGER.log(Level.INFO, "pre-cached all sound data");
 
         // Now initialize mixbuffer with zero.
         initMixBuffer();
 
         // Finished initialization.
-        System.err.print("I_InitSound: sound module ready\n");
+        LOGGER.log(Level.INFO, "I_InitSound: sound module ready");
 
         return true;
     }
@@ -458,12 +461,12 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver {
         channelids[slot] = sfxid;
 
         if (D) {
-            System.err.println(channelStatus());
+            LOGGER.log(Level.FINE, String.valueOf(channelStatus()));
         }
         if (D) {
-            System.err.printf(
-                    "Playing sfxid %d handle %d length %d vol %d on channel %d\n",
-                    sfxid, rc, S_sfx[sfxid].data.length, volume, slot);
+            LOGGER.log(Level.FINE, String.format(
+                    "Playing sfxid %d handle %d length %d vol %d on channel %d",
+                    sfxid, rc, S_sfx[sfxid].data.length, volume, slot));
         }
 
         // You tell me.
@@ -537,7 +540,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver {
                     // System.err.println("Got a permit");
                 } catch (InterruptedException e) {
                     // Well, ouch.
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, "MixServer run failure", e);
                 }
 
                 int chunks = 0;

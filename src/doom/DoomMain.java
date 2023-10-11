@@ -143,6 +143,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import m.DelegateRandom;
 import m.IDoomMenu;
@@ -152,6 +154,7 @@ import m.Settings;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.MAPFRACUNIT;
 import mochadoom.Engine;
+import mochadoom.Loggers;
 import n.DoomSystemNetworking;
 import n.DummyNetworkDriver;
 import p.AbstractLevelLoader;
@@ -224,6 +227,8 @@ import w.WadLoader;
     "StringBufferMayBeStringBuilder"
 })
 public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetworking, IDoomGame, IDoom {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomMain.class.getName());
 
     public static final String RCSID = "$Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $";
 
@@ -510,12 +515,11 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         {
             if (cVarManager.bool(CommandVariable.DEBUGFILE)) {
                 String filename = "debug" + consoleplayer + ".txt";
-                System.out.println("debug output to: " + filename);
+                LOGGER.log(Level.INFO, String.format("Debug output to: %s", filename));
                 try {
                     debugfile = new OutputStreamWriter(new FileOutputStream(filename));
                 } catch (FileNotFoundException e) {
-                    System.err.println("Couldn't open debugfile. Now, that sucks some putrid shit out of John Romero's asshole!");
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, "Couldn't open debugfile.", e);
                 }
             }
         }
@@ -739,7 +743,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         // First, check for -iwad parameter.
         // If valid, then it trumps all others.
         if (cVarManager.present(CommandVariable.IWAD)) {
-            System.out.println("-iwad specified. Will be used with priority\n");
+            LOGGER.log(Level.INFO, "-iwad specified. Will be used with priority");
             // It might be quoted.
             final String test = C2JUtils.unquoteIfQuoted(cVarManager.get(CommandVariable.IWAD, String.class, 0).get(), '"');
             final String separator = System.getProperty("file.separator");
@@ -759,7 +763,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
             doomwaddir = System.getenv("DOOMWADDIR");
             if (doomwaddir != null) {
-                System.out.println("DOOMWADDIR found. Will be used with priority\n");
+                LOGGER.log(Level.INFO, "DOOMWADDIR found. Will be used with priority");
             }
 
             // None found, using current.
@@ -776,7 +780,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         final String wadFullPath = DoomVersion.tryAllWads(this, doomwaddir);
         if (wadFullPath == null) {
-            System.out.println("Game mode indeterminate.\n");
+            LOGGER.log(Level.INFO, "Game mode indeterminate.");
             setGameMode(GameMode.indetermined);
             // We don't abort. Let's see what the PWAD contains.
             //exit(1);
@@ -816,7 +820,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
             // Oh yes I can.
             if (isShareware()) {
-                System.out.println("\nYou cannot -file with the shareware version. Register!");
+                LOGGER.log(Level.WARNING, "You cannot -file with the shareware version. Register!");
             }
 
             // Check for fake IWAD with right name,
@@ -824,7 +828,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             if (isRegistered()) {
                 for (i = 0; i < 23; i++) {
                     if (wadLoader.CheckNumForName(name[i].toUpperCase()) < 0) {
-                        doomSystem.Error("\nThis is not the registered version: " + name[i]);
+                        doomSystem.Error("This is not the registered version: " + name[i]);
                     }
                 }
             }
@@ -868,99 +872,73 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         return true;
     }
 
-    /**
-     * 
-     */
     protected final void GenerateTitle() {
         switch (getGameMode()) {
             case retail:
-                title.append("                         ");
                 title.append("The Ultimate DOOM Startup v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case shareware:
-                title.append("                            ");
                 title.append("DOOM Shareware Startup v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case registered:
-                title.append("                            ");
                 title.append("DOOM Registered Startup v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case commercial:
-                title.append("                            ");
                 title.append("DOOM 2: Hell on Earth v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
-
                 break;
             case pack_plut:
-                title.append("                            ");
                 title.append("DOOM 2: Plutonia Experiment v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case pack_tnt:
-                title.append("                            ");
                 title.append("DOOM 2: TNT - Evilution v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case pack_xbla:
-                title.append("                            ");
                 title.append("DOOM 2: No Rest for the Living v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case freedm:
-                title.append("                            ");
-                title.append("FreeDM                     v");
+                title.append("FreeDM v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case freedoom1:
-                title.append("                            ");
-                title.append("FreeDoom: Phase 1          v");
+                title.append("FreeDoom: Phase 1 v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             case freedoom2:
-                title.append("                            ");
-                title.append("FreeDoom: Phase 2          v");
+                title.append("FreeDoom: Phase 2 v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
             default:
-                title.append("                            ");
                 title.append("Public DOOM - v");
                 title.append(VERSION / 100);
                 title.append(".");
                 title.append(VERSION % 100);
-                title.append("                           ");
                 break;
         }
     }
@@ -1053,12 +1031,10 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         }
 
         if (gamekeydown[key_up]) {
-            //System.err.print("up\n");
             forward += forwardmove[speed];
         }
 
         if (gamekeydown[key_down]) {
-            //System.err.print("down\n");
             forward -= forwardmove[speed];
         }
 
@@ -1078,17 +1054,14 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         // Look up/down/center keys
         if (gamekeydown[key_lookup]) {
-            System.err.print("Look up\n");
             look = lspeed;
         }
 
         if (gamekeydown[key_lookdown]) {
-            System.err.print("Look down\n");
             look = -lspeed;
         }
 
         if (gamekeydown[key_lookcenter]) {
-            System.err.print("Center look\n");
             look = TOCENTER;
         }
 
@@ -2515,8 +2488,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         final int version;
         if (fail || ((version = demobuffer.getVersion() & 0xFF) & ~JAVARANDOM_MASK) != VERSION) {
-            System.err.println("Demo is from a different game version!\n");
-            System.err.println("Version code read: " + demobuffer.getVersion());
+            LOGGER.log(Level.WARNING, String.format("Demo is from a different game version, version code read: %d",
+                    demobuffer.getVersion()));
             gameaction = ga_nothing;
             return;
         }
@@ -2700,7 +2673,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         // Random number generator, but we can have others too.
         this.random = new DelegateRandom();
-        System.out.print(String.format("M_Random: Using %s.\n", random.getClass().getSimpleName()));
+        LOGGER.log(Level.INFO, String.format("M_Random: Using %s.", random.getClass().getSimpleName()));
 
         // Sound can be left until later, in Start
         this.wadLoader = new WadLoader(this.doomSystem); // The wadloader is a "weak" status holder.
@@ -2728,8 +2701,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         this.finale = selectFinale();
 
         readCVars();
-        System.out.printf("W_Init: Init WAD files: [%s]\n",
-                Arrays.stream(wadfiles).filter(Objects::nonNull).collect(Collectors.joining(", ")));
+        LOGGER.log(Level.INFO, String.format("W_Init: Init WAD files: [%s]",
+                Arrays.stream(wadfiles).filter(Objects::nonNull).collect(Collectors.joining(", "))));
         try {
             wadLoader.InitMultipleFiles(wadfiles);
         } catch (Exception e1) {
@@ -2742,13 +2715,13 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                 .setVideoScale(vs).setBppMode(bppMode).setWadLoader(wadLoader)
                 .build();
 
-        System.out.print("V_Init: allocate screens.\n");
+        LOGGER.log(Level.INFO, "V_Init: Allocate screens.");
 
         // Disk access visualizer
         this.diskDrawer = new DiskDrawer(this, DiskDrawer.STDISK);
 
         // init subsystems
-        System.out.print("AM_Init: Init Automap colors - \n");
+        LOGGER.log(Level.INFO, "AM_Init: Init Automap colors.");
         this.autoMap = new automap.Map<>(this);
 
         this.wiper = graphicSystem.createWiper(random);
@@ -2761,26 +2734,25 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
 
         printGameInfo();
 
-        System.out.print("Tables.InitTables: Init trigonometric LUTs.\n");
+        LOGGER.log(Level.INFO, "Tables.InitTables: Init trigonometric LUTs.");
         Tables.InitTables();
 
-        System.out.print("M_Init: Init miscellaneous info.\n");
+        LOGGER.log(Level.INFO, "M_Init: Init miscellaneous info.");
         menu.Init();
 
-        System.out.print("R_Init: Init DOOM refresh daemon - ");
+        LOGGER.log(Level.INFO, "R_Init: Init DOOM refresh daemon.");
         sceneRenderer.Init();
 
-        System.out.print("\nP_Init: Init Playloop state.\n");
+        LOGGER.log(Level.INFO, "P_Init: Init Playloop state.");
         actions.Init();
 
-        System.out.print("I_Init: Setting up machine state.\n");
+        LOGGER.log(Level.INFO, "I_Init: Setting up machine state.");
         doomSystem.Init();
 
-        System.out.print("D_CheckNetGame: Checking network game status.\n");
+        LOGGER.log(Level.INFO, "D_CheckNetGame: Checking network game status.");
         CheckNetGame();
 
-        System.out.print("S_Init: Setting up sound.\n");
-
+        LOGGER.log(Level.INFO, "S_Init: Setting up sound.");
         // Sound "drivers" before the game sound controller.
         this.music = IMusic.chooseModule(cVarManager);
         this.soundDriver = ISoundDriver.chooseModule(this, cVarManager);
@@ -2789,14 +2761,14 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         music.InitMusic();
         doomSound.Init(snd_SfxVolume * 8, snd_MusicVolume * 8);
 
-        System.out.print("HU_Init: Setting up heads up display.\n");
+        LOGGER.log(Level.INFO, "HU_Init: Setting up heads up display.");
         headsUp.Init();
 
-        System.out.print("ST_Init: Init status bar.\n");
+        LOGGER.log(Level.INFO, "ST_Init: Init status bar.");
         statusBar.Init();
 
         if (statcopy != null) {
-            System.out.print("External statistics registered.\n");
+            LOGGER.log(Level.INFO, "External statistics registered.");
         }
 
         // NOW it's safe to init the disk reader.
@@ -2842,7 +2814,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         cVarManager.with(CommandVariable.STATCOPY, 0, (String s) -> {
             // TODO: this should be chained to a logger
             statcopy = s;
-            System.out.print("External statistics registered.\n");
+            LOGGER.log(Level.INFO, "External statistics registered.");
         });
 
         // start the apropriate game based on parms
@@ -2897,9 +2869,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         switch (getGameMode()) {
             case shareware:
             case indetermined:
-                System.out.print("===========================================================================\n");
-                System.out.print("                                Shareware!\n");
-                System.out.print("===========================================================================\n");
+                LOGGER.log(Level.INFO, "Game Info: Shareware!");
                 break;
             case registered:
             case retail:
@@ -2907,19 +2877,14 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             case pack_tnt:
             case pack_plut:
             case pack_xbla:
-                System.out.print("===========================================================================\n");
-                System.out.print("                 Commercial product - do not distribute!\n");
-                System.out.print("         Please report software piracy to the SPA: 1-800-388-PIR8\n");
-                System.out.print("===========================================================================\n");
+                LOGGER.log(Level.INFO, "Game Info: Commercial product - do not distribute!");
+                LOGGER.log(Level.INFO, "Game Note: Please report software piracy to the SPA: 1-800-388-PIR8");
                 break;
             case freedoom1:
             case freedoom2:
             case freedm:
-                System.out.print("===========================================================================\n");
-                System.out.print("       Copyright © 2001-2017 Contributors to the Freedoom project.\n");
-                System.out.print("                            All rights reserved.\n");
-                System.out.print("     See: https://github.com/freedoom/freedoom/blob/master/COPYING.adoc\n");
-                System.out.print("===========================================================================\n");
+                LOGGER.log(Level.INFO, "Game Info: Copyright (c) 2001-2017 Contributors to the Freedoom project. All rights reserved.");
+                LOGGER.log(Level.INFO, "Game Note: See https://github.com/freedoom/freedoom/blob/master/COPYING.adoc");
                 break;
             default:
                 // Ouch.
@@ -2962,19 +2927,19 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         GenerateTitle();
         // Print ticker info. It has already been set at Init() though.
         if (cVarManager.bool(CommandVariable.MILLIS)) {
-            System.out.println("ITicker: Using millisecond accuracy timer.");
+            LOGGER.log(Level.INFO, "ITicker: Using millisecond accuracy timer.");
         } else if (cVarManager.bool(CommandVariable.FASTTIC)) {
-            System.out.println("ITicker: Using fastest possible timer.");
+            LOGGER.log(Level.INFO, "ITicker: Using fastest possible timer.");
         } else {
-            System.out.println("ITicker: Using nanosecond accuracy timer.");
+            LOGGER.log(Level.INFO, "ITicker: Using nanosecond accuracy timer.");
         }
-        System.out.println(title.toString());
+        LOGGER.log(Level.INFO, title.toString());
         if (devparm) {
-            System.out.println(D_DEVSTR);
+            LOGGER.log(Level.INFO, D_DEVSTR);
         }
         // Running from CDROM?
         if (cVarManager.bool(CommandVariable.CDROM)) {
-            System.out.println(D_CDROM);
+            LOGGER.log(Level.INFO, D_CDROM);
             //System.get("c:\\doomdata",0);
             //System.out.println (Settings.basedefault+"c:/doomdata/default.cfg");
         }
@@ -2990,7 +2955,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             if (scale > 400) {
                 scale = 400;
             }
-            System.out.println("turbo scale: " + scale);
+            LOGGER.log(Level.INFO, String.format("turbo scale: %d", scale));
             forwardmove[0] = forwardmove[0] * scale / 100;
             forwardmove[1] = forwardmove[1] * scale / 100;
             sidemove[0] = sidemove[0] * scale / 100;
@@ -3050,7 +3015,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             normaldemo = true;
             loaddemo = cVarManager.get(CommandVariable.PLAYDEMO, String.class, 0).get();
         } else if (cVarManager.present(CommandVariable.FASTDEMO)) {
-            System.out.println("Fastdemo mode. Boundless clock!");
+            LOGGER.log(Level.INFO, "Fastdemo mode. Boundless clock!");
             fastdemo = true;
             loaddemo = cVarManager.get(CommandVariable.FASTDEMO, String.class, 0).get();
         } else if (cVarManager.present(CommandVariable.TIMEDEMO)) {
@@ -3062,7 +3027,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         if (loaddemo != null) {
             loaddemo = C2JUtils.unquoteIfQuoted(loaddemo, '"');
             AddFile(loaddemo + ".lmp");
-            System.out.printf("Playing demo %s.lmp.\n", loaddemo);
+            LOGGER.log(Level.INFO, String.format("Playing demo %s.lmp.", loaddemo));
             autostart = true;
         }
 
@@ -3081,9 +3046,9 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
                     .isPresent();
 
             if (!novert) {
-                System.out.println("-novert ENABLED (default)");
+                LOGGER.log(Level.INFO, "-novert ENABLED (default)");
             } else {
-                System.out.println("-novert DISABLED. Hope you know what you're doing...");
+                LOGGER.log(Level.INFO, "-novert DISABLED. Hope you know what you're doing...");
             }
         }
 
@@ -3101,15 +3066,11 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         if (cVarManager.present(CommandVariable.TIMER) && deathmatch) {
             // Good Sign (2017/03/31) How this should work?
             final int time = cVarManager.get(CommandVariable.TIMER, Integer.class, 0).get();
-            System.out.print("Levels will end after " + time + " minute");
-            if (time > 1) {
-                System.out.print("s");
-            }
-            System.out.print(".\n");
+            LOGGER.log(Level.INFO, String.format("Levels will end after %d minute(s)", time));
         }
         // OK, and exactly how is this enforced?
         if (cVarManager.bool(CommandVariable.AVG) && deathmatch) {
-            System.out.print("Austin Virtual Gaming: Levels will end after 20 minutes\n");
+            LOGGER.log(Level.INFO, "Austin Virtual Gaming: Levels will end after 20 minutes");
         }
 
         // MAES 31/5/2011: added support for +map variation.
@@ -3634,7 +3595,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         memset(gotinfo, false, gotinfo.length);
         if (doomcom.consoleplayer != 0) {
             // listen for setup info from key player
-            System.out.println("listening for network start info...\n");
+            LOGGER.log(Level.INFO, "listening for network start info...");
             while (true) {
                 CheckAbort();
                 if (!HGetPacket()) {
@@ -3663,7 +3624,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             }
         } else {
             // key player, send the setup info
-            System.out.println("sending network start info...\n");
+            LOGGER.log(Level.INFO, "sending network start info...");
             do {
                 CheckAbort();
                 for (i = 0; i < doomcom.numnodes; i++) {
@@ -3735,8 +3696,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             ArbitrateNetStart();
         }
 
-        System.out.printf("startskill %s  deathmatch: %s  startmap: %d  startepisode: %d\n",
-                startskill.toString(), Boolean.toString(deathmatch), startmap, startepisode);
+        LOGGER.log(Level.FINE, String.format("D_CheckNetGame: startskill %s, deathmatch: %s, startmap: %d, startepisode: %d",
+                startskill.toString(), Boolean.toString(deathmatch), startmap, startepisode));
 
         // read values out of doomcom
         ticdup = doomcom.ticdup;
@@ -3754,7 +3715,7 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             nodeingame[i] = true;
         }
 
-        System.out.printf("player %d of %d (%d nodes)\n", (consoleplayer + 1), doomcom.numplayers, doomcom.numnodes);
+        LOGGER.log(Level.FINE, String.format("D_CheckNetGame: Player %d of %d (%d node(s))", (consoleplayer + 1), doomcom.numplayers, doomcom.numnodes));
     }
 
     /**
@@ -3870,13 +3831,13 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
             } else {
                 if (nettics[0] <= nettics[nodeforplayer[i]]) {
                     gametime--;
-                    System.out.print("-");
+                    //System.out.print("-");
                 }
                 frameskip[frameon & 3] = oldnettics > nettics[nodeforplayer[i]];
                 oldnettics = nettics[0];
                 if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3]) {
                     skiptics = 1;
-                    System.out.print("+");
+                    //System.out.print("+");
                 }
             }
         } // demoplayback

@@ -24,9 +24,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import m.Settings;
 import static m.Settings.SETTINGS_MAP;
+import mochadoom.Loggers;
 import utils.ParseString;
 import utils.QuoteType;
 import utils.ResourceIO;
@@ -37,6 +40,8 @@ import utils.ResourceIO;
  * @author Good Sign
  */
 public class ConfigManager {
+
+    private static final Logger LOGGER = Loggers.getLogger(ConfigManager.class.getName());
 
     private static final Pattern SPLITTER = Pattern.compile("[ \t\n\r\f]+");
 
@@ -224,7 +229,7 @@ public class ConfigManager {
                     configMap.put(setting, setting.defaultValue);
                 });
 
-        System.out.print("M_LoadDefaults: Load system defaults.\n");
+        LOGGER.log(Level.INFO, "M_LoadDefaults: Load system defaults.");
         this.configFiles.forEach(file -> {
             final Optional<ResourceIO> maybeRIO = file.firstValidPathIO();
 
@@ -240,7 +245,7 @@ public class ConfigManager {
     }
 
     private boolean readFoundConfig(Files file, ResourceIO rio) {
-        System.out.print(String.format("M_LoadDefaults: Using config %s.\n", rio.getFileame()));
+        LOGGER.log(Level.INFO, String.format("M_LoadDefaults: Using config %s.", rio.getFileame()));
         if (rio.readLines(line -> {
             final String[] split = SPLITTER.split(line, 2);
             if (split.length < 2) {
@@ -256,7 +261,7 @@ public class ConfigManager {
                         .orElse(split[1]);
 
                 if (update(setting, value) == UpdateStatus.INVALID) {
-                    System.err.printf("WARNING: invalid config value for: %s in %s \n", name, rio.getFileame());
+                    LOGGER.log(Level.WARNING, String.format("WARNING: invalid config value for: %s in %s", name, rio.getFileame()));
                 } else {
                     setting.rebase(file);
                 }
@@ -267,7 +272,7 @@ public class ConfigManager {
         }
 
         // Something went bad, but this won't destroy successfully read values, though.
-        System.err.printf("Can't read the settings file %s\n", rio.getFileame());
+        LOGGER.log(Level.SEVERE, String.format("Can't read the settings file %s", rio.getFileame()));
         return false;
     }
 

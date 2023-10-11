@@ -26,6 +26,7 @@ import java.awt.Toolkit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.Settings;
 import mochadoom.Engine;
 import mochadoom.Loggers;
@@ -36,6 +37,8 @@ import mochadoom.Loggers;
  * That sort of things.
  */
 public class DoomWindowController<E extends Component & DoomWindow<E>, H extends Enum<H> & EventBase<H>> implements FullscreenOptions {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomWindow.class.getName());
 
     private static final long ALL_EVENTS_MASK = 0xFFFF_FFFF_FFFF_FFFFL;
 
@@ -82,7 +85,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
                 updateSize();
             }
         } catch (Exception e) {
-            Loggers.getLogger(DoomWindow.class.getName()).log(Level.SEVERE,
+            LOGGER.log(Level.SEVERE,
                     String.format("Error creating DOOM AWT frame. Exiting. Reason: %s", e.getMessage()), e);
             throw e;
         }
@@ -97,7 +100,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
     }
 
     public boolean switchFullscreen() {
-        Loggers.getLogger(DoomFrame.class.getName()).log(Level.WARNING, "FULLSCREEN SWITHED");
+        LOGGER.log(Level.INFO, "FULLSCREEN SWITHED");
         // remove the frame from view
         doomFrame.dispose();
         doomFrame = new DoomFrame<>(dimension, component, doomFrame.imageSupplier);

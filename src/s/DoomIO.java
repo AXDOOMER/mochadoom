@@ -7,8 +7,13 @@ import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 public class DoomIO {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomIO.class.getName());
 
     InputStream is;
     OutputStream os;
@@ -213,8 +218,7 @@ public class DoomIO {
                 ((OutputStream) stream).write(bytes);
 
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "linkBA output failure", e);
             }
         }
 
@@ -229,8 +233,7 @@ public class DoomIO {
                 }
 
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "linkBA input failure", e);
             }
         }
 

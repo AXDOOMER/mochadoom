@@ -6,10 +6,13 @@ import static data.Limits.MAXVISSPRITES;
 import static data.Tables.ANG45;
 import static data.Tables.BITS32;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import mochadoom.Loggers;
 import p.mobj_t;
 import static p.mobj_t.MF_SHADOW;
 import static rr.SceneRenderer.MINZ;
@@ -25,6 +28,8 @@ import v.graphics.Palettes;
  */
 public final class VisSprites<V>
         implements IVisSpriteManagement<V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(VisSprites.class.getName());
 
     private final static boolean DEBUG = false;
 
@@ -56,7 +61,7 @@ public final class VisSprites<V>
     @Override
     public void AddSprites(sector_t sec) {
         if (DEBUG) {
-            System.out.println("AddSprites");
+            LOGGER.log(Level.FINER, "AddSprites");
         }
         mobj_t thing;
         int lightnum;

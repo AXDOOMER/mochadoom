@@ -38,12 +38,15 @@ import java.util.logging.Logger;
 
 public class Engine {
 
+    private static final Logger LOGGER = Loggers.getLogger(Engine.class.getName());
+
     private static volatile Engine instance;
 
     /**
      * Mocha Doom engine entry point
      */
     public static void main(final String[] argv) throws IOException {
+        LOGGER.log(Level.INFO, Strings.MOCHA_DOOM_TITLE);
         final Engine local;
         synchronized (Engine.class) {
             local = new Engine(argv);
@@ -62,7 +65,7 @@ public class Engine {
         try {
             local.DOOM.setupLoop();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "DOOM.setupLoop failure", e);
             System.exit(1);
         }
     }
@@ -157,7 +160,7 @@ public class Engine {
                     try {
                         Engine.instance = local = new Engine();
                     } catch (IOException ex) {
-                        Logger.getLogger(Engine.class.getName()).log(Level.SEVERE, null, ex);
+                        LOGGER.log(Level.SEVERE, "Engine I/O error", ex);
                         throw new Error("This launch is DOOMed");
                     }
                 }

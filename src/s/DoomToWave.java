@@ -6,9 +6,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import utils.C2JUtils;
 
 public class DoomToWave {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomToWave.class.getName());
 
     static int MEMORYCACHE = 0x8000;
 
@@ -105,15 +110,15 @@ public class DoomToWave {
         int speed = DoomIO.freadint(is, 2);//peek_u16_le (buffer + 2);
         int datasize = DoomIO.freadint(is, 4);//peek_i32_le (buffer + 4);
         if (type != 3) {
-            System.out.println("Sound: weird type " + type + ". Extracting anyway.");
+            LOGGER.log(Level.FINE, String.format("Sound: weird type %d. Extracting anyway.", type));
         }
 
         int headsize = 2 + 2 + 4;
         /*- headsize*/ int phys_size = is.available();
         if (datasize > phys_size) {
-            System.out.println("Sound %s: declared sample size %lu greater than lump size %lu ;"/*,
+            LOGGER.log(Level.INFO, "Sound: declared sample size greater than lump size"/*,
 		lump_name (name), (unsigned long) datasize, (unsigned long) phys_size*/);
-            System.out.println("Sound %s: truncating to lump size."/*, lump_name (name)*/);
+            LOGGER.log(Level.INFO, "Sound: truncating to lump size."/*, lump_name (name)*/);
             datasize = phys_size;
         } /* Sometimes the size of sound lump is greater
 	     than the declared sound size. */ else if (datasize < phys_size) {
@@ -140,15 +145,15 @@ public class DoomToWave {
         int speed = 0x0000FFFF & is.getShort();//peek_u16_le (buffer + 2);
         int datasize = is.getInt();//peek_i32_le (buffer + 4);
         if (type != 3) {
-            System.out.println("Sound: weird type " + type + ". Extracting anyway.");
+            LOGGER.log(Level.INFO, String.format("Sound: weird type %d. Extracting anyway.", type));
         }
 
         int headsize = 2 + 2 + 4;
         /*- headsize*/ int phys_size = is.remaining();
         if (datasize > phys_size) {
-            System.out.println("Sound %s: declared sample size %lu greater than lump size %lu ;"/*,
+            LOGGER.log(Level.INFO, "Sound: declared sample size greater than lump size"/*,
 			lump_name (name), (unsigned long) datasize, (unsigned long) phys_size*/);
-            System.out.println("Sound %s: truncating to lump size."/*, lump_name (name)*/);
+            LOGGER.log(Level.INFO, "Sound: truncating to lump size."/*, lump_name (name)*/);
             datasize = phys_size;
         } /* Sometimes the size of sound lump is greater
 		     than the declared sound size. */ else if (datasize < phys_size) {

@@ -150,6 +150,9 @@ import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
 import doom.wbstartstruct_t;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.patch_t;
 import static v.DoomGraphicSystem.V_NOSCALESTART;
 import static v.DoomGraphicSystem.V_SAFESCALE;
@@ -163,6 +166,8 @@ import static v.renderers.DoomScreen.FG;
  *
  */
 public class EndLevel<T, V> extends AbstractEndLevel {
+
+    private static final Logger LOGGER = Loggers.getLogger(EndLevel.class.getName());
 
     ////////////////// STATUS ///////////////////
     private final DoomMain<T, V> DOOM;
@@ -439,7 +444,7 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             DOOM.graphicSystem.DrawPatchScaled(FG, c[i], DOOM.vs, lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y);
         } else {
             // DEBUG
-            System.out.println("Could not place patch on level " + n + 1);
+            LOGGER.log(Level.FINE, String.format("Could not place patch on level %d", n + 1));
         }
     }
 

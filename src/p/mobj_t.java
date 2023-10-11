@@ -21,6 +21,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import p.ActiveStates.MobjConsumer;
 import static p.MapUtils.AproxDistance;
 import rr.subsector_t;
@@ -86,6 +89,8 @@ import w.IWritableDoomObject;
  */
 public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
         IWritableDoomObject, IPackableDoomObject, IReadableDoomObject {
+
+    private static final Logger LOGGER = Loggers.getLogger(mobj_t.class.getName());
 
     public final ActionFunctions A;
 
@@ -427,8 +432,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
         try {
             this.unpack(mobj_t.fastclear);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "clear failure", e);
         }
     }
 

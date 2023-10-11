@@ -16,7 +16,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import mochadoom.Loggers;
 import w.IWritableDoomObject;
 
 // Emacs style mode select   -*- C++ -*- 
@@ -44,6 +47,8 @@ import w.IWritableDoomObject;
 //
 //-----------------------------------------------------------------------------
 public abstract class MenuMisc {
+
+    private static final Logger LOGGER = Loggers.getLogger(MenuMisc.class.getName());
 
     public static final String rcsid = "$Id: MenuMisc.java,v 1.29 2012/09/24 17:16:22 velktron Exp $";
 
@@ -188,16 +193,14 @@ public abstract class MenuMisc {
             f = new DataOutputStream(new FileOutputStream(filename));
 
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "WritePCXfile: not found", e);
         }
 
         try {
             //f.setLength(0);
             pcx.write(f);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "WritePCXfile: I/O error", e);
         }
 
     }
@@ -214,7 +217,7 @@ public abstract class MenuMisc {
         try {
             ImageIO.write(buf, "PNG", new File(imagename));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "WritePNGfile: I/O error", e);
         }
     }
 
@@ -226,7 +229,7 @@ public abstract class MenuMisc {
         try {
             ImageIO.write(buf, "PNG", new File(imagename));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "WritePNGfile: I/O error", e);
         }
     }
 
@@ -238,7 +241,7 @@ public abstract class MenuMisc {
         try {
             ImageIO.write(buf, "PNG", new File(imagename));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "WritePNGfile: I/O error", e);
         }
     }
 }

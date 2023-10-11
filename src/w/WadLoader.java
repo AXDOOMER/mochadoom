@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.IntFunction;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import mochadoom.Loggers;
@@ -49,6 +50,8 @@ import utils.GenericCopy.ArraySupplier;
 import static utils.GenericCopy.malloc;
 
 public class WadLoader implements IWadLoader {
+
+    private static final Logger LOGGER = Loggers.getLogger(WadLoader.class.getName());
 
     protected IDoomSystem I;
 
@@ -405,12 +408,12 @@ public class WadLoader implements IWadLoader {
                     } else {
                         this.AddFile(s, null, type);
                     }
-                    Loggers.getLogger(WadLoader.class.getName()).log(Level.INFO,
+                    LOGGER.log(Level.INFO,
                             String.format("Added %s (zipped: %s network: %s)", s,
                                     C2JUtils.flags(type, InputStreamSugar.ZIP_FILE),
                                     C2JUtils.flags(type, InputStreamSugar.NETWORK_FILE)));
                 } else {
-                    Loggers.getLogger(WadLoader.class.getName()).log(Level.SEVERE,
+                    LOGGER.log(Level.SEVERE,
                             String.format("Couldn't open resource %s", s));
                 }
             }
@@ -597,12 +600,7 @@ public class WadLoader implements IWadLoader {
         i = CheckNumForName(name.toUpperCase());
 
         if (i == -1) {
-            Exception e = new Exception();
-            e.printStackTrace();
-            System.err.println("Error: " + name + " not found");
-            System.err.println("Hash: "
-                    + Long.toHexString(name8.getLongHash(name)));
-            I.Error("W_GetNumForName: %s not found!", name);
+            I.Error("W_GetNumForName: %s not found! hash: %s", name, Long.toHexString(name8.getLongHash(name)));
         }
 
         return i;
@@ -674,8 +672,7 @@ public class WadLoader implements IWadLoader {
                 // FIXME: reloadable files can only be that. Files.
                 handle = InputStreamSugar.createInputStreamFromURI(this.reloadname, null, 0);
             } catch (Exception e) {
-                e.printStackTrace();
-                I.Error("W_ReadLump: couldn't open %s", reloadname);
+                I.Error("W_ReadLump: couldn't open %s, due to: %s", reloadname, e.getMessage());
             }
         } else {
             handle = l.handle;
@@ -697,8 +694,8 @@ public class WadLoader implements IWadLoader {
             // Well, that's a no-brainer.
             //l.wadfile.knownpos=l.position+c;
             if (c < l.size) {
-                System.err.printf("W_ReadLump: only read %d of %d on lump %d %d\n", c, l.size,
-                        lump, l.position);
+                LOGGER.log(Level.SEVERE, String.format("W_ReadLump: only read %d of %d on lump %d %d", c, l.size,
+                        lump, l.position));
             }
 
             if (l.handle == null) {
@@ -711,9 +708,7 @@ public class WadLoader implements IWadLoader {
             // ??? I_EndRead ();
 
         } catch (Exception e) {
-            e.printStackTrace();
-            I.Error("W_ReadLump: could not read lump " + lump);
-            e.printStackTrace();
+            I.Error("W_ReadLump: could not read lump %d, due to: %s", lump, e.getMessage());
         }
 
     }
@@ -773,9 +768,8 @@ public class WadLoader implements IWadLoader {
                         Track((CacheableDoomObject) thebuffer, lump);
                     }
                 } catch (Exception e) {
-                    System.err.println("Could not auto-instantiate lump "
-                            + lump + " of class " + what);
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE,
+                            String.format("Could not auto-instantiate lump %d of class %s", lump, String.valueOf(what)), e);
                 }
 
             } else {
@@ -850,9 +844,8 @@ public class WadLoader implements IWadLoader {
                 }
                 // lumpcache[lump]=array;
             } catch (Exception e) {
-                System.err.println("Could not auto-unpack lump " + lump
-                        + " into an array of objects of class " + what);
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, String.format("Could not auto-unpack lump %d into an array of objects of class %s",
+                        lump, String.valueOf(what)), e);
             }
 
         }
@@ -902,7 +895,7 @@ public class WadLoader implements IWadLoader {
                 thebuffer.rewind();
                 lumpcache[lump].unpack(thebuffer);
             } catch (IOException e) {
-                Loggers.getLogger(WadLoader.class.getName()).log(Level.WARNING, String.format(
+                LOGGER.log(Level.WARNING, String.format(
                         "Could not auto-unpack lump %s into an array of objects of class %s", lump, what
                 ), e);
             }
@@ -1171,7 +1164,7 @@ public class WadLoader implements IWadLoader {
 
     @Override
     public void CloseAllHandles() {
-        ArrayList<InputStream> d = new ArrayList<>();
+        List<InputStream> d = new ArrayList<>();
 
         for (int i = 0; i < this.lumpinfo.length; i++) {
             if (!d.contains(lumpinfo[i].handle)) {
@@ -1179,7 +1172,7 @@ public class WadLoader implements IWadLoader {
             }
         }
 
-        int count = 0;
+        int count = 1;
 
         for (InputStream e : d) {
             try {
@@ -1187,8 +1180,7 @@ public class WadLoader implements IWadLoader {
                 //System.err.printf("%s file handle closed",e.toString());
                 count++;
             } catch (IOException e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
+                LOGGER.log(Level.SEVERE, String.format("Could not close file handle (%d/%d)", count, d.size()), e1);
             }
         }
 

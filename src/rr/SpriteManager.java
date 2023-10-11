@@ -5,7 +5,10 @@ import doom.DoomMain;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
+import mochadoom.Loggers;
 import static utils.C2JUtils.memset;
 import static utils.GenericCopy.malloc;
 import w.lumpinfo_t;
@@ -20,6 +23,8 @@ import w.lumpinfo_t;
  *
  */
 public class SpriteManager<T, V> implements ISpriteManager {
+
+    private static final Logger LOGGER = Loggers.getLogger(SpriteManager.class.getName());
 
     /** There seems to be an arbitrary limit of 29 distinct frames per THING */
     public static final int MAX_SPRITE_FRAMES = 29;
@@ -231,11 +236,8 @@ public class SpriteManager<T, V> implements ISpriteManager {
         spriteoffset = new int[numspritelumps];
         spritetopoffset = new int[numspritelumps];
 
+        LOGGER.log(Level.INFO, String.format("Sprite lumps: %d", numspritelumps));
         for (i = 0; i < numspritelumps; i++) {
-            if ((i & 63) == 0) {
-                System.out.print(".");
-            }
-
             patch = DOOM.wadLoader.CacheLumpNum(firstspritelump + i, PU_CACHE,
                     patch_t.class);
             spritewidth[i] = patch.width << FRACBITS;

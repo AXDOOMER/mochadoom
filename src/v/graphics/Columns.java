@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.IntConsumer;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import m.Settings;
 import mochadoom.Engine;
@@ -35,6 +36,8 @@ import rr.patch_t;
  * @author Good Sign
  */
 public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
+
+    static final Logger LOGGER = Loggers.getLogger(Columns.class.getName());
 
     /**
      * We have to draw columns to the screen, not rows and is ineffective performance-wise because
@@ -94,7 +97,7 @@ public interface Columns<V, E extends Enum<E>> extends Blocks<V, E> {
         if (U.COLUMN_THREADS > 0) try {
             U.pool.submit(() -> IntStream.range(0, patch.width).parallel().forEach(task)).get();
         } catch (InterruptedException | ExecutionException ex) {
-            Loggers.getLogger(Columns.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, null, ex);
         } else {
             for (int i = 0; i < patch.width; ++i) {
                 task.accept(i);

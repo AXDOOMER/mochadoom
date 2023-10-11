@@ -2,6 +2,9 @@ package pooling;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import p.mobj_t;
 
 /** A convenient object pooling class. Currently used for AudioChunks, but
@@ -10,6 +13,8 @@ import p.mobj_t;
  * 
  */
 public abstract class ObjectPool<K> {
+
+    private static final Logger LOGGER = Loggers.getLogger(ObjectPool.class.getName());
 
     private static final boolean D = false;
 
@@ -37,7 +42,7 @@ public abstract class ObjectPool<K> {
                     // object has expired
                     if (t instanceof mobj_t) {
                         if (D) {
-                            System.out.printf("Object %s expired\n", t.toString());
+                            LOGGER.log(Level.FINE, String.format("Object %s expired", t.toString()));
                         }
                     }
                     unlocked.remove(t);
@@ -49,7 +54,7 @@ public abstract class ObjectPool<K> {
                         locked.put(t, Long.valueOf(now));
                         if (D) {
                             if (t instanceof mobj_t) {
-                                System.out.printf("Object %s reused\n", t.toString());
+                                LOGGER.log(Level.FINE, String.format("Object %s reused", t.toString()));
                             }
                         }
                         return t;
@@ -71,7 +76,7 @@ public abstract class ObjectPool<K> {
     public synchronized void checkIn(K t) {
         if (D) {
             if (t instanceof mobj_t) {
-                System.out.printf("Object %s returned to the pool\n", t.toString());
+                LOGGER.log(Level.FINE, String.format("Object %s returned to the pool", t.toString()));
             }
         }
         locked.remove(t);

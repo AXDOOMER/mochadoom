@@ -38,7 +38,13 @@
 //-----------------------------------------------------------------------------
 package i;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
+
 public class system {
+
+    private static final Logger LOGGER = Loggers.getLogger(system.class.getName());
 
     /*
 #include <stdlib.h>
@@ -175,9 +181,7 @@ byte*	I_AllocLow(int length)
 
         // Message first.
         //va_start (argptr,error);
-        System.err.print("Error: ");
-        System.err.printf(error, args);
-        System.err.print("\n");
+        LOGGER.log(Level.SEVERE, String.format("Error: " + error, args));
         //va_end (argptr);
 
         //fflush( stderr );

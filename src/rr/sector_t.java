@@ -10,6 +10,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.IRandom;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
@@ -30,6 +31,8 @@ import w.IReadableDoomObject;
  * @author Maes
  */
 public class sector_t implements IReadableDoomObject, IPackableDoomObject, Resettable {
+
+    private static final Logger LOGGER = Loggers.getLogger(sector_t.class.getName());
 
     public ThinkerList TL;
 
@@ -192,8 +195,8 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject, Reset
 
             // Check for overflow. Exit.
             if (h >= MAX_ADJOINING_SECTORS) {
-                Loggers.getLogger(sector_t.class.getName()).log(Level.WARNING,
-                        "Sector with more than 20 adjoining sectors\n");
+                LOGGER.log(Level.WARNING,
+                        "Sector with more than 20 adjoining sectors");
                 break;
             }
         }

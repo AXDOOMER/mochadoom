@@ -16,8 +16,11 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import mochadoom.Loggers;
 import p.AbstractLevelLoader;
 import w.DoomBuffer;
 import w.IWadLoader;
@@ -33,6 +36,8 @@ import w.lumpinfo_t;
  *
  */
 public class SimpleTextureManager implements TextureManager<byte[]> {
+
+    private static final Logger LOGGER = Loggers.getLogger(SimpleTextureManager.class.getName());
 
     IWadLoader W;
     IDoomSystem I;
@@ -209,14 +214,8 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
 
         totalwidth = 0;
 
-        //  Really complex printing shit...
-        System.out.print("[");
+        LOGGER.log(Level.INFO, String.format("Textures: %d", numtextures));
         for (int i = 0; i < numtextures; i++, directory++) {
-
-            if ((i & 63) == 0) {
-                System.out.print('.');
-            }
-
             if (i == _numtextures[TEXTURE1]) {
                 // Start looking in second texture file.
                 texset = TEXTURE2;
@@ -443,9 +442,9 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         for (x = 0; x < texture.width; x++) {
             // Can only occur if a column isn't covered by a patch at all, not even a transparent one.
             if (patchcount[x] == 0) {
-                // TODO: somehow handle this. 
-                System.err.print(realpatch.width);
-                System.err.print("R_GenerateLookup: column without a patch (" + texture.name + ")\n");
+                // TODO: somehow handle this.
+                LOGGER.log(Level.WARNING, String.format("R_GenerateLookup: column without a patch (%s), width: %d",
+                        texture.name, realpatch.width));
                 //return;
             }
             // I_Error ("R_GenerateLookup: column without a patch");
@@ -1241,9 +1240,11 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         // Problem. Composite texture requested as if it was masked
         // but it doesn't yet exist. Create it.
         if (getMaskedComposite(tex) == null) {
-            System.err.printf("Forced generation of composite %s\n", CheckTextureNameForNum(tex), smp_composite[id], col, ofs);
+            LOGGER.log(Level.WARNING, String.format("Forced generation of composite %s",
+                    CheckTextureNameForNum(tex), smp_composite[id], col, ofs));
             GenerateMaskedComposite(tex);
-            System.err.printf("Composite patch %s %d\n", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length);
+            LOGGER.log(Level.WARNING, String.format("Composite patch %s %d",
+                    getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length));
         }
 
         // Last resort. 
@@ -1310,9 +1311,11 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         // Problem. Composite texture requested as if it was masked
         // but it doesn't yet exist. Create it.
         if (getMaskedComposite(tex) == null) {
-            System.err.printf("Forced generation of composite %s\n", CheckTextureNameForNum(tex), composite, col, ofs);
+            LOGGER.log(Level.WARNING,
+                    String.format("Forced generation of composite %s", CheckTextureNameForNum(tex), composite, col, ofs));
             GenerateMaskedComposite(tex);
-            System.err.printf("Composite patch %s %d\n", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length);
+            LOGGER.log(Level.WARNING,
+                    String.format("Composite patch %s %d", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length));
         }
 
         // Last resort. 
@@ -1374,9 +1377,11 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         // Problem. Composite texture requested as if it was masked
         // but it doesn't yet exist. Create it.
         if (getMaskedComposite(tex) == null) {
-            System.err.printf("Forced generation of composite %s\n", CheckTextureNameForNum(tex), composite, col, ofs);
+            LOGGER.log(Level.WARNING,
+                    String.format("Forced generation of composite %s", CheckTextureNameForNum(tex), composite, col, ofs));
             GenerateMaskedComposite(tex);
-            System.err.printf("Composite patch %s %d\n", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length);
+            LOGGER.log(Level.WARNING,
+                    String.format("Composite patch %s %d", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length));
         }
 
         // Last resort. 

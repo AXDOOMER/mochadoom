@@ -13,6 +13,9 @@ import static doom.SourceCode.W_Wad.W_Reload;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.IntFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.patch_t;
 import utils.GenericCopy.ArraySupplier;
 import v.graphics.Lights;
@@ -21,6 +24,8 @@ import static v.graphics.Palettes.PAL_NUM_STRIDES;
 import v.tables.Playpal;
 
 public interface IWadLoader {
+
+    static final Logger LOGGER = Loggers.getLogger(IWadLoader.class.getName());
 
     /**
      * W_Reload Flushes any of the reloadable lumps in memory and reloads the
@@ -314,8 +319,7 @@ public interface IWadLoader {
                     playpal.length, minLength));
         }
 
-        System.out.print("VI_Init: set palettes.\n");
-        System.out.println("Palette: " + playpal.length / PAL_NUM_STRIDES + " colors");
+        LOGGER.log(Level.FINE, String.format("VI_Init: set palettes: %d colors", playpal.length / PAL_NUM_STRIDES));
 
         InjectLumpNum(pallump, new DoomBuffer(ByteBuffer.wrap(playpal)));
         return playpal;
@@ -340,8 +344,7 @@ public interface IWadLoader {
                     colormap.length, minLength));
         }
 
-        System.out.print("VI_Init: set colormaps.\n");
-        System.out.println("Colormaps: " + colormap.length);
+        LOGGER.log(Level.FINE, String.format("VI_Init: set colormaps: %d", colormap.length));
 
         final byte[] tmp = new byte[length];
         ReadLump(lump, tmp);

@@ -7,6 +7,9 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /**
  * An executor that make sure tasks submitted with the same key
@@ -24,6 +27,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * * @param <K> type of keys.
  */
 public class OrderedExecutor<K> {
+
+    private static final Logger LOGGER = Loggers.getLogger(OrderedExecutor.class.getName());
 
     private final Executor executor;
     private final Map<K, Task> tasks;
@@ -95,7 +100,7 @@ public class OrderedExecutor<K> {
             try {
                 runnable.run();
             } catch (Exception ex) {
-                ex.printStackTrace();
+                LOGGER.log(Level.SEVERE, "OrderedExecutor run failure", ex);
             }
             // Check to see if there are queued task, if yes, submit for execution.
             lock.lock();

@@ -18,6 +18,7 @@ package defines;
 
 import doom.DoomMain;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import mochadoom.Loggers;
 import utils.C2JUtils;
 import static utils.C2JUtils.testReadAccess;
@@ -42,6 +43,8 @@ public enum DoomVersion {
         this.wadFileName = wadFileName;
     }
 
+    private static final Logger LOGGER = Loggers.getLogger(DoomVersion.class.getName());
+
     /**
      * Try all versions in given doomwaddir
      * 
@@ -56,7 +59,7 @@ public enum DoomVersion {
                     // C'est ridicule!
                     // Let's handle languages in config files, okay?
                     DOOM.language = Language_t.french;
-                    System.out.println("French version\n");
+                    //System.out.println("French version\n");
                 }
 
                 return vFullPath;
@@ -85,7 +88,7 @@ public enum DoomVersion {
             }
 
         } catch (IllegalArgumentException ex) {
-            Loggers.getLogger(DoomVersion.class.getName()).log(Level.WARNING, iwad, ex);
+            LOGGER.log(Level.WARNING, iwad, ex);
         }
 
         // It's either invalid or we can't read it.

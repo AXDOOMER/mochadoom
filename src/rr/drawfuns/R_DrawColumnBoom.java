@@ -1,7 +1,10 @@
 package rr.drawfuns;
 
 import i.IDoomSystem;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
+import mochadoom.Loggers;
 
 /**
  * Adapted from Killough's Boom code. There are optimized as well as low-detail
@@ -11,6 +14,8 @@ import static m.fixed_t.FRACBITS;
  */
 public abstract class R_DrawColumnBoom<T, V>
         extends DoomColumnFunction<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(R_DrawColumnBoom.class.getName());
 
     public R_DrawColumnBoom(int SCREENWIDTH, int SCREENHEIGHT, int[] ylookup,
             int[] columnofs, ColVars<T, V> dcvars, V screen, IDoomSystem I) {
@@ -123,8 +128,9 @@ public abstract class R_DrawColumnBoom<T, V>
                                     = colormap[0x00FF & source[dc_source_ofs
                                     + ((frac >> FRACBITS) & heightmask)]];
                         } catch (Exception e) {
-                            System.err.printf("%s %s %x %x %x\n", colormap,
-                                    source, dc_source_ofs, frac, heightmask);
+                            LOGGER.log(Level.WARNING,
+                                    String.format("%s %s %x %x %x", colormap,
+                                            source, dc_source_ofs, frac, heightmask));
                         }
                         dest += SCREENWIDTH;
                         frac += fracstep;
@@ -241,8 +247,9 @@ public abstract class R_DrawColumnBoom<T, V>
                                     = colormap[0x00FF & source[dc_source_ofs
                                     + ((frac >> FRACBITS) & heightmask)]];
                         } catch (Exception e) {
-                            System.err.printf("%s %s %x %x %x\n", colormap,
-                                    source, dc_source_ofs, frac, heightmask);
+                            LOGGER.log(Level.WARNING,
+                                    String.format("%s %s %x %x %x\n", colormap,
+                                            source, dc_source_ofs, frac, heightmask));
                         }
                         dest += SCREENWIDTH;
                         frac += fracstep;
@@ -359,8 +366,9 @@ public abstract class R_DrawColumnBoom<T, V>
                                     = colormap[0x00FF & source[dc_source_ofs
                                     + ((frac >> FRACBITS) & heightmask)]];
                         } catch (Exception e) {
-                            System.err.printf("%s %s %x %x %x\n", colormap,
-                                    source, dc_source_ofs, frac, heightmask);
+                            LOGGER.log(Level.WARNING,
+                                    String.format("%s %s %x %x %x\n", colormap,
+                                            source, dc_source_ofs, frac, heightmask));
                         }
                         dest += SCREENWIDTH;
                         frac += fracstep;

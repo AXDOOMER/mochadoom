@@ -6,7 +6,10 @@ import static data.Tables.ANG90;
 import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FixedDiv;
+import mochadoom.Loggers;
 import utils.C2JUtils;
 import v.scale.VideoScale;
 
@@ -15,6 +18,8 @@ import v.scale.VideoScale;
  *  visplane data among parallel renderers, without duplicating them.
  */
 public class Visplanes {
+
+    private static final Logger LOGGER = Loggers.getLogger(Visplanes.class.getName());
 
     private static final boolean DEBUG2 = false;
 
@@ -208,8 +213,7 @@ public class Visplanes {
     public int CheckPlane(int index, int start, int stop) {
 
         if (DEBUG2) {
-            System.out.println("Checkplane " + index + " between " + start
-                    + " and " + stop);
+            LOGGER.log(Level.FINER, String.format("Checkplane %d between %d and %d", index, start, stop));
         }
 
         // Interval ?
@@ -223,7 +227,7 @@ public class Visplanes {
         visplane_t pl = visplanes[index];
 
         if (DEBUG2) {
-            System.out.println("Checking out plane " + pl);
+            LOGGER.log(Level.FINER, String.format("Checking out plane %s", String.valueOf(pl)));
         }
 
         int x;

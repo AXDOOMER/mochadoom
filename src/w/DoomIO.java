@@ -28,7 +28,10 @@ import java.io.InputStream;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.Swap;
+import mochadoom.Loggers;
 
 /**
  * An extension of RandomAccessFile, which handles readString/WriteString specially 
@@ -47,6 +50,8 @@ import m.Swap;
  * 
  */
 public class DoomIO {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomIO.class.getName());
 
     private DoomIO() {
 
@@ -205,7 +210,7 @@ public class DoomIO {
                 dos.writeBytes(s);
             }
         } catch (Exception e) {
-            System.err.println("writeString " + s + " to DoomFile failed!");
+            LOGGER.log(Level.WARNING, String.format("writeString %s to DoomFile failed!", s));
         }
     }
 

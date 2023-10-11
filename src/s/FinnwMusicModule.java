@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiEvent;
@@ -32,6 +34,7 @@ import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 import javax.sound.midi.Transmitter;
+import mochadoom.Loggers;
 
 /** A music driver that bypasses Sequences and sends events from a MUS lump
  *  directly to a MIDI device.
@@ -51,6 +54,8 @@ import javax.sound.midi.Transmitter;
  *
  */
 public class FinnwMusicModule implements IMusic {
+
+    private static final Logger LOGGER = Loggers.getLogger(FinnwMusicModule.class.getName());
 
     public FinnwMusicModule() {
         this.lock = new ReentrantLock();
@@ -73,7 +78,7 @@ public class FinnwMusicModule implements IMusic {
             genMidiEG.sendTo(receiver);
             sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
         } catch (MidiUnavailableException ex) {
-            System.err.println(ex);
+            LOGGER.log(Level.WARNING, "InitMusic: midi unavailable", ex);
             receiver = null;
         }
         exec = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl());
@@ -736,7 +741,7 @@ public class FinnwMusicModule implements IMusic {
                 } catch (RejectedExecutionException ex) {
                     // This is normal when shutting down
                 } catch (Exception ex) {
-                    System.err.println(ex);
+                    LOGGER.log(Level.WARNING, "schedule failure", ex);
                 }
             }
         }

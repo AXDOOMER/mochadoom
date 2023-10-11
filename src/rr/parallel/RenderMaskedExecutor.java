@@ -3,6 +3,9 @@ package rr.parallel;
 import i.IDoomSystem;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.IDetailAware;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
@@ -23,6 +26,8 @@ import v.tables.BlurryTable;
  */
 public abstract class RenderMaskedExecutor<T, V>
         implements Runnable, IDetailAware {
+
+    private static final Logger LOGGER = Loggers.getLogger(RenderMaskedExecutor.class.getName());
 
     protected CyclicBarrier barrier;
 
@@ -97,7 +102,7 @@ public abstract class RenderMaskedExecutor<T, V>
         try {
             barrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "RenderMaskedExecutor run failure", e);
         }
     }
 

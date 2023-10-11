@@ -26,6 +26,7 @@ import hu.IHeadsUp;
 import i.IDoomSystem;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import mochadoom.Loggers;
 import p.Actions.ActionsAttacks;
 import p.Actions.ActionsEnemies;
 import p.Actions.ActionsThinkers;
@@ -42,6 +43,8 @@ import utils.TraitFactory.SharedContext;
 public class ActionFunctions extends UnifiedGameMap implements
         ActionsThinkers, ActionsEnemies, ActionsAttacks, Ai, Attacks, Thinkers, Weapons {
 
+    private static final Logger LOGGER = Loggers.getLogger(ActionFunctions.class.getName());
+
     private final SharedContext traitsSharedContext;
 
     public ActionFunctions(final DoomMain<?, ?> DOOM) {
@@ -53,7 +56,7 @@ public class ActionFunctions extends UnifiedGameMap implements
         try {
             return TraitFactory.build(this, ACTION_KEY_CHAIN);
         } catch (IllegalArgumentException | IllegalAccessException ex) {
-            Logger.getLogger(ActionFunctions.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, "buildContext failure", ex);
             throw new RuntimeException(ex);
         }
     }

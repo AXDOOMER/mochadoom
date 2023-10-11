@@ -5,9 +5,12 @@ import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.pw_invisibility;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedMul;
+import mochadoom.Loggers;
 import static p.mobj_t.MF_TRANSLATION;
 import p.pspdef_t;
 import rr.AbstractThings;
@@ -42,6 +45,8 @@ import v.tables.BlurryTable;
  * @param <V>
  */
 public abstract class MaskedWorker<T, V> extends AbstractThings<T, V> implements Runnable, IDetailAware {
+
+    private static final Logger LOGGER = Loggers.getLogger(MaskedWorker.class.getName());
 
     private final static boolean DEBUG = false;
     private final static boolean RANGECHECK = false;
@@ -202,7 +207,7 @@ public abstract class MaskedWorker<T, V> extends AbstractThings<T, V> implements
             column = patch.columns[texturecolumn];
 
             if (column == null) {
-                System.err.printf("Null column for texturecolumn %d\n", texturecolumn, x1, x2);
+                LOGGER.log(Level.WARNING, String.format("Null column for texturecolumn %d", texturecolumn, x1, x2));
             } else {
                 DrawMaskedColumn(column);
             }
@@ -495,8 +500,7 @@ public abstract class MaskedWorker<T, V> extends AbstractThings<T, V> implements
         try {
             barrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "MaskedWorker run failure", e);
         }
         // TODO Auto-generated catch block
     }

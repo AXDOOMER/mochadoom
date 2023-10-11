@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.AbstractThings;
 import rr.IDetailAware;
 import rr.SceneRenderer;
@@ -36,6 +39,8 @@ import v.tables.BlurryTable;
  * @author velktron
  */
 public abstract class ParallelThings<T, V> extends AbstractThings<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(ParallelThings.class.getName());
 
     // stuff to get from container
     /** Render Masked Instuction subsystem. Essentially, a way to split sprite work
@@ -75,7 +80,7 @@ public abstract class ParallelThings<T, V> extends AbstractThings<T, V> {
             maskedbarrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "ParallelThings DrawMasked failure", e);
         }
         // TODO Auto-generated catch block
 
@@ -130,7 +135,7 @@ public abstract class ParallelThings<T, V> extends AbstractThings<T, V> {
             RMIExec[i].updateRMI(RMI);
         }
 
-        System.err.println("RMI Buffer resized. Actual capacity " + RMI.length);
+        LOGGER.log(Level.FINE, String.format("RMI Buffer resized. Actual capacity %d", RMI.length));
     }
 
     protected abstract void InitRMISubsystem(int[] columnofs, int[] ylookup, V screen, CyclicBarrier maskedbarrier, BlurryTable BLURRY_MAP, List<IDetailAware> detailaware);

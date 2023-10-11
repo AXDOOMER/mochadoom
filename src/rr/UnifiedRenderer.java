@@ -2,6 +2,9 @@ package rr;
 
 import doom.DoomMain;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomLow;
 import rr.drawfuns.R_DrawColumnBoomOpt;
@@ -15,6 +18,8 @@ import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
 
 public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(UnifiedRenderer.class.getName());
 
     public UnifiedRenderer(DoomMain<T, V> DOOM) {
         super(DOOM);
@@ -73,7 +78,7 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
         @Override
         protected void InitColormaps() throws IOException {
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();
@@ -214,7 +219,7 @@ public abstract class UnifiedRenderer<T, V> extends RendererState<T, V> {
          */
         protected void InitColormaps() throws IOException {
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS32 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS32 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             BLURRY_MAP = DOOM.graphicSystem.getBlurryTable();

@@ -1,6 +1,9 @@
 package s;
 
 import doom.DoomMain;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /** A variation of the Classic Sound Driver, decoding the DP-lumps
  *  instead of the DS. A better way would be to build-in an 
@@ -10,6 +13,8 @@ import doom.DoomMain;
  *
  */
 public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
+
+    private static final Logger LOGGER = Loggers.getLogger(SpeakerDoomSoundDriver.class.getName());
 
     public SpeakerDoomSoundDriver(DoomMain<?, ?> DM, int numChannels) {
         super(DM, numChannels);
@@ -79,7 +84,7 @@ public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
         DM.wadLoader.UnlockLumpNum(sfxlump);
 
         if (D) {
-            System.out.printf("SFX %d size %d padded to %d\n", index, size, paddedsize);
+            LOGGER.log(Level.FINE, String.format("SFX %d size %d padded to %d", index, size, paddedsize));
         }
         // Preserve padded length.
         len[index] = paddedsize;

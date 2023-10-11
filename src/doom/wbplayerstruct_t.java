@@ -1,10 +1,16 @@
 package doom;
 
 //
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
+
 // INTERMISSION
 // Structure passed e.g. to WI_Start(wb)
 //
 public class wbplayerstruct_t implements Cloneable {
+
+    private static final Logger LOGGER = Loggers.getLogger(wbplayerstruct_t.class.getName());
 
     public wbplayerstruct_t() {
         frags = new int[4];
@@ -25,7 +31,7 @@ public class wbplayerstruct_t implements Cloneable {
         try {
             r = (wbplayerstruct_t) super.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "wbplayerstruct_t: clone failure", e);
         }
         /*r.in=this.in;
          r.skills=this.skills;

@@ -14,10 +14,13 @@ import static doom.SourceCode.P_MapUtl.P_SetThingPosition;
 import doom.SourceCode.R_Main;
 import static doom.SourceCode.R_Main.R_PointInSubsector;
 import doom.SourceCode.fixed_t;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.BBox;
 import m.Settings;
 import static m.fixed_t.FRACBITS;
 import mochadoom.Engine;
+import mochadoom.Loggers;
 import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
 import rr.line_t;
@@ -41,6 +44,8 @@ import static utils.C2JUtils.flags;
  * @author velktron
  */
 public abstract class AbstractLevelLoader implements ILevelLoader {
+
+    private static final Logger LOGGER = Loggers.getLogger(AbstractLevelLoader.class.getName());
 
     // ///////////////// Status objects ///////////////////
     final DoomMain<?, ?> DOOM;
@@ -554,8 +559,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
         long b = System.nanoTime();
 
-        System.err.printf("Blockmap generated in %f sec\n", (b - a) / 1e9);
-        System.err.printf("Time spend in AddBlockLine : %f sec\n", total / 1e9);
+        LOGGER.log(Level.WARNING, String.format("Blockmap generated in %f sec", (b - a) / 1e9));
+        LOGGER.log(Level.WARNING, String.format("Time spend in AddBlockLine : %f sec", total / 1e9));
     }
 
     // jff 10/6/98
@@ -581,7 +586,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
                 // check that block offset is in bounds
                 if (blockoffset >= p_maxoffs) {
-                    System.err.printf("P_VerifyBlockMap: block offset overflow\n");
+                    LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: block offset overflow"));
                     return false;
                 }
 
@@ -589,7 +594,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
                 // check that list offset is in bounds
                 if (offset < 4 || offset >= count) {
-                    System.err.printf("P_VerifyBlockMap: list offset overflow\n");
+                    LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: list offset overflow"));
                     return false;
                 }
 
@@ -599,7 +604,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                 for (tmplist = p_list;; tmplist++) {
                     // we have overflowed the lump?
                     if (tmplist >= p_maxoffs) {
-                        System.err.printf("P_VerifyBlockMap: open blocklist\n");
+                        LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: open blocklist"));
                         return false;
                     }
                     if (blockmaplump[tmplist] == -1) // found -1
@@ -611,7 +616,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                 // scan the list for out-of-range linedef indicies in list
                 for (tmplist = p_list; blockmaplump[tmplist] != -1; tmplist++) {
                     if (blockmaplump[tmplist] < 0 || blockmaplump[tmplist] >= numlines) {
-                        System.err.printf("P_VerifyBlockMap: index >= numlines\n");
+                        LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: index >= numlines"));
                         return false;
                     }
                 }
@@ -699,8 +704,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // next time.
         rejectmatrix[bytenum] |= POKE_REJECT[bitnum];
 
-        System.out.println(rejectDensity());
-
+        rejectDensity();
     }
 
     protected void retrieveFromReject(int x, int y, boolean value) {
@@ -726,7 +730,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // next time.
         rejectmatrix[bytenum] |= POKE_REJECT[bitnum];
 
-        System.out.println(rejectDensity());
+        rejectDensity();
 
     }
 
@@ -791,8 +795,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             }
         }
 
-        System.err.printf("Map bounding %d %d %d %d\n", minx >> FRACBITS,
-                miny >> FRACBITS, maxx >> FRACBITS, maxy >> FRACBITS);
+        LOGGER.log(Level.WARNING, String.format("Map bounding %d %d %d %d\n", minx >> FRACBITS,
+                miny >> FRACBITS, maxx >> FRACBITS, maxy >> FRACBITS));
 
         // Blow up bounding to the closest 128-sized block, adding 8 units as
         // padding.
@@ -802,8 +806,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         int bckx = ((BLOCKMAPPADDING + maxx) - orgx);
         int bcky = ((BLOCKMAPPADDING + maxy) - orgy);
 
-        System.err.printf("%d %d %d %d\n", orgx >> FRACBITS, orgy >> FRACBITS,
-                1 + (bckx >> MAPBLOCKSHIFT), 1 + (bcky >> MAPBLOCKSHIFT));
+        LOGGER.log(Level.WARNING, String.format("%d %d %d %d", orgx >> FRACBITS, orgy >> FRACBITS,
+                1 + (bckx >> MAPBLOCKSHIFT), 1 + (bcky >> MAPBLOCKSHIFT)));
 
         return new int[]{orgx, orgy, bckx, bcky};
     }
@@ -839,8 +843,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // all-zeroes one,
         // or whatever you happened to read anyway.
         if (tmpreject.length < rejectmatrix.length) {
-            System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",
-                    tmpreject.length, rejectmatrix.length);
+            LOGGER.log(Level.WARNING, String.format("BROKEN REJECT MAP! Length %d expected %d\n",
+                    tmpreject.length, rejectmatrix.length));
         }
 
         // Maes: purely academic. Most maps are well above 0.68

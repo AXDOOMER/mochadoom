@@ -27,6 +27,9 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /**
  * Resource IO to automate read/write on configuration/resources
@@ -34,6 +37,8 @@ import java.util.function.Supplier;
  * @author Good Sign
  */
 public class ResourceIO {
+
+    private static final Logger LOGGER = Loggers.getLogger(ResourceIO.class.getName());
 
     private final Path file;
     private final Charset charset = Charset.forName("US-ASCII");
@@ -64,7 +69,7 @@ public class ResourceIO {
 
                 return true;
             } catch (IOException x) {
-                System.err.format("IOException: %s%n", x);
+                LOGGER.log(Level.WARNING, "ResourceIO read failure", x);
                 return false;
             }
         }
@@ -82,7 +87,7 @@ public class ResourceIO {
 
             return true;
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            LOGGER.log(Level.WARNING, "ResourceIO write failure", x);
             return false;
         }
     }

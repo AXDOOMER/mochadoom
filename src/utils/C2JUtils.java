@@ -12,6 +12,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import p.Resettable;
 import w.InputStreamSugar;
 
@@ -22,6 +25,8 @@ import w.InputStreamSugar;
  * @author Maes
  */
 public final class C2JUtils {
+
+    private static final Logger LOGGER = Loggers.getLogger(C2JUtils.class.getName());
 
     public static char[] strcpy(char[] s1, final char[] s2) {
         System.arraycopy(s2, 0, s1, 0, Math.min(s1.length, s2.length));
@@ -170,9 +175,7 @@ public final class C2JUtils {
                 os[i] = c.getDeclaredConstructor().newInstance();
             }
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + os.length
-                    + " objects of class" + c.getName() + "!");
+            LOGGER.log(Level.SEVERE, String.format("Failure to allocate %d objects of class %s", os.length, c.getName()), e);
             System.exit(-1);
         }
     }
@@ -195,10 +198,7 @@ public final class C2JUtils {
                 os[i] = c.getDeclaredConstructor().newInstance();
             }
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + os.length
-                    + " objects of class " + c.getName() + "!");
-
+            LOGGER.log(Level.SEVERE, String.format("Failure to allocate %d objects of class %s", os.length, c.getName()), e);
             System.exit(-1);
         }
     }
@@ -232,8 +232,7 @@ public final class C2JUtils {
                 os[i] = c.getDeclaredConstructor().newInstance();
             }
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.err.println("Failure to instantiate " + os.length + " objects of class " + c.getName() + "!");
+            LOGGER.log(Level.SEVERE, String.format("Failure to instantiate %d objects of class %s", os.length, c.getName()), e);
             System.exit(-1);
         }
 
@@ -266,9 +265,7 @@ public final class C2JUtils {
                 os[i] = c.getDeclaredConstructor().newInstance();
             }
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.err.println("Failure to instantiate " + os.length
-                    + " objects of class " + c.getName() + "!");
+            LOGGER.log(Level.SEVERE, String.format("Failure to instantiate %d objects of class %s", os.length, c.getName()), e);
             System.exit(-1);
         }
 
@@ -294,10 +291,7 @@ public final class C2JUtils {
                 os[i] = c.getDeclaredConstructor().newInstance();
             }
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + os.length
-                    + " objects of class " + c.getName() + "!");
-
+            LOGGER.log(Level.SEVERE, String.format("Failure to allocate %d objects of class %s", os.length, c.getName()), e);
             System.exit(-1);
         }
     }
@@ -696,12 +690,12 @@ public final class C2JUtils {
         return path.substring(src, src + len);
     }
 
-    /** Maes: File intead of "inthandle" */
+    /** Maes: File instead of "inthandle" */
     public static long filelength(File handle) {
         try {
             return handle.length();
         } catch (Exception e) {
-            System.err.println("Error fstating");
+            LOGGER.log(Level.SEVERE, "Error fstating", e);
             return -1;
         }
 
@@ -718,7 +712,7 @@ public final class C2JUtils {
             cls = (T) oldarray.getClass().getComponentType().getDeclaredConstructor().newInstance();
             return resize(cls, oldarray, newsize);
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
-            System.err.println("Cannot autodetect type in resizeArray.\n");
+            LOGGER.log(Level.SEVERE, "Cannot autodetect type in resizeArray.", e);
             return null;
         }
     }
@@ -743,7 +737,7 @@ public final class C2JUtils {
 
         // Init the null portions as well
         C2JUtils.initArrayOfObjects(tmp, oldarray.length, tmp.length);
-        System.out.printf("Old array of type %s resized. New capacity: %d\n", instance.getClass(), newsize);
+        LOGGER.log(Level.INFO, String.format("Old array of type %s resized. New capacity: %d", instance.getClass(), newsize));
 
         return tmp;
     }
@@ -760,8 +754,8 @@ public final class C2JUtils {
         // For non-autoinit types, this is enough.
         T[] tmp = Arrays.copyOf(oldarray, newsize);
 
-        System.out.printf("Old array of type %s resized without auto-init. New capacity: %d\n",
-                tmp.getClass().getComponentType(), newsize);
+        LOGGER.log(Level.INFO, String.format("Old array of type %s resized without auto-init. New capacity: %d",
+                tmp.getClass().getComponentType(), newsize));
 
         return tmp;
     }
@@ -773,9 +767,7 @@ public final class C2JUtils {
         try {
             return (T[]) Array.newInstance(c, size);
         } catch (NegativeArraySizeException e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + size
-                    + " objects of class " + c.getName() + "!");
+            LOGGER.log(Level.SEVERE, String.format("Failure to allocate %d objects of class %s", size, c.getName()), e);
             System.exit(-1);
         }
 
@@ -793,9 +785,7 @@ public final class C2JUtils {
         try {
             return (T[]) Array.newInstance(c, size);
         } catch (NegativeArraySizeException e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + size
-                    + " objects of class " + c.getName() + "!");
+            LOGGER.log(Level.SEVERE, String.format("Failure to allocate %d objects of class %s", size, c.getName()), e);
             System.exit(-1);
         }
 

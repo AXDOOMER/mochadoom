@@ -106,7 +106,7 @@ public class DSP {
 
     public static void main(String[] argv) {
         double[] fir = wsfiltgen(128, 11025 / 2.0, 22050, 22050 * 3.0 / 4, 0.5);
-        System.out.println(fir);
+        //System.out.println(fir);
 
     }
 

@@ -5,12 +5,15 @@ import data.sounds.sfxenum_t;
 import doom.DoomMain;
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.FloatControl.Type;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
+import mochadoom.Loggers;
 
 /** David Martel's sound driver for Mocha Doom. Excellent work!
  * 
@@ -32,6 +35,8 @@ import javax.sound.sampled.SourceDataLine;
  *
  */
 public class DavidSFXModule extends AbstractSoundDriver {
+
+    private static final Logger LOGGER = Loggers.getLogger(DavidSFXModule.class.getName());
 
     ArrayList<DoomSound> cachedSounds = new ArrayList<>();
 
@@ -69,7 +74,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
     @Override
     public boolean InitSound() {
         // Secure and configure sound device first.
-        System.err.println("I_InitSound: ");
+        LOGGER.log(Level.INFO, "I_InitSound");
 
         // Initialize external data (all sounds) at start, keep static.
         initSound16();
@@ -81,9 +86,9 @@ public class DavidSFXModule extends AbstractSoundDriver {
             cachedSounds.add(tmp);
         }
 
-        System.err.print(" pre-cached all sound data\n");
+        LOGGER.log(Level.INFO, "pre-cached all sound data");
         // Finished initialization.
-        System.err.print("I_InitSound: sound module ready\n");
+        LOGGER.log(Level.INFO, "I_InitSound: sound module ready");
 
         return true;
 
@@ -123,7 +128,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
                 this.soundThread[i].join();
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "ShutDownSound failure", e);
             }
         }
         // Done.
@@ -162,8 +167,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
                 channels[c].auline = (SourceDataLine) AudioSystem.getLine(info);
                 channels[c].auline.open(tmp.format);
             } catch (LineUnavailableException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LOGGER.log(Level.INFO, "create data line for channel failure", e);
             }
             boolean errors = false;
             // Add individual volume control.
@@ -171,13 +175,13 @@ public class DavidSFXModule extends AbstractSoundDriver {
                 channels[c].vc = (FloatControl) channels[c].auline
                         .getControl(Type.MASTER_GAIN);
             } else {
-                System.err.print("MASTER_GAIN, ");
+                LOGGER.log(Level.FINE, "MASTER_GAIN");
                 errors = true;
                 if (channels[c].auline.isControlSupported(Type.VOLUME)) {
                     channels[c].vc = (FloatControl) channels[c].auline
                             .getControl(Type.VOLUME);
                 } else {
-                    System.err.print("VOLUME, ");
+                    LOGGER.log(Level.FINE, "VOLUME");
                 }
             }
 
@@ -187,7 +191,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
                         .getControl(Type.SAMPLE_RATE);
             } else {
                 errors = true;
-                System.err.print("SAMPLE_RATE, ");
+                LOGGER.log(Level.FINE, "SAMPLE_RATE");
             }
 
             // Add individual pan control
@@ -195,18 +199,18 @@ public class DavidSFXModule extends AbstractSoundDriver {
                 channels[c].bc = (FloatControl) channels[c].auline
                         .getControl(FloatControl.Type.BALANCE);
             } else {
-                System.err.print("BALANCE, ");
+                LOGGER.log(Level.FINE, "BALANCE");
                 errors = true;
                 if (channels[c].auline.isControlSupported(Type.PAN)) {
                     channels[c].bc = (FloatControl) channels[c].auline
                             .getControl(FloatControl.Type.PAN);
                 } else {
-                    System.err.print("PANNING ");
+                    LOGGER.log(Level.FINE, "PANNING");
                 }
             }
 
             if (errors) {
-                System.err.printf("for channel %d NOT supported!\n", c);
+                LOGGER.log(Level.SEVERE, String.format("for channel %d NOT supported!", c));
             }
 
             channels[c].auline.start();
@@ -369,10 +373,10 @@ public class DavidSFXModule extends AbstractSoundDriver {
         channels[slot].setPitch(pitch);
 
         if (D) {
-            System.err.println(channelStatus());
+            LOGGER.log(Level.FINE, channelStatus());
         }
         if (D) {
-            System.err.printf("Playing %d vol %d on channel %d\n", rc, volume, slot);
+            LOGGER.log(Level.FINE, String.format("Playing %d vol %d on channel %d", rc, volume, slot));
         }
         // You tell me.
         return rc;
@@ -463,7 +467,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
         public void addSound(byte[] ds, int handle) {
 
             if (D) {
-                System.out.printf("Added handle %d to channel %d\n", handle, id);
+                LOGGER.log(Level.INFO, String.format("Added handle %d to channel %d", handle, id));
             }
             this.handle = handle;
             this.currentSound = ds;
@@ -512,7 +516,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
         }
 
         public void run() {
-            System.err.printf("Sound thread %d started\n", id);
+            LOGGER.log(Level.INFO, String.format("Sound thread %d started", id));
             while (!terminate) {
                 currentSoundSync = currentSound;
                 if (currentSoundSync != null) {
@@ -520,7 +524,7 @@ public class DavidSFXModule extends AbstractSoundDriver {
                     try {
                         auline.write(currentSoundSync, 0, currentSoundSync.length);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.SEVERE, "SoundWorker run failure", e);
                         return;
                     } finally {
                         // The previous steps are actually VERY fast.

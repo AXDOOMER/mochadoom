@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import mochadoom.Loggers;
 import utils.ResourceIO;
 
@@ -39,10 +40,13 @@ import utils.ResourceIO;
  */
 public class CVarManager {
 
+    private static final Logger LOGGER = Loggers.getLogger(CVarManager.class.getName());
+
     private final EnumMap<CommandVariable, Object[]> cVarMap = new EnumMap<>(CommandVariable.class);
 
     public CVarManager(final List<String> commandList) {
-        System.out.println(processAllArgs(commandList) + " command-line variables");
+        LOGGER.log(Level.INFO,
+                String.format("%d command-line variable(s).", processAllArgs(commandList)));
     }
 
     /**
@@ -156,9 +160,9 @@ public class CVarManager {
     private void readResponseFile(final String filename) {
         final ResponseReader r = new ResponseReader();
         if (new ResourceIO(filename).readLines(r)) {
-            System.out.println(String.format("Found response file %s, read %d command line variables", filename, r.cVarCount));
+            LOGGER.log(Level.INFO, String.format("Found response file %s, read %d command line variables", filename, r.cVarCount));
         } else {
-            System.out.println(String.format("No such response file %s!", filename));
+            LOGGER.log(Level.WARNING, String.format("No such response file %s!", filename));
             System.exit(1);
         }
     }
@@ -251,7 +255,7 @@ public class CVarManager {
             try {
                 return Integer.parseInt(arg);
             } catch (NumberFormatException ex) {
-                Loggers.getLogger(CommandVariable.class.getName()).log(Level.WARNING, null, ex);
+                LOGGER.log(Level.WARNING, "formatArgValue failure", ex);
                 return null;
             }
         } else if (format == String.class) {
@@ -265,7 +269,7 @@ public class CVarManager {
                 | IllegalAccessException
                 | IllegalArgumentException
                 | InvocationTargetException ex) {
-            Loggers.getLogger(CommandVariable.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, "formatArgValue failure", ex);
             return null;
         }
     }

@@ -1,9 +1,14 @@
 package doom;
 
 import static data.Limits.MAXPLAYERS;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import static utils.GenericCopy.malloc;
 
 public class wbstartstruct_t implements Cloneable {
+
+    private static final Logger LOGGER = Loggers.getLogger(wbstartstruct_t.class.getName());
 
     public wbstartstruct_t() {
         plyr = malloc(wbplayerstruct_t::new, wbplayerstruct_t[]::new, MAXPLAYERS);
@@ -36,8 +41,7 @@ public class wbstartstruct_t implements Cloneable {
         try {
             cl = (wbstartstruct_t) super.clone();
         } catch (CloneNotSupportedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "wbstartstruct_t: clone failure", e);
         }
         /*cl.epsd=this.epsd;
             cl.didsecret=this.didsecret;

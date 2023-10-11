@@ -8,8 +8,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 public class QMusToMid {
+
+    private static final Logger LOGGER = Loggers.getLogger(QMusToMid.class.getName());
 
     public static final int NOTMUSFILE = 1;
     /* Not a MUS file */
@@ -93,8 +98,7 @@ public class QMusToMid {
         if (pos < TRACKBUFFERSIZE) {
             track[MIDItrack].data[(int) pos] = byte_;
         } else {
-            System.out.println("ERROR : Track buffer full.\n"
-                    + "Increase the track buffer size (option -size).\n");
+            LOGGER.log(Level.SEVERE, "ERROR: Track buffer full. Increase the track buffer size (option -size).");
             System.exit(1);
         }
         track[MIDItrack].current++;
@@ -156,7 +160,7 @@ public class QMusToMid {
 
             return 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Could not read MUS header", e);
             return COMUSFILE;
         }
     }
@@ -171,7 +175,7 @@ public class QMusToMid {
             DoomIO.fwrite2(DoomIO.toByteArray(ntrks), 2, file);
             DoomIO.fwrite2(DoomIO.toByteArray(division), 2, file);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Could not write MID header", e);
         }
 
         return 0;
@@ -221,7 +225,7 @@ public class QMusToMid {
             DoomIO.fwrite(track[tracknum].data, (int) track[tracknum].current, 1, file);
             DoomIO.fwrite(TRACKMAGIC2, 4, 1, file);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Could not write track", e);
         }
     }
 
@@ -238,7 +242,7 @@ public class QMusToMid {
             DoomIO.fwrite(TRACKMAGIC6, 4, 1, file);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Could not write first track", e);
         }
     }
 
@@ -319,7 +323,7 @@ public class QMusToMid {
 	      return MUSFILECOR ;
 	    }*/
         if (!nodisplay) {
-            System.out.println(mus + " (" + mus.available() + "  bytes) contains " + MUSh.channels + " melodic channel" + (MUSh.channels >= 2 ? "s" : "") + "\n");
+            LOGGER.log(Level.FINE, String.format("stream (%d bytes) contains %d melodic channel(s)", mus.available(), MUSh.channels));
         }
 
         if (MUSh.channels > 15) /* <=> MUSchannels+drums > 16 */ {
@@ -337,12 +341,12 @@ public class QMusToMid {
         if (BufferSize != 0) {
             TRACKBUFFERSIZE = ((long) BufferSize) << 10;
             if (!nodisplay) {
-                System.out.println("Track buffer size set to " + BufferSize + " KB.\n");
+                LOGGER.log(Level.FINE, String.format("Track buffer size set to %d KB.", BufferSize));
             }
         }
 
         if (!nodisplay) {
-            System.out.println("Converting...");
+            LOGGER.log(Level.FINE, "Converting...");
         }
         event = getc(mus);
         et = event_type(event);
@@ -463,16 +467,15 @@ public class QMusToMid {
             }
         }
         if (!nodisplay) {
-            System.out.println("done !\n");
+            LOGGER.log(Level.FINE, "done!");
         }
         if (ouch != 0) {
-            System.out.println("WARNING : There are bytes missing at the end of " + mus + ".\n          "
-                    + "The end of the MIDI file might not fit the original one.\n");
+            LOGGER.log(Level.WARNING, "WARNING: There are bytes missing at the end of stream. The end of the MIDI file might not fit the original one.");
         }
         if (division == 0) {
             division = 89;
         } else if (!nodisplay) {
-            System.out.println("Ticks per quarter note set to " + division + ".\n");
+            LOGGER.log(Level.FINE, String.format("Ticks per quarter note set to %d", division));
         }
         if (!nodisplay) {
             if (division != 89) {
@@ -485,13 +488,13 @@ public class QMusToMid {
             min = time / 60;
             sec = (char) (time - min * 60);
             if (division != 89) {
-                System.out.println("                    MID file");
+                LOGGER.log(Level.FINE, "MID file");
             } else {
-                System.out.println("Playing time: " + min + "min " + sec + "sec");
+                LOGGER.log(Level.FINE, String.format("Playing time: %dmin %dsec", min, sec));
             }
         }
         if (!nodisplay) {
-            System.out.println("Writing...");
+            LOGGER.log(Level.FINE, "Writing...");
         }
         WriteMIDheader(TrackCnt + 1, division, mid);
         WriteFirstTrack(mid);
@@ -499,13 +502,12 @@ public class QMusToMid {
             WriteTrack(i, mid, track);
         }
         if (!nodisplay) {
-            System.out.println("done !\n");
+            LOGGER.log(Level.FINE, "done !");
         }
-        if (!nodisplay && (!nocomp)) {
-            System.out.println("Compression : %u%%.\n"/*,
-	           (100 * n) / (n+ (long) ftell( mid ))*/);
-        }
-
+        //if (!nodisplay && (!nocomp)) {
+        //    System.out.println("Compression : %u%%.\n"/*,
+        //           (100 * n) / (n+ (long) ftell( mid ))*/);
+        //}
         return 0;
     }
 
@@ -581,28 +583,27 @@ public class QMusToMid {
         int error = qmus2mid(mus, mid, nodisplay, div, size, nocomp);
 
         if (error != 0) {
-            System.out.println("ERROR : ");
             switch (error) {
                 case NOTMUSFILE:
-                    System.out.println("%s is not a MUS file.\n"/*, mus*/);
+                    LOGGER.log(Level.SEVERE, "ERROR: stream is not a MUS file."/*, mus*/);
                     break;
                 case COMUSFILE:
-                    System.out.println("Can't open %s for read.\n"/*, mus*/);
+                    LOGGER.log(Level.SEVERE, "ERROR: Can't open stream for read."/*, mus*/);
                     break;
                 case COTMPFILE:
-                    System.out.println("Can't open temp file.\n");
+                    LOGGER.log(Level.SEVERE, "ERROR: Can't open temp file.");
                     break;
                 case CWMIDFILE:
-                    System.out.println("Can't write %s (?).\n"/*, mid */);
+                    LOGGER.log(Level.SEVERE, "ERROR: Can't write stream (?)."/*, mid */);
                     break;
                 case MUSFILECOR:
-                    System.out.println("%s is corrupted.\n"/*, mus*/);
+                    LOGGER.log(Level.SEVERE, "ERROR: stream is corrupted."/*, mus*/);
                     break;
                 case TOOMCHAN:
-                    System.out.println("%s contains more than 16 channels.\n"/*, mus*/);
+                    LOGGER.log(Level.SEVERE, "ERROR: stream contains more than 16 channels."/*, mus*/);
                     break;
                 case MEMALLOC:
-                    System.out.println("Not enough memory.\n");
+                    LOGGER.log(Level.SEVERE, "ERROR: Not enough memory.");
                     break;
                 default:
                     break;
@@ -611,7 +612,7 @@ public class QMusToMid {
         }
 
         if (!nodisplay) {
-            System.out.println(mus + " converted successfully.\n");
+            LOGGER.log(Level.FINE, "stream converted successfully.");
             /*if( (file = fopen( mid, "rb" )) != NULL )
 	        {
 	          //stat( mid, &file_data ) ;

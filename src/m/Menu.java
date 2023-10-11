@@ -47,6 +47,9 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.patch_t;
 import timing.DelegateTicker;
 import utils.C2JUtils;
@@ -54,6 +57,8 @@ import static v.renderers.DoomScreen.FG;
 import w.DoomIO;
 
 public class Menu<T, V> extends AbstractDoomMenu<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(Menu.class.getName());
 
     ////////////////// CONSTRUCTOR ////////////////
     public Menu(DoomMain<T, V> DOOM) {
@@ -1163,7 +1168,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
             }
         } else if (sc == SC_F5 && DOOM.ticker instanceof DelegateTicker) { // Toggle ticker
             ((DelegateTicker) DOOM.ticker).changeTicker();
-            System.err.println("Warning! Ticker changed; time reset");
+            LOGGER.log(Level.WARNING, "Warning! Ticker changed; time reset");
             DOOM.doomSound.StartSound(null, sfxenum_t.sfx_radio);
             return true;
         }
@@ -1762,8 +1767,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
 
             // Yet another hack...
             if (!DOOM.isRetail() && (choice > 2)) {
-                System.err
-                        .print("M_Episode: 4th episode requires UltimateDOOM\n");
+                LOGGER.log(Level.WARNING, "M_Episode: 4th episode requires UltimateDOOM");
                 choice = 0;
             }
 

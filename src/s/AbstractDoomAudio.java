@@ -11,8 +11,11 @@ import static data.sounds.S_sfx;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomMain;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
+import mochadoom.Loggers;
 import p.mobj_t;
 
 /** Some stuff that is not implementation dependant
@@ -25,6 +28,8 @@ import p.mobj_t;
  * 
  * */
 public class AbstractDoomAudio implements IDoomSound {
+
+    private static final Logger LOGGER = Loggers.getLogger(AbstractDoomAudio.class.getName());
 
     protected final DoomMain<?, ?> DS;
     protected final IMusic IMUS;
@@ -83,7 +88,7 @@ public class AbstractDoomAudio implements IDoomSound {
             int musicVolume) {
         int i;
 
-        System.err.printf("S_Init: default sfx volume %d\n", sfxVolume);
+        LOGGER.log(Level.INFO, String.format("S_Init: default sfx volume %d", sfxVolume));
 
         this.snd_SfxVolume = sfxVolume;
         this.snd_MusicVolume = musicVolume;
@@ -191,8 +196,6 @@ public class AbstractDoomAudio implements IDoomSound {
         //  sfx_id, S_sfx[sfx_id].name , origin.type.toString(),origin.hashCode());
         // check for bogus sound #
         if (sfx_id < 1 || sfx_id > NUMSFX) {
-            Exception e = new Exception();
-            e.printStackTrace();
             DS.doomSystem.Error("Bad sfx #: %d", sfx_id);
         }
 
@@ -319,8 +322,8 @@ public class AbstractDoomAudio implements IDoomSound {
                 priority);
 
         if (D) {
-            System.err.printf("Handle %d for channel %d for sound %s vol %d sep %d\n", channels[cnum].handle,
-                    cnum, sfx.name, volume, sep);
+            LOGGER.log(Level.FINE, String.format("Handle %d for channel %d for sound %s vol %d sep %d\n", channels[cnum].handle,
+                    cnum, sfx.name, volume, sep));
         }
     }
 

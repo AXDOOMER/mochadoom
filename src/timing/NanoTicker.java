@@ -1,9 +1,14 @@
 package timing;
 
 import static data.Defines.TICRATE;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 public class NanoTicker
         implements ITicker {
+
+    private static final Logger LOGGER = Loggers.getLogger(NanoTicker.class.getName());
 
     /**
      * I_GetTime
@@ -23,7 +28,7 @@ public class NanoTicker
         }
         newtics = (int) (((tp - basetime) * TICRATE) / 1000000000);// + tp.tv_usec*TICRATE/1000000;
         if (newtics < oldtics) {
-            System.err.printf("Timer discrepancies detected : %d", (++discrepancies));
+            LOGGER.log(Level.WARNING, String.format("Timer discrepancies detected : %d", (++discrepancies)));
             return oldtics;
         }
         return (oldtics = newtics);

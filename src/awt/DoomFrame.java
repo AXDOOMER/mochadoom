@@ -14,6 +14,7 @@ import static java.awt.RenderingHints.VALUE_ANTIALIAS_OFF;
 import static java.awt.RenderingHints.VALUE_RENDER_SPEED;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
 import mochadoom.Engine;
 import mochadoom.Loggers;
@@ -22,6 +23,8 @@ import mochadoom.Loggers;
  * Common code for Doom's video frames
  */
 public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JFrame implements FullscreenOptions {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomFrame.class.getName());
 
     private static final long serialVersionUID = -4130528877723831825L;
 
@@ -130,8 +133,7 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
          * - Good Sign 2017/04/09
          */
         if (localG2d == null) {
-            Loggers.getLogger(DoomFrame.class.getName())
-                    .log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
+            LOGGER.log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
         } else {
             draw(g2d, imageSupplier.get(), dim, this);
             if (showFPS) {

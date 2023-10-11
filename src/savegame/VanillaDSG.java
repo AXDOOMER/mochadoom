@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.Settings;
 import mochadoom.Engine;
 import mochadoom.Loggers;
@@ -51,6 +52,8 @@ import rr.side_t;
 import utils.C2JUtils;
 
 public class VanillaDSG<T, V> implements IDoomSaveGame {
+
+    private static final Logger LOGGER = Loggers.getLogger(VanillaDSG.class.getName());
 
     VanillaDSGHeader header;
     final DoomMain<T, V> DOOM;
@@ -85,7 +88,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
         try {
             this.f = f;
             maxsize = f.available();
-            System.out.println("Max size " + maxsize);
+            LOGGER.log(Level.FINE, String.format("Max size %d", maxsize));
             this.header = new VanillaDSGHeader();
             header.read(f);
             UnArchivePlayers();
@@ -95,7 +98,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
             byte terminator = f.readByte();
             return terminator == 0x1D;
         } catch (IOException e) {
-            Loggers.getLogger(VanillaDSG.class.getName()).log(Level.WARNING, e, ()
+            LOGGER.log(Level.WARNING, e, ()
                     -> String.format("Error while loading savegame! Cause: %s", e.getMessage()));
             return false; // Needed to shut up compiler.
         }
@@ -517,7 +520,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
         }
 
         if (player == 0) {
-            Loggers.getLogger(VanillaDSG.class.getName()).log(Level.WARNING,
+            LOGGER.log(Level.WARNING,
                     "Player not found, cannot reconstruct pointers!");
             return;
         }
@@ -866,7 +869,7 @@ public class VanillaDSG<T, V> implements IDoomSaveGame {
             // TODO: the rest...
             f.write(0x1D);
         } catch (IOException e) {
-            Loggers.getLogger(VanillaDSG.class.getName()).log(Level.WARNING, e, ()
+            LOGGER.log(Level.WARNING, e, ()
                     -> String.format("Error while saving savegame! Cause: %s", e.getMessage()));
             return false; // Needed to shut up compiler.
         }

@@ -3,6 +3,9 @@ package rr.parallel;
 import doom.DoomMain;
 import doom.player_t;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.SimpleThings;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.R_DrawColumnBoom;
@@ -31,6 +34,8 @@ import rr.drawfuns.R_DrawTranslatedColumnLow;
  * @author admin
  */
 public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(ParallelRenderer.class.getName());
 
     public ParallelRenderer(DoomMain<T, V> DM, int wallthread,
             int floorthreads, int nummaskedthreads) {
@@ -306,7 +311,7 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
         protected void InitColormaps() throws IOException {
 
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite
@@ -420,7 +425,7 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
                 throws IOException {
 
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite

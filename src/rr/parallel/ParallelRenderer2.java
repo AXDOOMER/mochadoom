@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomLow;
 import rr.drawfuns.R_DrawColumnBoomOpt;
@@ -30,10 +33,12 @@ import static utils.GenericCopy.malloc;
  */
 public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T, V> {
 
+    private static final Logger LOGGER = Loggers.getLogger(ParallelRenderer2.class.getName());
+
     @SuppressWarnings("unchecked")
     public ParallelRenderer2(DoomMain<T, V> DOOM, int wallthread, int floorthreads, int nummaskedthreads) {
         super(DOOM, wallthread, floorthreads, nummaskedthreads);
-        System.out.println("Parallel Renderer 2 (Seg-based)");
+        LOGGER.log(Level.FINE, "Parallel Renderer 2 (Seg-based)");
 
         this.MySegs = new ParallelSegs2<>(this);
         this.MyPlanes = new ParallelPlanes<>(DOOM, this);
@@ -126,7 +131,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         try {
             visplanebarrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "RenderPlayerView failure", e);
         }
 
         // Check for new console commands.
@@ -323,7 +328,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         @Override
         protected void InitColormaps() throws IOException {
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite
@@ -424,7 +429,7 @@ public abstract class ParallelRenderer2<T, V> extends AbstractParallelRenderer<T
         @Override
         protected void InitColormaps() throws IOException {
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite

@@ -783,7 +783,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
         // find player to center on initially
         if (!DOOM.playeringame[pnum = DOOM.consoleplayer]) {
             for (pnum = 0; pnum < MAXPLAYERS; pnum++) {
-                System.out.println(pnum);
+                //System.out.println(pnum);
                 if (DOOM.playeringame[pnum]) {
                     break;
                 }

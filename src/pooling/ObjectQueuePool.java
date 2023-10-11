@@ -1,6 +1,9 @@
 package pooling;
 
 import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import p.mobj_t;
 
 /** A convenient object pooling class, derived from the stock ObjectPool.
@@ -10,6 +13,8 @@ import p.mobj_t;
  * 
  */
 public abstract class ObjectQueuePool<K> {
+
+    private static final Logger LOGGER = Loggers.getLogger(ObjectQueuePool.class.getName());
 
     private static final boolean D = false;
 
@@ -43,7 +48,7 @@ public abstract class ObjectQueuePool<K> {
     public void checkIn(K t) {
         if (D) {
             if (t instanceof mobj_t) {
-                System.out.printf("Object %s returned to the pool\n", t.toString());
+                LOGGER.log(Level.FINE, String.format("Object %s returned to the pool", t.toString()));
             }
         }
         locked.push(t);

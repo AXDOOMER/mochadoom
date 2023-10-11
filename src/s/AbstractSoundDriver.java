@@ -4,6 +4,9 @@ import data.sfxinfo_t;
 import data.sounds;
 import static data.sounds.S_sfx;
 import doom.DoomMain;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /**
  * Functionality and fields that are common among the various "sound drivers"
@@ -12,6 +15,8 @@ import doom.DoomMain;
  * @author Maes
  */
 public abstract class AbstractSoundDriver implements ISoundDriver {
+
+    private static final Logger LOGGER = Loggers.getLogger(AbstractSoundDriver.class.getName());
 
     protected final static boolean D = false; // debug
 
@@ -172,7 +177,8 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
         DM.wadLoader.UnlockLumpNum(sfxlump);
 
         if (D) {
-            System.out.printf("SFX %d name %s size %d speed %d padded to %d\n", index, S_sfx[index].name, dmx.datasize, dmx.speed, paddedsize);
+            LOGGER.log(Level.FINE,
+                    String.format("SFX %d name %s size %d speed %d padded to %d", index, S_sfx[index].name, dmx.datasize, dmx.speed, paddedsize));
         }
         // Preserve padded length.
         len[index] = paddedsize;
@@ -304,7 +310,7 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
         try {
             lump = DM.wadLoader.GetNumForName(namebuf);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "GetSfxLumpNum failure", e);
             return -1;
         }
 

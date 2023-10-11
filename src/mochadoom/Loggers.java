@@ -21,6 +21,10 @@ import awt.EventBase;
 import awt.EventBase.ActionMode;
 import awt.EventBase.ActionStateHolder;
 import awt.EventBase.RelationType;
+import doom.CVarManager;
+import doom.ConfigManager;
+import doom.DoomMain;
+import i.DoomSystem;
 import java.awt.AWTEvent;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -44,6 +48,10 @@ import v.graphics.Patches;
  */
 public class Loggers {
 
+    static {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tF %1$tT] [%4$-7s] [%3$-20s] %5$s %n");
+    }
+
     private static final Level DEFAULT_LEVEL = Level.WARNING;
 
     private static final Map<Level, Logger> PARENT_LOGGERS_MAP = Stream.of(
@@ -59,6 +67,11 @@ public class Loggers {
         INDIVIDUAL_CLASS_LOGGERS.put(ActiveStates.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINER));
         INDIVIDUAL_CLASS_LOGGERS.put(DoomWindow.class.getName(), PARENT_LOGGERS_MAP.get(Level.FINE));
         INDIVIDUAL_CLASS_LOGGERS.put(Patches.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
+        INDIVIDUAL_CLASS_LOGGERS.put(ConfigManager.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
+        INDIVIDUAL_CLASS_LOGGERS.put(DoomMain.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
+        INDIVIDUAL_CLASS_LOGGERS.put(DoomSystem.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
+        INDIVIDUAL_CLASS_LOGGERS.put(CVarManager.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
+        INDIVIDUAL_CLASS_LOGGERS.put(Engine.class.getName(), PARENT_LOGGERS_MAP.get(Level.INFO));
     }
 
     public static Logger getLogger(final String className) {

@@ -5,12 +5,15 @@ import data.sounds.sfxenum_t;
 import doom.DoomMain;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.FloatControl.Type;
 import javax.sound.sampled.LineUnavailableException;
+import mochadoom.Loggers;
 
 /** Experimental Clip based driver. It does work, but it has no
  *  tangible advantages over the Audioline or Classic one. If the
@@ -32,6 +35,8 @@ import javax.sound.sampled.LineUnavailableException;
  *
  */
 public class ClipSFXModule extends AbstractSoundDriver {
+
+    private static final Logger LOGGER = Loggers.getLogger(ClipSFXModule.class.getName());
 
     HashMap<Integer, Clip> cachedSounds = new HashMap<>();
 
@@ -68,16 +73,16 @@ public class ClipSFXModule extends AbstractSoundDriver {
     @Override
     public boolean InitSound() {
         // Secure and configure sound device first.
-        System.err.println("I_InitSound: ");
+        LOGGER.log(Level.INFO, "I_InitSound");
 
         // We don't actually do this here (will happen only when we
         // create the first audio clip).
         // Initialize external data (all sounds) at start, keep static.
         initSound16();
 
-        System.err.print(" pre-cached all sound data\n");
+        LOGGER.log(Level.INFO, "pre-cached all sound data");
         // Finished initialization.
-        System.err.print("I_InitSound: sound module ready\n");
+        LOGGER.log(Level.INFO, "I_InitSound: sound module ready");
         return true;
 
     }
@@ -225,14 +230,12 @@ public class ClipSFXModule extends AbstractSoundDriver {
         try {
             clip = (Clip) AudioSystem.getLine(info);
         } catch (LineUnavailableException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Line unavailable", e);
         }
         try {
             clip.open(DoomSound.DEFAULT_SAMPLES_FORMAT, S_sfx[sfxid].data, 0, S_sfx[sfxid].data.length);
         } catch (LineUnavailableException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Line unavailable", e);
         }
 
         if (!exists) {
@@ -339,10 +342,10 @@ public class ClipSFXModule extends AbstractSoundDriver {
         //channels[slot].setPitch(pitch);
 
         if (D) {
-            System.err.println(channelStatus());
+            LOGGER.log(Level.FINE, channelStatus());
         }
         if (D) {
-            System.err.printf("Playing %d vol %d on channel %d\n", rc, volume, slot);
+            LOGGER.log(Level.FINE, String.format("Playing %d vol %d on channel %d\n", rc, volume, slot));
         }
         // Well...play it.
 

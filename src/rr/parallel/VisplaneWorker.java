@@ -5,7 +5,10 @@ import static data.Tables.addAngles;
 import doom.DoomMain;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
+import mochadoom.Loggers;
 import rr.IDetailAware;
 import rr.PlaneDrawer;
 import rr.SceneRenderer;
@@ -30,6 +33,8 @@ import v.graphics.Palettes;
  *
  */
 public abstract class VisplaneWorker<T, V> extends PlaneDrawer<T, V> implements Runnable, IDetailAware {
+
+    private static final Logger LOGGER = Loggers.getLogger(VisplaneWorker.class.getName());
 
     // Private to each thread.
     protected final int id;
@@ -174,8 +179,7 @@ public abstract class VisplaneWorker<T, V> extends PlaneDrawer<T, V> implements 
         try {
             barrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "VisplaneWorker run failure", e);
         }
         // TODO Auto-generated catch block
 

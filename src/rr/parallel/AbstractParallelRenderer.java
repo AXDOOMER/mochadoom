@@ -8,8 +8,11 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
+import mochadoom.Loggers;
 import rr.PlaneDrawer;
 import rr.RendererState;
 import rr.SceneRenderer;
@@ -22,6 +25,8 @@ import utils.C2JUtils;
  * @author velktron
  */
 public abstract class AbstractParallelRenderer<T, V> extends RendererState<T, V> implements RWI.Init<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(AbstractParallelRenderer.class.getName());
 
     public AbstractParallelRenderer(DoomMain<T, V> DM, int wallthread, int floorthreads, int nummaskedthreads) {
         super(DM);
@@ -177,8 +182,7 @@ public abstract class AbstractParallelRenderer<T, V> extends RendererState<T, V>
             try {
                 drawsegsbarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "sync failure", e);
             }
             // TODO Auto-generated catch block
         }
@@ -446,7 +450,7 @@ public abstract class AbstractParallelRenderer<T, V> extends RendererState<T, V>
                 RSIExec[i].updateRSI(RSI);
             }
 
-            System.out.println("RWI Buffer resized. Actual capacity " + RSI.length);
+            LOGGER.log(Level.INFO, String.format("RWI Buffer resized. Actual capacity %d", RSI.length));
         }
     }
 

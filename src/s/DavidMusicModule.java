@@ -1,6 +1,8 @@
 package s;
 
 import java.io.ByteArrayInputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
@@ -11,6 +13,7 @@ import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Transmitter;
+import mochadoom.Loggers;
 
 /** Concern separated from David Martel's MIDI & MUS player
  *  for Mocha Doom. Greatly improved upon by finnw, perfecting volume changes
@@ -22,6 +25,8 @@ import javax.sound.midi.Transmitter;
  *
  */
 public class DavidMusicModule implements IMusic {
+
+    private static final Logger LOGGER = Loggers.getLogger(DavidMusicModule.class.getName());
 
     public static final int CHANGE_VOLUME = 7;
     public static final int CHANGE_VOLUME_FINE = 9;
@@ -67,7 +72,7 @@ public class DavidMusicModule implements IMusic {
             transmitter = sequencer.getTransmitter();
             transmitter.setReceiver(receiver);
         } catch (MidiUnavailableException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "InitMusic: midi unavilable", e);
         }
     }
 
@@ -99,8 +104,7 @@ public class DavidMusicModule implements IMusic {
 
     @Override
     public void SetMusicVolume(int volume) {
-
-        System.out.println("Midi volume set to " + volume);
+        LOGGER.log(Level.INFO, String.format("Midi volume set to %d", volume));
         receiver.setGlobalVolume(volume / 127f);
 
     }
@@ -115,7 +119,7 @@ public class DavidMusicModule implements IMusic {
     @Override
     public void ResumeSong(int handle) {
         if (songloaded) {
-            System.out.println("Resuming song");
+            LOGGER.log(Level.FINE, "Resuming song");
             sequencer.start();
         }
 
@@ -139,7 +143,7 @@ public class DavidMusicModule implements IMusic {
             sequencer.setSequence(sequence); // Create a sequencer for the sequence
             songloaded = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "RegisterSong failure", e);
             return -1;
         }
         // In good old C style, we return 0 upon success?

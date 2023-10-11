@@ -36,6 +36,8 @@ import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
@@ -48,6 +50,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import mochadoom.Engine;
+import mochadoom.Loggers;
 import static p.ActiveStates.P_MobjThinker;
 import p.mobj_t;
 import rr.drawfuns.ColFuncs;
@@ -83,6 +86,8 @@ import w.IWadLoader;
  * @author velktron
  */
 public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimitResettable {
+
+    private static final Logger LOGGER = Loggers.getLogger(RendererState.class.getName());
 
     protected static final boolean DEBUG = false;
     protected static final boolean DEBUG2 = false;
@@ -513,7 +518,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          */
         private void AddLine(seg_t line) {
             if (DEBUG) {
-                System.out.println("Entered AddLine for " + line);
+                LOGGER.log(Level.FINE, String.format("Entered AddLine for %s", String.valueOf(line)));
             }
             int x1;
             int x2;
@@ -589,11 +594,11 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // Single sided line?
             if (backsector == null) {
                 if (DEBUG) {
-                    System.out.println("Entering ClipSolidWallSegment SS with params " + x1 + " " + (x2 - 1));
+                    LOGGER.log(Level.FINE, String.format("Entering ClipSolidWallSegment SS with params %d %d", x1, (x2 - 1)));
                 }
                 ClipSolidWallSegment(x1, x2 - 1); // to clipsolid
                 if (DEBUG) {
-                    System.out.println("Exiting ClipSolidWallSegment");
+                    LOGGER.log(Level.FINE, "Exiting ClipSolidWallSegment");
                 }
                 return;
             }
@@ -602,7 +607,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (backsector.ceilingheight <= frontsector.floorheight
                     || backsector.floorheight >= frontsector.ceilingheight) {
                 if (DEBUG) {
-                    System.out.println("Entering ClipSolidWallSegment Closed door with params " + x1 + " " + (x2 - 1));
+                    LOGGER.log(Level.FINE, String.format("Entering ClipSolidWallSegment Closed door with params %d %d", x1, (x2 - 1)));
                 }
                 ClipSolidWallSegment(x1, x2 - 1);
                 // to clipsolid
@@ -613,7 +618,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (backsector.ceilingheight != frontsector.ceilingheight
                     || backsector.floorheight != frontsector.floorheight) {
                 if (DEBUG) {
-                    System.out.println("Entering ClipSolidWallSegment window with params " + x1 + " " + (x2 - 1));
+                    LOGGER.log(Level.FINE, String.format("Entering ClipSolidWallSegment window with params %d %d", x1, (x2 - 1)));
                 }
                 ClipPassWallSegment(x1, x2 - 1); // to clippass
                 return;
@@ -638,7 +643,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // Fucking GOTOs....
             ClipPassWallSegment(x1, x2 - 1); // to clippass
             if (DEBUG) {
-                System.out.println("Exiting AddLine for " + line);
+                LOGGER.log(Level.FINE, String.format("Exiting AddLine for %s", String.valueOf(line)));
             }
         }
 
@@ -794,7 +799,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          */
         private void Subsector(int num) {
             if (DEBUG) {
-                System.out.println("\t\tSubSector " + num + " to render");
+                LOGGER.log(Level.FINE, String.format("SubSector %d to render", num));
             }
             int count;
             int line; // pointer into a list of segs instead of seg_t
@@ -812,14 +817,14 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
             frontsector = sub.sector;
             if (DEBUG) {
-                System.out.println("Frontsector to render :" + frontsector);
+                LOGGER.log(Level.FINE, String.format("Frontsector to render: %s", String.valueOf(frontsector)));
             }
             count = sub.numlines;
             // line = LL.segs[sub.firstline];
             line = sub.firstline;
 
             if (DEBUG) {
-                System.out.println("Trying to find an existing FLOOR visplane...");
+                LOGGER.log(Level.FINE, "Trying to find an existing FLOOR visplane...");
             }
             if (frontsector.floorheight < view.z) {
                 vp_vars.floorplane
@@ -847,14 +852,14 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             VIS.AddSprites(frontsector);
 
             if (DEBUG) {
-                System.out.println("Enter Addline for SubSector " + num + " count " + count);
+                LOGGER.log(Level.FINE, String.format("Enter Addline for SubSector %d count %d", num, count));
             }
             while (count-- > 0) {
                 AddLine(DOOM.levelLoader.segs[line]);
                 line++;
             }
             if (DEBUG) {
-                System.out.println("Exit Addline for SubSector " + num);
+                LOGGER.log(Level.FINE, String.format("Exit Addline for SubSector %d", num));
             }
         }
 
@@ -864,7 +869,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          */
         public void RenderBSPNode(int bspnum) {
             if (DEBUG) {
-                System.out.println("Processing BSP Node " + bspnum);
+                LOGGER.log(Level.FINE, String.format("Processing BSP Node %d", bspnum));
             }
 
             node_t bsp;
@@ -874,7 +879,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // SubSector.
             if (C2JUtils.flags(bspnum, NF_SUBSECTOR)) {
                 if (DEBUG) {
-                    System.out.println("Subsector found.");
+                    LOGGER.log(Level.FINE, "Subsector found.");
                 }
                 if (bspnum == -1) {
                     Subsector(0);
@@ -889,26 +894,26 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // Decide which side the view point is on.
             side = bsp.PointOnSide(view.x, view.y);
             if (DEBUG) {
-                System.out.println("\tView side: " + side);
+                LOGGER.log(Level.FINE, String.format("View side: %d", side));
             }
 
             // Recursively divide front space.
             if (DEBUG) {
-                System.out.println("\tEnter Front space of " + bspnum);
+                LOGGER.log(Level.FINE, String.format("Enter Front space of %d", bspnum));
             }
             RenderBSPNode(bsp.children[side]);
             if (DEBUG) {
-                System.out.println("\tReturn Front space of " + bspnum);
+                LOGGER.log(Level.FINE, String.format("Return Front space of %d", bspnum));
             }
 
             // Possibly divide back space.
             if (CheckBBox(bsp.bbox[side ^ 1].bbox)) {
                 if (DEBUG) {
-                    System.out.println("\tEnter Back space of " + bspnum);
+                    LOGGER.log(Level.FINE, String.format("Enter Back space of %d", bspnum));
                 }
                 RenderBSPNode(bsp.children[side ^ 1]);
                 if (DEBUG) {
-                    System.out.println("\tReturn Back space of " + bspnum);
+                    LOGGER.log(Level.FINE, String.format("Return Back space of %d", bspnum));
                 }
             }
         }
@@ -1029,7 +1034,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         public void StoreWallRange(int start, int stop) {
 
             if (DEBUG2) {
-                System.out.println("\t\t\t\tStorewallrange called between " + start + " and " + stop);
+                LOGGER.log(Level.FINER, String.format("Storewallrange called between %d and %d", start, stop));
             }
 
             int hyp; // fixed_t
@@ -1544,7 +1549,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                             dcvars.dc_source = TexMan.GetCachedColumn(toptexture, texturecolumn);
                             dcvars.dc_source_ofs = 0;
                             if (dcvars.dc_colormap == null) {
-                                System.out.println("Two-sided");
+                                LOGGER.log(Level.FINE, "Two-sided");
                             }
                             CompleteColumn();
                             ceilingclip[rw_x] = (short) mid;
@@ -1756,7 +1761,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         @Override
         public void DrawPlanes() {
             if (DEBUG) {
-                System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: " + vp_vars.lastvisplane);
+                LOGGER.log(Level.FINE, String.format("DrawPlanes: %d", vp_vars.lastvisplane));
             }
             visplane_t pln; // visplane_t
             int light;
@@ -1771,7 +1776,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             for (int pl = 0; pl < vp_vars.lastvisplane; pl++) {
                 pln = vp_vars.visplanes[pl];
                 if (DEBUG2) {
-                    System.out.println(pln);
+                    LOGGER.log(Level.FINER, String.valueOf(pln));
                 }
 
                 if (pln.minx > pln.maxx) {
@@ -2447,32 +2452,33 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // DON'T FORGET ABOUT MEEEEEE!!!11!!!
         this.screen = this.DOOM.graphicSystem.getScreen(FG);
 
-        System.out.print("\nR_InitData");
+        LOGGER.log(Level.INFO, "R_InitData");
         InitData();
         // InitPointToAngle ();
-        System.out.print("\nR_InitPointToAngle");
+        LOGGER.log(Level.INFO, "R_InitPointToAngle");
 
         // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
-        System.out.print("\nR_InitTables");
+        LOGGER.log(Level.INFO, "R_InitTables");
         InitTables();
 
         SetViewSize(DOOM.menu.getScreenBlocks(), DOOM.menu.getDetailLevel());
 
-        System.out.print("\nR_InitPlanes");
+        LOGGER.log(Level.INFO, "R_InitPlanes");
         MyPlanes.InitPlanes();
 
-        System.out.print("\nR_InitLightTables");
+        LOGGER.log(Level.INFO, "R_InitLightTables");
         InitLightTables();
 
-        System.out.print("\nR_InitSkyMap: " + TexMan.InitSkyMap());
+        int initSkyMap = TexMan.InitSkyMap();
+        LOGGER.log(Level.INFO, String.format("R_InitSkyMap: %d", initSkyMap));
 
-        System.out.print("\nR_InitTranslationsTables");
+        LOGGER.log(Level.INFO, "R_InitTranslationsTables");
         InitTranslationTables();
 
-        System.out.print("\nR_InitTranMap: ");
+        LOGGER.log(Level.INFO, "R_InitTranMap");
         R_InitTranMap(0);
 
-        System.out.print("\nR_InitDrawingFunctions: ");
+        LOGGER.log(Level.INFO, "R_InitDrawingFunctions");
         R_InitDrawingFunctions();
 
         framecount = 0;
@@ -2647,19 +2653,21 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // it. If OK, this trumps even those specified in lumps.
         DOOM.cVarManager.with(CommandVariable.TRANMAP, 0, (String tranmap) -> {
             if (C2JUtils.testReadAccess(tranmap)) {
-                System.out.printf("Translucency map file %s specified in -tranmap arg. Attempting to use...\n", tranmap);
+                LOGGER.log(Level.INFO,
+                        String.format("Translucency map file %s specified in -tranmap arg. Attempting to use...", tranmap));
                 main_tranmap = new byte[256 * 256]; // killough 4/11/98
                 int result = MenuMisc.ReadFile(tranmap, main_tranmap);
                 if (result > 0) {
                     return;
                 }
-                System.out.print("...failure.\n");
+
+                LOGGER.log(Level.SEVERE, "R_InitTranMap: translucency map failure");
             }
         });
 
         // Next, if a tranlucency filter map lump is present, use it
         if (lump != -1) { // Set a pointer to the translucency filter maps.
-            System.out.print("Translucency map found in lump. Attempting to use...");
+            LOGGER.log(Level.INFO, "Translucency map found in lump. Attempting to use...");
             // main_tranmap=new byte[256*256]; // killough 4/11/98
             main_tranmap = DOOM.wadLoader.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC); // killough
             // 4/11/98
@@ -2667,12 +2675,12 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (main_tranmap.length >= 0x10000) {
                 return;
             }
-            System.out.print("...failure.\n"); // Not good, try something else.
+            LOGGER.log(Level.SEVERE, "R_InitTranMap: tranlucency filter map failure"); // Not good, try something else.
         }
 
         // A default map file already exists. Try to read it.
         if (C2JUtils.testReadAccess("tranmap.dat")) {
-            System.out.print("Translucency map found in default tranmap.dat file. Attempting to use...");
+            LOGGER.log(Level.INFO, "Translucency map found in default tranmap.dat file. Attempting to use...");
             main_tranmap = new byte[256 * 256]; // killough 4/11/98
             int result = MenuMisc.ReadFile("tranmap.dat", main_tranmap);
             if (result > 0) {
@@ -2683,7 +2691,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // Nothing to do, so we must synthesize it from scratch. And, boy, is it
         // slooow.
         { // Compose a default transparent filter map based on PLAYPAL.
-            System.out.print("Computing translucency map from scratch...that's gonna be SLOW...");
+            LOGGER.log(Level.INFO, "Computing translucency map from scratch...that's gonna be SLOW...");
             byte[] playpal = DOOM.wadLoader.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
             main_tranmap = new byte[256 * 256]; // killough 4/11/98
             int[] basepal = new int[3 * 256];
@@ -2726,15 +2734,15 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     main_tranmap[(b << 8) | a] = main_tranmap[(a << 8) | b];
                 }
             }
-            System.out.print("...done\n");
+            LOGGER.log(Level.INFO, "R_InitTranMap: done");
             if (MenuMisc.WriteFile("tranmap.dat", main_tranmap,
                     main_tranmap.length)) {
-                System.out.print("TRANMAP.DAT saved to disk for your convenience! Next time will be faster.\n");
+                LOGGER.log(Level.INFO, "TRANMAP.DAT saved to disk for your convenience! Next time will be faster.");
             }
         }
 
         long b = System.nanoTime();
-        System.out.printf("Tranmap %d\n", (b - ta) / 1000000);
+        LOGGER.log(Level.INFO, String.format("Tranmap %d", (b - ta) / 1000000));
     }
 
     /**
@@ -2819,21 +2827,21 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
      */
     public void InitData() {
         try {
-            System.out.print("\nInit Texture and Flat Manager");
+            LOGGER.log(Level.INFO, "Init Texture and Flat Manager");
             TexMan = this.DOOM.textureManager;
-            System.out.print("\nInitTextures");
+            LOGGER.log(Level.INFO, "InitTextures");
             TexMan.InitTextures();
-            System.out.print("\nInitFlats");
+            LOGGER.log(Level.INFO, "InitFlats");
             TexMan.InitFlats();
-            System.out.print("\nInitSprites");
+            LOGGER.log(Level.INFO, "InitSprites");
             DOOM.spriteManager.InitSpriteLumps();
             MyThings.cacheSpriteManager(DOOM.spriteManager);
             VIS.cacheSpriteManager(DOOM.spriteManager);
-            System.out.print("\nInitColormaps\t\t");
+            LOGGER.log(Level.INFO, "InitColormaps");
             InitColormaps();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error: InitData failure", e);
         }
 
     }

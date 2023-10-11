@@ -80,8 +80,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         try {
             return Optional.of(new Robot());
         } catch (AWTException e) {
-            Loggers.getLogger(EventObserver.class.getName())
-                    .log(Level.SEVERE, "AWT Robot could not be created, mouse input focus will be loose!", e);
+            LOGGER.log(Level.SEVERE, "AWT Robot could not be created, mouse input focus will be loose!", e);
         }
         return Optional.empty();
     }

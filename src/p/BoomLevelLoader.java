@@ -37,6 +37,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.function.IntFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.BBox;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
@@ -45,6 +47,7 @@ import static m.BBox.BOXTOP;
 import m.fixed_t;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import mochadoom.Loggers;
 import rr.RendererState;
 import rr.line_t;
 import static rr.line_t.ML_TWOSIDED;
@@ -92,6 +95,8 @@ import w.wadfile_info_t;
  * -----------------------------------------------------------------------------
  */
 public class BoomLevelLoader extends AbstractLevelLoader {
+
+    private static final Logger LOGGER = Loggers.getLogger(BoomLevelLoader.class.getName());
 
     public BoomLevelLoader(DoomMain<?, ?> DM) {
         super(DM);
@@ -237,7 +242,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         byte[] compare = Arrays.copyOfRange(data, 0, 7);
 
         if (Arrays.equals(compare, DeepBSPNodesV4.DeepBSPHeader)) {
-            System.out.println("P_CheckForDeePBSPv4Nodes: DeePBSP v4 Extended nodes are detected");
+            LOGGER.log(Level.INFO, "P_CheckForDeePBSPv4Nodes: DeePBSP v4 Extended nodes are detected");
             result = true;
         }
 
@@ -261,7 +266,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         wrapper = ByteBuffer.wrap(data).getInt();
 
         if (wrapper == XNOD) {
-            System.out.println("P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected");
+            LOGGER.log(Level.INFO, "P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected");
             result = true;
         }
 
@@ -289,7 +294,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                     ver = 3;
                 } else {
                     nodesVersion = gNd2;
-                    System.out.println("P_GetNodesVersion: found version 2 nodes");
+                    LOGGER.log(Level.INFO, "P_GetNodesVersion: found version 2 nodes");
                 }
             }
             if (wrapper == gNd4) {
@@ -300,12 +305,12 @@ public class BoomLevelLoader extends AbstractLevelLoader {
             }
             // e6y: unknown gl nodes will be ignored
             if (nodesVersion == 0 && ver != -1) {
-                System.out.printf("P_GetNodesVersion: found version %d nodes\n", ver);
-                System.out.printf("P_GetNodesVersion: version %d nodes not supported\n", ver);
+                LOGGER.log(Level.INFO, String.format("P_GetNodesVersion: found version %d nodes", ver));
+                LOGGER.log(Level.INFO, String.format("P_GetNodesVersion: version %d nodes not supported", ver));
             }
         } else {
             nodesVersion = 0;
-            System.out.println("P_GetNodesVersion: using normal BSP nodes");
+            LOGGER.log(Level.INFO, "P_GetNodesVersion: using normal BSP nodes");
             if (P_CheckForZDoomNodes(lumpnum, gl_lumpnum)) {
                 DOOM.doomSystem.Error("P_GetNodesVersion: ZDoom nodes not supported yet");
             }
@@ -514,7 +519,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
             // e6y: fix wrong side index
             if (side != 0 && side != 1) {
-                System.err.printf("P_LoadSegs: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
+                LOGGER.log(Level.WARNING, String.format("P_LoadSegs: seg %d contains wrong side index %d. Replaced with 1.", i, side));
                 side = 1;
             }
 
@@ -537,7 +542,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 li.frontsector = sides[ldef.sidenum[side]].sector;
             } else {
                 li.frontsector = null;
-                System.err.printf("P_LoadSegs: front of seg %i has no sidedef\n", i);
+                LOGGER.log(Level.INFO, String.format("P_LoadSegs: front of seg %i has no sidedef", i));
             }
 
             if (flags(ldef.flags, ML_TWOSIDED) && ldef.sidenum[side ^ 1] != NO_INDEX) {
@@ -561,10 +566,10 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 }
 
                 if (v1 >= numvertexes) {
-                    System.err.printf(str, i, v1);
+                    LOGGER.log(Level.WARNING, String.format(str, i, v1));
                 }
                 if (v2 >= numvertexes) {
-                    System.err.printf(str, i, v2);
+                    LOGGER.log(Level.WARNING, String.format(str, i, v2));
                 }
 
                 if (li.sidedef == sides[li.linedef.sidenum[0]]) {
@@ -638,7 +643,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
             // e6y: fix wrong side index
             if (side != 0 && side != 1) {
-                System.err.printf("P_LoadSegs_V4: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
+                LOGGER.log(Level.WARNING, String.format("P_LoadSegs_V4: seg %d contains wrong side index %d. Replaced with 1.", i, side));
                 side = 1;
             }
 
@@ -661,7 +666,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 li.frontsector = sides[ldef.sidenum[side]].sector;
             } else {
                 li.frontsector = null;
-                System.err.printf("P_LoadSegs_V4: front of seg %i has no sidedef\n", i);
+                LOGGER.log(Level.WARNING, String.format("P_LoadSegs_V4: front of seg %i has no sidedef", i));
             }
 
             if (flags(ldef.flags, ML_TWOSIDED)
@@ -686,10 +691,10 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 }
 
                 if (v1 >= numvertexes) {
-                    System.err.printf(str, i, v1);
+                    LOGGER.log(Level.WARNING, String.format(str, i, v1));
                 }
                 if (v2 >= numvertexes) {
-                    System.err.printf(str, i, v2);
+                    LOGGER.log(Level.WARNING, String.format(str, i, v2));
                 }
 
                 if (li.sidedef == sides[li.linedef.sidenum[0]]) {
@@ -870,8 +875,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         if ((data == null) || (numnodes == 0)) {
             // allow trivial maps
             if (numsubsectors == 1) {
-                System.out
-                        .print("P_LoadNodes: trivial map (no nodes, one subsector)\n");
+                LOGGER.log(Level.INFO, "P_LoadNodes: trivial map (no nodes, one subsector)");
             } else {
                 DOOM.doomSystem.Error("P_LoadNodes: no nodes in level");
             }
@@ -899,7 +903,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
                     // haleyjd 11/06/10: check for invalid subsector reference
                     if (no.children[j] >= numsubsectors) {
-                        System.err.printf("P_LoadNodes: BSP tree references invalid subsector %d.\n", no.children[j]);
+                        LOGGER.log(Level.WARNING, String.format("P_LoadNodes: BSP tree references invalid subsector %d.", no.children[j]));
                         no.children[j] = 0;
                     }
 
@@ -930,7 +934,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
         if ((data == null) || (numnodes == 0)) {
             // allow trivial maps
             if (numsubsectors == 1) {
-                System.out.print("P_LoadNodes_V4: trivial map (no nodes, one subsector)\n");
+                LOGGER.log(Level.INFO, "P_LoadNodes_V4: trivial map (no nodes, one subsector)\n");
             } else {
                 DOOM.doomSystem.Error("P_LoadNodes_V4: no nodes in level");
             }
@@ -991,7 +995,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
             // e6y: fix wrong side index
             if (side != 0 && side != 1) {
-                System.err.printf("P_LoadZSegs: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
+                LOGGER.log(Level.WARNING, String.format("P_LoadZSegs: seg %d contains wrong side index %d. Replaced with 1.", i, side));
                 side = 1;
             }
 
@@ -1014,7 +1018,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 li.frontsector = sides[ldef.sidenum[side]].sector;
             } else {
                 li.frontsector = null;
-                System.err.printf("P_LoadZSegs: front of seg %i has no sidedef\n", i);
+                LOGGER.log(Level.WARNING, String.format("P_LoadZSegs: front of seg %i has no sidedef", i));
             }
 
             if (flags(ldef.flags, ML_TWOSIDED) && (ldef.sidenum[side ^ 1] != NO_INDEX)) {
@@ -1376,9 +1380,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 for (int j = 0; j < 2; j++) {
                     if (ld.sidenum[j] != NO_INDEX && ld.sidenum[j] >= numsides) {
                         ld.sidenum[j] = NO_INDEX;
-                        System.err.printf(
-                                "P_LoadLineDefs: linedef %d has out-of-range sidedef number\n",
-                                numlines - i - 1
+                        LOGGER.log(Level.WARNING, String.format(
+                                "P_LoadLineDefs: linedef %d has out-of-range sidedef number",
+                                numlines - i - 1)
                         );
                     }
                 }
@@ -1388,7 +1392,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                     ld.sidenum[0] = 0; // Substitute dummy sidedef for missing
                     // right side
                     // cph - print a warning about the bug
-                    System.err.printf("P_LoadLineDefs: linedef %d missing first sidedef\n", numlines - i - 1);
+                    LOGGER.log(Level.WARNING, String.format("P_LoadLineDefs: linedef %d missing first sidedef\n", numlines - i - 1));
                 }
 
                 if ((ld.sidenum[1] == NO_INDEX) && flags(ld.flags, ML_TWOSIDED)) {
@@ -1411,9 +1415,9 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                     // TODO ehhh?
                     // ld.r_flags = RF_IGNORE_COMPAT;
                     // cph - print a warning about the bug
-                    System.err.printf(
+                    LOGGER.log(Level.WARNING, String.format(
                             "P_LoadLineDefs: linedef %d has two-sided flag set, but no second sidedef\n",
-                            numlines - i - 1
+                            numlines - i - 1)
                     );
                 }
             }
@@ -1486,7 +1490,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                  */
                 char sector_num = (char) msd.sector;
                 if (sector_num >= numsectors) {
-                    System.err.printf("P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num);
+                    LOGGER.log(Level.WARNING, String.format("P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num));
                     sector_num = 0;
                 }
                 sd.sector = sec = sectors[sector_num];
@@ -1603,8 +1607,8 @@ public class BoomLevelLoader extends AbstractLevelLoader {
             // haleyjd 03/04/10: check for blockmap problems
             // http://www.doomworld.com/idgames/index.php?id=12935
             if (!VerifyBlockMap(count)) {
-                System.err.printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-                System.err.printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+                LOGGER.log(Level.WARNING, String.format("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes."));
+                LOGGER.log(Level.WARNING, String.format("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding"));
             }
         }
 

@@ -5,6 +5,9 @@ import data.sounds.sfxenum_t;
 import doom.CVarManager;
 import doom.CommandVariable;
 import doom.DoomMain;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
@@ -30,6 +33,8 @@ import doom.DoomMain;
 //
 //-----------------------------------------------------------------------------
 public interface ISoundDriver {
+
+    static final Logger LOGGER = Loggers.getLogger(ISoundDriver.class.getName());
 
     public static final int VOLUME_STEPS = 128;
     public static final int PANNING_STEPS = 256;
@@ -93,7 +98,7 @@ public interface ISoundDriver {
         }
         // Check for sound init failure and revert to dummy
         if (!driver.InitSound()) {
-            System.err.println("S_InitSound: failed. Reverting to dummy...\n");
+            LOGGER.log(Level.WARNING, "S_InitSound: failed. Reverting to dummy...");
             return new DummySFX();
         }
         return driver;
