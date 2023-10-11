@@ -188,11 +188,17 @@ public class ConfigManager {
     
     public void SaveDefaults() {
         SETTINGS_MAP.forEach((file, settings) -> {
+            // skip writing settings which are not part of the loaded config files,
+            // this helps to not overwrite default.cfg with empty content in case we're using the -config argument
+            if (!this.configFiles.contains(file)) {
+                return;
+            }
+
             // do not write unless there is changes
             if (!file.changed) {
                 return;
             }
-            
+
             // choose existing config file or create one in current working directory
             final ResourceIO rio = file.firstValidPathIO().orElseGet(file::workDirIO);
             final Iterator<Settings> it = settings.stream().sorted(file.comparator).iterator();

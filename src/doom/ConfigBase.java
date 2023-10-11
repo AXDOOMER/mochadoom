@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import m.Settings;
 import utils.OSValidator;
@@ -63,19 +64,30 @@ public enum ConfigBase {
 
         public final Comparator<Settings> comparator;
         public final String fileName;
+        // flags that configuration is provided by the -config argument
+        public final boolean alternate;
+
         public boolean changed = true;
-        
         private String[] paths;
-        
+
         public Files(String fileName) {
-            this(fileName, Comparator.comparing(Enum::name, String::compareTo));
+            this(fileName, false);
+        }
+
+        public Files(String fileName, boolean alternate) {
+            this(fileName, Comparator.comparing(Enum::name, String::compareTo), alternate);
         }
 
         public Files(String fileName, Comparator<Settings> comparator) {
+            this(fileName, comparator, false);
+        }
+
+        public Files(String fileName, Comparator<Settings> comparator, boolean alternate) {
             this.fileName = fileName;
             this.comparator = comparator;
+            this.alternate = alternate;
         }
-        
+
         public Optional<ResourceIO> firstValidPathIO() {
             return Arrays.stream(getPaths())
                 .map(ResourceIO::new)
@@ -86,7 +98,33 @@ public enum ConfigBase {
         public ResourceIO workDirIO() {
             return new ResourceIO(getFolder() + fileName);
         }
-        
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 53 * hash + Objects.hashCode(this.fileName);
+            hash = 53 * hash + (this.alternate ? 1 : 0);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final Files other = (Files) obj;
+            if (this.alternate != other.alternate) {
+                return false;
+            }
+            return Objects.equals(this.fileName, other.fileName);
+        }
+
         /**
          * Get file / paths combinations
          * 
@@ -146,7 +184,7 @@ public enum ConfigBase {
          */
         if (!Engine.getCVM()
             .with(CommandVariable.CONFIG, 0, (String[] fileNames) ->
-                Arrays.stream(fileNames).map(Files::new).forEach(ret::add))
+                Arrays.stream(fileNames).map(fileName -> new Files(fileName, true)).forEach(ret::add))
                 
         /**
          * If there is no such argument, load default.cfg (or .doomrc) and mochadoom.cfg
