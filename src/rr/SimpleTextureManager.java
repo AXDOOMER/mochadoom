@@ -1241,7 +1241,7 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         // but it doesn't yet exist. Create it.
         if (getMaskedComposite(tex) == null) {
             LOGGER.log(Level.WARNING, String.format("Forced generation of composite %s",
-                    CheckTextureNameForNum(tex), smp_composite[id], col, ofs));
+                    CheckTextureNameForNum(tex)));
             GenerateMaskedComposite(tex);
             LOGGER.log(Level.WARNING, String.format("Composite patch %s %d",
                     getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length));
@@ -1312,7 +1312,7 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         // but it doesn't yet exist. Create it.
         if (getMaskedComposite(tex) == null) {
             LOGGER.log(Level.WARNING,
-                    String.format("Forced generation of composite %s", CheckTextureNameForNum(tex), composite, col, ofs));
+                    String.format("Forced generation of composite %s", CheckTextureNameForNum(tex)));
             GenerateMaskedComposite(tex);
             LOGGER.log(Level.WARNING,
                     String.format("Composite patch %s %d", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length));
@@ -1378,7 +1378,7 @@ public class SimpleTextureManager implements TextureManager<byte[]> {
         // but it doesn't yet exist. Create it.
         if (getMaskedComposite(tex) == null) {
             LOGGER.log(Level.WARNING,
-                    String.format("Forced generation of composite %s", CheckTextureNameForNum(tex), composite, col, ofs));
+                    String.format("Forced generation of composite %s", CheckTextureNameForNum(tex)));
             GenerateMaskedComposite(tex);
             LOGGER.log(Level.WARNING,
                     String.format("Composite patch %s %d", getMaskedComposite(tex).name, getMaskedComposite(tex).columns.length));

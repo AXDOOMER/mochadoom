@@ -542,7 +542,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 li.frontsector = sides[ldef.sidenum[side]].sector;
             } else {
                 li.frontsector = null;
-                LOGGER.log(Level.INFO, String.format("P_LoadSegs: front of seg %i has no sidedef", i));
+                LOGGER.log(Level.INFO, String.format("P_LoadSegs: front of seg %d has no sidedef", i));
             }
 
             if (flags(ldef.flags, ML_TWOSIDED) && ldef.sidenum[side ^ 1] != NO_INDEX) {
@@ -666,7 +666,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 li.frontsector = sides[ldef.sidenum[side]].sector;
             } else {
                 li.frontsector = null;
-                LOGGER.log(Level.WARNING, String.format("P_LoadSegs_V4: front of seg %i has no sidedef", i));
+                LOGGER.log(Level.WARNING, String.format("P_LoadSegs_V4: front of seg %d has no sidedef", i));
             }
 
             if (flags(ldef.flags, ML_TWOSIDED)
@@ -995,7 +995,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
 
             // e6y: fix wrong side index
             if (side != 0 && side != 1) {
-                LOGGER.log(Level.WARNING, String.format("P_LoadZSegs: seg %d contains wrong side index %d. Replaced with 1.", i, side));
+                LOGGER.log(Level.WARNING, String.format("P_LoadZSegs: seg %d contains wrong side index %d. Replaced with 1.", i, (int) side));
                 side = 1;
             }
 
@@ -1018,7 +1018,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                 li.frontsector = sides[ldef.sidenum[side]].sector;
             } else {
                 li.frontsector = null;
-                LOGGER.log(Level.WARNING, String.format("P_LoadZSegs: front of seg %i has no sidedef", i));
+                LOGGER.log(Level.WARNING, String.format("P_LoadZSegs: front of seg %d has no sidedef", i));
             }
 
             if (flags(ldef.flags, ML_TWOSIDED) && (ldef.sidenum[side ^ 1] != NO_INDEX)) {
@@ -1490,7 +1490,7 @@ public class BoomLevelLoader extends AbstractLevelLoader {
                  */
                 char sector_num = (char) msd.sector;
                 if (sector_num >= numsectors) {
-                    LOGGER.log(Level.WARNING, String.format("P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num));
+                    LOGGER.log(Level.WARNING, String.format("P_LoadSideDefs2: sidedef %d has out-of-range sector num %d", i, (int) sector_num));
                     sector_num = 0;
                 }
                 sd.sector = sec = sectors[sector_num];

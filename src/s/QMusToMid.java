@@ -490,7 +490,7 @@ public class QMusToMid {
             if (division != 89) {
                 LOGGER.log(Level.FINE, "MID file");
             } else {
-                LOGGER.log(Level.FINE, String.format("Playing time: %dmin %dsec", min, sec));
+                LOGGER.log(Level.FINE, String.format("Playing time: %dmin %dsec", (int) min, (int) sec));
             }
         }
         if (!nodisplay) {

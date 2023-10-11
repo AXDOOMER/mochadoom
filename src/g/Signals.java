@@ -19,10 +19,6 @@ package g;
 //
 import doom.event_t;
 import doom.evtype_t;
-import static java.awt.event.InputEvent.ALT_DOWN_MASK;
-import static java.awt.event.InputEvent.CTRL_DOWN_MASK;
-import static java.awt.event.InputEvent.META_DOWN_MASK;
-import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
 import java.awt.event.KeyEvent;
 import static java.awt.event.KeyEvent.*;
 

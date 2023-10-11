@@ -207,7 +207,7 @@ public abstract class MaskedWorker<T, V> extends AbstractThings<T, V> implements
             column = patch.columns[texturecolumn];
 
             if (column == null) {
-                LOGGER.log(Level.WARNING, String.format("Null column for texturecolumn %d", texturecolumn, x1, x2));
+                LOGGER.log(Level.WARNING, String.format("Null column for texturecolumn %d", texturecolumn));
             } else {
                 DrawMaskedColumn(column);
             }
