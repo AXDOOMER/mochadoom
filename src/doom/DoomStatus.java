@@ -435,7 +435,7 @@ public abstract class DoomStatus<T, V> {
     public int joybspeed;
 
     /** Cancel vertical mouse movement by default */
-    protected boolean novert = false;	// AX: The good default
+    protected boolean novert = true;
 
     protected int MAXPLMOVE() {
         return forwardmove[1];

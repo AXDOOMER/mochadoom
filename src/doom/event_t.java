@@ -275,9 +275,9 @@ public interface event_t {
             case MouseEvent.BUTTON1:
                 return MOUSE_LEFT;
             case MouseEvent.BUTTON2:
-                return MOUSE_RIGHT;
-            case MouseEvent.BUTTON3:
                 return MOUSE_MID;
+            case MouseEvent.BUTTON3:
+                return MOUSE_RIGHT;
         }
 
         return 0;

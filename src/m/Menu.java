@@ -940,7 +940,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
     public boolean Responder(event_t ev) {
         final ScanCode sc;
 
-        if (ev.isType(evtype_t.ev_joystick) && joywait < DOOM.ticker.GetTime()) {
+        if (DOOM.use_joystick && ev.isType(evtype_t.ev_joystick) && joywait < DOOM.ticker.GetTime()) {
             // Joystick input
             sc = ev.mapByJoy(joyEvent -> {
                 ScanCode r = SC_NULL;
@@ -969,7 +969,7 @@ public class Menu<T, V> extends AbstractDoomMenu<T, V> {
                 }
                 return r;
             });
-        } else if (ev.isType(evtype_t.ev_mouse) && mousewait < DOOM.ticker.GetTime()) {
+        } else if (DOOM.use_mouse && ev.isType(evtype_t.ev_mouse) && mousewait < DOOM.ticker.GetTime()) {
             // Mouse input 
             if ((sc = ev.mapByMouse(mouseEvent -> {
                 ScanCode r = SC_NULL;

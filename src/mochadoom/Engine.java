@@ -137,7 +137,7 @@ public class Engine {
     }
 
     /**
-     * Temporary solution. Will be later moved in more detalied place
+     * Temporary solution. Will be later moved in more detailed place
      */
     public static void updateFrame() {
         instance.windowController.updateFrame();

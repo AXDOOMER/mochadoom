@@ -1313,8 +1313,8 @@ public class DoomMain<T, V> extends DoomStatus<T, V> implements IDoomGameNetwork
         // any other key pops up menu if in demos
         if (gameaction == ga_nothing && !singledemo && (demoplayback || gamestate == GS_DEMOSCREEN)) {
             if (ev.isType(ev_keydown)
-                    || ev.ifMouse(ev_mouse, event_t::hasData)
-                    || ev.ifJoy(ev_joystick, event_t::hasData)) {
+                    || (use_mouse && ev.ifMouse(ev_mouse, event_t::hasData))
+                    || (use_joystick && ev.ifJoy(ev_joystick, event_t::hasData))) {
                 M_StartControlPanel:
                 {
                     menu.StartControlPanel();
