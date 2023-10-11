@@ -36,8 +36,8 @@ import static g.Signals.ScanCode.SC_A;
 import static g.Signals.ScanCode.SC_D;
 import static g.Signals.ScanCode.SC_LALT;
 import static g.Signals.ScanCode.SC_LCTRL;
-import static g.Signals.ScanCode.SC_LEFT;
-import static g.Signals.ScanCode.SC_RIGHT;
+import static g.Signals.ScanCode.SC_NUMKEY4;
+import static g.Signals.ScanCode.SC_NUMKEY6;
 import static g.Signals.ScanCode.SC_RSHIFT;
 import static g.Signals.ScanCode.SC_S;
 import static g.Signals.ScanCode.SC_SPACE;
@@ -71,8 +71,8 @@ public enum Settings {
     sfx_volume(FILE_DOOM, 8),
     music_volume(FILE_DOOM, 8),
     show_messages(FILE_DOOM, 1),
-    key_right(FILE_DOOM, SC_RIGHT.ordinal()),
-    key_left(FILE_DOOM, SC_LEFT.ordinal()),
+    key_right(FILE_DOOM, SC_NUMKEY6.ordinal()),
+    key_left(FILE_DOOM, SC_NUMKEY4.ordinal()),
     key_up(FILE_DOOM, SC_W.ordinal()),
     key_down(FILE_DOOM, SC_S.ordinal()),
     key_strafeleft(FILE_DOOM, SC_A.ordinal()),

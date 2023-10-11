@@ -184,10 +184,6 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
             return;
         }
 
-        if (handler == EventHandler.WINDOW_ACTIVATE) {
-            int u = 8;
-        }
-
         // In case of debug. If level > FINE (most of cases) it will not affect anything
         Loggers.LogEvent(LOGGER, actionStateHolder, handler, ev);
 
@@ -250,10 +246,10 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      *  - Good Sign 2017/04/24
      */
     protected void centreCursor(final AWTEvent event) {
-            final int centreX = component.getWidth() >> 1;
-            final int centreY = component.getHeight() >> 1;
-            if (component.isShowing()) {
-                MOUSE_ROBOT.ifPresent(rob -> mouseEvent.resetIn(rob, component.getLocationOnScreen(), centreX, centreY));
+        final int centreX = component.getWidth() >> 1;
+        final int centreY = component.getHeight() >> 1;
+        if (component.isShowing()) {
+            MOUSE_ROBOT.ifPresent(rob -> mouseEvent.resetIn(rob, component.getLocationOnScreen(), centreX, centreY));
         }
         modifyCursor(event);
     }
