@@ -115,7 +115,7 @@ public enum Settings {
      */
     mb_used(FILE_MOCHADOOM, 2),
     fullscreen(FILE_MOCHADOOM, false),
-    fullscreen_mode(FILE_MOCHADOOM, FullscreenOptions.FullMode.Best),
+    fullscreen_mode(FILE_MOCHADOOM, FullscreenOptions.FullMode.Native),
     fullscreen_stretch(FILE_MOCHADOOM, FullscreenOptions.StretchMode.Fit),
     fullscreen_interpolation(FILE_MOCHADOOM, FullscreenOptions.InterpolationMode.Nearest),
     alwaysrun(FILE_MOCHADOOM, false), // Always run is OFF

@@ -36,7 +36,7 @@ import mochadoom.Engine;
 public interface FullscreenOptions {
 
     enum InterpolationMode {
-        Nearest, Bilinear, Biqubic;
+        Nearest, Bilinear, Bicubic;
     }
 
     enum StretchMode {
@@ -123,7 +123,7 @@ public interface FullscreenOptions {
         int fit(int width, int defWidth, int height, int defHeight);
     }
 
-    default void options(Graphics2D graphics) {
+    default void applyFullscreenOptions(Graphics2D graphics) {
         switch (INTERPOLATION) {
             case Nearest:
                 graphics.setRenderingHint(KEY_INTERPOLATION, VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
@@ -131,7 +131,7 @@ public interface FullscreenOptions {
             case Bilinear:
                 graphics.setRenderingHint(KEY_INTERPOLATION, VALUE_INTERPOLATION_BILINEAR);
                 break;
-            case Biqubic:
+            case Bicubic:
                 graphics.setRenderingHint(KEY_INTERPOLATION, VALUE_INTERPOLATION_BICUBIC);
                 break;
         }
@@ -149,7 +149,7 @@ public interface FullscreenOptions {
                 return (w, h) -> device.getDisplayMode();
         }
 
-        throw new Error("Enum reflection overuse?");
+        throw new Error(String.format("Unsupported mode: %s", String.valueOf(FULLMODE)));
     }
 
     @FunctionalInterface

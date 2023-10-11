@@ -100,7 +100,7 @@ public class DoomWindowController<E extends Component & DoomWindow<E>, H extends
     }
 
     public boolean switchFullscreen() {
-        LOGGER.log(Level.INFO, "FULLSCREEN SWITHED");
+        LOGGER.log(Level.INFO, "Fullscreen switched");
         // remove the frame from view
         doomFrame.dispose();
         doomFrame = new DoomFrame<>(dimension, component, doomFrame.imageSupplier);

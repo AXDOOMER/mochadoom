@@ -8,9 +8,11 @@ import java.awt.HeadlessException;
 import java.awt.Image;
 import static java.awt.RenderingHints.KEY_ALPHA_INTERPOLATION;
 import static java.awt.RenderingHints.KEY_ANTIALIASING;
+import static java.awt.RenderingHints.KEY_COLOR_RENDERING;
 import static java.awt.RenderingHints.KEY_RENDERING;
 import static java.awt.RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED;
 import static java.awt.RenderingHints.VALUE_ANTIALIAS_OFF;
+import static java.awt.RenderingHints.VALUE_COLOR_RENDER_SPEED;
 import static java.awt.RenderingHints.VALUE_RENDER_SPEED;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -164,6 +166,10 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
                     localG2d.setRenderingHint(KEY_ALPHA_INTERPOLATION, VALUE_ALPHA_INTERPOLATION_SPEED);
                     localG2d.setRenderingHint(KEY_ANTIALIASING, VALUE_ANTIALIAS_OFF);
                     localG2d.setRenderingHint(KEY_RENDERING, VALUE_RENDER_SPEED);
+                    localG2d.setRenderingHint(KEY_COLOR_RENDERING, VALUE_COLOR_RENDER_SPEED);
+
+                    // add fullscreen interpolation options
+                    applyFullscreenOptions(localG2d);
                 }
             }
         }

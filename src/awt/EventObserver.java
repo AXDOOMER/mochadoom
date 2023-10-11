@@ -45,8 +45,8 @@ import java.util.logging.Logger;
 import mochadoom.Loggers;
 
 /**
- * Observer for AWTEvents. The description would be short in contrary to the description
- * of EventHandler Enum. This class uses rules in Handler extends Enum<Handler> & EventBase<Handler>
+ * Observer for AWTEvents.The description would be short in contrary to the description
+ of EventHandler Enum. This class uses rules in Handler extends Enum<Handler> & EventBase<Handler>
  * to react on AWTEvent events given to him by some listener (or by fake, don't matter) and feeds them
  * to someone who needs them (DOOM's internal event handling system)
  * 
@@ -55,6 +55,7 @@ import mochadoom.Loggers;
  * and you need one part to react in one way, another part in another.
  * 
  * @author Good Sign
+ * @param <Handler> the type of the handler
  */
 public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
 
@@ -144,13 +145,13 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
     private final Cursor initialCursor;
 
     /**
-     * Ivisible cursor on the systems who support changing cursors
+     * Invisible cursor on the systems who support changing cursors
      */
     private final Cursor hiddenCursor;
 
     /**
      * To construct the Observer you only need to provide it with the class of Enum used
-     * to contain dictinary, the Component it will be working on and acceptor of event_t's
+     * to contain dictionary, the Component it will be working on and acceptor of event_t's
      */
     public EventObserver(Class<Handler> handlerClass, Component component, Consumer<? super event_t> doomEventConsumer) {
         this.actionStateHolder = new ActionStateHolder<>(handlerClass, this);
@@ -249,10 +250,10 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      *  - Good Sign 2017/04/24
      */
     protected void centreCursor(final AWTEvent event) {
-        final int centreX = component.getWidth() >> 1;
-        final int centreY = component.getHeight() >> 1;
-        if (component.isShowing()) {
-            MOUSE_ROBOT.ifPresent(rob -> mouseEvent.resetIn(rob, component.getLocationOnScreen(), centreX, centreY));
+            final int centreX = component.getWidth() >> 1;
+            final int centreY = component.getHeight() >> 1;
+            if (component.isShowing()) {
+                MOUSE_ROBOT.ifPresent(rob -> mouseEvent.resetIn(rob, component.getLocationOnScreen(), centreX, centreY));
         }
         modifyCursor(event);
     }

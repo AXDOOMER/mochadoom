@@ -140,7 +140,9 @@ public enum EventHandler implements EventBase<EventHandler> {
         // Set input method and mouse cursor
         mapper.map(ActionMode.PERFORM, EventObserver::centreCursor);
     }, ActionMode.PERFORM),
-    WINDOW_GAIN_FOCUS(WindowEvent.WINDOW_GAINED_FOCUS),
+    WINDOW_GAIN_FOCUS(WindowEvent.WINDOW_GAINED_FOCUS, mapper -> {
+        mapper.map(ActionMode.PERFORM, EventObserver::modifyCursor);
+    }),
     WINDOW_LOSE_FOCUS(WindowEvent.WINDOW_LOST_FOCUS, mapper -> {
         mapper.map(ActionMode.PERFORM, EventObserver::restoreCursor);
     }, ActionMode.PERFORM),
