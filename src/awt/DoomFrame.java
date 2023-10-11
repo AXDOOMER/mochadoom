@@ -81,6 +81,10 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
          * JFrame's size is auto-set here.
          */
         pack();
+
+        // center frame
+        setLocationRelativeTo(null);
+
         setVisible(true);
         
         // Gently tell the eventhandler to wake up and set itself.	  
