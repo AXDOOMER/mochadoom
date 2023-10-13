@@ -36,6 +36,7 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.im.InputContext;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Optional;
@@ -235,7 +236,10 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      * Hide cursor
      */
     protected void modifyCursor(final AWTEvent event) {
-        component.getInputContext().selectInputMethod(java.util.Locale.US);
+        InputContext inputContext = component.getInputContext();
+        if (inputContext != null) {
+            inputContext.selectInputMethod(java.util.Locale.US);
+        }
         component.setCursor(hiddenCursor);
     }
 
@@ -246,9 +250,9 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      *  - Good Sign 2017/04/24
      */
     protected void centreCursor(final AWTEvent event) {
-        final int centreX = component.getWidth() >> 1;
-        final int centreY = component.getHeight() >> 1;
         if (component.isShowing()) {
+            int centreX = component.getWidth() >> 1;
+            int centreY = component.getHeight() >> 1;
             MOUSE_ROBOT.ifPresent(rob -> mouseEvent.resetIn(rob, component.getLocationOnScreen(), centreX, centreY));
         }
         modifyCursor(event);
