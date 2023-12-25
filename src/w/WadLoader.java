@@ -741,8 +741,8 @@ public class WadLoader implements IWadLoader {
 	
 	@Override
 	@SuppressWarnings("unchecked")
-    public <T> T CacheLumpNum(int lump, int tag, Class<T> what) {
-		
+    public <T extends CacheableDoomObject> T CacheLumpNum(int lump, int tag, Class<T> what) {
+
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
 		}
@@ -750,8 +750,8 @@ public class WadLoader implements IWadLoader {
 		// Nothing cached here...
 		// SPECIAL case : if no class is specified (null), the lump is re-read anyway
 		// and you get a raw doombuffer. Plus, it won't be cached.
-		
-		if ((lumpcache[lump] == null)||(what==null)) {
+
+		if (lumpcache[lump] == null) {
 
 			// read the lump in
 
@@ -763,33 +763,25 @@ public class WadLoader implements IWadLoader {
 
 			// Class type specified
 
-			if (what != null) {
+			if (!DoomBuffer.class.equals(what)) {
 				try {
 					// Can it be uncached? If so, deserialize it.
 
-					if (implementsInterface(what, w.CacheableDoomObject.class)) {
-						// MAES: this should be done whenever single lumps
-						// are read. DO NOT DELEGATE TO THE READ OBJECTS THEMSELVES.
-						// In case of sequential reads of similar objects, use 
-						// CacheLumpNumIntoArray instead.
-						thebuffer.rewind();
-						lumpcache[lump] = (CacheableDoomObject) what.newInstance();
-						lumpcache[lump].unpack(thebuffer);
-						
-						// Track it for freeing
-						Track(lumpcache[lump],lump);
-						
-						if (what == patch_t.class) {
-							((patch_t) lumpcache[lump]).name = this.lumpinfo[lump].name;
-						}
-					} else {
-						// replace lump with parsed object.
-						lumpcache[lump] = (CacheableDoomObject) thebuffer;
-						
-						// Track it for freeing
-						Track((CacheableDoomObject)thebuffer,lump);
-					}
-				} catch (Exception e) {
+                    // MAES: this should be done whenever single lumps
+                    // are read. DO NOT DELEGATE TO THE READ OBJECTS THEMSELVES.
+                    // In case of sequential reads of similar objects, use
+                    // CacheLumpNumIntoArray instead.
+                    thebuffer.rewind();
+                    lumpcache[lump] = what.getConstructor().newInstance();
+                    lumpcache[lump].unpack(thebuffer);
+
+                    // Track it for freeing
+                    Track(lumpcache[lump],lump);
+
+                    if (what == patch_t.class) {
+                        ((patch_t) lumpcache[lump]).name = this.lumpinfo[lump].name;
+                    }
+                } catch (Exception e) {
 					System.err.println("Could not auto-instantiate lump "
 							+ lump + " of class " + what);
 					e.printStackTrace();
@@ -980,8 +972,8 @@ public class WadLoader implements IWadLoader {
 
 	@Override
 	public byte[] CacheLumpNameAsRawBytes(String name, int tag) {
-		return ((DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag,
-				null)).getBuffer().array();
+		return this.CacheLumpNum(this.GetNumForName(name), tag,
+				DoomBuffer.class).getBuffer().array();
 	}
 	
 	 /* (non-Javadoc)
@@ -990,8 +982,8 @@ public class WadLoader implements IWadLoader {
 
     @Override
 	public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
-        return ((DoomBuffer) this.CacheLumpNum(num, tag,
-                null)).getBuffer().array();
+        return this.CacheLumpNum(num, tag,
+				DoomBuffer.class).getBuffer().array();
     	}
 	
 
