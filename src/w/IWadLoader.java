@@ -10,7 +10,6 @@ import static doom.SourceCode.W_Wad.W_InitMultipleFiles;
 import static doom.SourceCode.W_Wad.W_LumpLength;
 import static doom.SourceCode.W_Wad.W_ReadLump;
 import static doom.SourceCode.W_Wad.W_Reload;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.IntFunction;
 import java.util.logging.Level;
@@ -117,14 +116,7 @@ public interface IWadLoader {
      * @param <T>
      */
     @W_Wad.C(W_CacheLumpNum)
-    public abstract <T> T CacheLumpNum(int lump, int tag,
-            Class<T> what);
-
-    // MAES 24/8/2011: superseded by auto-allocating version with proper 
-    // container-based caching.
-    @Deprecated
-    public abstract void CacheLumpNumIntoArray(int lump, int tag,
-            Object[] array, Class<?> what) throws IOException;
+    public abstract <T extends CacheableDoomObject> T CacheLumpNum(int lump, int tag, Class<T> what);
 
     /**
      * Return a cached lump based on its name, as raw bytes, no matter what.

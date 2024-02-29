@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -367,25 +369,25 @@ public final class C2JUtils {
         System.arraycopy(src, 0, dest, 0, length);
     }
 
-    public static boolean testReadAccess(String URI) {
+    public static boolean testReadAccess(String uri) {
         InputStream in;
 
         // This is bullshit.
-        if (URI == null) {
+        if (uri == null) {
             return false;
         }
-        if (URI.length() == 0) {
+        if (uri.length() == 0) {
             return false;
         }
 
         try {
-            in = new FileInputStream(URI);
+            in = new FileInputStream(uri);
         } catch (FileNotFoundException e) {
             // Not a file...
             URL u;
             try {
-                u = new URL(URI);
-            } catch (MalformedURLException e1) {
+                u = new URI(uri).toURL();
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e1) {
                 return false;
             }
             try {
@@ -409,25 +411,25 @@ public final class C2JUtils {
 
     }
 
-    public static boolean testWriteAccess(String URI) {
+    public static boolean testWriteAccess(String uri) {
         OutputStream out;
 
         // This is bullshit.
-        if (URI == null) {
+        if (uri == null) {
             return false;
         }
-        if (URI.length() == 0) {
+        if (uri.length() == 0) {
             return false;
         }
 
         try {
-            out = new FileOutputStream(URI);
+            out = new FileOutputStream(uri);
         } catch (FileNotFoundException e) {
             // Not a file...
             URL u;
             try {
-                u = new URL(URI);
-            } catch (MalformedURLException e1) {
+                u = new URI(uri).toURL();
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e1) {
                 return false;
             }
             try {
@@ -796,29 +798,29 @@ public final class C2JUtils {
      * Try to guess whether a URI represents a local file, a network any of the
      * above but zipped. Returns
      * 
-     * @param URI
+     * @param uri
      * @return an int with flags set according to InputStreamSugar
      */
-    public static int guessResourceType(String URI) {
+    public static int guessResourceType(String uri) {
 
         int result = 0;
         InputStream in;
 
         // This is bullshit.
-        if (URI == null || URI.length() == 0) {
+        if (uri == null || uri.length() == 0) {
             return InputStreamSugar.BAD_URI;
         }
 
         try {
-            in = new FileInputStream(new File(URI));
+            in = new FileInputStream(new File(uri));
             // It's a file
             result |= InputStreamSugar.FILE;
         } catch (FileNotFoundException e) {
             // Not a file...
             URL u;
             try {
-                u = new URL(URI);
-            } catch (MalformedURLException e1) {
+                u = new URI(uri).toURL();
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e1) {
                 return InputStreamSugar.BAD_URI;
             }
             try {
@@ -834,7 +836,7 @@ public final class C2JUtils {
         // TODO: add proper validation, and maybe MIME type checking
         // for network streams, for cases that we can't really
         // tell from extension alone.
-        if (checkForExtension(URI, "zip")) {
+        if (checkForExtension(uri, "zip")) {
             result |= InputStreamSugar.ZIP_FILE;
 
         }

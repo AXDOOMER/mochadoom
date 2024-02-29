@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +62,7 @@ public class InputStreamSugar {
                 ZipInputStream zis;
                 // Try it as a NET zip file
                 try {
-                    u = new URL(resource);
+                    u = new URI(resource).toURL();
                     zis = new ZipInputStream(u.openStream());
                 } catch (Exception e) {
                     // Local zip file?
@@ -127,7 +128,7 @@ public class InputStreamSugar {
         URL u;
 
         try { // Is it a net resource?
-            u = new URL(resource);
+            u = new URI(resource).toURL();
             is = u.openStream();
         } catch (Exception e) {
             // OK, not a valid URL or no network. We don't care.
@@ -153,7 +154,7 @@ public class InputStreamSugar {
      * @param is
      * @param pos
      *        The desired position
-     * @param URI
+     * @param uri
      *        Information which can help reopen a stream, e.g. a filename, URL,
      *        or zip file.
      * @peram entry If we must look into a zipfile entry
@@ -161,7 +162,7 @@ public class InputStreamSugar {
      * @throws IOException
      */
     public static final InputStream streamSeek(InputStream is, long pos,
-            long size, String URI, ZipEntry entry, int type)
+            long size, String uri, ZipEntry entry, int type)
             throws IOException {
         if (is == null) {
             return is;
@@ -209,7 +210,7 @@ public class InputStreamSugar {
             } catch (IOException e) {
                 // Ouch. Do a dumb close & reopening.
                 is.close();
-                is = createInputStreamFromURI(URI, null, 1);
+                is = createInputStreamFromURI(uri, null, 1);
                 is.skip(pos);
                 return is;
             }
@@ -219,7 +220,7 @@ public class InputStreamSugar {
         if (is instanceof ZipInputStream) {
             // ZipInputStreams are VERY dumb. so...
             is.close();
-            is = createInputStreamFromURI(URI, entry, type);
+            is = createInputStreamFromURI(uri, entry, type);
             is.skip(pos);
             return is;
 
@@ -227,7 +228,7 @@ public class InputStreamSugar {
 
         try { // Is it a net resource? We have to reopen it :-/
             // long a=System.nanoTime();
-            URL u = new URL(URI);
+            URL u = new URI(uri).toURL();
             InputStream nis = u.openStream();
             nis.skip(pos);
             is.close();
