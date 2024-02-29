@@ -36,10 +36,10 @@ public enum QuoteType {
     public String unQuote(final String s) {
         return C2JUtils.unquote(s, quoteChar);
     }
-    
+
     public static Optional<QuoteType> getQuoteType(final String stringSource) {
         if (stringSource.length() > 2) {
-            for (final QuoteType type: QuoteType.values()) {
+            for (final QuoteType type : QuoteType.values()) {
                 if (type.isQuoted(stringSource)) {
                     return Optional.of(type);
                 }

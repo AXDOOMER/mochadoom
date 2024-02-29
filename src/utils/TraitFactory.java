@@ -94,28 +94,26 @@ import mochadoom.Loggers;
  *    as negligible as one level of indirection + array access by int.
  */
 public class TraitFactory {
+
     private final static Logger LOGGER = Loggers.getLogger(TraitFactory.class.getName());
-    
+
     public static <T extends Trait> SharedContext build(T traitUser, KeyChain usedChain)
-        throws IllegalArgumentException, IllegalAccessException
-    {
+            throws IllegalArgumentException, IllegalAccessException {
         return build(traitUser, usedChain.currentCapacity);
     }
-    
+
     public static <T extends Trait> SharedContext build(T traitUser, int idCapacity)
-        throws IllegalArgumentException, IllegalAccessException
-    {
+            throws IllegalArgumentException, IllegalAccessException {
         final FactoryContext c = new FactoryContext(idCapacity);
         repeatRecursive(traitUser.getClass().getInterfaces(), c);
         return c;
     }
 
     private static void repeatRecursive(final Class<?>[] traitUserInteraces, final FactoryContext c)
-        throws IllegalAccessException, SecurityException, IllegalArgumentException
-    {
-        for (Class<?> cls: traitUserInteraces) {
+            throws IllegalAccessException, SecurityException, IllegalArgumentException {
+        for (Class<?> cls : traitUserInteraces) {
             final Field[] declaredFields = cls.getDeclaredFields();
-            for (final Field f: declaredFields) {
+            for (final Field f : declaredFields) {
                 final int modifiers = f.getModifiers();
                 if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
                     final Class<?> fieldClass = f.getType();
@@ -126,49 +124,50 @@ public class TraitFactory {
                     }
                 }
             }
-            
+
             repeatRecursive(cls.getInterfaces(), c);
         }
     }
-    
+
     public interface Trait {
+
         SharedContext getContext();
-        
+
         default <T> T contextGet(ContextKey<T> key, T defaultValue) {
             final T got = getContext().get(key);
             return got == null ? defaultValue : got;
         }
-        
+
         default <T> T contextRequire(ContextKey<T> key) {
             final T got = getContext().get(key);
             if (got == null) {
                 throw defaultException(key).get();
             }
-            
+
             return got;
         }
-        
+
         default <T, E extends Throwable> T contextRequire(ContextKey<T> key, Supplier<E> exceptionSupplier) throws E {
             final T got = getContext().get(key);
             if (got == null) {
                 throw exceptionSupplier.get();
             }
-            
+
             return got;
         }
-        
+
         default <T> boolean contextTest(ContextKey<T> key, Predicate<T> predicate) {
             final T got = getContext().get(key);
             return got == null ? false : predicate.test(got);
         }
-        
+
         default <T> void contextWith(ContextKey<T> key, Consumer<T> consumer) {
             final T got = getContext().get(key);
             if (got != null) {
                 consumer.accept(got);
             }
         }
-        
+
         default <T, R> R contextMap(ContextKey<T> key, Function<T, R> mapper, R defaultValue) {
             final T got = getContext().get(key);
             if (got != null) {
@@ -177,13 +176,14 @@ public class TraitFactory {
                 return defaultValue;
             }
         }
-        
+
         default Supplier<? extends RuntimeException> defaultException(ContextKey<?> key) {
             return () -> new SharedContextException(key, this.getClass());
         }
     }
-    
+
     public final static class ContextKey<T> {
+
         final Class<? extends Trait> traitClass;
         final int preferredId;
         final Supplier<T> contextConstructor;
@@ -199,20 +199,23 @@ public class TraitFactory {
             return String.format("context in the Trait %s (preferred id: %d)", traitClass, preferredId);
         }
     }
-    
+
     public final static class KeyChain {
+
         int currentCapacity;
-        
+
         public <T> ContextKey<T> newKey(final Class<? extends Trait> traitClass, Supplier<T> contextConstructor) {
             return new ContextKey<>(traitClass, currentCapacity++, contextConstructor);
         }
     }
 
     public interface SharedContext {
+
         <T> T get(ContextKey<T> key);
     }
-    
+
     final static class FactoryContext implements InsertConveyor, SharedContext {
+
         private HashMap<ContextKey<?>, Object> traitMap;
         private ContextKey<?>[] keys;
         private Object[] contexts;
@@ -237,7 +240,7 @@ public class TraitFactory {
                         return;
                     }
                 }
-            
+
                 hasMap = true;
                 for (int i = 0; i < keys.length; ++i) {
                     traitMap.put(keys[i], contexts[i]);
@@ -246,7 +249,7 @@ public class TraitFactory {
                 keys = null;
                 contexts = null;
             }
-            
+
             traitMap.put(key, context.get());
         }
 
@@ -258,36 +261,39 @@ public class TraitFactory {
             } else if (key.preferredId >= 0 && key.preferredId < keys.length) {
                 return (T) contexts[key.preferredId];
             }
-            
+
             return null;
         }
     }
-    
+
     public interface InsertConveyor {
+
         void put(ContextKey<?> key, Supplier<?> context);
-        
+
         default void putObj(ContextKey<?> key, Object context) {
             put(key, () -> context);
         }
     }
-    
-    private static class SharedContextException extends RuntimeException {
-		private static final long serialVersionUID = 5356800492346200764L;
 
-		SharedContextException(ContextKey<?> key, Class<? extends Trait> topLevel) {
+    private static class SharedContextException extends RuntimeException {
+
+        private static final long serialVersionUID = 5356800492346200764L;
+
+        SharedContextException(ContextKey<?> key, Class<? extends Trait> topLevel) {
             super(String.format("Trait context %s is not initialized when used by %s or"
-                + "is dereferencing a null pointer when required to do not",
-                key, topLevel));
-        }        
+                    + "is dereferencing a null pointer when required to do not",
+                    key, topLevel));
+        }
     }
-    
+
     private static Type[] getParameterizedTypes(Object object) {
         Type superclassType = object.getClass().getGenericSuperclass();
         if (!ParameterizedType.class.isAssignableFrom(superclassType.getClass())) {
             return null;
         }
-        return ((ParameterizedType)superclassType).getActualTypeArguments();
+        return ((ParameterizedType) superclassType).getActualTypeArguments();
     }
-    
-    private TraitFactory() {}
+
+    private TraitFactory() {
+    }
 }

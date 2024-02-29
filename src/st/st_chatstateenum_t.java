@@ -1,7 +1,7 @@
 package st;
 
 enum st_chatstateenum_t {
-	    StartChatState,
-	    WaitDestState,
-	    GetChatState
+    StartChatState,
+    WaitDestState,
+    GetChatState
 }

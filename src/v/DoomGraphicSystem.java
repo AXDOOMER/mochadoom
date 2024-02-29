@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v;
 
 import f.Wiper;
@@ -83,27 +82,26 @@ import v.tables.BlurryTable;
  * 
  * @author Maes
  */
-
 public interface DoomGraphicSystem<T, V> {
-    
+
     /**
      * Flags used by patch drawing functions
      * Now working as separate and optional varargs argument
      * Added by _D_. Unsure if I should use VSI objects instead, as they
      * already carry scaling information which doesn't need to be repacked...
      */
-    final int V_NOSCALESTART      = 0x00010000;   // dont scale x,y, start coords
-    final int V_SCALESTART        = 0x00020000;   // scale x,y, start coords
-    final int V_SCALEPATCH        = 0x00040000;   // scale patch
-    final int V_NOSCALEPATCH      = 0x00080000;   // don't scale patch
-    final int V_WHITEMAP          = 0x00100000;   // draw white (for v_drawstring)    
-    final int V_FLIPPEDPATCH      = 0x00200000;   // flipped in y
-    final int V_TRANSLUCENTPATCH  = 0x00400000;   // draw patch translucent    
-    final int V_PREDIVIDE         = 0x00800000;   // pre-divide by best x/y scale.    
-    final int V_SCALEOFFSET       = 0x01000000;   // Scale the patch offset
-    final int V_NOSCALEOFFSET     = 0x02000000;   // dont's cale patch offset
-    final int V_SAFESCALE         = 0x04000000;   // scale only by minimal scale of x/y instead of both
-    
+    final int V_NOSCALESTART = 0x00010000;   // dont scale x,y, start coords
+    final int V_SCALESTART = 0x00020000;   // scale x,y, start coords
+    final int V_SCALEPATCH = 0x00040000;   // scale patch
+    final int V_NOSCALEPATCH = 0x00080000;   // don't scale patch
+    final int V_WHITEMAP = 0x00100000;   // draw white (for v_drawstring)    
+    final int V_FLIPPEDPATCH = 0x00200000;   // flipped in y
+    final int V_TRANSLUCENTPATCH = 0x00400000;   // draw patch translucent    
+    final int V_PREDIVIDE = 0x00800000;   // pre-divide by best x/y scale.    
+    final int V_SCALEOFFSET = 0x01000000;   // Scale the patch offset
+    final int V_NOSCALEOFFSET = 0x02000000;   // dont's cale patch offset
+    final int V_SAFESCALE = 0x04000000;   // scale only by minimal scale of x/y instead of both
+
     /**
      * Public API
      * See documentation in r2d package
@@ -112,60 +110,84 @@ public interface DoomGraphicSystem<T, V> {
      * Because using only these methods, it is minimal risk of breaking something. Actually,
      * the only problematic cases should be passing null instead of argument or invalid coordinates.
      */
-    
     /* SCREENS */
     V getScreen(DoomScreen screenType);
+
     int getScalingX();
+
     int getScalingY();
+
     int getScreenWidth();
+
     int getScreenHeight();
+
     void screenCopy(V srcScreen, V dstScreen, Relocation relocation);
+
     void screenCopy(DoomScreen srcScreen, DoomScreen dstScreen);
 
     /* PALETTES */
     void setUsegamma(int gammalevel);
+
     int getUsegamma();
+
     void setPalette(int palette);
+
     int getPalette();
+
     int getBaseColor(byte color);
+
     int getBaseColor(int color);
-    
+
     /* POINTS */
     int point(int x, int y);
+
     int point(int x, int y, int width);
-    
+
     /* LINES */
     void drawLine(Plotter<?> plotter, int x1, int x2);
-    
+
     /* PATCHES */
     void DrawPatch(DoomScreen screen, patch_t patch, int x, int y, int... flags);
+
     void DrawPatchCentered(DoomScreen screen, patch_t patch, int y, int... flags);
+
     void DrawPatchCenteredScaled(DoomScreen screen, patch_t patch, VideoScale vs, int y, int... flags);
+
     void DrawPatchScaled(DoomScreen screen, patch_t patch, VideoScale vs, int x, int y, int... flags);
+
     void DrawPatchColScaled(DoomScreen screen, patch_t patch, VideoScale vs, int x, int col);
-    
+
     /* RECTANGLES */
     void CopyRect(DoomScreen srcScreenType, Rectangle rectangle, DoomScreen dstScreenType);
+
     void CopyRect(DoomScreen srcScreenType, Rectangle rectangle, DoomScreen dstScreenType, int dstPoint);
+
     void FillRect(DoomScreen screenType, Rectangle rectangle, V patternSrc, Horizontal pattern);
+
     void FillRect(DoomScreen screenType, Rectangle rectangle, V patternSrc, int point);
+
     void FillRect(DoomScreen screenType, Rectangle rectangle, int color);
+
     void FillRect(DoomScreen screenType, Rectangle rectangle, byte color);
-    
+
     /* BLOCKS */
     V convertPalettedBlock(byte... src);
+
     V ScaleBlock(V block, VideoScale vs, int width, int height);
+
     void TileScreen(DoomScreen dstScreen, V block, Rectangle blockArea);
+
     void TileScreenArea(DoomScreen dstScreen, Rectangle screenArea, V block, Rectangle blockArea);
+
     void DrawBlock(DoomScreen dstScreen, V block, Rectangle sourceArea, int destinationPoint);
-    
+
     /** 
      * No matter how complex/weird/arcane palette manipulations you do internally, the AWT module
      * must always be able to "tap" into what's the current, "correct" screen after all manipulation and
      * color juju was applied. Call after a palette/gamma change.
      */
     Image getScreenImage();
-    
+
     /**
      * Saves screenshot to a file "filling a planar buffer to linear"
      * (I cannot guarantee I understood - Good Sign 2017/04/01)
@@ -185,7 +207,7 @@ public interface DoomGraphicSystem<T, V> {
      * Plotter for point-by-point drawing of AutoMap
      */
     default Plotter<V> createPlotter(DoomScreen screen) {
-        switch(Engine.getConfig().getValue(Settings.automap_plotter_style, Plotter.Style.class)) {
+        switch (Engine.getConfig().getValue(Settings.automap_plotter_style, Plotter.Style.class)) {
             case Thick:
                 return new Plotter.Thick<>(getScreen(screen), getScreenWidth(), getScreenHeight());
             case Deep:
@@ -194,12 +216,14 @@ public interface DoomGraphicSystem<T, V> {
                 return new Plotter.Thin<>(getScreen(screen), getScreenWidth());
         }
     }
-    
+
     Wiper createWiper(IRandom random);
+
     BlurryTable getBlurryTable();
 
     /**
      * Indexed renderer needs to reset its image 
      */
-    default void forcePalette() {}
+    default void forcePalette() {
+    }
 }

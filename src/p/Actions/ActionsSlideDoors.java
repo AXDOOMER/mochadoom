@@ -2,6 +2,7 @@ package p.Actions;
 
 import doom.thinker_t;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import mochadoom.Loggers;
 import p.AbstractLevelLoader;
 import static p.ActiveStates.T_SlidingDoor;
@@ -19,6 +20,8 @@ import static utils.GenericCopy.malloc;
 import utils.TraitFactory.ContextKey;
 
 public interface ActionsSlideDoors extends ActionTrait {
+
+    static final Logger LOGGER = Loggers.getLogger(ActionsSlideDoors.class.getName());
 
     ContextKey<SlideDoors> KEY_SLIDEDOORS = ACTION_KEY_CHAIN.newKey(ActionsSlideDoors.class, SlideDoors::new);
 
@@ -47,6 +50,7 @@ public interface ActionsSlideDoors extends ActionTrait {
     };
 
     final class SlideDoors {
+
         slideframe_t[] slideFrames = malloc(slideframe_t::new, slideframe_t[]::new, MAXSLIDEDOORS);
     }
 
@@ -85,7 +89,7 @@ public interface ActionsSlideDoors extends ActionTrait {
                 if (door.timer-- == 0) {
                     // CAN DOOR CLOSE?
                     if (door.frontsector.thinglist != null
-                        || door.backsector.thinglist != null) {
+                            || door.backsector.thinglist != null) {
                         door.timer = ActionsSlideDoors.SDOORWAIT;
                         break;
                     }
@@ -185,7 +189,7 @@ public interface ActionsSlideDoors extends ActionTrait {
             return;
         }
 
-        Loggers.getLogger(ActionsSlideDoors.class.getName()).log(Level.WARNING, "EV_SlidingDoor");
+        LOGGER.log(Level.WARNING, "EV_SlidingDoor");
 
         // Make sure door isn't already being animated
         sec = line.frontsector;

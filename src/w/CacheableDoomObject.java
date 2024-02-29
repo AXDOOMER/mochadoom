@@ -41,8 +41,7 @@ import java.nio.ByteBuffer;
  * @author Velktron
  *
  */
-
 public interface CacheableDoomObject {
-    
-    public void unpack(ByteBuffer buf) throws IOException ;
+
+    public void unpack(ByteBuffer buf) throws IOException;
 }

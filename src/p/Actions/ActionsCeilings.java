@@ -39,7 +39,9 @@ public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
     ContextKey<Ceilings> KEY_CEILINGS = ACTION_KEY_CHAIN.newKey(ActionsCeilings.class, Ceilings::new);
 
     void RemoveThinker(thinker_t activeCeiling);
+
     result_e MovePlane(sector_t sector, int speed, int bottomheight, boolean crush, int i, int direction);
+
     int FindSectorFromLineTag(line_t line, int secnum);
 
     final class Ceilings {
@@ -88,7 +90,7 @@ public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
                         case crushAndRaise:
                             ceiling.direction = -1;
                         default:
-                        	break;
+                            break;
                     }
                 }
                 break;
@@ -249,8 +251,8 @@ public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
         final ceiling_t[] activeCeilings = getActiveCeilings();
         for (int i = 0; i < activeCeilings.length; ++i) {
             if (activeCeilings[i] != null
-                && (activeCeilings[i].tag == line.tag)
-                && (activeCeilings[i].direction == 0)) {
+                    && (activeCeilings[i].tag == line.tag)
+                    && (activeCeilings[i].direction == 0)) {
                 activeCeilings[i].direction = activeCeilings[i].olddirection;
                 activeCeilings[i].thinkerFunction = ActiveStates.T_MoveCeiling;
             }
@@ -270,8 +272,8 @@ public interface ActionsCeilings extends ActionsMoveEvents, ActionsUseEvents {
         final ceiling_t[] activeCeilings = getActiveCeilings();
         for (i = 0; i < activeCeilings.length; ++i) {
             if (activeCeilings[i] != null
-                && (activeCeilings[i].tag == line.tag)
-                && (activeCeilings[i].direction != 0)) {
+                    && (activeCeilings[i].tag == line.tag)
+                    && (activeCeilings[i].direction != 0)) {
                 activeCeilings[i].olddirection = activeCeilings[i].direction;
                 activeCeilings[i].thinkerFunction = ActiveStates.NOP;
                 activeCeilings[i].direction = 0;       // in-stasis

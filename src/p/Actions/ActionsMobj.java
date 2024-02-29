@@ -99,22 +99,22 @@ public interface ActionsMobj extends ActionsThings, ActionsMovement, ActionsTele
         // inflict thrust and push the victim out of reach,
         // thus kick away unless using the chainsaw.
         if ((inflictor != null)
-            && !eval(target.flags & MF_NOCLIP)
-            && (source == null
-            || source.player == null
-            || source.player.readyweapon != weapontype_t.wp_chainsaw)) {
+                && !eval(target.flags & MF_NOCLIP)
+                && (source == null
+                || source.player == null
+                || source.player.readyweapon != weapontype_t.wp_chainsaw)) {
             ang = sceneRenderer().PointToAngle2(inflictor.x,
-                inflictor.y,
-                target.x,
-                target.y) & BITS32;
+                    inflictor.y,
+                    target.x,
+                    target.y) & BITS32;
 
             thrust = damage * (MAPFRACUNIT >> 3) * 100 / target.info.mass;
 
             // make fall forwards sometimes
             if ((damage < 40)
-                && (damage > target.health)
-                && (target.z - inflictor.z > 64 * FRACUNIT)
-                && eval(P_Random() & 1)) {
+                    && (damage > target.health)
+                    && (target.z - inflictor.z > 64 * FRACUNIT)
+                    && eval(P_Random() & 1)) {
                 ang += ANG180;
                 thrust *= 4;
             }
@@ -128,15 +128,15 @@ public interface ActionsMobj extends ActionsThings, ActionsMovement, ActionsTele
         if (player != null) {
             // end of game hell hack
             if (target.subsector.sector.special == 11
-                && damage >= target.health) {
+                    && damage >= target.health) {
                 damage = target.health - 1;
             }
 
             // Below certain threshold,
             // ignore damage in GOD mode, or with INVUL power.
             if (damage < 1000
-                && (eval(player.cheats & player_t.CF_GODMODE))
-                || player.powers[pw_invulnerability] != 0) {
+                    && (eval(player.cheats & player_t.CF_GODMODE))
+                    || player.powers[pw_invulnerability] != 0) {
                 return;
             }
 
@@ -181,7 +181,7 @@ public interface ActionsMobj extends ActionsThings, ActionsMovement, ActionsTele
         }
 
         if ((P_Random() < target.info.painchance)
-            && !eval(target.flags & MF_SKULLFLY)) {
+                && !eval(target.flags & MF_SKULLFLY)) {
             target.flags |= MF_JUSTHIT;    // fight back!
 
             target.SetMobjState(target.info.painstate);
@@ -190,14 +190,14 @@ public interface ActionsMobj extends ActionsThings, ActionsMovement, ActionsTele
         target.reactiontime = 0;       // we're awake now...   
 
         if (((target.threshold == 0) || (target.type == mobjtype_t.MT_VILE))
-            && (source != null) && (source != target)
-            && (source.type != mobjtype_t.MT_VILE)) {
+                && (source != null) && (source != target)
+                && (source.type != mobjtype_t.MT_VILE)) {
             // if not intent on another player,
             // chase after this one
             target.target = source;
             target.threshold = BASETHRESHOLD;
             if (target.mobj_state == states[target.info.spawnstate.ordinal()]
-                && target.info.seestate != statenum_t.S_NULL) {
+                    && target.info.seestate != statenum_t.S_NULL) {
                 target.SetMobjState(target.info.seestate);
             }
         }
@@ -303,9 +303,9 @@ public interface ActionsMobj extends ActionsThings, ActionsMovement, ActionsTele
     @SourceCode.P_Mobj.C(P_RemoveMobj)
     default void RemoveMobj(mobj_t mobj) {
         if (eval(mobj.flags & MF_SPECIAL)
-            && !eval(mobj.flags & MF_DROPPED)
-            && (mobj.type != mobjtype_t.MT_INV)
-            && (mobj.type != mobjtype_t.MT_INS)) {
+                && !eval(mobj.flags & MF_DROPPED)
+                && (mobj.type != mobjtype_t.MT_INV)
+                && (mobj.type != mobjtype_t.MT_INS)) {
             final RespawnQueue resp = contextRequire(KEY_RESP_QUEUE);
             resp.itemrespawnque[resp.iquehead] = mobj.spawnpoint;
             resp.itemrespawntime[resp.iquehead] = LevelTime();
@@ -377,7 +377,7 @@ public interface ActionsMobj extends ActionsThings, ActionsMovement, ActionsTele
                 blocky = ll.getSafeBlockY(thing.y - ll.bmaporgy);
 
                 if (blockx >= 0 && blockx < ll.bmapwidth
-                    && blocky >= 0 && blocky < ll.bmapheight) {
+                        && blocky >= 0 && blocky < ll.bmapheight) {
                     ll.blocklinks[blocky * ll.bmapwidth + blockx] = (mobj_t) thing.bnext;
                 }
             }

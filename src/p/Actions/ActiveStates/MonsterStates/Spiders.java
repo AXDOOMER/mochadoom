@@ -22,8 +22,9 @@ import p.Actions.ActionTrait;
 import p.mobj_t;
 
 public interface Spiders extends ActionTrait {
+
     void A_FaceTarget(mobj_t actor);
-    
+
     default void A_SpidRefire(mobj_t actor) {
         // keep firing unless target got out of sight
         A_FaceTarget(actor);

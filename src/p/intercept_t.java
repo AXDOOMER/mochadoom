@@ -15,7 +15,8 @@ public class intercept_t {
     /**
      * most intercepts will belong to a static pool
      */
-    public intercept_t() {}
+    public intercept_t() {
+    }
 
     public intercept_t(int frac, mobj_t thing) {
         this.frac = frac;

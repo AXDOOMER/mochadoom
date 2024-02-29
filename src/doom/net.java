@@ -40,16 +40,12 @@ package doom;
 //
 //-----------------------------------------------------------------------------
 
-
 //static const char rcsid[] = "$Id: net.java,v 1.5 2011/02/11 00:11:13 velktron Exp $";
-
-
 //#include "m_menu.h"
 //#include "i_system.h"
 //#include "i_video.h"
 //#include "i_net.h"
 //#include "g_game.h"
-
 //
 //Network play related stuff.
 //There is a data struct that stores network
@@ -57,33 +53,28 @@ package doom;
 //one that defines the actual packets to
 //be transmitted.
 //
+public class net {
 
+    protected static int NCMD_EXIT = 0x80000000;
+    protected static int NCMD_RETRANSMIT = 0x40000000;
+    protected static int NCMD_SETUP = 0x20000000;
+    protected static int NCMD_KILL = 0x10000000;	// kill game
+    protected static int NCMD_CHECKSUM = 0x0fffffff;
 
-public class net{
-
-protected static int	NCMD_EXIT=		0x80000000;
-protected static int   	NCMD_RETRANSMIT		=0x40000000;
-protected static int   	NCMD_SETUP		=0x20000000;
-protected static int   NCMD_KILL	=	0x10000000;	// kill game
-protected static int   	NCMD_CHECKSUM	= 	0x0fffffff;
-
-protected static int  DOOMCOM_ID =     0x12345678;
+    protected static int DOOMCOM_ID = 0x12345678;
 
 //Max computers/players in a game.
-protected static int    MAXNETNODES   =  8;
-
+    protected static int MAXNETNODES = 8;
 
 //Networking and tick handling related.
-protected static int    BACKUPTICS     = 12;
-
+    protected static int BACKUPTICS = 12;
 
 // commant_t
-protected  static int CMD_SEND    = 1;
-protected  static int CMD_GET = 2; 
+    protected static int CMD_SEND = 1;
+    protected static int CMD_GET = 2;
 
-doomcom_t	doomcom;	
-doomdata_t	netbuffer;		// points inside doomcom
-
+    doomcom_t doomcom;
+    doomdata_t netbuffer;		// points inside doomcom
 
 //
 // NETWORKING
@@ -94,51 +85,44 @@ doomdata_t	netbuffer;		// points inside doomcom
 //
 // a gametic cannot be run until nettics[] > gametic for all players
 //
-public static int	RESENDCOUNT	=10;
-public static int	PL_DRONE	=0x80;	// bit flag in doomdata->player
+    public static int RESENDCOUNT = 10;
+    public static int PL_DRONE = 0x80;	// bit flag in doomdata->player
 
-ticcmd_t[]	localcmds= new ticcmd_t[BACKUPTICS];
+    ticcmd_t[] localcmds = new ticcmd_t[BACKUPTICS];
 
-final int MAXPLAYERS = 4;
+    final int MAXPLAYERS = 4;
 
-ticcmd_t [][]       netcmds=new ticcmd_t [MAXPLAYERS][BACKUPTICS];
-int[]         	nettics=new int[MAXNETNODES];
-boolean[]		nodeingame=new boolean[MAXNETNODES];		// set false as nodes leave game
-boolean[]		remoteresend=new boolean[MAXNETNODES];		// set when local needs tics
-int[]		resendto=new int[MAXNETNODES];			// set when remote needs tics
-int[]		resendcount=new int[MAXNETNODES];
+    ticcmd_t[][] netcmds = new ticcmd_t[MAXPLAYERS][BACKUPTICS];
+    int[] nettics = new int[MAXNETNODES];
+    boolean[] nodeingame = new boolean[MAXNETNODES];		// set false as nodes leave game
+    boolean[] remoteresend = new boolean[MAXNETNODES];		// set when local needs tics
+    int[] resendto = new int[MAXNETNODES];			// set when remote needs tics
+    int[] resendcount = new int[MAXNETNODES];
 
-int[]		nodeforplayer=new int[MAXPLAYERS];
+    int[] nodeforplayer = new int[MAXPLAYERS];
 
-int             maketic;
-int		lastnettic;
-int		skiptics;
-int		ticdup;		
-int		maxsend;	// BACKUPTICS/(2*ticdup)-1
-
+    int maketic;
+    int lastnettic;
+    int skiptics;
+    int ticdup;
+    int maxsend;	// BACKUPTICS/(2*ticdup)-1
 
 //void D_ProcessEvents (void); 
 //void G_BuildTiccmd (ticcmd_t *cmd); 
 //void D_DoAdvanceDemo (void);
- 
-boolean		reboundpacket;
-doomdata_t	reboundstore;
-
-
+    boolean reboundpacket;
+    doomdata_t reboundstore;
 
 // 
 //
 //123
-
-/** MAES: interesting. After testing it was found to return the following size:
- * 
- */
-
-int NetbufferSize ()
-{
+    /** MAES: interesting. After testing it was found to return the following size:
+     * 
+     */
+    int NetbufferSize() {
 //    return (int)(((doomdata_t)0).cmds[netbuffer.numtics]);
-    return (8*(netbuffer.numtics+1));
-}
+        return (8 * (netbuffer.numtics + 1));
+    }
 
 }
 /*

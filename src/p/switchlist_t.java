@@ -3,20 +3,16 @@ package p;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 import w.DoomBuffer;
-//
-// P_SWITCH
-//
 
 public class switchlist_t
         implements CacheableDoomObject {
-    
-    public switchlist_t(){
-        
+
+    public switchlist_t() {
+
     }
-    
+
     // Were char[9]
     public String name1;
 

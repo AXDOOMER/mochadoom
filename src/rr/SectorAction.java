@@ -8,11 +8,10 @@ import doom.thinker_t;
  *  it. Also, it extends thinker so futher extensions are thinkers too.
  * 
  */
- 
 public abstract class SectorAction extends thinker_t {
-  
+
     public sector_t sector;
-    
+
     /** Special, only used when (un)archiving in order to re-link stuff
      *  to their proper sector.
      */

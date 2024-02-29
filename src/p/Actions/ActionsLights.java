@@ -44,11 +44,12 @@ import w.DoomIO;
 public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
 
     int FindSectorFromLineTag(line_t line, int secnum);
-    
+
     //
     // P_LIGHTS
     //
     public class fireflicker_t extends SectorAction {
+
         public int count;
         public int maxlight;
         public int minlight;
@@ -87,13 +88,12 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
             b.putInt(mintime);//36
         }
     }
-    
+
     public class glow_t extends SectorAction {
 
         public int minlight;
         public int maxlight;
         public int direction;
-
 
         @Override
         public void read(DataInputStream f) throws IOException {
@@ -114,7 +114,7 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
             b.putInt(direction);//38
         }
     }
-    
+
     //
     // Find minimum light from an adjacent sector
     //
@@ -128,7 +128,8 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
         min = max;
         for (int i = 0; i < sector.linecount; i++) {
             line = sector.lines[i];
-            getNextSector: {
+            getNextSector:
+            {
                 check = line.getNextSector(sector);
             }
 
@@ -142,7 +143,7 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
         }
         return min;
     }
-    
+
     /**
      * P_SpawnLightFlash After the map has been loaded, scan each sector for
      * specials that spawn thinkers
@@ -155,11 +156,13 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
         // nothing special about it during gameplay
         sector.special = 0;
 
-        Z_Malloc: {
+        Z_Malloc:
+        {
             flash = new lightflash_t();
         }
 
-        P_AddThinker: {
+        P_AddThinker:
+        {
             AddThinker(flash);
         }
 
@@ -183,11 +186,13 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
     default void SpawnStrobeFlash(sector_t sector, int fastOrSlow, int inSync) {
         strobe_t flash;
 
-        Z_Malloc: {
+        Z_Malloc:
+        {
             flash = new strobe_t();
         }
 
-        P_AddThinker: {
+        P_AddThinker:
+        {
             AddThinker(flash);
         }
 
@@ -217,16 +222,19 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
     default void SpawnGlowingLight(sector_t sector) {
         glow_t g;
 
-        Z_Malloc: {
+        Z_Malloc:
+        {
             g = new glow_t();
         }
 
-        P_AddThinker: {
+        P_AddThinker:
+        {
             AddThinker(g);
         }
 
         g.sector = sector;
-        P_FindMinSurroundingLight: {
+        P_FindMinSurroundingLight:
+        {
             g.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
         }
         g.maxlight = sector.lightlevel;
@@ -269,14 +277,16 @@ public interface ActionsLights extends ActionsMoveEvents, ActionsUseEvents {
         // Nothing special about it during gameplay.
         sector.special = 0;
 
-        Z_Malloc: {
+        Z_Malloc:
+        {
             flick = new fireflicker_t();
         }
-        
-        P_AddThinker: {
+
+        P_AddThinker:
+        {
             AddThinker(flick);
         }
-        
+
         flick.thinkerFunction = T_FireFlicker;
         flick.sector = sector;
         flick.maxlight = sector.lightlevel;

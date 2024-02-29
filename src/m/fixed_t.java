@@ -33,154 +33,124 @@ import data.Defines;
 // There are still remnants of a full OO implementation that still do work, 
 // and the usual FixedMul/FixedDiv etc. methods are still used throughout the codebase,
 // but operate on int operants (signed, 32-bit integers).
+public class fixed_t implements Comparable<fixed_t> {
 
-public class fixed_t implements Comparable<fixed_t>{
-
-    public static final int FRACBITS =       16;
-    public static final int FRACUNIT =       (1<<FRACBITS);
-    public static final int MAPFRACUNIT =    FRACUNIT/Defines.TIC_MUL;
+    public static final int FRACBITS = 16;
+    public static final int FRACUNIT = (1 << FRACBITS);
+    public static final int MAPFRACUNIT = FRACUNIT / Defines.TIC_MUL;
     public int val;
-    
-    public fixed_t(){
+
+    public fixed_t() {
         this.set(0);
     }
-    
-    public int get(){
+
+    public int get() {
         return val;
     }
-    
-    public void set(int val){
-        this.val=val;
+
+    public void set(int val) {
+        this.val = val;
     }
 
-    public void copy(fixed_t a){
+    public void copy(fixed_t a) {
         this.set(a.get());
     }
 
-    
-    public boolean equals(fixed_t a){
-        return (this.get()==a.get())?true:false;
+    public boolean equals(fixed_t a) {
+        return (this.get() == a.get());
     }
 
-    public static boolean equals(fixed_t a, fixed_t b){
-        return (a.get()==b.get())?true:false;
-    }    
-    
-    public fixed_t(int val){
-        this.val=val;
-    }
-    
-public fixed_t(fixed_t x) {
-        this.val=x.val;
+    public static boolean equals(fixed_t a, fixed_t b) {
+        return (a.get() == b.get());
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.14 2011/10/25 19:52:13 velktron Exp $";
+    public fixed_t(int val) {
+        this.val = val;
+    }
 
-/** Creates a new fixed_t object for the result a*b
- * 
- * @param a
- * @param b
- * @return
- */
+    public fixed_t(fixed_t x) {
+        this.val = x.val;
+    }
 
-public static int FixedMul
-( fixed_t	a,
-  fixed_t	b )
-{
-    return (int)(((long) a.val * (long ) b.val) >>> FRACBITS);
-}
+    public static final String rcsid = "$Id: fixed_t.java,v 1.14 2011/10/25 19:52:13 velktron Exp $";
 
-public static int FixedMul
-( int   a,
-  fixed_t   b )
-{
-    return (int)(((long) a * (long ) b.val) >>> FRACBITS);
-}
+    /** Creates a new fixed_t object for the result a*b
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int FixedMul(fixed_t a,
+            fixed_t b) {
+        return (int) (((long) a.val * (long) b.val) >>> FRACBITS);
+    }
 
-public static final int FixedMul
-( int   a,
-  int   b )
-{
-    return (int)(((long) a * (long ) b) >>> FRACBITS);
-}
+    public static int FixedMul(int a,
+            fixed_t b) {
+        return (int) (((long) a * (long) b.val) >>> FRACBITS);
+    }
 
+    public static final int FixedMul(int a,
+            int b) {
+        return (int) (((long) a * (long) b) >>> FRACBITS);
+    }
 
-/** Returns result straight as an int..
- * 
- * @param a
- * @param b
- * @return
- */
+    /** Returns result straight as an int..
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int FixedMulInt(fixed_t a,
+            fixed_t b) {
+        return (int) (((long) a.val * (long) b.val) >> FRACBITS);
+    }
 
-public static int FixedMulInt
-( fixed_t   a,
-        fixed_t   b )
-{
-    return (int)(((long) a.val * (long ) b.val) >> FRACBITS);
-}
+    /** In-place c=a*b
+     * 
+     * @param a
+     * @param b
+     * @param c
+     */
+    public final static void FixedMul(fixed_t a,
+            fixed_t b,
+            fixed_t c) {
+        c.set((int) (((long) a.val * (long) b.val) >> FRACBITS));
+    }
 
-/** In-place c=a*b
- * 
- * @param a
- * @param b
- * @param c
- */
+    /** In-place this=this*a
+     * 
+     * @param a
+     * @param b
+     * @param c
+     */
+    public final void FixedMul(fixed_t a) {
+        this.set((int) (((long) a.val * (long) this.val) >> FRACBITS));
+    }
 
-public final static void FixedMul
-( fixed_t   a,
-        fixed_t   b,
-        fixed_t c)
-{
-    c.set((int)(((long) a.val * (long ) b.val) >> FRACBITS));
-}
+    public final static int
+            FixedDiv(int a,
+                    int b) {
+        if ((Math.abs(a) >> 14) >= Math.abs(b)) {
+            return (a ^ b) < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        } else {
+            long result;
 
+            result = ((long) a << 16) / b;
 
-/** In-place this=this*a
- * 
- * @param a
- * @param b
- * @param c
- */
+            return (int) result;
+        }
+    }
 
-public final void FixedMul
-( fixed_t   a)
-{
-    this.set((int)(((long) a.val * (long ) this.val) >> FRACBITS));
-}
+    public final static int
+            FixedDiv2(int a,
+                    int b) {
 
+        int c;
+        c = (int) (((long) a << 16) / (long) b);
+        return c;
 
-public final static int
-FixedDiv
-( int   a,
-  int   b )
-{
-	  if ((Math.abs(a) >> 14) >= Math.abs(b))
-	    {
-		return (a^b) < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-	    }
-	    else
-	    {
-		long result;
-
-		result = ((long) a << 16) / b;
-
-		return (int) result;
-	    }
-}
-
-
-public final static int
-FixedDiv2
-( int   a,
-  int   b )
-{
-
-    
-    int c;
-    c = (int)(((long)a<<16) / (long)b);
-    return c;
-    
-    /*
+        /*
     double c;
 
     c = ((double)a) / ((double)b) * FRACUNIT;
@@ -189,123 +159,126 @@ FixedDiv2
       throw new ArithmeticException("FixedDiv: divide by zero");
  
  return (int)c;*/
-}
-
-@Override
-public int compareTo(fixed_t o) {
-    if (o.getClass()!=fixed_t.class) return -1;
-    if (this.val==((fixed_t)(o)).val) return 0;
-    if (this.val>((fixed_t)(o)).val) return 1;
-    else return -1;
     }
 
-public int compareTo(int o) {
-    if (this.val==o) return 0;
-    if (this.val>o) return 1;
-    else return -1;
+    @Override
+    public int compareTo(fixed_t o) {
+        if (o.getClass() != fixed_t.class) {
+            return -1;
+        }
+        if (this.val == ((fixed_t) (o)).val) {
+            return 0;
+        }
+        if (this.val > ((fixed_t) (o)).val) {
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
-public void add(fixed_t a){
-    this.val+=a.val;
-}
-
-public void sub(fixed_t a){
-    this.val-=a.val;
-}
-
-public void add(int a){
-    this.val+=a;
-}
-
-public void sub(int a){
-    this.val-=a;
-}
-
-/** a+b
- * 
- * @param a
- * @param b
- * @return
- */
-
-public static int add(fixed_t a,fixed_t b){
-    return a.val+b.val;
-}
-
-/** a-b
- * 
- * @param a
- * @param b
- * @return
- */
-
-public static int sub(fixed_t a,fixed_t b){
-    return a.val-b.val;
-}
-
-/** c=a+b
- * 
- * @param c
- * @param a
- * @param b
- */
-
-public static void add(fixed_t c, fixed_t a,fixed_t b){
-    c.val= a.val+b.val;
-}
-
-/** c=a-b
- * 
- * @param c
- * @param a
- * @param b
- */
-
-public static void sub(fixed_t c,fixed_t a,fixed_t b){
-    c.val= a.val-b.val;
-}
-
-
-/** Equals Zero
- * 
- * @return
- */
-
-public boolean isEZ() {
-    return (this.val==0);
+    public int compareTo(int o) {
+        if (this.val == o) {
+            return 0;
+        }
+        if (this.val > o) {
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
-/** Greater than Zero
- * 
- * @return
- */
-
-public boolean isGZ() {
-    return (this.val>0);
+    public void add(fixed_t a) {
+        this.val += a.val;
     }
 
-/** Less than Zero
- * 
- * @return
- */
-public boolean isLZ() {
-    return (this.val<0);
+    public void sub(fixed_t a) {
+        this.val -= a.val;
+    }
+
+    public void add(int a) {
+        this.val += a;
+    }
+
+    public void sub(int a) {
+        this.val -= a;
+    }
+
+    /** a+b
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int add(fixed_t a, fixed_t b) {
+        return a.val + b.val;
+    }
+
+    /** a-b
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int sub(fixed_t a, fixed_t b) {
+        return a.val - b.val;
+    }
+
+    /** c=a+b
+     * 
+     * @param c
+     * @param a
+     * @param b
+     */
+    public static void add(fixed_t c, fixed_t a, fixed_t b) {
+        c.val = a.val + b.val;
+    }
+
+    /** c=a-b
+     * 
+     * @param c
+     * @param a
+     * @param b
+     */
+    public static void sub(fixed_t c, fixed_t a, fixed_t b) {
+        c.val = a.val - b.val;
+    }
+
+    /** Equals Zero
+     * 
+     * @return
+     */
+    public boolean isEZ() {
+        return (this.val == 0);
+    }
+
+    /** Greater than Zero
+     * 
+     * @return
+     */
+    public boolean isGZ() {
+        return (this.val > 0);
+    }
+
+    /** Less than Zero
+     * 
+     * @return
+     */
+    public boolean isLZ() {
+        return (this.val < 0);
     }
 
 // These are here to make easier handling all those methods in R 
 // that return "1" or "0" based on one result.
+    public int oneEZ() {
+        return (this.val == 0) ? 1 : 0;
+    }
 
-public int oneEZ(){
-    return (this.val==0)?1:0;
-}
+    public int oneGZ() {
+        return (this.val > 0) ? 1 : 0;
+    }
 
-public int oneGZ(){
-    return (this.val>0)?1:0;
-}
-
-public int oneLZ(){
-    return (this.val<0)?1:0;
-}
-
+    public int oneLZ() {
+        return (this.val < 0) ? 1 : 0;
+    }
 
 }

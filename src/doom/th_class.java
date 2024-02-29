@@ -4,14 +4,12 @@ package doom;
  * cph 2002/01/13: for consistency with the main thinker list, keep objects
  * pending deletion on a class list too
  */
-
-
 public enum th_class {
-      th_delete,
-      th_misc,
-      th_friends,
-      th_enemies,
-      th_all;
-      
-      public static final int NUMTHCLASS=th_class.values().length;
+    th_delete,
+    th_misc,
+    th_friends,
+    th_enemies,
+    th_all;
+
+    public static final int NUMTHCLASS = th_class.values().length;
 }

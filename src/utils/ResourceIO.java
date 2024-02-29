@@ -27,6 +27,9 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /**
  * Resource IO to automate read/write on configuration/resources
@@ -34,6 +37,8 @@ import java.util.function.Supplier;
  * @author Good Sign
  */
 public class ResourceIO {
+
+    private static final Logger LOGGER = Loggers.getLogger(ResourceIO.class.getName());
 
     private final Path file;
     private final Charset charset = Charset.forName("US-ASCII");
@@ -56,15 +61,15 @@ public class ResourceIO {
 
     public boolean readLines(final Consumer<String> lineConsumer) {
         if (Files.exists(file)) {
-            try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
+            try ( BufferedReader reader = Files.newBufferedReader(file, charset)) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     lineConsumer.accept(line);
                 }
-                
+
                 return true;
             } catch (IOException x) {
-                System.err.format("IOException: %s%n", x);
+                LOGGER.log(Level.WARNING, "ResourceIO read failure", x);
                 return false;
             }
         }
@@ -73,20 +78,20 @@ public class ResourceIO {
     }
 
     public boolean writeLines(final Supplier<String> lineSupplier, final OpenOption... options) {
-        try (BufferedWriter writer = Files.newBufferedWriter(file, charset, options)) {
+        try ( BufferedWriter writer = Files.newBufferedWriter(file, charset, options)) {
             String line;
             while ((line = lineSupplier.get()) != null) {
                 writer.write(line, 0, line.length());
                 writer.newLine();
             }
-            
+
             return true;
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            LOGGER.log(Level.WARNING, "ResourceIO write failure", x);
             return false;
         }
     }
-    
+
     public String getFileame() {
         return file.toString();
     }

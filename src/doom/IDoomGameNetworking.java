@@ -13,26 +13,24 @@ import java.io.IOException;
  * @author Velktron
  *
  */
-
 public interface IDoomGameNetworking {
-	
-	public void TryRunTics() throws IOException;
-	
-	/**
-	 * NetUpdate
-	 * Builds ticcmds for console player,
-	 * sends out a packet
-	 * @throws IOException 
-	 */
 
-	public void NetUpdate ();
-	
-	public doomcom_t getDoomCom();
-	
-	public void setDoomCom(doomcom_t doomcom);
-	
-	public int getTicdup();
+    public void TryRunTics() throws IOException;
 
-	public void setTicdup(int ticdup);
+    /**
+     * NetUpdate
+     * Builds ticcmds for console player,
+     * sends out a packet
+     * @throws IOException 
+     */
+    public void NetUpdate();
+
+    public doomcom_t getDoomCom();
+
+    public void setDoomCom(doomcom_t doomcom);
+
+    public int getTicdup();
+
+    public void setTicdup(int ticdup);
 
 }

@@ -34,14 +34,13 @@ import w.IWadLoader;
  * 
  * 
  */
+public abstract class AbstractThings<T, V> implements IMaskedDrawer<T, V> {
 
-public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
+    private final static boolean RANGECHECK = false;
 
-    private final static boolean RANGECHECK=false;
-    
     protected short[] maskedtexturecol;
     protected int pmaskedtexturecol = 0;
-    
+
     // Cache those you get from the sprite manager
     protected int[] spritewidth, spriteoffset, spritetopoffset;
 
@@ -55,7 +54,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
     protected int spryscale;
 
     protected int sprtopscreen;
-    
+
     protected short[] mfloorclip;
 
     protected int p_mfloorclip;
@@ -70,11 +69,11 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
 
     // This must be "pegged" to the one used by the default renderer.
     protected ColVars<T, V> maskedcvars;
-    
-    protected ColumnFunction<T,V> colfunc;
-    protected ColFuncs<T,V> colfuncs;
-    protected ColFuncs<T,V> colfuncshi;
-    protected ColFuncs<T,V> colfuncslow;
+
+    protected ColumnFunction<T, V> colfunc;
+    protected ColFuncs<T, V> colfuncs;
+    protected ColFuncs<T, V> colfuncshi;
+    protected ColFuncs<T, V> colfuncslow;
     protected final VideoScale vs;
     protected final LightsAndColors<V> colormaps;
     protected final ViewVars view;
@@ -86,8 +85,8 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
     protected final IVisSpriteManagement<V> VIS;
     protected final IWadLoader W;
     protected final vissprite_t<V> avis;
-    
-    public AbstractThings(VideoScale vs, SceneRenderer<T,V> R) {
+
+    public AbstractThings(VideoScale vs, SceneRenderer<T, V> R) {
         this.colfuncshi = R.getColFuncsHi();
         this.colfuncslow = R.getColFuncsLow();
         this.colormaps = R.getColorMap();
@@ -99,7 +98,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         this.MyBSP = R.getBSPVars();
         this.VIS = R.getVisSpriteManager();
         this.W = R.getWadLoader();
-        this.avis = new vissprite_t<V>();
+        this.avis = new vissprite_t<>();
         this.maskedcvars = R.getMaskedDCVars();
         this.vs = vs;
         clipbot = new short[vs.getScreenWidth()];
@@ -143,20 +142,21 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         maskedcvars.dc_texturemid = vis.texturemid;
         frac = vis.startfrac;
         spryscale = vis.scale;
-        sprtopscreen =
-            view.centeryfrac
-                    - FixedMul(maskedcvars.dc_texturemid, spryscale);
+        sprtopscreen
+                = view.centeryfrac
+                - FixedMul(maskedcvars.dc_texturemid, spryscale);
 
         // A texture height of 0 means "not tiling" and holds for
         // all sprite/masked renders.
         maskedcvars.dc_texheight = 0;
 
-        for (maskedcvars.dc_x = vis.x1; maskedcvars.dc_x <= vis.x2; maskedcvars.dc_x++, frac +=
-            vis.xiscale) {
+        for (maskedcvars.dc_x = vis.x1; maskedcvars.dc_x <= vis.x2; maskedcvars.dc_x++, frac
+                += vis.xiscale) {
             texturecolumn = frac >> FRACBITS;
             if (RANGECHECK) {
-                if (texturecolumn < 0 || texturecolumn >= patch.width)
+                if (texturecolumn < 0 || texturecolumn >= patch.width) {
                     I.Error("R_DrawSpriteRange: bad texturecolumn");
+                }
             }
             column = patch.columns[texturecolumn];
             DrawMaskedColumn(column);
@@ -179,7 +179,6 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         int texnum;
 
         // System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
-
         // Calculate light table.
         // Use different light tables
         // for horizontal / vertical / diagonal. Diagonal?
@@ -189,19 +188,20 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         backsector = MyBSP.curline.backsector;
         texnum = TexMan.getTextureTranslation(MyBSP.curline.sidedef.midtexture);
         // System.out.print(" for texture "+textures[texnum].name+"\n:");
-        lightnum =
-            (frontsector.lightlevel >> colormaps.lightSegShift()) + colormaps.extralight;
+        lightnum
+                = (frontsector.lightlevel >> colormaps.lightSegShift()) + colormaps.extralight;
 
-        if (MyBSP.curline.v1y == MyBSP.curline.v2y)
+        if (MyBSP.curline.v1y == MyBSP.curline.v2y) {
             lightnum--;
-        else if (MyBSP.curline.v1x == MyBSP.curline.v2x)
+        } else if (MyBSP.curline.v1x == MyBSP.curline.v2x) {
             lightnum++;
+        }
 
         // Killough code.
-        colormaps.walllights =
-            lightnum >= colormaps.lightLevels() ? colormaps.scalelight[colormaps.lightLevels() - 1]
-                    : lightnum < 0 ? colormaps.scalelight[0]
-                            : colormaps.scalelight[lightnum];
+        colormaps.walllights
+                = lightnum >= colormaps.lightLevels() ? colormaps.scalelight[colormaps.lightLevels() - 1]
+                : lightnum < 0 ? colormaps.scalelight[0]
+                        : colormaps.scalelight[lightnum];
 
         // Get the list
         maskedtexturecol = ds.getMaskedTextureColList();
@@ -218,27 +218,28 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         p_mceilingclip = ds.getSprTopClipPointer();
         // find positioning
         if ((MyBSP.curline.linedef.flags & ML_DONTPEGBOTTOM) != 0) {
-            maskedcvars.dc_texturemid =
-                frontsector.floorheight > backsector.floorheight ? frontsector.floorheight
-                        : backsector.floorheight;
-            maskedcvars.dc_texturemid =
-                maskedcvars.dc_texturemid + TexMan.getTextureheight(texnum)
-                        - view.z;
+            maskedcvars.dc_texturemid
+                    = frontsector.floorheight > backsector.floorheight ? frontsector.floorheight
+                            : backsector.floorheight;
+            maskedcvars.dc_texturemid
+                    = maskedcvars.dc_texturemid + TexMan.getTextureheight(texnum)
+                    - view.z;
         } else {
-            maskedcvars.dc_texturemid =
-                frontsector.ceilingheight < backsector.ceilingheight ? frontsector.ceilingheight
-                        : backsector.ceilingheight;
+            maskedcvars.dc_texturemid
+                    = frontsector.ceilingheight < backsector.ceilingheight ? frontsector.ceilingheight
+                            : backsector.ceilingheight;
             maskedcvars.dc_texturemid = maskedcvars.dc_texturemid - view.z;
         }
         maskedcvars.dc_texturemid += MyBSP.curline.sidedef.rowoffset;
 
-        if (colormaps.fixedcolormap != null)
+        if (colormaps.fixedcolormap != null) {
             maskedcvars.dc_colormap = colormaps.fixedcolormap;
+        }
 
         // Texture height must be set at this point. This will trigger
         // tiling. For sprites, it should be set to 0.
-        maskedcvars.dc_texheight =
-            TexMan.getTextureheight(texnum) >> FRACBITS;
+        maskedcvars.dc_texheight
+                = TexMan.getTextureheight(texnum) >> FRACBITS;
 
         // draw the columns
         for (maskedcvars.dc_x = x1; maskedcvars.dc_x <= x2; maskedcvars.dc_x++) {
@@ -247,26 +248,27 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
                 if (colormaps.fixedcolormap == null) {
                     index = spryscale >>> colormaps.lightScaleShift();
 
-                    if (index >= colormaps.maxLightScale())
+                    if (index >= colormaps.maxLightScale()) {
                         index = colormaps.maxLightScale() - 1;
+                    }
 
                     maskedcvars.dc_colormap = colormaps.walllights[index];
                 }
 
-                sprtopscreen =
-                    view.centeryfrac
-                            - FixedMul(maskedcvars.dc_texturemid, spryscale);
+                sprtopscreen
+                        = view.centeryfrac
+                        - FixedMul(maskedcvars.dc_texturemid, spryscale);
                 maskedcvars.dc_iscale = (int) (0xffffffffL / spryscale);
 
                 // draw the texture
                 column_t data = TexMan.GetColumnStruct(texnum,
-                    (int) maskedtexturecol[pmaskedtexturecol
-                            + maskedcvars.dc_x]);// -3);
+                        (int) maskedtexturecol[pmaskedtexturecol
+                        + maskedcvars.dc_x]);// -3);
 
                 DrawMaskedColumn(data);
 
-                maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x] =
-                    Short.MAX_VALUE;
+                maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x]
+                        = Short.MAX_VALUE;
             }
             spryscale += rw_scalestep;
         }
@@ -277,7 +279,6 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      * R_DrawPSprite Draws a "player sprite" with slighly different rules
      * than normal sprites. This is actually a PITA, at best :-/
      */
-
     protected void DrawPSprite(pspdef_t psp) {
 
         int tx;
@@ -291,17 +292,19 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
 
         // decide which patch to use (in terms of angle?)
         if (RANGECHECK) {
-            if (psp.state.sprite.ordinal() >= SM.getNumSprites())
+            if (psp.state.sprite.ordinal() >= SM.getNumSprites()) {
                 I.Error("R_ProjectSprite: invalid sprite number %d ",
-                    psp.state.sprite);
+                        psp.state.sprite);
+            }
         }
 
         sprdef = SM.getSprite(psp.state.sprite.ordinal());
 
         if (RANGECHECK) {
-            if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
+            if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes) {
                 I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
-                    psp.state.sprite, psp.state.frame);
+                        psp.state.sprite, psp.state.frame);
+            }
         }
 
         sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK];
@@ -321,23 +324,25 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         x1 = (view.centerxfrac + FixedMul(tx, pspritescale)) >> FRACBITS;
 
         // off the right side
-        if (x1 > view.width)
+        if (x1 > view.width) {
             return;
+        }
 
         tx += spritewidth[lump];
-        x2 =
-            ((view.centerxfrac + FixedMul(tx, pspritescale)) >> FRACBITS) - 1;
+        x2
+                = ((view.centerxfrac + FixedMul(tx, pspritescale)) >> FRACBITS) - 1;
 
         // off the left side
-        if (x2 < 0)
+        if (x2 < 0) {
             return;
+        }
 
         // store information in a vissprite ?
         vis = avis;
         vis.mobjflags = 0;
-        vis.texturemid =
-            ((BASEYCENTER + view.lookdir) << FRACBITS) + FRACUNIT / 2
-                    - (psp.sy - spritetopoffset[lump]);
+        vis.texturemid
+                = ((BASEYCENTER + view.lookdir) << FRACBITS) + FRACUNIT / 2
+                - (psp.sy - spritetopoffset[lump]);
         vis.x1 = x1 < 0 ? 0 : x1;
         vis.x2 = x2 >= view.width ? view.width - 1 : x2;
         vis.scale = (pspritescale) << view.detailshift;
@@ -350,8 +355,9 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
             vis.startfrac = 0;
         }
 
-        if (vis.x1 > x1)
+        if (vis.x1 > x1) {
             vis.startfrac += vis.xiscale * (vis.x1 - x1);
+        }
 
         vis.patch = lump;
 
@@ -377,37 +383,37 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         DrawVisSprite(vis);
     }
 
-    protected int PSpriteSY[] = { 0, // staff
-            5 * FRACUNIT, // goldwand
-            15 * FRACUNIT, // crossbow
-            15 * FRACUNIT, // blaster
-            15 * FRACUNIT, // skullrod
-            15 * FRACUNIT, // phoenix rod
-            15 * FRACUNIT, // mace
-            15 * FRACUNIT, // gauntlets
-            15 * FRACUNIT // beak
-        };
+    protected int PSpriteSY[] = {0, // staff
+        5 * FRACUNIT, // goldwand
+        15 * FRACUNIT, // crossbow
+        15 * FRACUNIT, // blaster
+        15 * FRACUNIT, // skullrod
+        15 * FRACUNIT, // phoenix rod
+        15 * FRACUNIT, // mace
+        15 * FRACUNIT, // gauntlets
+        15 * FRACUNIT // beak
+};
 
     /**
      * R_DrawPlayerSprites This is where stuff like guns is drawn...right?
      */
-
     protected final void DrawPlayerSprites() {
         int i;
         int lightnum;
         pspdef_t psp;
 
         // get light level
-        lightnum =
-            (view.player.mo.subsector.sector.lightlevel >> colormaps.lightSegShift())
-                    + colormaps.extralight;
+        lightnum
+                = (view.player.mo.subsector.sector.lightlevel >> colormaps.lightSegShift())
+                + colormaps.extralight;
 
-        if (lightnum < 0)
+        if (lightnum < 0) {
             colormaps.spritelights = colormaps.scalelight[0];
-        else if (lightnum >= colormaps.lightLevels())
+        } else if (lightnum >= colormaps.lightLevels()) {
             colormaps.spritelights = colormaps.scalelight[colormaps.lightLevels() - 1];
-        else
+        } else {
             colormaps.spritelights = colormaps.scalelight[lightnum];
+        }
 
         // clip to screen bounds
         mfloorclip = view.screenheightarray;
@@ -436,7 +442,6 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
     /**
      * R_DrawSprite
      */
-
     protected final void DrawSprite(vissprite_t<V> spr) {
         int ds;
         drawseg_t dss;
@@ -448,8 +453,9 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         int lowscale; // fixed
         int silhouette;
 
-        for (x = spr.x1; x <= spr.x2; x++)
+        for (x = spr.x1; x <= spr.x2; x++) {
             clipbot[x] = cliptop[x] = -2;
+        }
 
         // Scan drawsegs from end to start for obscuring segs.
         // The first drawseg that has a greater scale
@@ -481,8 +487,9 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
                     || (lowscale < spr.scale && (dss.curline
                             .PointOnSegSide(spr.gx, spr.gy) == 0))) {
                 // masked mid texture?
-                if (!dss.nullMaskedTextureCol())
+                if (!dss.nullMaskedTextureCol()) {
                     RenderMaskedSegRange(dss, r1, r2);
+                }
                 // seg is behind sprite
                 continue;
             }
@@ -490,45 +497,54 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
             // clip this piece of the sprite
             silhouette = dss.silhouette;
 
-            if (spr.gz >= dss.bsilheight)
+            if (spr.gz >= dss.bsilheight) {
                 silhouette &= ~SIL_BOTTOM;
+            }
 
-            if (spr.gzt <= dss.tsilheight)
+            if (spr.gzt <= dss.tsilheight) {
                 silhouette &= ~SIL_TOP;
+            }
 
             // BOTTOM clipping
             if (silhouette == 1) {
                 // bottom sil
-                for (x = r1; x <= r2; x++)
-                    if (clipbot[x] == -2)
+                for (x = r1; x <= r2; x++) {
+                    if (clipbot[x] == -2) {
                         clipbot[x] = dss.getSprBottomClip(x);
+                    }
+                }
 
             } else if (silhouette == 2) {
                 // top sil
-                for (x = r1; x <= r2; x++)
-                    if (cliptop[x] == -2)
+                for (x = r1; x <= r2; x++) {
+                    if (cliptop[x] == -2) {
                         cliptop[x] = dss.getSprTopClip(x);
+                    }
+                }
             } else if (silhouette == 3) {
                 // both
                 for (x = r1; x <= r2; x++) {
-                    if (clipbot[x] == -2)
+                    if (clipbot[x] == -2) {
                         clipbot[x] = dss.getSprBottomClip(x);
-                    if (cliptop[x] == -2)
+                    }
+                    if (cliptop[x] == -2) {
                         cliptop[x] = dss.getSprTopClip(x);
+                    }
                 }
             }
 
         }
 
         // all clipping has been performed, so draw the sprite
-
         // check for unclipped columns
         for (x = spr.x1; x <= spr.x2; x++) {
-            if (clipbot[x] == -2)
+            if (clipbot[x] == -2) {
                 clipbot[x] = (short) view.height;
+            }
             // ?? What's this bullshit?
-            if (cliptop[x] == -2)
+            if (cliptop[x] == -2) {
                 cliptop[x] = -1;
+            }
         }
 
         mfloorclip = clipbot;
@@ -545,7 +561,6 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      * anything, and it will work better, in-place and be simpler to draw,
      * too.
      */
-
     @Override
     public void DrawMasked() {
         // vissprite_t spr;
@@ -561,7 +576,6 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         // modified mergesort, while
         // the original algorithm is so dreadful it actually does slow
         // things down.
-
         VIS.SortVisSprites();
 
         // If you are feeling adventurous, try these ones. They *might*
@@ -571,12 +585,9 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         // of your view, but I hardly see any benefits in that. They are
         // both
         // much better than the original anyway.
-
         // combSort(vissprites,vissprite_p);
         // shellsort(vissprites,vissprite_p);
-
         // pQuickSprite.sort(vissprites);
-
         // The original sort. It's incredibly bad on so many levels (uses a
         // separate
         // linked list for the sorted sequence, which is pointless since the
@@ -592,12 +603,10 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
          * vsprsortedhead.next ; spr != vsprsortedhead ; spr=spr.next) {
          * DrawSprite (spr); } }
          */
-
         // After using in-place sorts, sprites can be drawn as simply as
         // that.
-
         colfunc = colfuncs.masked; // Sprites use fully-masked capable
-                                 // function.
+        // function.
 
         final vissprite_t<V>[] vissprites = VIS.getVisSprites();
         final int numvissprites = VIS.getNumVisSprites();
@@ -609,8 +618,9 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         // render any remaining masked mid textures
         for (ds = seg_vars.ds_p - 1; ds >= 0; ds--) {
             dss = seg_vars.drawsegs[ds];
-            if (!dss.nullMaskedTextureCol())
+            if (!dss.nullMaskedTextureCol()) {
                 RenderMaskedSegRange(dss, dss.x1, dss.x2);
+            }
         }
         // draw the psprites on top of everything
         // but does not draw on side views
@@ -628,7 +638,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      * you're doing.
      */
 
-   /* protected final void DrawMaskedColumn(T column) {
+    /* protected final void DrawMaskedColumn(T column) {
         int topscreen;
         int bottomscreen;
         int basetexturemid; // fixed_t
@@ -681,9 +691,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
 
         maskedcvars.dc_texturemid = basetexturemid;
     }
-    */
-
-
+     */
     /**
      * R_DrawMaskedColumn Used for sprites and masked mid textures. Masked
      * means: partly transparent, i.e. stored in posts/runs of opaque
@@ -691,7 +699,6 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      * post is drawn outside of the screen the rest appear screwed up.
      * SOLUTION: use the version taking raw byte[] arguments.
      */
-
     @SuppressWarnings("unchecked")
     protected final void DrawMaskedColumn(column_t column) {
         int topscreen;
@@ -715,13 +722,15 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
             maskedcvars.dc_yh = (bottomscreen - 1) >> FRACBITS;
 
             if (maskedcvars.dc_yh >= mfloorclip[p_mfloorclip
-                    + maskedcvars.dc_x])
-                maskedcvars.dc_yh =
-                    mfloorclip[p_mfloorclip + maskedcvars.dc_x] - 1;
+                    + maskedcvars.dc_x]) {
+                maskedcvars.dc_yh
+                        = mfloorclip[p_mfloorclip + maskedcvars.dc_x] - 1;
+            }
             if (maskedcvars.dc_yl <= mceilingclip[p_mceilingclip
-                    + maskedcvars.dc_x])
-                maskedcvars.dc_yl =
-                    mceilingclip[p_mceilingclip + maskedcvars.dc_x] + 1;
+                    + maskedcvars.dc_x]) {
+                maskedcvars.dc_yl
+                        = mceilingclip[p_mceilingclip + maskedcvars.dc_x] + 1;
+            }
 
             // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
             if (maskedcvars.dc_yl <= maskedcvars.dc_yh
@@ -729,9 +738,8 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
 
                 // Set pointer inside column to current post's data
                 // Remember, it goes {postlen}{postdelta}{pad}[data]{pad}
-
-                maskedcvars.dc_texturemid =
-                    basetexturemid - (column.postdeltas[i] << FRACBITS);
+                maskedcvars.dc_texturemid
+                        = basetexturemid - (column.postdeltas[i] << FRACBITS);
 
                 // Drawn by either R_DrawColumn or (SHADOW)
                 // R_DrawFuzzColumn.
@@ -742,21 +750,19 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
                 // frac = dc_texturemid + (dc_yl - centery) * fracstep;
                 //
                 // results in a negative initial frac number.
-
                 // Drawn by either R_DrawColumn
                 //  or (SHADOW) R_DrawFuzzColumn.
-                
                 // FUN FACT: this was missing and fucked my shit up.
-                maskedcvars.dc_texheight=0; // Killough
-                
+                maskedcvars.dc_texheight = 0; // Killough
+
                 completeColumn();
-                 
+
             }
         }
 
         maskedcvars.dc_texturemid = basetexturemid;
     }
-    
+
     /*
      * R_DrawMaskedColumn
      * Used for sprites and masked mid textures.
@@ -768,7 +774,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
      *  REALLY needed.
      *
      */
-/*
+ /*
     protected final  void DrawMaskedColumn (byte[] column)
     {
         int topscreen;
@@ -819,8 +825,7 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
         
         dc_texturemid = basetexturemid;
     }
-      */
-
+     */
     @Override
     public void setPspriteIscale(int i) {
         pspriteiscale = i;
@@ -833,15 +838,15 @@ public abstract class AbstractThings<T,V> implements IMaskedDrawer<T,V> {
     }
 
     @Override
-    public void setDetail(int detailshift){
-        switch (detailshift){
-        case HIGH_DETAIL:
-            colfuncs=colfuncshi;
-            break;
-        case LOW_DETAIL:
-            colfuncs=colfuncslow;
-            break;
+    public void setDetail(int detailshift) {
+        switch (detailshift) {
+            case HIGH_DETAIL:
+                colfuncs = colfuncshi;
+                break;
+            case LOW_DETAIL:
+                colfuncs = colfuncslow;
+                break;
         }
     }
-    
+
 }

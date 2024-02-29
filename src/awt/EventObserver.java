@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package awt;
 
 import awt.EventBase.ActionMode;
@@ -37,6 +36,7 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.im.InputContext;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Optional;
@@ -46,8 +46,8 @@ import java.util.logging.Logger;
 import mochadoom.Loggers;
 
 /**
- * Observer for AWTEvents. The description would be short in contrary to the description
- * of EventHandler Enum. This class uses rules in Handler extends Enum<Handler> & EventBase<Handler>
+ * Observer for AWTEvents.The description would be short in contrary to the description
+ of EventHandler Enum. This class uses rules in Handler extends Enum<Handler> & EventBase<Handler>
  * to react on AWTEvent events given to him by some listener (or by fake, don't matter) and feeds them
  * to someone who needs them (DOOM's internal event handling system)
  * 
@@ -56,9 +56,10 @@ import mochadoom.Loggers;
  * and you need one part to react in one way, another part in another.
  * 
  * @author Good Sign
+ * @param <Handler> the type of the handler
  */
 public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
-    
+
     static final Optional<Robot> MOUSE_ROBOT = createRobot();
     private static final Logger LOGGER = Loggers.getLogger(EventObserver.class.getName());
 
@@ -81,8 +82,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         try {
             return Optional.of(new Robot());
         } catch (AWTException e) {
-            Loggers.getLogger(EventObserver.class.getName())
-                .log(Level.SEVERE, "AWT Robot could not be created, mouse input focus will be loose!", e);
+            LOGGER.log(Level.SEVERE, "AWT Robot could not be created, mouse input focus will be loose!", e);
         }
         return Optional.empty();
     }
@@ -103,7 +103,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         final BufferedImage transparent = new BufferedImage(dim.width, dim.height, BufferedImage.TYPE_INT_ARGB);
         return tk.createCustomCursor(transparent, new Point(1, 1), "HiddenCursor");
     }
-    
+
     /**
      * This event here is used as a static scratch copy. When sending out
      * messages, its contents are to be actually copied (struct-like).
@@ -119,40 +119,40 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      * Shared state of keys
      */
     protected final KeyStateHolder<Handler> keyStateHolder;
-    
+
     /**
      * Component (Canvas or JPanel, for exaple) to deal with
      */
     protected final Component component;
-    
+
     /**
      * This one will be given all event_t's we produce there
      */
     private final Consumer<? super event_t> doomEventConsumer;
-    
+
     /**
      * Will be used to find Handler by AWTEvent's id
      */
     private final Handler[] eventSortedHandlers;
-    
+
     /**
      * Shared state of actions
      */
     private final ActionStateHolder<Handler> actionStateHolder;
-    
+
     /**
      * Presumably a system Cursor, that is to be used on cursor restore.
      */
     private final Cursor initialCursor;
 
     /**
-     * Ivisible cursor on the systems who support changing cursors
+     * Invisible cursor on the systems who support changing cursors
      */
     private final Cursor hiddenCursor;
-    
+
     /**
      * To construct the Observer you only need to provide it with the class of Enum used
-     * to contain dictinary, the Component it will be working on and acceptor of event_t's
+     * to contain dictionary, the Component it will be working on and acceptor of event_t's
      */
     public EventObserver(Class<Handler> handlerClass, Component component, Consumer<? super event_t> doomEventConsumer) {
         this.actionStateHolder = new ActionStateHolder<>(handlerClass, this);
@@ -163,13 +163,13 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         this.hiddenCursor = createHiddenCursor();
         this.keyStateHolder = new KeyStateHolder<>();
     }
-    
+
     public EventObserver<Handler> addInterest(EventBase.KeyStateInterest<Handler> interest) {
         keyStateHolder.addInterest(interest);
         return this;
     }
 
-    public EventObserver<Handler>  removeInterest(EventBase.KeyStateInterest<Handler> interest) {
+    public EventObserver<Handler> removeInterest(EventBase.KeyStateInterest<Handler> interest) {
         keyStateHolder.removeInterest(interest);
         return this;
     }
@@ -184,14 +184,10 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         if (!maybe.isPresent() || !actionStateHolder.hasActionsEnabled(handler = maybe.get(), ActionMode.PERFORM)) {
             return;
         }
-        
-        if (handler == EventHandler.WINDOW_ACTIVATE) {
-            int u = 8;
-        }
-        
+
         // In case of debug. If level > FINE (most of cases) it will not affect anything
         Loggers.LogEvent(LOGGER, actionStateHolder, handler, ev);
-        
+
         actionStateHolder.run(handler, ActionMode.PERFORM, ev);
         actionStateHolder.adjustments(handler).forEach((relation, affected) -> {
             switch (relation.affection) {
@@ -205,14 +201,14 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
                         actionStateHolder.disableAction(h, relation.affectedMode);
                     });
                 default:
-                	break;
+                    break;
             }
         });
-        
+
         actionStateHolder.cooperations(handler, RelationType.CAUSE).forEach(h -> {
             actionStateHolder.run(h, ActionMode.CAUSE, ev);
         });
-        
+
         actionStateHolder.cooperations(handler, RelationType.REVERT).forEach(h -> {
             actionStateHolder.run(h, ActionMode.REVERT, ev);
         });
@@ -240,7 +236,10 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      * Hide cursor
      */
     protected void modifyCursor(final AWTEvent event) {
-        component.getInputContext().selectInputMethod(java.util.Locale.US);
+        InputContext inputContext = component.getInputContext();
+        if (inputContext != null) {
+            inputContext.selectInputMethod(java.util.Locale.US);
+        }
         component.setCursor(hiddenCursor);
     }
 
@@ -251,9 +250,9 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
      *  - Good Sign 2017/04/24
      */
     protected void centreCursor(final AWTEvent event) {
-        final int centreX = component.getWidth() >> 1;
-        final int centreY = component.getHeight() >> 1;
         if (component.isShowing()) {
+            int centreX = component.getWidth() >> 1;
+            int centreY = component.getHeight() >> 1;
             MOUSE_ROBOT.ifPresent(rob -> mouseEvent.resetIn(rob, component.getLocationOnScreen(), centreX, centreY));
         }
         modifyCursor(event);
@@ -289,7 +288,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
         feed(Signals.getScanCode((KeyEvent) ev).doomEventDown);
         discardInputEvent(ev);
     }
-    
+
     /**
      * Consumes InputEvents so they will not pass further
      */
@@ -300,21 +299,21 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
             LOGGER.log(Level.SEVERE, null, ex);
         }
     }
-    
+
     protected final void enableAction(final Handler h, ActionMode mode) {
         actionStateHolder.enableAction(h, mode);
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, () -> String.format("ENABLE ACTION: %s [%s]", h, mode));
         }
     }
-    
+
     protected final void disableAction(final Handler h, ActionMode mode) {
         actionStateHolder.disableAction(h, mode);
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, () -> String.format("DISABLE ACTION: %s [%s]", h, mode));
         }
     }
-    
+
     @SafeVarargs
     protected final void mapRelation(final Handler h, RelationType type, Handler... targets) {
         if (type.affection == EventBase.RelationAffection.COOPERATES) {
@@ -326,7 +325,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
             LOGGER.log(Level.FINE, () -> String.format("RELATION MAPPING: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
         }
     }
-    
+
     @SafeVarargs
     protected final void unmapRelation(final Handler h, RelationType type, Handler... targets) {
         if (type.affection == EventBase.RelationAffection.COOPERATES) {
@@ -338,7 +337,7 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
             LOGGER.log(Level.FINE, () -> String.format("RELATION UNMAP: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
         }
     }
-    
+
     @SafeVarargs
     protected final void restoreRelation(final Handler h, RelationType type, Handler... targets) {
         if (type.affection == EventBase.RelationAffection.COOPERATES) {
@@ -350,28 +349,28 @@ public class EventObserver<Handler extends Enum<Handler> & EventBase<Handler>> {
             LOGGER.log(Level.FINE, () -> String.format("RELATION RESTORE: %s -> [%s] {%s}", h, type, Arrays.toString(targets)));
         }
     }
-    
+
     protected void mapAction(final Handler h, ActionMode mode, EventAction<Handler> remap) {
         actionStateHolder.mapAction(h, mode, remap);
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, () -> String.format("ACTION MAPPING (MAP): %s [%s]", h, mode));
         }
     }
-    
+
     protected void remapAction(final Handler h, ActionMode mode, EventAction<Handler> remap) {
         actionStateHolder.remapAction(h, mode, remap);
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, () -> String.format("ACTION MAPPING (REMAP): %s [%s]", h, mode));
         }
     }
-    
+
     protected void unmapAction(final Handler h, ActionMode mode) {
         actionStateHolder.unmapAction(h, mode);
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, () -> String.format("UNMAP ACTION: %s [%s]", h, mode));
         }
     }
-    
+
     protected void restoreAction(final Handler h, ActionMode mode) {
         actionStateHolder.restoreAction(h, mode);
         if (LOGGER.isLoggable(Level.FINE)) {

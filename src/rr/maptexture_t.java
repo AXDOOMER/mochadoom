@@ -15,17 +15,16 @@ import w.DoomBuffer;
  *  @author MAES
  *
  */
+public class maptexture_t implements CacheableDoomObject {
 
-public class maptexture_t implements CacheableDoomObject{
-    public String        name;
-    public  boolean     masked; 
-    public short       width; // was signed byte
-    public short       height; // was 
+    public String name;
+    public boolean masked;
+    public short width; // was signed byte
+    public short height; // was 
     //void**t        columndirectory;  // OBSOLETE (yeah, but we must read a dummy integer here)
-    public short       patchcount;
-    public mappatch_t[]  patches;
-    
-    
+    public short patchcount;
+    public mappatch_t[] patches;
+
     @Override
     public void unpack(ByteBuffer buf) throws IOException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -42,5 +41,5 @@ public class maptexture_t implements CacheableDoomObject{
 
         patches = malloc(mappatch_t::new, mappatch_t[]::new, patchcount);
         DoomBuffer.readObjectArray(buf, patches, patchcount);
-    }  
+    }
 };

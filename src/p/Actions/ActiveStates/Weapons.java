@@ -41,6 +41,7 @@ import p.pspdef_t;
 import static utils.C2JUtils.eval;
 
 public interface Weapons extends Sounds {
+
     /**
      * A_WeaponReady
      * The player can fire the weapon
@@ -54,13 +55,12 @@ public interface Weapons extends Sounds {
 
         // get out of attack state
         if (player.mo.mobj_state == states[statenum_t.S_PLAY_ATK1.ordinal()]
-            || player.mo.mobj_state == states[statenum_t.S_PLAY_ATK2.ordinal()]) {
+                || player.mo.mobj_state == states[statenum_t.S_PLAY_ATK2.ordinal()]) {
             player.mo.SetMobjState(statenum_t.S_PLAY);
         }
 
         if (player.readyweapon == weapontype_t.wp_chainsaw
-         && psp.state == states[statenum_t.S_SAW.ordinal()])
-        {
+                && psp.state == states[statenum_t.S_SAW.ordinal()]) {
             StartSound(player.mo, sounds.sfxenum_t.sfx_sawidl);
         }
 
@@ -78,9 +78,8 @@ public interface Weapons extends Sounds {
         //  the missile launcher and bfg do not auto fire
         if (eval(player.cmd.buttons & BT_ATTACK)) {
             if (!player.attackdown
-             || (player.readyweapon != weapontype_t.wp_missile
-             && player.readyweapon != weapontype_t.wp_bfg))
-            {
+                    || (player.readyweapon != weapontype_t.wp_missile
+                    && player.readyweapon != weapontype_t.wp_bfg)) {
                 player.attackdown = true;
                 getEnemies().FireWeapon(player);
                 return;
@@ -131,8 +130,8 @@ public interface Weapons extends Sounds {
         // check for fire
         //  (if a weaponchange is pending, let it go through instead)
         if (eval(player.cmd.buttons & BT_ATTACK)
-            && player.pendingweapon == weapontype_t.wp_nochange
-            && eval(player.health[0])) {
+                && player.pendingweapon == weapontype_t.wp_nochange
+                && eval(player.health[0])) {
             player.refire++;
             getEnemies().FireWeapon(player);
         } else {
@@ -148,7 +147,7 @@ public interface Weapons extends Sounds {
         player.mo.SetMobjState(statenum_t.S_PLAY_ATK2);
         player.SetPsprite(ps_flash, weaponinfo[player.readyweapon.ordinal()].flashstate);
     }
-    
+
     //
     // ?
     //

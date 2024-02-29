@@ -17,27 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.graphics;
 
 import java.lang.reflect.Array;
-import static utils.GenericCopy.*;
+import static utils.GenericCopy.memcpy;
 
 public interface ColorTransform {
-    
+
     default boolean initTransform(Wipers.WiperImpl<?, ?> wiper) {
         memcpy(wiper.wipeStartScr, 0, wiper.wipeEndScr, 0, Array.getLength(wiper.wipeEndScr));
         return false;
     }
-    
+
     default boolean colorTransformB(Wipers.WiperImpl<byte[], ?> wiper) {
         byte[] w = wiper.wipeStartScr, e = wiper.wipeEndScr;
         boolean changed = false;
         for (int i = 0, newval; i < w.length; ++i) {
             if (w[i] != e[i]) {
                 w[i] = w[i] > e[i]
-                    ? (newval = w[i] - wiper.ticks) < e[i] ? e[i] : (byte) newval
-                    : (newval = w[i] + wiper.ticks) > e[i] ? e[i] : (byte) newval;
+                        ? (newval = w[i] - wiper.ticks) < e[i] ? e[i] : (byte) newval
+                        : (newval = w[i] + wiper.ticks) > e[i] ? e[i] : (byte) newval;
                 changed = true;
             }
         }
@@ -50,8 +49,8 @@ public interface ColorTransform {
         for (int i = 0, newval; i < w.length; ++i) {
             if (w[i] != e[i]) {
                 w[i] = w[i] > e[i]
-                    ? (newval = w[i] - wiper.ticks) < e[i] ? e[i] : (byte) newval
-                    : (newval = w[i] + wiper.ticks) > e[i] ? e[i] : (byte) newval;
+                        ? (newval = w[i] - wiper.ticks) < e[i] ? e[i] : (byte) newval
+                        : (newval = w[i] + wiper.ticks) > e[i] ? e[i] : (byte) newval;
                 changed = true;
             }
         }
@@ -64,8 +63,8 @@ public interface ColorTransform {
         for (int i = 0, newval; i < w.length; ++i) {
             if (w[i] != e[i]) {
                 w[i] = w[i] > e[i]
-                    ? (newval = w[i] - wiper.ticks) < e[i] ? e[i] : (byte) newval
-                    : (newval = w[i] + wiper.ticks) > e[i] ? e[i] : (byte) newval;
+                        ? (newval = w[i] - wiper.ticks) < e[i] ? e[i] : (byte) newval
+                        : (newval = w[i] + wiper.ticks) > e[i] ? e[i] : (byte) newval;
                 changed = true;
             }
         }

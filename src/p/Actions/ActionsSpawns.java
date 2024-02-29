@@ -212,7 +212,8 @@ public interface ActionsSpawns extends ActionsSectors {
         p = getPlayer(mthing.type - 1);
 
         if (p.playerstate == PST_REBORN) {
-            G_PlayerReborn: {
+            G_PlayerReborn:
+            {
                 p.PlayerReborn();
             }
         }
@@ -221,7 +222,8 @@ public interface ActionsSpawns extends ActionsSectors {
         x = mthing.x << FRACBITS;
         y = mthing.y << FRACBITS;
         z = ONFLOORZ;
-        P_SpawnMobj: {
+        P_SpawnMobj:
+        {
             mobj = this.SpawnMobj(x, y, z, mobjtype_t.MT_PLAYER);
         }
 
@@ -245,7 +247,8 @@ public interface ActionsSpawns extends ActionsSectors {
         p.viewheight = VIEWHEIGHT;
 
         // setup gun psprite
-        P_SetupPsprites: {
+        P_SetupPsprites:
+        {
             p.SetupPsprites();
         }
 
@@ -258,11 +261,13 @@ public interface ActionsSpawns extends ActionsSectors {
 
         if (mthing.type - 1 == ConsolePlayerNumber()) {
             // wake up the status bar
-            ST_Start: {
+            ST_Start:
+            {
                 statusBar().Start();
             }
             // wake up the heads up text
-            HU_Start: {
+            HU_Start:
+            {
                 headsUp().Start();
             }
         }
@@ -317,9 +322,11 @@ public interface ActionsSpawns extends ActionsSectors {
         }
 
         switch (getGameSkill()) {
-            case sk_baby: bit = 1;
+            case sk_baby:
+                bit = 1;
                 break;
-            case sk_nightmare: bit = 4;
+            case sk_nightmare:
+                bit = 4;
                 break;
             default:
                 bit = 1 << (getGameSkill().ordinal() - 1);
@@ -342,7 +349,7 @@ public interface ActionsSpawns extends ActionsSectors {
         // warning message for the player.
         if (i == NUMMOBJTYPES) {
             Spawn.LOGGER.log(Level.WARNING,
-                String.format("P_SpawnMapThing: Unknown type %d at (%d, %d)", mthing.type, mthing.x, mthing.y));
+                    String.format("P_SpawnMapThing: Unknown type %d at (%d, %d)", mthing.type, mthing.x, mthing.y));
             return null;
         }
 

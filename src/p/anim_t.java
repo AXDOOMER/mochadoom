@@ -6,16 +6,13 @@ package p;
  * @author admin
  *
  */
-
-
-
 public class anim_t {
-	
-		public anim_t(){
-			
-		}
-    
-      public anim_t(boolean istexture, int picnum, int basepic, int numpics,
+
+    public anim_t() {
+
+    }
+
+    public anim_t(boolean istexture, int picnum, int basepic, int numpics,
             int speed) {
         super();
         this.istexture = istexture;
@@ -24,10 +21,10 @@ public class anim_t {
         this.numpics = numpics;
         this.speed = speed;
     }
-    public  boolean istexture;
-      public   int     picnum;
-      public  int     basepic;
-      public  int     numpics;
-      public int     speed;
-        
-    }
+    public boolean istexture;
+    public int picnum;
+    public int basepic;
+    public int numpics;
+    public int speed;
+
+}

@@ -32,10 +32,9 @@ package boom;
  *
  *-----------------------------------------------------------------------------
  */
+public interface E6Y {
 
-public interface E6Y{
-
-/*
+    /*
 #define HU_HUDADDX (HU_HUDX)
 #define HU_HUDADDY (HU_HUDY+(-1)*HU_GAPY)
 #define HU_CENTERMSGX (320/2)
@@ -45,47 +44,45 @@ public interface E6Y{
 #define HU_HUDADDY_D (HU_HUDY_LL+(-1)*HU_GAPY)
 
 #define HU_MSGCENTERTIMEOUT   (2*TICRATE)
-*/
+     */
+    public static final String STSTR_SECRETFOUND = "A secret is revealed!";
 
-public static final String STSTR_SECRETFOUND =  "A secret is revealed!";
+    public static final int S_CANT_GL_ARB_MULTITEXTURE = 0x10000000;
+    public static final int S_CANT_GL_ARB_MULTISAMPLEFACTOR = 0x20000000;
 
-public static final int S_CANT_GL_ARB_MULTITEXTURE= 0x10000000;
-public static final int S_CANT_GL_ARB_MULTISAMPLEFACTOR=  0x20000000;
+    public static final int GL_COMBINE_ARB = 0x8570;
+    public static final int GL_RGB_SCALE_ARB = 0x8573;
 
-public static final int  GL_COMBINE_ARB  =  0x8570;
-public static final int GL_RGB_SCALE_ARB = 0x8573;
+    public static final char NO_INDEX = 0xFFFF;
 
-public static final char NO_INDEX =0xFFFF;
-
-public static final float FOV_CORRECTION_FACTOR= 1.13776f;
-public static final int FOV90 =90;
+    public static final float FOV_CORRECTION_FACTOR = 1.13776f;
+    public static final int FOV90 = 90;
 
 //public static final double DEG2RAD( a ) ( a * Pi ) / 180.0f;
 //#define RAD2DEG( a ) ( a / Pi ) * 180.0f;
+    public class buf_overrun_item_t {
 
-public class buf_overrun_item_t
-{
-  String wadname;
-  int map;
-  int address;
-} 
+        String wadname;
+        int map;
+        int address;
+    }
 
-public class camera_t
-{
-  long x;
-  long y;
-  long z;
-  long PrevX;
-  long PrevY;
-  long PrevZ;
-  long angle;
-  long pitch;
-  long PrevAngle;
-  long PrevPitch;
-  int type;
-}
+    public class camera_t {
 
-/*
+        long x;
+        long y;
+        long z;
+        long PrevX;
+        long PrevY;
+        long PrevZ;
+        long angle;
+        long pitch;
+        long PrevAngle;
+        long PrevPitch;
+        int type;
+    }
+
+    /*
 
 extern int REAL_SCREENWIDTH;
 extern int REAL_SCREENHEIGHT;
@@ -411,6 +408,5 @@ void I_midiOutSetVolumes(int volume);
 #endif
 
 #endif
-*/
-
+     */
 }

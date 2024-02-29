@@ -17,20 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.graphics;
 
-import static utils.C2JUtils.*;
+import static utils.C2JUtils.memcpy;
 
 public interface Melt extends ColorTransform {
+
     /**
      * No more fucking column-major transpose!
      * A funny fast thing for 1993, but able to make Intel i7 think hard in 2017
      * (well, at least, in energy saving mode :p)
      *  - Good Sign, 2017/04/10
      */
-    default boolean initMeltScaled(Wipers.WiperImpl<?, ?> wiper) { return initMelt(wiper, true); }
-    default boolean initMelt(Wipers.WiperImpl<?, ?> wiper) { return initMelt(wiper, false); }
+    default boolean initMeltScaled(Wipers.WiperImpl<?, ?> wiper) {
+        return initMelt(wiper, true);
+    }
+
+    default boolean initMelt(Wipers.WiperImpl<?, ?> wiper) {
+        return initMelt(wiper, false);
+    }
+
     default boolean initMelt(Wipers.WiperImpl<?, ?> wiper, boolean scaled) {
         // copy start screen to main screen
         memcpy(wiper.wipeStartScr, wiper.wipeScr, wiper.screenWidth * wiper.screenHeight);
@@ -57,7 +63,7 @@ public interface Melt extends ColorTransform {
             }
         }
     }
-    
+
     /**
      * The only place where we cannot have generic code, because it is 1 pixel copy operation
      * which to be called tens thousands times and will cause overhead on just literally any more intermediate function
@@ -85,9 +91,11 @@ public interface Melt extends ColorTransform {
                 final int iWidth = width * i;
                 to[pd + iWidth] = from[ps + iWidth];
             }
-        } else throw new UnsupportedOperationException("Do not have support for: " + bufType);
+        } else {
+            throw new UnsupportedOperationException("Do not have support for: " + bufType);
+        }
     }
-    
+
     /**
      * Completely opposite of the previous method. Only performant when scaling is on.
      * Stick to System.arraycopy since there is certainly several pixels to get and set.
@@ -101,18 +109,24 @@ public interface Melt extends ColorTransform {
             System.arraycopy(from, ps + iWidth, wiper.wipeScr, pd + iWidth, wiper.dupy);
         }
     }
-    
+
     /**
      * Scrolls down columns ready for scroll and those who aren't makes a bit more ready
      * Finally no more shitty transpose!
      *  - Good Sign 2017/04/10
      */
-    default boolean doMeltScaled(Wipers.WiperImpl<?, ?> wiper) { return doMelt(wiper, true); }
-    default boolean doMelt(Wipers.WiperImpl<?, ?> wiper) { return doMelt(wiper, false); }
+    default boolean doMeltScaled(Wipers.WiperImpl<?, ?> wiper) {
+        return doMelt(wiper, true);
+    }
+
+    default boolean doMelt(Wipers.WiperImpl<?, ?> wiper) {
+        return doMelt(wiper, false);
+    }
+
     default boolean doMelt(Wipers.WiperImpl<?, ?> wiper, boolean scaled) {
         final int lim = scaled ? wiper.screenWidth / wiper.dupy : wiper.screenWidth;
         boolean done = true;
-        
+
         while (wiper.ticks-- > 0) {
             for (int i = 0; i < lim; i++) {
                 // Column won't start yet.
@@ -121,24 +135,28 @@ public interface Melt extends ColorTransform {
                     done = false;
                 } else if (wiper.y[i] < wiper.screenHeight) {
                     int dy = (wiper.y[i] < wiper.scaled_16) ? wiper.y[i] + (scaled ? wiper.dupy : 1) : wiper.scaled_8;
-                    if (wiper.y[i] + dy >= wiper.screenHeight) dy = wiper.screenHeight - wiper.y[i];
+                    if (wiper.y[i] + dy >= wiper.screenHeight) {
+                        dy = wiper.screenHeight - wiper.y[i];
+                    }
                     int pd = wiper.y[i] * wiper.screenWidth + (scaled ? i * wiper.dupx : i);
 
                     // MAES: this part should draw the END SCREEN "behind" the melt.
-                    if (scaled)
+                    if (scaled) {
                         toScreenScaled(wiper, wiper.wipeEndScr, dy, pd, pd);
-                    else
+                    } else {
                         toScreen(wiper.bufferType, wiper.wipeScr, wiper.wipeEndScr, wiper.screenWidth, dy, pd, pd);
-                    
+                    }
+
                     wiper.y[i] += dy;
                     pd += dy * wiper.screenWidth;
 
                     // This draws a column shifted by y[i]
-                    if (scaled)
+                    if (scaled) {
                         toScreenScaled(wiper, wiper.wipeStartScr, wiper.screenHeight - wiper.y[i], i * wiper.dupy, pd);
-                    else
+                    } else {
                         toScreen(wiper.bufferType, wiper.wipeScr, wiper.wipeStartScr, wiper.screenWidth, wiper.screenHeight - wiper.y[i], i, pd);
-                    
+                    }
+
                     done = false;
                 }
             }

@@ -23,48 +23,40 @@ package m;
 //  built-in endianness settings), but they are still used occasionally.
 //
 //-----------------------------------------------------------------------------
-
-public final class Swap{
-
+public final class Swap {
 
 // Swap 16bit, that is, MSB and LSB byte.
-public final static short SHORT(short x)
-{
-    // No masking with 0xFF should be necessary. 
-    // MAES: necessary with java due to sign trailing.
-    
-    return (short) ((short) ((x>>>8)&0xFF) | (x<<8));
-}
+    public final static short SHORT(short x) {
+        // No masking with 0xFF should be necessary. 
+        // MAES: necessary with java due to sign trailing.
+
+        return (short) ((short) ((x >>> 8) & 0xFF) | (x << 8));
+    }
 
 //Swap 16bit, that is, MSB and LSB byte.
-public final static short SHORT(char x)
-{
-    // No masking with 0xFF should be necessary. 
-    // MAES: necessary with java due to sign trailing.
-    
-    return (short) ((short) ((x>>>8)&0xFF) | (x<<8));
-}
+    public final static short SHORT(char x) {
+        // No masking with 0xFF should be necessary. 
+        // MAES: necessary with java due to sign trailing.
+
+        return (short) ((short) ((x >>> 8) & 0xFF) | (x << 8));
+    }
 
 //Swap 16bit, that is, MSB and LSB byte.
-public final static char USHORT(char x)
-{
-    // No masking with 0xFF should be necessary. 
-    // MAES: necessary with java due to sign trailing.
-    
-    return (char) ((char) ((x>>>8)&0xFF) | (x<<8));
-}
+    public final static char USHORT(char x) {
+        // No masking with 0xFF should be necessary. 
+        // MAES: necessary with java due to sign trailing.
 
+        return (char) ((char) ((x >>> 8) & 0xFF) | (x << 8));
+    }
 
 // Swapping 32bit.
 // Maes: the "long" here is really 32-bit.
-public final static int LONG( int x)
-{
-    return
-	(x>>>24)
-	| ((x>>>8) & 0xff00)
-	| ((x<<8) & 0xff0000)
-	| (x<<24);
-}
+    public final static int LONG(int x) {
+        return (x >>> 24)
+                | ((x >>> 8) & 0xff00)
+                | ((x << 8) & 0xff0000)
+                | (x << 24);
+    }
 }
 
 //$Log: Swap.java,v $

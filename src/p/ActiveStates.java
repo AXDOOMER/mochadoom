@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package p;
 
 import doom.SourceCode.D_Think;
@@ -85,7 +84,7 @@ import mochadoom.Loggers;
  * Or otherwise be sector specials, flickering lights etc.
  * Those are atypical and need special handling.
  */
-public enum ActiveStates implements ThinkerStates{
+public enum ActiveStates implements ThinkerStates {
     NOP(ActiveStates::nop, ThinkerConsumer.class),
     A_Light0(ActionFunctions::A_Light0, PlayerSpriteConsumer.class),
     A_WeaponReady(ActionFunctions::A_WeaponReady, PlayerSpriteConsumer.class),
@@ -171,9 +170,9 @@ public enum ActiveStates implements ThinkerStates{
     T_VerticalDoor(ActionFunctions::T_VerticalDoor, ThinkerConsumer.class),
     T_PlatRaise(ActionFunctions::T_PlatRaise, ThinkerConsumer.class),
     T_SlidingDoor(ActionFunctions::T_SlidingDoor, ThinkerConsumer.class);
-    
+
     private final static Logger LOGGER = Loggers.getLogger(ActiveStates.class.getName());
-    
+
     private final ParamClass<?> actionFunction;
     private final Class<? extends ParamClass<?>> paramType;
 
@@ -181,40 +180,45 @@ public enum ActiveStates implements ThinkerStates{
         this.actionFunction = actionFunction;
         this.paramType = paramType;
     }
-    
-    private static void nop(Object... o) {}
+
+    private static void nop(Object... o) {
+    }
 
     @actionf_p1
     @D_Think.C(actionf_t.acp1)
     public interface MobjConsumer extends ParamClass<MobjConsumer> {
-    	void accept(ActionFunctions a, mobj_t m);
+
+        void accept(ActionFunctions a, mobj_t m);
     }
-    
+
     @actionf_v
     @D_Think.C(actionf_t.acv)
     public interface ThinkerConsumer extends ParamClass<ThinkerConsumer> {
-    	void accept(ActionFunctions a, thinker_t t);
+
+        void accept(ActionFunctions a, thinker_t t);
     }
-    
+
     @actionf_p2
     @D_Think.C(actionf_t.acp2)
     public interface PlayerSpriteConsumer extends ParamClass<PlayerSpriteConsumer> {
-    	void accept(ActionFunctions a, player_t p, pspdef_t s);
+
+        void accept(ActionFunctions a, player_t p, pspdef_t s);
     }
 
-    private interface ParamClass<T extends ParamClass<T>> {}
-    
+    private interface ParamClass<T extends ParamClass<T>> {
+    }
+
     public boolean isParamType(final Class<?> paramType) {
         return this.paramType == paramType;
     }
-    
+
     @SuppressWarnings("unchecked")
     public <T extends ParamClass<T>> T fun(final Class<T> paramType) {
         if (this.paramType != paramType) {
             LOGGER.log(Level.WARNING, "Wrong paramType for state: {0}", this);
             return null;
         }
-        
+
         // don't believe, it's checked
         return (T) this.actionFunction;
     }

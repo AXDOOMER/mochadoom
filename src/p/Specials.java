@@ -2,7 +2,7 @@ package p;
 
 import doom.player_t;
 import m.fixed_t;
-import static m.fixed_t.*;
+import static m.fixed_t.FRACUNIT;
 import p.Actions.ActionsLights.glow_t;
 import p.Actions.ActionsLights.lightflash_t;
 import rr.line_t;
@@ -33,7 +33,6 @@ import rr.side_t;
 //	 utility functions, etc.
 //
 //-----------------------------------------------------------------------------
-
 public interface Specials {
 
 //
@@ -41,187 +40,169 @@ public interface Specials {
 //
 //extern	boolean levelTimer;
 //extern	int	levelTimeCount;
-
-
 //      Define values for map objects
-public static final int MO_TELEPORTMAN          =14;
-
+    public static final int MO_TELEPORTMAN = 14;
 
 // at game start
-public void    P_InitPicAnims ();
+    public void P_InitPicAnims();
 
 // at map load
-public void    P_SpawnSpecials ();
+    public void P_SpawnSpecials();
 
 // every tic
-public void    P_UpdateSpecials ();
+    public void P_UpdateSpecials();
 
 // when needed
-public boolean
-P_UseSpecialLine
-( mobj_t	thing,
-  line_t	line,
-  int		side );
+    public boolean
+            P_UseSpecialLine(mobj_t thing,
+                    line_t line,
+                    int side);
 
-public void
-P_ShootSpecialLine
-( mobj_t	thing,
-  line_t	line );
+    public void
+            P_ShootSpecialLine(mobj_t thing,
+                    line_t line);
 
-public 
-void
-P_CrossSpecialLine
-( int		linenum,
-  int		side,
-  mobj_t	thing );
+    public void
+            P_CrossSpecialLine(int linenum,
+                    int side,
+                    mobj_t thing);
 
-public void    P_PlayerInSpecialSector (player_t player);
+    public void P_PlayerInSpecialSector(player_t player);
 
-public int
-twoSided
-( int		sector,
-  int		line );
+    public int
+            twoSided(int sector,
+                    int line);
 
-public sector_t
-getSector
-( int		currentSector,
-  int		line,
-  int		side );
+    public sector_t
+            getSector(int currentSector,
+                    int line,
+                    int side);
 
-side_t
-getSide
-( int		currentSector,
-  int		line,
-  int		side );
+    side_t
+            getSide(int currentSector,
+                    int line,
+                    int side);
 
-public fixed_t P_FindLowestFloorSurrounding(sector_t sec);
-public fixed_t P_FindHighestFloorSurrounding(sector_t sec);
+    public fixed_t P_FindLowestFloorSurrounding(sector_t sec);
 
-public fixed_t
-P_FindNextHighestFloor
-( sector_t	sec,
-  int		currentheight );
+    public fixed_t P_FindHighestFloorSurrounding(sector_t sec);
 
-public fixed_t P_FindLowestCeilingSurrounding(sector_t sec);
-public fixed_t P_FindHighestCeilingSurrounding(sector_t sec);
+    public fixed_t
+            P_FindNextHighestFloor(sector_t sec,
+                    int currentheight);
 
-public int
-P_FindSectorFromLineTag
-( line_t	line,
-  int		start );
+    public fixed_t P_FindLowestCeilingSurrounding(sector_t sec);
 
-public int
-P_FindMinSurroundingLight
-( sector_t	sector,
-  int		max );
+    public fixed_t P_FindHighestCeilingSurrounding(sector_t sec);
 
-public sector_t
-getNextSector
-( line_t	line,
-  sector_t	sec );
+    public int
+            P_FindSectorFromLineTag(line_t line,
+                    int start);
 
+    public int
+            P_FindMinSurroundingLight(sector_t sector,
+                    int max);
+
+    public sector_t
+            getNextSector(line_t line,
+                    sector_t sec);
 
 //
 // SPECIAL
 //
-int EV_DoDonut(line_t line);
+    int EV_DoDonut(line_t line);
 
+    public static final int GLOWSPEED = 8;
+    public static final int STROBEBRIGHT = 5;
+    public static final int FASTDARK = 15;
+    public static final int SLOWDARK = 35;
 
-public static final int GLOWSPEED	=		8;
-public static final int STROBEBRIGHT=		5;
-public static final int FASTDARK	=		15;
-public static final int SLOWDARK	=		35;
+    public void P_SpawnFireFlicker(sector_t sector);
 
+    public void T_LightFlash(lightflash_t flash);
 
-public void    P_SpawnFireFlicker (sector_t sector);
-public void    T_LightFlash (lightflash_t flash);
-public void    P_SpawnLightFlash (sector_t sector);
-public void    T_StrobeFlash (strobe_t flash);
+    public void P_SpawnLightFlash(sector_t sector);
 
-public void
-P_SpawnStrobeFlash
-( sector_t	sector,
-  int		fastOrSlow,
-  int		inSync );
+    public void T_StrobeFlash(strobe_t flash);
 
-public void    EV_StartLightStrobing(line_t line);
-public void    EV_TurnTagLightsOff(line_t line);
+    public void
+            P_SpawnStrobeFlash(sector_t sector,
+                    int fastOrSlow,
+                    int inSync);
 
-public void
-EV_LightTurnOn
-( line_t	line,
-  int		bright );
+    public void EV_StartLightStrobing(line_t line);
 
-public void    T_Glow(glow_t g);
-public void    P_SpawnGlowingLight(sector_t sector);
+    public void EV_TurnTagLightsOff(line_t line);
 
- // max # of wall switches in a level
-public static final int MAXSWITCHES	=	50;
+    public void
+            EV_LightTurnOn(line_t line,
+                    int bright);
 
- // 4 players, 4 buttons each at once, max.
-public static final int MAXBUTTONS		=16;
+    public void T_Glow(glow_t g);
 
- // 1 second, in ticks. 
-public static final int BUTTONTIME   =   35         ;    
+    public void P_SpawnGlowingLight(sector_t sector);
+
+    // max # of wall switches in a level
+    public static final int MAXSWITCHES = 50;
+
+    // 4 players, 4 buttons each at once, max.
+    public static final int MAXBUTTONS = 16;
+
+    // 1 second, in ticks. 
+    public static final int BUTTONTIME = 35;
 
 //extern button_t	buttonlist[MAXBUTTONS]; 
+    public void
+            P_ChangeSwitchTexture(line_t line,
+                    int useAgain);
 
-public void
-P_ChangeSwitchTexture
-( line_t	line,
-  int		useAgain );
+    public void P_InitSwitchList();
 
-public void P_InitSwitchList();
-
-public static final int PLATWAIT    =	3;
-public static final int PLATSPEED	=	FRACUNIT;
-public static final int MAXPLATS	=	30;
-
+    public static final int PLATWAIT = 3;
+    public static final int PLATSPEED = FRACUNIT;
+    public static final int MAXPLATS = 30;
 
 //extern plat_t*	activeplats[MAXPLATS];
+    public void T_PlatRaise(plat_t plat);
 
-public void    T_PlatRaise(plat_t	plat);
+    public int
+            EV_DoPlat(line_t line,
+                    plattype_e type,
+                    int amount);
 
-public int
-EV_DoPlat
-( line_t	line,
-  plattype_e	type,
-  int		amount );
+    void P_AddActivePlat(plat_t plat);
 
-void    P_AddActivePlat(plat_t plat);
-void    P_RemoveActivePlat(plat_t plat);
-void    EV_StopPlat(line_t line);
-void    P_ActivateInStasis(int tag);
+    void P_RemoveActivePlat(plat_t plat);
 
-public static final int VDOORSPEED	=	FRACUNIT*2;
-public static final int VDOORWAIT   =		150;
+    void EV_StopPlat(line_t line);
 
-void
-EV_VerticalDoor
-( line_t	line,
-  mobj_t	thing );
+    void P_ActivateInStasis(int tag);
 
-int
-EV_DoDoor
-( line_t	line,
-  vldoor_e	type );
+    public static final int VDOORSPEED = FRACUNIT * 2;
+    public static final int VDOORWAIT = 150;
 
-int
-EV_DoLockedDoor
-( line_t	line,
-  vldoor_e	type,
-  mobj_t	thing );
+    void
+            EV_VerticalDoor(line_t line,
+                    mobj_t thing);
 
-public void    T_VerticalDoor (vldoor_t door);
-public void    P_SpawnDoorCloseIn30 (sector_t sec);
+    int
+            EV_DoDoor(line_t line,
+                    vldoor_e type);
 
-void
-P_SpawnDoorRaiseIn5Mins
-( sector_t	sec,
-  int		secnum );
+    int
+            EV_DoLockedDoor(line_t line,
+                    vldoor_e type,
+                    mobj_t thing);
+
+    public void T_VerticalDoor(vldoor_t door);
+
+    public void P_SpawnDoorCloseIn30(sector_t sec);
+
+    void
+            P_SpawnDoorRaiseIn5Mins(sector_t sec,
+                    int secnum);
 
 }
-
 
 // UNUSED
 //
@@ -246,9 +227,9 @@ typedef enum
     sdt_openAndClose
 
 } sdt_e;
-*/
+ */
 
-/*
+ /*
 
 typedef struct
 {
@@ -263,9 +244,9 @@ typedef struct
     sd_e	 status;
 
 } slidedoor_t;
-*/
+ */
 
-/*
+ /*
 
 typedef struct
 {
@@ -279,9 +260,9 @@ typedef struct
     char	backFrame4[9];
     
 } slidename_t;
-*/
+ */
 
-/*
+ /*
 
 typedef struct
 {
@@ -290,9 +271,9 @@ typedef struct
 
 } slideframe_t;
 
-*/
+ */
 
-/*
+ /*
 // how many frames of animation
 #define SNUMFRAMES		4
 
@@ -358,4 +339,4 @@ EV_Teleport
 ( line_t*	line,
   int		side,
   mobj_t*	thing );
-*/
+ */

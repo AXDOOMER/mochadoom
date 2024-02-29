@@ -36,6 +36,8 @@ import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
@@ -48,6 +50,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import mochadoom.Engine;
+import mochadoom.Loggers;
 import static p.ActiveStates.P_MobjThinker;
 import p.mobj_t;
 import rr.drawfuns.ColFuncs;
@@ -55,7 +58,9 @@ import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.DoomSpanFunction;
 import rr.drawfuns.SpanVars;
-import static rr.line_t.*;
+import static rr.line_t.ML_DONTPEGBOTTOM;
+import static rr.line_t.ML_DONTPEGTOP;
+import static rr.line_t.ML_MAPPED;
 import utils.C2JUtils;
 import static utils.GenericCopy.malloc;
 import static v.DoomGraphicSystem.V_NOSCALEOFFSET;
@@ -63,7 +68,8 @@ import static v.DoomGraphicSystem.V_NOSCALEPATCH;
 import static v.DoomGraphicSystem.V_NOSCALESTART;
 import v.graphics.Palettes;
 import v.renderers.DoomScreen;
-import static v.renderers.DoomScreen.*;
+import static v.renderers.DoomScreen.BG;
+import static v.renderers.DoomScreen.FG;
 import v.tables.BlurryTable;
 import v.tables.LightsAndColors;
 import w.IWadLoader;
@@ -80,6 +86,8 @@ import w.IWadLoader;
  * @author velktron
  */
 public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimitResettable {
+
+    private static final Logger LOGGER = Loggers.getLogger(RendererState.class.getName());
 
     protected static final boolean DEBUG = false;
     protected static final boolean DEBUG2 = false;
@@ -188,8 +196,8 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             int yslope[] = vp_vars.yslope;
             for (int i = 0; i < view.height; i++) {
                 yslope[i] = FixedDiv(
-                    (view.width << view.detailshift) / 2 * FRACUNIT,
-                    Math.abs(((i - view.centery) << FRACBITS) + FRACUNIT / 2)
+                        (view.width << view.detailshift) / 2 * FRACUNIT,
+                        Math.abs(((i - view.centery) << FRACBITS) + FRACUNIT / 2)
                 );
             }
 
@@ -371,7 +379,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             while (last >= solidsegs[(next + 1)].first - 1) {
                 // There is a fragment between two posts.
                 MySegs.StoreWallRange(solidsegs[next].last + 1,
-                    solidsegs[next + 1].first - 1);
+                        solidsegs[next + 1].first - 1);
                 next++;
 
                 if (last <= solidsegs[next].last) {
@@ -471,7 +479,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             while (last >= solidsegs[start + 1].first - 1) {
                 // There is a fragment between two posts.
                 MySegs.StoreWallRange(solidsegs[start].last + 1,
-                    solidsegs[start + 1].first - 1);
+                        solidsegs[start + 1].first - 1);
                 start++;
                 // if (startptr>=MAXSEGS-2) return;
                 // start=solidsegs[startptr];
@@ -510,7 +518,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          */
         private void AddLine(seg_t line) {
             if (DEBUG) {
-                System.out.println("Entered AddLine for " + line);
+                LOGGER.log(Level.FINE, String.format("Entered AddLine for %s", String.valueOf(line)));
             }
             int x1;
             int x2;
@@ -586,20 +594,20 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // Single sided line?
             if (backsector == null) {
                 if (DEBUG) {
-                    System.out .println("Entering ClipSolidWallSegment SS with params " + x1 + " " + (x2 - 1));
+                    LOGGER.log(Level.FINE, String.format("Entering ClipSolidWallSegment SS with params %d %d", x1, (x2 - 1)));
                 }
                 ClipSolidWallSegment(x1, x2 - 1); // to clipsolid
                 if (DEBUG) {
-                    System.out.println("Exiting ClipSolidWallSegment");
+                    LOGGER.log(Level.FINE, "Exiting ClipSolidWallSegment");
                 }
                 return;
             }
 
             // Closed door.
             if (backsector.ceilingheight <= frontsector.floorheight
-                || backsector.floorheight >= frontsector.ceilingheight) {
+                    || backsector.floorheight >= frontsector.ceilingheight) {
                 if (DEBUG) {
-                    System.out.println("Entering ClipSolidWallSegment Closed door with params " + x1 + " " + (x2 - 1));
+                    LOGGER.log(Level.FINE, String.format("Entering ClipSolidWallSegment Closed door with params %d %d", x1, (x2 - 1)));
                 }
                 ClipSolidWallSegment(x1, x2 - 1);
                 // to clipsolid
@@ -608,9 +616,9 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
             // Window. This includes same-level floors with different textures
             if (backsector.ceilingheight != frontsector.ceilingheight
-                || backsector.floorheight != frontsector.floorheight) {
+                    || backsector.floorheight != frontsector.floorheight) {
                 if (DEBUG) {
-                    System.out.println("Entering ClipSolidWallSegment window with params " + x1 + " " + (x2 - 1));
+                    LOGGER.log(Level.FINE, String.format("Entering ClipSolidWallSegment window with params %d %d", x1, (x2 - 1)));
                 }
                 ClipPassWallSegment(x1, x2 - 1); // to clippass
                 return;
@@ -622,9 +630,9 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // identical light levels on both sides,
             // and no middle texture.
             if (backsector.ceilingpic == frontsector.ceilingpic
-                && backsector.floorpic == frontsector.floorpic
-                && backsector.lightlevel == frontsector.lightlevel
-                && curline.sidedef.midtexture == 0) {
+                    && backsector.floorpic == frontsector.floorpic
+                    && backsector.lightlevel == frontsector.lightlevel
+                    && curline.sidedef.midtexture == 0) {
                 return;
             }
 
@@ -635,7 +643,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // Fucking GOTOs....
             ClipPassWallSegment(x1, x2 - 1); // to clippass
             if (DEBUG) {
-                System.out.println("Exiting AddLine for " + line);
+                LOGGER.log(Level.FINE, String.format("Exiting AddLine for %s", String.valueOf(line)));
             }
         }
 
@@ -791,7 +799,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          */
         private void Subsector(int num) {
             if (DEBUG) {
-                System.out.println("\t\tSubSector " + num + " to render");
+                LOGGER.log(Level.FINE, String.format("SubSector %d to render", num));
             }
             int count;
             int line; // pointer into a list of segs instead of seg_t
@@ -800,7 +808,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (RANGECHECK) {
                 if (num >= DOOM.levelLoader.numsubsectors) {
                     DOOM.doomSystem.Error("R_Subsector: ss %d with numss = %d", num,
-                        DOOM.levelLoader.numsubsectors);
+                            DOOM.levelLoader.numsubsectors);
                 }
             }
 
@@ -809,19 +817,19 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
             frontsector = sub.sector;
             if (DEBUG) {
-                System.out.println("Frontsector to render :" + frontsector);
+                LOGGER.log(Level.FINE, String.format("Frontsector to render: %s", String.valueOf(frontsector)));
             }
             count = sub.numlines;
             // line = LL.segs[sub.firstline];
             line = sub.firstline;
 
             if (DEBUG) {
-                System.out.println("Trying to find an existing FLOOR visplane...");
+                LOGGER.log(Level.FINE, "Trying to find an existing FLOOR visplane...");
             }
             if (frontsector.floorheight < view.z) {
                 vp_vars.floorplane
-                    = vp_vars.FindPlane(frontsector.floorheight,
-                        frontsector.floorpic, frontsector.lightlevel);
+                        = vp_vars.FindPlane(frontsector.floorheight,
+                                frontsector.floorpic, frontsector.lightlevel);
             } else {
                 // FIXME: unclear what would happen with a null visplane used
                 // It's never checked explicitly for either condition, just
@@ -831,10 +839,10 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
             // System.out.println("Trying to find an existing CEILING visplane...");
             if (frontsector.ceilingheight > view.z
-                || frontsector.ceilingpic == TexMan.getSkyFlatNum()) {
+                    || frontsector.ceilingpic == TexMan.getSkyFlatNum()) {
                 vp_vars.ceilingplane
-                    = vp_vars.FindPlane(frontsector.ceilingheight,
-                        frontsector.ceilingpic, frontsector.lightlevel);
+                        = vp_vars.FindPlane(frontsector.ceilingheight,
+                                frontsector.ceilingpic, frontsector.lightlevel);
             } else {
                 vp_vars.ceilingplane = -1; // In lieu of NULL. Will bomb if
                 // actually
@@ -844,14 +852,14 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             VIS.AddSprites(frontsector);
 
             if (DEBUG) {
-                System.out.println("Enter Addline for SubSector " + num + " count " + count);
+                LOGGER.log(Level.FINE, String.format("Enter Addline for SubSector %d count %d", num, count));
             }
             while (count-- > 0) {
                 AddLine(DOOM.levelLoader.segs[line]);
                 line++;
             }
             if (DEBUG) {
-                System.out.println("Exit Addline for SubSector " + num);
+                LOGGER.log(Level.FINE, String.format("Exit Addline for SubSector %d", num));
             }
         }
 
@@ -861,7 +869,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          */
         public void RenderBSPNode(int bspnum) {
             if (DEBUG) {
-                System.out.println("Processing BSP Node " + bspnum);
+                LOGGER.log(Level.FINE, String.format("Processing BSP Node %d", bspnum));
             }
 
             node_t bsp;
@@ -871,7 +879,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // SubSector.
             if (C2JUtils.flags(bspnum, NF_SUBSECTOR)) {
                 if (DEBUG) {
-                    System.out.println("Subsector found.");
+                    LOGGER.log(Level.FINE, "Subsector found.");
                 }
                 if (bspnum == -1) {
                     Subsector(0);
@@ -886,26 +894,26 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // Decide which side the view point is on.
             side = bsp.PointOnSide(view.x, view.y);
             if (DEBUG) {
-                System.out.println("\tView side: " + side);
+                LOGGER.log(Level.FINE, String.format("View side: %d", side));
             }
 
             // Recursively divide front space.
             if (DEBUG) {
-                System.out.println("\tEnter Front space of " + bspnum);
+                LOGGER.log(Level.FINE, String.format("Enter Front space of %d", bspnum));
             }
             RenderBSPNode(bsp.children[side]);
             if (DEBUG) {
-                System.out.println("\tReturn Front space of " + bspnum);
+                LOGGER.log(Level.FINE, String.format("Return Front space of %d", bspnum));
             }
 
             // Possibly divide back space.
             if (CheckBBox(bsp.bbox[side ^ 1].bbox)) {
                 if (DEBUG) {
-                    System.out.println("\tEnter Back space of " + bspnum);
+                    LOGGER.log(Level.FINE, String.format("Enter Back space of %d", bspnum));
                 }
                 RenderBSPNode(bsp.children[side ^ 1]);
                 if (DEBUG) {
-                    System.out.println("\tReturn Back space of " + bspnum);
+                    LOGGER.log(Level.FINE, String.format("Return Back space of %d", bspnum));
                 }
             }
         }
@@ -996,7 +1004,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          * fixed_t
          */
         protected int rw_offset, rw_distance, rw_scale, rw_scalestep,
-            rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
+                rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
 
         @Override
         public void resetLimits() {
@@ -1026,7 +1034,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         public void StoreWallRange(int start, int stop) {
 
             if (DEBUG2) {
-                System.out.println("\t\t\t\tStorewallrange called between " + start + " and " + stop);
+                LOGGER.log(Level.FINER, String.format("Storewallrange called between %d and %d", start, stop));
             }
 
             int hyp; // fixed_t
@@ -1092,14 +1100,14 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // calculate scale at both ends and step
             // this is the ONLY place where rw_scale is set.
             seg.scale1
-                = rw_scale
-                = ScaleFromGlobalAngle((view.angle + view.xtoviewangle[start]));
+                    = rw_scale
+                    = ScaleFromGlobalAngle((view.angle + view.xtoviewangle[start]));
 
             if (stop > start) {
                 seg.scale2
-                    = ScaleFromGlobalAngle(view.angle + view.xtoviewangle[stop]);
+                        = ScaleFromGlobalAngle(view.angle + view.xtoviewangle[stop]);
                 seg.scalestep
-                    = rw_scalestep = (seg.scale2 - rw_scale) / (stop - start);
+                        = rw_scalestep = (seg.scale2 - rw_scale) / (stop - start);
             } else {
                 // UNUSED: try to fix the stretched line bug
                 /*
@@ -1125,13 +1133,13 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (MyBSP.backsector == null) {
                 // single sided line
                 midtexture
-                    = TexMan.getTextureTranslation(MyBSP.sidedef.midtexture);
+                        = TexMan.getTextureTranslation(MyBSP.sidedef.midtexture);
                 // a single sided line is terminal, so it must mark ends
                 markfloor = markceiling = true;
                 if ((MyBSP.linedef.flags & ML_DONTPEGBOTTOM) != 0) {
                     vtop
-                        = MyBSP.frontsector.floorheight
-                        + TexMan.getTextureheight(MyBSP.sidedef.midtexture);
+                            = MyBSP.frontsector.floorheight
+                            + TexMan.getTextureheight(MyBSP.sidedef.midtexture);
                     // bottom of texture at bottom
                     rw_midtexturemid = vtop - view.z;
                 } else {
@@ -1186,20 +1194,20 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
                 // hack to allow height changes in outdoor areas
                 if (MyBSP.frontsector.ceilingpic == TexMan.getSkyFlatNum()
-                    && MyBSP.backsector.ceilingpic == TexMan
-                        .getSkyFlatNum()) {
+                        && MyBSP.backsector.ceilingpic == TexMan
+                                .getSkyFlatNum()) {
                     worldtop = worldhigh;
                 }
 
                 markfloor = worldlow != worldbottom
-                    || MyBSP.backsector.floorpic != MyBSP.frontsector.floorpic
-                    || MyBSP.backsector.lightlevel != MyBSP.frontsector.lightlevel; // same plane on both sides
+                        || MyBSP.backsector.floorpic != MyBSP.frontsector.floorpic
+                        || MyBSP.backsector.lightlevel != MyBSP.frontsector.lightlevel; // same plane on both sides
                 markceiling = worldhigh != worldtop
-                    || MyBSP.backsector.ceilingpic != MyBSP.frontsector.ceilingpic
-                    || MyBSP.backsector.lightlevel != MyBSP.frontsector.lightlevel; // same plane on both sides
+                        || MyBSP.backsector.ceilingpic != MyBSP.frontsector.ceilingpic
+                        || MyBSP.backsector.lightlevel != MyBSP.frontsector.lightlevel; // same plane on both sides
 
                 if (MyBSP.backsector.ceilingheight <= MyBSP.frontsector.floorheight
-                    || MyBSP.backsector.floorheight >= MyBSP.frontsector.ceilingheight) {
+                        || MyBSP.backsector.floorheight >= MyBSP.frontsector.ceilingheight) {
                     // closed door
                     markceiling = markfloor = true;
                 }
@@ -1207,14 +1215,14 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                 if (worldhigh < worldtop) {
                     // top texture
                     toptexture
-                        = TexMan.getTextureTranslation(MyBSP.sidedef.toptexture);
+                            = TexMan.getTextureTranslation(MyBSP.sidedef.toptexture);
                     if ((MyBSP.linedef.flags & ML_DONTPEGTOP) != 0) {
                         // top of texture at top
                         rw_toptexturemid = worldtop;
                     } else {
                         vtop
-                            = MyBSP.backsector.ceilingheight
-                            + TexMan.getTextureheight(MyBSP.sidedef.toptexture);
+                                = MyBSP.backsector.ceilingheight
+                                + TexMan.getTextureheight(MyBSP.sidedef.toptexture);
 
                         // bottom of texture
                         rw_toptexturemid = vtop - view.z;
@@ -1223,7 +1231,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                 if (worldlow > worldbottom) {
                     // bottom texture
                     bottomtexture
-                        = TexMan.getTextureTranslation(MyBSP.sidedef.bottomtexture);
+                            = TexMan.getTextureTranslation(MyBSP.sidedef.bottomtexture);
 
                     if ((MyBSP.linedef.flags & ML_DONTPEGBOTTOM) != 0) {
                         // bottom of texture at bottom
@@ -1244,14 +1252,14 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     seg_vars.maskedtexturecol = vp_vars.openings;
                     seg_vars.pmaskedtexturecol = vp_vars.lastopening - rw_x;
                     seg.setMaskedTextureCol(seg_vars.maskedtexturecol,
-                        seg_vars.pmaskedtexturecol);
+                            seg_vars.pmaskedtexturecol);
                     vp_vars.lastopening += rw_stopx - rw_x;
                 }
             }
 
             // calculate rw_offset (only needed for textured lines)
             segtextured
-                = (((midtexture | toptexture | bottomtexture) != 0) | maskedtexture);
+                    = (((midtexture | toptexture | bottomtexture) != 0) | maskedtexture);
 
             if (segtextured) {
                 offsetangle = addAngles(rw_normalangle, -rw_angle1);
@@ -1288,8 +1296,8 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                 // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
                 if (colormaps.fixedcolormap == null) {
                     lightnum
-                        = (MyBSP.frontsector.lightlevel >> colormaps.lightSegShift())
-                        + colormaps.extralight;
+                            = (MyBSP.frontsector.lightlevel >> colormaps.lightSegShift())
+                            + colormaps.extralight;
 
                     if (MyBSP.curline.v1y == MyBSP.curline.v2y) {
                         lightnum--;
@@ -1301,7 +1309,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                         colormaps.walllights = colormaps.scalelight[0];
                     } else if (lightnum >= colormaps.lightLevels()) {
                         colormaps.walllights
-                            = colormaps.scalelight[colormaps.lightLevels() - 1];
+                                = colormaps.scalelight[colormaps.lightLevels() - 1];
                     } else {
                         colormaps.walllights = colormaps.scalelight[lightnum];
                     }
@@ -1317,7 +1325,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             }
 
             if (MyBSP.frontsector.ceilingheight <= view.z
-                && MyBSP.frontsector.ceilingpic != TexMan.getSkyFlatNum()) {
+                    && MyBSP.frontsector.ceilingpic != TexMan.getSkyFlatNum()) {
                 // below view plane
                 markceiling = false;
             }
@@ -1331,7 +1339,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
             bottomstep = -FixedMul(rw_scalestep, worldbottom);
             bottomfrac
-                = (view.centeryfrac >> 4) - FixedMul(worldbottom, rw_scale);
+                    = (view.centeryfrac >> 4) - FixedMul(worldbottom, rw_scale);
 
             if (MyBSP.backsector != null) {
                 worldhigh >>= 4;
@@ -1339,13 +1347,13 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
                 if (worldhigh < worldtop) {
                     pixhigh
-                        = (view.centeryfrac >> 4) - FixedMul(worldhigh, rw_scale);
+                            = (view.centeryfrac >> 4) - FixedMul(worldhigh, rw_scale);
                     pixhighstep = -FixedMul(rw_scalestep, worldhigh);
                 }
 
                 if (worldlow > worldbottom) {
                     pixlow
-                        = (view.centeryfrac >> 4) - FixedMul(worldlow, rw_scale);
+                            = (view.centeryfrac >> 4) - FixedMul(worldlow, rw_scale);
                     pixlowstep = -FixedMul(rw_scalestep, worldlow);
                 }
             }
@@ -1354,13 +1362,13 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (markceiling) {
                 // System.out.println("Markceiling");
                 vp_vars.ceilingplane
-                    = vp_vars.CheckPlane(vp_vars.ceilingplane, rw_x, rw_stopx - 1);
+                        = vp_vars.CheckPlane(vp_vars.ceilingplane, rw_x, rw_stopx - 1);
             }
 
             if (markfloor) {
                 // System.out.println("Markfloor");
                 vp_vars.floorplane
-                    = vp_vars.CheckPlane(vp_vars.floorplane, rw_x, rw_stopx - 1);
+                        = vp_vars.CheckPlane(vp_vars.floorplane, rw_x, rw_stopx - 1);
             }
 
             RenderSegLoop();
@@ -1368,11 +1376,11 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             // After rendering is actually performed, clipping is set.
             // save sprite clipping info ... no top clipping?
             if ((C2JUtils.flags(seg.silhouette, SIL_TOP) || maskedtexture)
-                && seg.nullSprTopClip()) {
+                    && seg.nullSprTopClip()) {
 
                 // memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
                 System.arraycopy(ceilingclip, start, vp_vars.openings,
-                    vp_vars.lastopening, rw_stopx - start);
+                        vp_vars.lastopening, rw_stopx - start);
 
                 seg.setSprTopClip(vp_vars.openings, vp_vars.lastopening - start);
                 // seg.setSprTopClipPointer();
@@ -1380,12 +1388,12 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             }
             // no floor clipping?
             if ((C2JUtils.flags(seg.silhouette, SIL_BOTTOM) || maskedtexture)
-                && seg.nullSprBottomClip()) {
+                    && seg.nullSprBottomClip()) {
                 // memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
                 System.arraycopy(floorclip, start, vp_vars.openings,
-                    vp_vars.lastopening, rw_stopx - start);
+                        vp_vars.lastopening, rw_stopx - start);
                 seg.setSprBottomClip(vp_vars.openings, vp_vars.lastopening
-                    - start);
+                        - start);
                 vp_vars.lastopening += rw_stopx - start;
             }
 
@@ -1440,9 +1448,9 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
                     if (top <= bottom) {
                         vp_vars.visplanes[vp_vars.ceilingplane].setTop(rw_x,
-                            (char) top);
+                                (char) top);
                         vp_vars.visplanes[vp_vars.ceilingplane].setBottom(rw_x,
-                            (char) bottom);
+                                (char) bottom);
                     }
                 }
 
@@ -1461,9 +1469,9 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     }
                     if (top <= bottom) {
                         vp_vars.visplanes[vp_vars.floorplane].setTop(rw_x,
-                            (char) top);
+                                (char) top);
                         vp_vars.visplanes[vp_vars.floorplane].setBottom(rw_x,
-                            (char) bottom);
+                                (char) bottom);
                     }
                 }
 
@@ -1479,8 +1487,8 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     // doesn't hold anymore,
                     // not even if accounting for overflow.
                     angle
-                        = Tables.toBAMIndex(rw_centerangle
-                            + (int) view.xtoviewangle[rw_x]);
+                            = Tables.toBAMIndex(rw_centerangle
+                                    + (int) view.xtoviewangle[rw_x]);
 
                     // FIXME: We are accessing finetangent here, the code seems
                     // pretty confident in that angle won't exceed 4K no matter
@@ -1494,7 +1502,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     // with 0x1FFF if you're so inclined.
                     // FIXED by allowing overflow. See Tables for details.
                     texturecolumn
-                        = rw_offset - FixedMul(finetangent[angle], rw_distance);
+                            = rw_offset - FixedMul(finetangent[angle], rw_distance);
                     texturecolumn >>= FRACBITS;
                     // calculate lighting
                     index = rw_scale >> colormaps.lightScaleShift();
@@ -1514,11 +1522,11 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     dcvars.dc_yl = yl;
                     dcvars.dc_yh = yh;
                     dcvars.dc_texheight
-                        = TexMan.getTextureheight(midtexture) >> FRACBITS; // killough
+                            = TexMan.getTextureheight(midtexture) >> FRACBITS; // killough
                     dcvars.dc_texturemid = rw_midtexturemid;
                     dcvars.dc_source_ofs = 0;
                     dcvars.dc_source
-                        = TexMan.GetCachedColumn(midtexture, texturecolumn);
+                            = TexMan.GetCachedColumn(midtexture, texturecolumn);
                     CompleteColumn();
                     ceilingclip[rw_x] = (short) view.height;
                     floorclip[rw_x] = -1;
@@ -1541,7 +1549,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                             dcvars.dc_source = TexMan.GetCachedColumn(toptexture, texturecolumn);
                             dcvars.dc_source_ofs = 0;
                             if (dcvars.dc_colormap == null) {
-                                System.out.println("Two-sided");
+                                LOGGER.log(Level.FINE, "Two-sided");
                             }
                             CompleteColumn();
                             ceilingclip[rw_x] = (short) mid;
@@ -1692,9 +1700,13 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
     }
 
     protected interface IPlaneDrawer {
+
         void InitPlanes();
+
         void MapPlane(int y, int x1, int x2);
+
         void DrawPlanes();
+
         int[] getDistScale();
 
         /**
@@ -1704,13 +1716,21 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
     }
 
     protected interface ISegDrawer extends ILimitResettable {
+
         void ClearClips();
+
         short[] getBLANKCEILINGCLIP();
+
         short[] getBLANKFLOORCLIP();
+
         short[] getFloorClip();
+
         short[] getCeilingClip();
+
         void ExecuteSetViewSize(int viewwidth);
+
         void setGlobalAngle(long angle1);
+
         void StoreWallRange(int first, int last);
 
         /**
@@ -1741,7 +1761,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         @Override
         public void DrawPlanes() {
             if (DEBUG) {
-                System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: " + vp_vars.lastvisplane);
+                LOGGER.log(Level.FINE, String.format("DrawPlanes: %d", vp_vars.lastvisplane));
             }
             visplane_t pln; // visplane_t
             int light;
@@ -1756,7 +1776,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             for (int pl = 0; pl < vp_vars.lastvisplane; pl++) {
                 pln = vp_vars.visplanes[pl];
                 if (DEBUG2) {
-                    System.out.println(pln);
+                    LOGGER.log(Level.FINER, String.valueOf(pln));
                 }
 
                 if (pln.minx > pln.maxx) {
@@ -1769,9 +1789,9 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     // being drawn, after all, are they?
                     int skytexture = TexMan.getSkyTexture();
                     skydcvars.dc_texheight
-                        = TexMan.getTextureheight(skytexture) >> FRACBITS;
+                            = TexMan.getTextureheight(skytexture) >> FRACBITS;
                     skydcvars.dc_iscale
-                        = vpvars.getSkyScale() >> view.detailshift;
+                            = vpvars.getSkyScale() >> view.detailshift;
 
                     /**
                      * Sky is allways drawn full bright, i.e. colormaps[0] is
@@ -1792,12 +1812,12 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
                         if (skydcvars.dc_yl <= skydcvars.dc_yh) {
                             angle
-                                = (int) (addAngles(view.angle, view.xtoviewangle[x]) >>> ANGLETOSKYSHIFT);
+                                    = (int) (addAngles(view.angle, view.xtoviewangle[x]) >>> ANGLETOSKYSHIFT);
                             skydcvars.dc_x = x;
                             // Optimized: texheight is going to be the same
                             // during normal skies drawing...right?
                             skydcvars.dc_source
-                                = TexMan.GetCachedColumn(skytexture, angle);
+                                    = TexMan.GetCachedColumn(skytexture, angle);
                             colfunc.sky.invoke();
                         }
                     }
@@ -2228,7 +2248,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         }
 
         skydcvars.viewheight
-            = maskedcvars.viewheight = dcvars.viewheight = view.height;
+                = maskedcvars.viewheight = dcvars.viewheight = view.height;
 
         view.detailshift = setdetail;
         view.width = view.scaledwidth >> view.detailshift;
@@ -2299,7 +2319,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             startmap = ((colormaps.lightLevels() - colormaps.lightBright() - i) * 2) * colormaps.numColorMaps() / colormaps.lightLevels();
             for (int j = 0; j < colormaps.maxLightScale(); j++) {
                 level
-                    = startmap - j / DISTMAP;
+                        = startmap - j / DISTMAP;
                 if (level < 0) {
                     level = 0;
                 }
@@ -2312,7 +2332,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
 
         MySegs.ExecuteSetViewSize(view.width);
     }
-    
+
     private final Rectangle backScreenRect = new Rectangle();
     private final Rectangle tilePatchRect = new Rectangle();
 
@@ -2353,7 +2373,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         /* This is a flat we're reading here */
         src = DOOM.wadLoader.CacheLumpName(name, PU_CACHE, flat_t.class);
         dest = BG;
-        
+
         /**
          * TODO: cache it?
          * This part actually draws the border itself, without bevels
@@ -2366,7 +2386,8 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
          * 
          * @SourceCode.Compatible
          */
-        Tiling: {
+        Tiling:
+        {
             this.backScreenRect.setBounds(0, 0, DOOM.vs.getScreenWidth(), DOOM.vs.getScreenHeight() - DOOM.statusBar.getHeight());
             this.tilePatchRect.setBounds(0, 0, 64, 64);
             V block = DOOM.graphicSystem.convertPalettedBlock(src.data);
@@ -2377,7 +2398,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             }
             DOOM.graphicSystem.TileScreenArea(dest, backScreenRect, block, tilePatchRect);
         }
-        
+
         final int scaleFlags = V_NOSCALESTART | (scaleSetting ? 0 : V_NOSCALEOFFSET | V_NOSCALEPATCH);
         final int stepX = scaleSetting ? DOOM.graphicSystem.getScalingX() << 3 : 8;
         final int stepY = scaleSetting ? DOOM.graphicSystem.getScalingY() << 3 : 8;
@@ -2413,7 +2434,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // Bottom-left
         patch = DOOM.wadLoader.CachePatchName("BRDR_BL", PU_CACHE);
         DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx - stepX, view.windowy + view.height, scaleFlags);
-        
+
         // Bottom-right.
         patch = DOOM.wadLoader.CachePatchName("BRDR_BR", PU_CACHE);
         DOOM.graphicSystem.DrawPatchScaled(BG, patch, DOOM.vs, view.windowx + view.width, view.windowy + view.height, scaleFlags);
@@ -2431,32 +2452,33 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // DON'T FORGET ABOUT MEEEEEE!!!11!!!
         this.screen = this.DOOM.graphicSystem.getScreen(FG);
 
-        System.out.print("\nR_InitData");
+        LOGGER.log(Level.INFO, "R_InitData");
         InitData();
         // InitPointToAngle ();
-        System.out.print("\nR_InitPointToAngle");
+        LOGGER.log(Level.INFO, "R_InitPointToAngle");
 
         // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
-        System.out.print("\nR_InitTables");
+        LOGGER.log(Level.INFO, "R_InitTables");
         InitTables();
 
         SetViewSize(DOOM.menu.getScreenBlocks(), DOOM.menu.getDetailLevel());
 
-        System.out.print("\nR_InitPlanes");
+        LOGGER.log(Level.INFO, "R_InitPlanes");
         MyPlanes.InitPlanes();
 
-        System.out.print("\nR_InitLightTables");
+        LOGGER.log(Level.INFO, "R_InitLightTables");
         InitLightTables();
 
-        System.out.print("\nR_InitSkyMap: " + TexMan.InitSkyMap());
+        int initSkyMap = TexMan.InitSkyMap();
+        LOGGER.log(Level.INFO, String.format("R_InitSkyMap: %d", initSkyMap));
 
-        System.out.print("\nR_InitTranslationsTables");
+        LOGGER.log(Level.INFO, "R_InitTranslationsTables");
         InitTranslationTables();
 
-        System.out.print("\nR_InitTranMap: ");
+        LOGGER.log(Level.INFO, "R_InitTranMap");
         R_InitTranMap(0);
 
-        System.out.print("\nR_InitDrawingFunctions: ");
+        LOGGER.log(Level.INFO, "R_InitDrawingFunctions");
         R_InitDrawingFunctions();
 
         framecount = 0;
@@ -2521,8 +2543,8 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // Calc focallength
         // so FIELDOFVIEW angles covers vs.getScreenWidth().
         focallength
-            = FixedDiv(view.centerxfrac, finetangent[QUARTERMARK + FIELDOFVIEW
-                / 2]);
+                = FixedDiv(view.centerxfrac, finetangent[QUARTERMARK + FIELDOFVIEW
+                        / 2]);
 
         for (i = 0; i < FINEANGLES / 2; i++) {
             if (finetangent[i] > FRACUNIT * 2) {
@@ -2609,7 +2631,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
     }
 
     protected static final int TSC = 12;
-    
+
     /**
      * number of fixed point digits in
      * filter percent
@@ -2631,19 +2653,21 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // it. If OK, this trumps even those specified in lumps.
         DOOM.cVarManager.with(CommandVariable.TRANMAP, 0, (String tranmap) -> {
             if (C2JUtils.testReadAccess(tranmap)) {
-                System.out.printf("Translucency map file %s specified in -tranmap arg. Attempting to use...\n", tranmap);
+                LOGGER.log(Level.INFO,
+                        String.format("Translucency map file %s specified in -tranmap arg. Attempting to use...", tranmap));
                 main_tranmap = new byte[256 * 256]; // killough 4/11/98
                 int result = MenuMisc.ReadFile(tranmap, main_tranmap);
                 if (result > 0) {
                     return;
                 }
-                System.out.print("...failure.\n");
+
+                LOGGER.log(Level.SEVERE, "R_InitTranMap: translucency map failure");
             }
         });
 
         // Next, if a tranlucency filter map lump is present, use it
         if (lump != -1) { // Set a pointer to the translucency filter maps.
-            System.out.print("Translucency map found in lump. Attempting to use...");
+            LOGGER.log(Level.INFO, "Translucency map found in lump. Attempting to use...");
             // main_tranmap=new byte[256*256]; // killough 4/11/98
             main_tranmap = DOOM.wadLoader.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC); // killough
             // 4/11/98
@@ -2651,12 +2675,12 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
             if (main_tranmap.length >= 0x10000) {
                 return;
             }
-            System.out.print("...failure.\n"); // Not good, try something else.
+            LOGGER.log(Level.SEVERE, "R_InitTranMap: tranlucency filter map failure"); // Not good, try something else.
         }
 
         // A default map file already exists. Try to read it.
         if (C2JUtils.testReadAccess("tranmap.dat")) {
-            System.out.print("Translucency map found in default tranmap.dat file. Attempting to use...");
+            LOGGER.log(Level.INFO, "Translucency map found in default tranmap.dat file. Attempting to use...");
             main_tranmap = new byte[256 * 256]; // killough 4/11/98
             int result = MenuMisc.ReadFile("tranmap.dat", main_tranmap);
             if (result > 0) {
@@ -2667,7 +2691,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // Nothing to do, so we must synthesize it from scratch. And, boy, is it
         // slooow.
         { // Compose a default transparent filter map based on PLAYPAL.
-            System.out.print("Computing translucency map from scratch...that's gonna be SLOW...");
+            LOGGER.log(Level.INFO, "Computing translucency map from scratch...that's gonna be SLOW...");
             byte[] playpal = DOOM.wadLoader.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
             main_tranmap = new byte[256 * 256]; // killough 4/11/98
             int[] basepal = new int[3 * 256];
@@ -2710,22 +2734,22 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
                     main_tranmap[(b << 8) | a] = main_tranmap[(a << 8) | b];
                 }
             }
-            System.out.print("...done\n");
+            LOGGER.log(Level.INFO, "R_InitTranMap: done");
             if (MenuMisc.WriteFile("tranmap.dat", main_tranmap,
-                main_tranmap.length)) {
-                System.out.print("TRANMAP.DAT saved to disk for your convenience! Next time will be faster.\n");
+                    main_tranmap.length)) {
+                LOGGER.log(Level.INFO, "TRANMAP.DAT saved to disk for your convenience! Next time will be faster.");
             }
         }
 
         long b = System.nanoTime();
-        System.out.printf("Tranmap %d\n", (b - ta) / 1000000);
+        LOGGER.log(Level.INFO, String.format("Tranmap %d", (b - ta) / 1000000));
     }
 
     /**
      * Mixes two RGB colors. Nuff said
      */
     protected void mixColors(int[] a, int[] b, int[] c, int pa, int pb,
-        int pc) {
+            int pc) {
         c[pc] = (a[pa] + b[pb]) / 2;
         c[pc + 1] = (a[pa + 1] + b[pb + 1]) / 2;
         c[pc + 2] = (a[pa + 2] + b[pb + 2]) / 2;
@@ -2737,8 +2761,8 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
      */
     protected float colorDistance(int[] a, int[] b, int pa, int pb) {
         return (float) Math.sqrt((a[pa] - b[pb]) * (a[pa] - b[pb])
-            + (a[pa + 1] - b[pb + 1]) * (a[pa + 1] - b[pb + 1])
-            + (a[pa + 2] - b[pb + 2]) * (a[pa + 2] - b[pb + 2]));
+                + (a[pa + 1] - b[pb + 1]) * (a[pa + 1] - b[pb + 1])
+                + (a[pa + 2] - b[pb + 2]) * (a[pa + 2] - b[pb + 2]));
     }
 
     /**
@@ -2803,21 +2827,21 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
      */
     public void InitData() {
         try {
-            System.out.print("\nInit Texture and Flat Manager");
+            LOGGER.log(Level.INFO, "Init Texture and Flat Manager");
             TexMan = this.DOOM.textureManager;
-            System.out.print("\nInitTextures");
+            LOGGER.log(Level.INFO, "InitTextures");
             TexMan.InitTextures();
-            System.out.print("\nInitFlats");
+            LOGGER.log(Level.INFO, "InitFlats");
             TexMan.InitFlats();
-            System.out.print("\nInitSprites");
+            LOGGER.log(Level.INFO, "InitSprites");
             DOOM.spriteManager.InitSpriteLumps();
             MyThings.cacheSpriteManager(DOOM.spriteManager);
             VIS.cacheSpriteManager(DOOM.spriteManager);
-            System.out.print("\nInitColormaps\t\t");
+            LOGGER.log(Level.INFO, "InitColormaps");
             InitColormaps();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error: InitData failure", e);
         }
 
     }
@@ -2882,7 +2906,7 @@ public abstract class RendererState<T, V> implements SceneRenderer<T, V>, ILimit
         // translationtables = Z_Malloc (256*3+255, PU_STATIC, 0);
         // translationtables = (byte *)(( (int)translationtables + 255 )& ~255);
         byte[][] translationtables
-            = colormaps.translationtables = new byte[TR_COLORS][256];
+                = colormaps.translationtables = new byte[TR_COLORS][256];
 
         // translate just the 16 green colors
         for (i = 0; i < 256; i++) {

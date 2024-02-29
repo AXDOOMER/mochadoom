@@ -3,6 +3,9 @@ package rr.parallel;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.IMaskedDrawer;
 import rr.ISpriteManager;
 import rr.IVisSpriteManagement;
@@ -27,17 +30,18 @@ import v.scale.VideoScale;
  * @author velktron
  *
  */
+public final class ParallelThings2<T, V> implements IMaskedDrawer<T, V> {
 
-public final class ParallelThings2<T,V> implements IMaskedDrawer<T,V> {
+    private static final Logger LOGGER = Loggers.getLogger(ParallelThings2.class.getName());
 
-    MaskedWorker<T,V>[] maskedworkers;
+    MaskedWorker<T, V>[] maskedworkers;
     CyclicBarrier maskedbarrier;
     Executor tp;
     protected final IVisSpriteManagement<V> VIS;
     protected final VideoScale vs;
-    
-    public ParallelThings2(VideoScale vs, SceneRenderer<T,V> R) {
-        this.VIS=R.getVisSpriteManager();
+
+    public ParallelThings2(VideoScale vs, SceneRenderer<T, V> R) {
+        this.VIS = R.getVisSpriteManager();
         this.vs = vs;
     }
 
@@ -52,13 +56,10 @@ public final class ParallelThings2<T,V> implements IMaskedDrawer<T,V> {
 
         try {
             maskedbarrier.await();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (InterruptedException | BrokenBarrierException e) {
+            LOGGER.log(Level.SEVERE, "ParallelThings2 DrawMasked failure", e);
         }
+        // TODO Auto-generated catch block
 
     }
 
@@ -69,28 +70,32 @@ public final class ParallelThings2<T,V> implements IMaskedDrawer<T,V> {
 
     @Override
     public void setPspriteScale(int scale) {
-        for (int i = 0; i < maskedworkers.length; i++)
+        for (int i = 0; i < maskedworkers.length; i++) {
             maskedworkers[i].setPspriteScale(scale);
+        }
     }
 
     @Override
     public void setPspriteIscale(int scale) {
-        for (int i = 0; i < maskedworkers.length; i++)
+        for (int i = 0; i < maskedworkers.length; i++) {
             maskedworkers[i].setPspriteIscale(scale);
+        }
     }
 
     @Override
     public void setDetail(int detailshift) {
-        for (int i = 0; i < maskedworkers.length; i++)
+        for (int i = 0; i < maskedworkers.length; i++) {
             maskedworkers[i].setDetail(detailshift);
-        
+        }
+
     }
 
     @Override
     public void cacheSpriteManager(ISpriteManager SM) {
-        for (int i = 0; i < maskedworkers.length; i++)
+        for (int i = 0; i < maskedworkers.length; i++) {
             maskedworkers[i].cacheSpriteManager(SM);
-        
+        }
+
     }
 
 }

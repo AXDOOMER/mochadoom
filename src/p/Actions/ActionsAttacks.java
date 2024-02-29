@@ -172,7 +172,7 @@ public interface ActionsAttacks extends ActionsAim, ActionsMobj, ActionsSight, A
         maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE.ordinal()].radius;
 
         if (Math.abs(thing.x - att.vileTryX) > maxdist
-            || Math.abs(thing.y - att.vileTryY) > maxdist) {
+                || Math.abs(thing.y - att.vileTryY) > maxdist) {
             return true;        // not actually touching
         }
 

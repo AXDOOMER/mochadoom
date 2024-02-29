@@ -2,30 +2,30 @@ package i;
 
 import doom.ticcmd_t;
 
-public class DummySystem implements IDoomSystem{
+public class DummySystem implements IDoomSystem {
 
     @Override
     public void AllocLow(int length) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void BeginRead() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void EndRead() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void WaitVBL(int count) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
@@ -43,13 +43,13 @@ public class DummySystem implements IDoomSystem{
     @Override
     public void Tactile(int on, int off, int total) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void Quit() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
@@ -61,23 +61,23 @@ public class DummySystem implements IDoomSystem{
     @Override
     public void Error(String error, Object... args) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void Error(String error) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void Init() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
-    public boolean GenerateAlert(String title, String cause) {
+    public boolean GenerateAlert(String title, String cause, boolean showCancelButton) {
         // TODO Auto-generated method stub
         return false;
     }

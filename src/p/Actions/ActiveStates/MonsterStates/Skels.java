@@ -33,8 +33,9 @@ import p.mobj_t;
 import static utils.C2JUtils.eval;
 
 public interface Skels extends ActionTrait {
+
     int TRACEANGLE = 0xC_00_00_00;
-    
+
     //
     // A_SkelMissile
     //
@@ -78,7 +79,7 @@ public interface Skels extends ActionTrait {
             getAttacks().DamageMobj(actor.target, actor, actor, damage);
         }
     }
-    
+
     default void A_Tracer(mobj_t actor) {
         long exact; //angle_t
         int dist, slope; // fixed
@@ -95,16 +96,16 @@ public interface Skels extends ActionTrait {
         if (th.mobj_tics < 1) {
             th.mobj_tics = 1;
         }
-        
+
         // adjust direction
         dest = actor.tracer;
         if (dest == null || dest.health <= 0) {
             return;
         }
-        
+
         // change angle
         exact = sceneRenderer().PointToAngle2(actor.x, actor.y, dest.x, dest.y) & BITS32;
-        
+
         // MAES: let's analyze the logic here...
         // So exact is the angle between the missile and its target.
         if (exact != actor.angle) { // missile is already headed there dead-on.

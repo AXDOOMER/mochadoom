@@ -2,7 +2,6 @@ package rr;
 
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
-
 import p.Resettable;
 
 /**
@@ -10,7 +9,6 @@ import p.Resettable;
  * 
  * @author Maes
  */
-
 public class seg_t
         implements Resettable {
 
@@ -27,7 +25,6 @@ public class seg_t
     public long angle;
 
     // MAES: all were single pointers.
-
     public side_t sidedef;
 
     public line_t linedef;
@@ -79,14 +76,16 @@ public class seg_t
         ldy = line.v2y - ly;
 
         if (ldx == 0) {
-            if (x <= lx)
+            if (x <= lx) {
                 return (ldy > 0) ? 1 : 0;
+            }
 
             return (ldy < 0) ? 1 : 0;
         }
         if (ldy == 0) {
-            if (y <= ly)
+            if (y <= ly) {
                 return (ldx < 0) ? 1 : 0;
+            }
 
             return (ldx > 0) ? 1 : 0;
         }
@@ -139,14 +138,16 @@ public class seg_t
         ldy = this.v2y - ly;
 
         if (ldx == 0) {
-            if (x <= lx)
+            if (x <= lx) {
                 return (ldy > 0) ? 1 : 0;
+            }
 
             return (ldy < 0) ? 1 : 0;
         }
         if (ldy == 0) {
-            if (y <= ly)
+            if (y <= ly) {
                 return (ldx < 0) ? 1 : 0;
+            }
 
             return (ldx > 0) ? 1 : 0;
         }
@@ -177,8 +178,8 @@ public class seg_t
     public String toString() {
         return String
                 .format(
-                    "Seg %d\n\tFrontsector: %s\n\tBacksector: %s\n\tVertexes: %x %x %x %x",
-                    iSegID, frontsector, backsector, v1x, v1y, v2x, v2y);
+                        "Seg %d\n\tFrontsector: %s\n\tBacksector: %s\n\tVertexes: %x %x %x %x",
+                        iSegID, frontsector, backsector, v1x, v1y, v2x, v2y);
     }
 
     @Override

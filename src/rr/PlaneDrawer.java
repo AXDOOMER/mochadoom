@@ -1,6 +1,5 @@
 package rr;
 
-import v.tables.LightsAndColors;
 import static data.Tables.ANGLETOFINESHIFT;
 import static data.Tables.BITS32;
 import static data.Tables.finecosine;
@@ -11,14 +10,14 @@ import static m.fixed_t.FixedMul;
 import rr.RendererState.IPlaneDrawer;
 import rr.drawfuns.SpanVars;
 import v.scale.VideoScale;
+import v.tables.LightsAndColors;
 
-public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
+public abstract class PlaneDrawer<T, V> implements IPlaneDrawer {
 
-    private static final boolean DEBUG2=false;
-
+    private static final boolean DEBUG2 = false;
 
     protected final boolean RANGECHECK = false;
-    
+
     //
     // spanstart holds the start of a plane span
     // initialized to 0 at start
@@ -37,10 +36,10 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
     /** To treat as fixed_t */
     protected int[] cacheddistance, cachedxstep, cachedystep;
 
-    protected final ViewVars view;    
+    protected final ViewVars view;
 
     protected final SegVars seg_vars;
-    protected final SpanVars<T,V> dsvars;
+    protected final SpanVars<T, V> dsvars;
     /** The visplane data. Set separately. For threads, use the same for
      *  everyone.
      */
@@ -49,22 +48,21 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
     protected final TextureManager<T> TexMan;
     protected final IDoomSystem I;
     protected final VideoScale vs;
-    
-    
-    protected PlaneDrawer(DoomMain<T, V> DOOM, SceneRenderer<T,V> R){
-        this.view=R.getView();
-        this.vpvars=R.getVPVars();
-        this.dsvars=R.getDSVars();
-        this.seg_vars=R.getSegVars();
-        this.colormap=R.getColorMap();
-        this.TexMan=R.getTextureManager();
-        this.I=R.getDoomSystem();
+
+    protected PlaneDrawer(DoomMain<T, V> DOOM, SceneRenderer<T, V> R) {
+        this.view = R.getView();
+        this.vpvars = R.getVPVars();
+        this.dsvars = R.getDSVars();
+        this.seg_vars = R.getSegVars();
+        this.colormap = R.getColorMap();
+        this.TexMan = R.getTextureManager();
+        this.I = R.getDoomSystem();
         this.vs = DOOM.vs;
         // Pre-scale stuff.
 
         spanstart = new int[vs.getScreenHeight()];
         spanstop = new int[vs.getScreenHeight()];
-        distscale = new int[vs.getScreenWidth()];        
+        distscale = new int[vs.getScreenWidth()];
         cacheddistance = new int[vs.getScreenHeight()];
         cachedxstep = new int[vs.getScreenHeight()];
         cachedystep = new int[vs.getScreenHeight()];
@@ -87,7 +85,6 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
      * 
      * BASIC PRIMITIVE
      */
-
     public void MapPlane(int y, int x1, int x2) {
         // MAES: angle_t
         int angle;
@@ -97,7 +94,7 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
         int index;
 
         if (RANGECHECK) {
-            rangeCheck(x1,x2,y);
+            rangeCheck(x1, x2, y);
         }
 
         if (planeheight != vpvars.cachedheight[y]) {
@@ -116,13 +113,14 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
         dsvars.ds_xfrac = view.x + FixedMul(finecosine[angle], length);
         dsvars.ds_yfrac = -view.y - FixedMul(finesine[angle], length);
 
-        if (colormap.fixedcolormap != null)
+        if (colormap.fixedcolormap != null) {
             dsvars.ds_colormap = colormap.fixedcolormap;
-        else {
+        } else {
             index = distance >>> colormap.lightZShift();
 
-            if (index >= colormap.maxLightZ())
+            if (index >= colormap.maxLightZ()) {
                 index = colormap.maxLightZ() - 1;
+            }
 
             dsvars.ds_colormap = planezlight[index];
         }
@@ -135,12 +133,12 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
         dsvars.spanfunc.invoke();
     }
 
-    protected final void rangeCheck(int x1,int x2,int y) {
-        if (x2 < x1 || x1 < 0 || x2 >= view.width || y > view.height)
-            I.Error("%s: %d, %d at %d",this.getClass().getName(), x1, x2, y);
+    protected final void rangeCheck(int x1, int x2, int y) {
+        if (x2 < x1 || x1 < 0 || x2 >= view.width || y > view.height) {
+            I.Error("%s: %d, %d at %d", this.getClass().getName(), x1, x2, y);
         }
-  
-        
+    }
+
     /**
      * R_MakeSpans
      * 
@@ -162,7 +160,6 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
      *            Bottom-right y coord ?
      * 
      */
-
     protected void MakeSpans(int x, int t1, int b1, int t2, int b2) {
 
         // If t1 = [sentinel value] then this part won't be executed.
@@ -187,7 +184,6 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
         // So...if t1 for some reason b2 > b1, we decrease b2 AND store the
         // current x
         // at spanstart [t2] :-S
-
         while (b2 > b1 && b2 >= t2) {
             // System.out.println("Decreasing b2");
             spanstart[b2] = x;
@@ -198,40 +194,39 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer {
     /**
      * R_InitPlanes Only at game startup.
      */
-
     @Override
     public void InitPlanes() {
         // Doh!
     }
 
-    protected final void rangeCheckErrors(){
-        if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
+    protected final void rangeCheckErrors() {
+        if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS) {
             I.Error("R_DrawPlanes: drawsegs overflow (%d)", seg_vars.ds_p);
+        }
 
-        if (vpvars.lastvisplane > vpvars.MAXVISPLANES)
+        if (vpvars.lastvisplane > vpvars.MAXVISPLANES) {
             I.Error(" R_DrawPlanes: visplane overflow (%d)",
-                vpvars.lastvisplane);
+                    vpvars.lastvisplane);
+        }
 
-        if (vpvars.lastopening > vpvars.MAXOPENINGS)
+        if (vpvars.lastopening > vpvars.MAXOPENINGS) {
             I.Error("R_DrawPlanes: opening overflow (%d)", vpvars.lastopening);
+        }
     }
 
     /** Default implementation which DOES NOTHING. MUST OVERRIDE */
-    
-    public void DrawPlanes(){
-        
+    public void DrawPlanes() {
+
     }
-    
-    public void sync(){
+
+    public void sync() {
         // Nothing required if serial.
     }
-    
+
     /////////////// VARIOUS BORING GETTERS ////////////////////
-
-
     @Override
     public int[] getDistScale() {
         return distscale;
     }
-    
+
 }

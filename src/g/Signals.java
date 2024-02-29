@@ -14,26 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package g;
 
 //
-
 import doom.event_t;
 import doom.evtype_t;
-import static java.awt.event.InputEvent.ALT_DOWN_MASK;
-import static java.awt.event.InputEvent.CTRL_DOWN_MASK;
-import static java.awt.event.InputEvent.META_DOWN_MASK;
-import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
 import java.awt.event.KeyEvent;
 import static java.awt.event.KeyEvent.*;
 
 public class Signals {
+
     // 65535 + 4 bytes in memory, acceptable for speed purpose
     private final static byte[] map = new byte[Character.MAX_VALUE];
     // plus 260 bytes in this
     private final static byte[] siblings = new byte[Byte.MAX_VALUE << 1];
-    
+
     public static ScanCode getScanCode(KeyEvent e) {
         final ScanCode ret = ScanCode.v[map[e.getKeyCode()] & 0xFF];
 
@@ -46,17 +41,19 @@ public class Signals {
         if (sib.location == e.getKeyLocation()) {
             return sib;
         }
-        
+
         return ScanCode.SC_NULL;
     }
 
-    private Signals() {}
-    
+    private Signals() {
+    }
+
     @FunctionalInterface
     public interface SignalListener {
+
         void sendEvent(ScanCode sc, int eventType);
     }
-    
+
     /**
      * Maps scan codes for whatever crap we use. They should be system dependent, but
      * it seems I've invented a "keyboard" instead of passing it to real one.
@@ -204,15 +201,15 @@ public class Signals {
         /** Custom ScanCodes - no keyboard or platform standard **/
         /* 140 */ SC_LMETA(VK_META, KEY_LOCATION_LEFT, META_DOWN_MASK),
         /* 141 */ SC_RMETA(VK_META, KEY_LOCATION_RIGHT, META_DOWN_MASK);
-        
+
         public final char c;
         public final event_t doomEventUp;
         public final event_t doomEventDown;
-        
+
         private final int location;
         private final char virtualKey;
         private final static ScanCode[] v = values();
-        
+
         ScanCode() {
             this.doomEventUp = this.doomEventDown = event_t.EMPTY_EVENT;
             this.location = this.c = this.virtualKey = 0;

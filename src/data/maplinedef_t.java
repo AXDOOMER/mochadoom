@@ -3,14 +3,13 @@ package data;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 
 /**
  * A LineDef, as used for editing, and as input to the BSP builder.
  */
-public class maplinedef_t implements CacheableDoomObject{
+public class maplinedef_t implements CacheableDoomObject {
 
     public maplinedef_t() {
         this.sidenum = new char[2];
@@ -36,12 +35,12 @@ public class maplinedef_t implements CacheableDoomObject{
     @Override
     public void unpack(ByteBuffer buf)
             throws IOException {
-    buf.order(ByteOrder.LITTLE_ENDIAN);
-    this.v1 = buf.getChar();
-    this.v2 = buf.getChar();
-    this.flags = buf.getShort();
-    this.special = buf.getShort();
-    this.tag = buf.getShort();
-    DoomBuffer.readCharArray(buf, this.sidenum, 2);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        this.v1 = buf.getChar();
+        this.v2 = buf.getChar();
+        this.flags = buf.getShort();
+        this.special = buf.getShort();
+        this.tag = buf.getShort();
+        DoomBuffer.readCharArray(buf, this.sidenum, 2);
     }
 }

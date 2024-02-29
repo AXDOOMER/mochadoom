@@ -32,15 +32,14 @@ import p.Actions.ActiveStates.MonsterStates.Zombies;
  * @author Good Sign
  */
 public interface Monsters extends
-    Bosses,
-    Demonspawns,
-    HorrendousVisages,
-    Mancubi,
-    PainsSouls,
-    Skels,
-    Spiders,
-    Viles,
-    Zombies
-{
-    
+        Bosses,
+        Demonspawns,
+        HorrendousVisages,
+        Mancubi,
+        PainsSouls,
+        Skels,
+        Spiders,
+        Viles,
+        Zombies {
+
 }

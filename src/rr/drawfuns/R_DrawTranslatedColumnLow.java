@@ -15,6 +15,7 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
 
     public static final class HiColor
             extends R_DrawTranslatedColumnLow<byte[], short[]> {
+
         public HiColor(int SCREENWIDTH, int SCREENHEIGHT, int[] ylookup,
                 int[] columnofs, ColVars<byte[], short[]> dcvars,
                 short[] screen, IDoomSystem I) {
@@ -34,8 +35,9 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
             final byte[] dc_translation = dcvars.dc_translation;
 
             count = dcvars.dc_yh - dcvars.dc_yl;
-            if (count < 0)
+            if (count < 0) {
                 return;
+            }
 
             if (RANGECHECK) {
                 super.performRangeCheck();
@@ -47,69 +49,71 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
 
             // Looks familiar.
             fracstep = dcvars.dc_iscale;
-            frac =
-                dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery)
-                        * fracstep;
+            frac
+                    = dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery)
+                    * fracstep;
 
             // Here we do an additional index re-mapping.
             // Maes: Unroll by 4
-            if (count >= 4)
+            if (count >= 4) {
                 do {
                     // Translation tables are used
                     // to map certain colorramps to other ones,
                     // used with PLAY sprites.
                     // Thus the "green" ramp of the player 0 sprite
                     // is mapped to gray, red, black/indigo.
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
                 } while ((count -= 4) > 4);
+            }
 
-            if (count > 0)
+            if (count > 0) {
                 do {
                     // Translation tables are used
                     // to map certain colorramps to other ones,
                     // used with PLAY sprites.
                     // Thus the "green" ramp of the player 0 sprite
                     // is mapped to gray, red, black/indigo.
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
 
                     frac += fracstep;
                 } while (count-- != 0);
+            }
         }
 
     }
@@ -136,8 +140,9 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
             final byte[] dc_translation = dcvars.dc_translation;
 
             count = dcvars.dc_yh - dcvars.dc_yl;
-            if (count < 0)
+            if (count < 0) {
                 return;
+            }
 
             if (RANGECHECK) {
                 super.performRangeCheck();
@@ -149,69 +154,71 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
 
             // Looks familiar.
             fracstep = dcvars.dc_iscale;
-            frac =
-                dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery)
-                        * fracstep;
+            frac
+                    = dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery)
+                    * fracstep;
 
             // Here we do an additional index re-mapping.
             // Maes: Unroll by 4
-            if (count >= 4)
+            if (count >= 4) {
                 do {
                     // Translation tables are used
                     // to map certain colorramps to other ones,
                     // used with PLAY sprites.
                     // Thus the "green" ramp of the player 0 sprite
                     // is mapped to gray, red, black/indigo.
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
                 } while ((count -= 4) > 4);
+            }
 
-            if (count > 0)
+            if (count > 0) {
                 do {
                     // Translation tables are used
                     // to map certain colorramps to other ones,
                     // used with PLAY sprites.
                     // Thus the "green" ramp of the player 0 sprite
                     // is mapped to gray, red, black/indigo.
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
 
                     frac += fracstep;
                 } while (count-- != 0);
+            }
         }
     }
 
@@ -237,8 +244,9 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
             final byte[] dc_translation = dcvars.dc_translation;
 
             count = dcvars.dc_yh - dcvars.dc_yl;
-            if (count < 0)
+            if (count < 0) {
                 return;
+            }
 
             if (RANGECHECK) {
                 super.performRangeCheck();
@@ -250,69 +258,71 @@ public abstract class R_DrawTranslatedColumnLow<T, V>
 
             // Looks familiar.
             fracstep = dcvars.dc_iscale;
-            frac =
-                dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery)
-                        * fracstep;
+            frac
+                    = dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery)
+                    * fracstep;
 
             // Here we do an additional index re-mapping.
             // Maes: Unroll by 4
-            if (count >= 4)
+            if (count >= 4) {
                 do {
                     // Translation tables are used
                     // to map certain colorramps to other ones,
                     // used with PLAY sprites.
                     // Thus the "green" ramp of the player 0 sprite
                     // is mapped to gray, red, black/indigo.
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
                     frac += fracstep;
 
                 } while ((count -= 4) > 4);
+            }
 
-            if (count > 0)
+            if (count > 0) {
                 do {
                     // Translation tables are used
                     // to map certain colorramps to other ones,
                     // used with PLAY sprites.
                     // Thus the "green" ramp of the player 0 sprite
                     // is mapped to gray, red, black/indigo.
-                    screen[dest] =
-                        screen[dest2] =
-                            dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
-                                    + (frac >> FRACBITS)]]];
+                    screen[dest]
+                            = screen[dest2]
+                            = dc_colormap[0x00FF & dc_translation[0xFF & dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
                     dest += SCREENWIDTH;
                     dest2 += SCREENWIDTH;
 
                     frac += fracstep;
                 } while (count-- != 0);
+            }
         }
     }
 

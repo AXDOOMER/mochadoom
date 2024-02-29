@@ -125,11 +125,16 @@ package f;
 //	Intermission screens.
 //
 //-----------------------------------------------------------------------------*/
-import static data.Defines.*;
-import static data.Limits.*;
+import static data.Defines.BT_ATTACK;
+import static data.Defines.BT_USE;
+import static data.Defines.NUMMAPS;
+import static data.Defines.PU_CACHE;
+import static data.Defines.PU_STATIC;
+import static data.Defines.TICRATE;
+import static data.Limits.MAXPLAYERS;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
-import defines.*;
+import defines.Language_t;
 import doom.DoomMain;
 import doom.SourceCode;
 import doom.SourceCode.CauseOfDesyncProbability;
@@ -145,9 +150,14 @@ import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
 import doom.wbstartstruct_t;
-import rr.*;
-import static v.DoomGraphicSystem.*;
-import static v.renderers.DoomScreen.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
+import rr.patch_t;
+import static v.DoomGraphicSystem.V_NOSCALESTART;
+import static v.DoomGraphicSystem.V_SAFESCALE;
+import static v.renderers.DoomScreen.BG;
+import static v.renderers.DoomScreen.FG;
 
 /**
  * This class (stuff.c) seems to implement the endlevel screens.
@@ -156,6 +166,8 @@ import static v.renderers.DoomScreen.*;
  *
  */
 public class EndLevel<T, V> extends AbstractEndLevel {
+
+    private static final Logger LOGGER = Loggers.getLogger(EndLevel.class.getName());
 
     ////////////////// STATUS ///////////////////
     private final DoomMain<T, V> DOOM;
@@ -432,7 +444,7 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             DOOM.graphicSystem.DrawPatchScaled(FG, c[i], DOOM.vs, lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y);
         } else {
             // DEBUG
-            System.out.println("Could not place patch on level " + n + 1);
+            LOGGER.log(Level.FINE, String.format("Could not place patch on level %d", n + 1));
         }
     }
 
@@ -456,18 +468,20 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             a.ctr = -1;
 
             if (null != a.type) // specify the next time to draw it
-            switch (a.type) {
-                case ANIM_ALWAYS:
-                    a.nexttic = bcnt + 1 + (DOOM.random.M_Random() % a.period);
-                    break;
-                case ANIM_RANDOM:
-                    a.nexttic = bcnt + 1 + a.data2 + (DOOM.random.M_Random() % a.data1);
-                    break;
-                case ANIM_LEVEL:
-                    a.nexttic = bcnt + 1;
-                    break;
-                default:
-                    break;
+            {
+                switch (a.type) {
+                    case ANIM_ALWAYS:
+                        a.nexttic = bcnt + 1 + (DOOM.random.M_Random() % a.period);
+                        break;
+                    case ANIM_RANDOM:
+                        a.nexttic = bcnt + 1 + a.data2 + (DOOM.random.M_Random() % a.data1);
+                        break;
+                    case ANIM_LEVEL:
+                        a.nexttic = bcnt + 1;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
@@ -859,7 +873,8 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             }
         }
 
-        WI_initAnimatedBack: {
+        WI_initAnimatedBack:
+        {
             initAnimatedBack();
         }
     }
@@ -1040,14 +1055,15 @@ public class EndLevel<T, V> extends AbstractEndLevel {
             }
 
             cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
-            
+
             dofrags += fragSum(i);
         }
 
         //Suspicious - Good Sign 2017/05/08
         dofrags = ~ ~dofrags;
 
-        WI_initAnimatedBack: {
+        WI_initAnimatedBack:
+        {
             initAnimatedBack();
         }
     }
@@ -1262,7 +1278,8 @@ public class EndLevel<T, V> extends AbstractEndLevel {
         cnt_time = cnt_par = -1;
         cnt_pause = TICRATE;
 
-        WI_initAnimatedBack: {
+        WI_initAnimatedBack:
+        {
             initAnimatedBack();
         }
     }
@@ -1717,9 +1734,9 @@ public void WI_unloadData()
             case NoState:
                 drawNoState();
                 break;
-                
+
             default:
-            	break;
+                break;
         }
     }
 
@@ -1772,23 +1789,28 @@ public void WI_unloadData()
     @SourceCode.Exact
     @WI_Stuff.C(WI_Start)
     public void Start(wbstartstruct_t wbstartstruct) {
-        WI_initVariables: {
+        WI_initVariables:
+        {
             initVariables(wbstartstruct);
         }
-        WI_loadData: {
+        WI_loadData:
+        {
             loadData();
         }
 
         if (DOOM.deathmatch) {
-            WI_initDeathmatchStats: {
+            WI_initDeathmatchStats:
+            {
                 initDeathmatchStats();
             }
         } else if (DOOM.netgame) {
-            WI_initNetgameStats: {
+            WI_initNetgameStats:
+            {
                 initNetgameStats();
             }
         } else {
-            WI_initStats: {
+            WI_initStats:
+            {
                 initStats();
             }
         }

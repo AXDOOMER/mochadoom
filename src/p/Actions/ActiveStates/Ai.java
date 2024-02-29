@@ -23,7 +23,6 @@ import data.mobjtype_t;
 import data.sounds;
 import defines.skill_t;
 import defines.statenum_t;
-import p.ActiveStates;
 import p.mobj_t;
 import static p.mobj_t.MF_AMBUSH;
 import static p.mobj_t.MF_COUNTKILL;
@@ -35,6 +34,7 @@ import static p.mobj_t.MF_SOLID;
 import static utils.C2JUtils.eval;
 
 public interface Ai extends Monsters, Sounds {
+
     //
     // A_Look
     // Stay in state until a player is sighted.
@@ -47,7 +47,7 @@ public interface Ai extends Monsters, Sounds {
         targ = actor.subsector.sector.soundtarget;
 
         if (targ != null
-            && eval(targ.flags & MF_SHOOTABLE)) {
+                && eval(targ.flags & MF_SHOOTABLE)) {
             actor.target = targ;
 
             if (eval(actor.flags & MF_AMBUSH)) {
@@ -270,7 +270,7 @@ public interface Ai extends Monsters, Sounds {
             getEnemies().NightmareRespawn(mobj);
         }
     }
-    
+
     //
     // A_FaceTarget
     //
@@ -283,9 +283,9 @@ public interface Ai extends Monsters, Sounds {
         actor.flags &= ~MF_AMBUSH;
 
         actor.angle = sceneRenderer().PointToAngle2(actor.x,
-            actor.y,
-            actor.target.x,
-            actor.target.y) & BITS32;
+                actor.y,
+                actor.target.x,
+                actor.target.y) & BITS32;
 
         if (eval(actor.target.flags & MF_SHADOW)) {
             actor.angle += (P_Random() - P_Random()) << 21;

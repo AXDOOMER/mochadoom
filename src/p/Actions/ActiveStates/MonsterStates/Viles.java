@@ -38,7 +38,9 @@ import static p.ChaseDirections.yspeed;
 import p.mobj_t;
 
 public interface Viles extends ActionTrait {
+
     void A_FaceTarget(mobj_t actor);
+
     void A_Chase(mobj_t actor);
 
     //
@@ -49,7 +51,7 @@ public interface Viles extends ActionTrait {
         final AbstractLevelLoader ll = levelLoader();
         final ActionsAttacks actionsAttacks = getAttacks();
         final Attacks att = actionsAttacks.contextRequire(KEY_ATTACKS);
-        
+
         int xl;
         int xh;
         int yl;
@@ -110,7 +112,7 @@ public interface Viles extends ActionTrait {
     default void A_VileStart(mobj_t actor) {
         StartSound(actor, sounds.sfxenum_t.sfx_vilatk);
     }
-    
+
     //
     // A_Fire
     // Keep fire in front of player unless out of sight
@@ -146,7 +148,7 @@ public interface Viles extends ActionTrait {
         actor.z = dest.z;
         SetThingPosition(actor);
     }
-    
+
     //
     // A_VileTarget
     // Spawn the hellfire

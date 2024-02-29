@@ -6,6 +6,7 @@ import rr.line_t;
 import rr.sector_t;
 
 public class slidedoor_t extends SectorAction {
+
     public sdt_e type;
     public line_t line;
     public int frame;

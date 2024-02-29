@@ -12,12 +12,15 @@ import doom.SourceCode;
 import doom.SourceCode.P_MapUtl;
 import static doom.SourceCode.P_MapUtl.P_SetThingPosition;
 import doom.SourceCode.R_Main;
-import static doom.SourceCode.R_Main.*;
+import static doom.SourceCode.R_Main.R_PointInSubsector;
 import doom.SourceCode.fixed_t;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import m.BBox;
 import m.Settings;
 import static m.fixed_t.FRACBITS;
 import mochadoom.Engine;
+import mochadoom.Loggers;
 import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
 import rr.line_t;
@@ -40,12 +43,12 @@ import static utils.C2JUtils.flags;
  * 
  * @author velktron
  */
-
 public abstract class AbstractLevelLoader implements ILevelLoader {
 
-    // ///////////////// Status objects ///////////////////
+    private static final Logger LOGGER = Loggers.getLogger(AbstractLevelLoader.class.getName());
 
-    final DoomMain<?,?> DOOM;
+    // ///////////////// Status objects ///////////////////
+    final DoomMain<?, ?> DOOM;
 
     //
     // MAP related Lookup tables.
@@ -65,7 +68,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     public line_t[] lines;
     public int numsides;
     public side_t[] sides;
-
 
     // BLOCKMAP
     // Created from axis aligned bounding box
@@ -92,7 +94,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      */
     protected int[] blockmaplump; // was short -- killough
 
-    @fixed_t public int bmaporgx, bmaporgy;
+    @fixed_t
+    public int bmaporgx, bmaporgy;
 
     /** for thing chains */
     public mobj_t[] blocklinks;
@@ -102,11 +105,9 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * LineOf Sight calculation. Without special effect, this could be used as a
      * PVS lookup as well.
      */
-
     public byte[] rejectmatrix;
 
     // Maintain single and multi player starting spots.
-
     // 1/11/98 killough: Remove limit on deathmatch starts
     protected mapthing_t[] deathmatchstarts; // killough
 
@@ -117,7 +118,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
     protected mapthing_t[] playerstarts = new mapthing_t[Limits.MAXPLAYERS];
 
-    public AbstractLevelLoader(DoomMain<?,?> DOOM) {
+    public AbstractLevelLoader(DoomMain<?, ?> DOOM) {
         this.DOOM = DOOM;
     }
 
@@ -125,7 +126,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * P_SetThingPosition Links a thing into both a block and a subsector based
      * on it's x y. Sets thing.subsector properly
      */
-
     @Override
     @SourceCode.Exact
     @P_MapUtl.C(P_SetThingPosition)
@@ -137,7 +137,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         final mobj_t link;
 
         // link into subsector
-        R_PointInSubsector: {
+        R_PointInSubsector:
+        {
             ss = PointInSubsector(thing.x, thing.y);
         }
         thing.subsector = ss;
@@ -161,13 +162,12 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             // inert things don't need to be in blockmap
             blockx = getSafeBlockX(thing.x - bmaporgx);
             blocky = getSafeBlockY(thing.y - bmaporgy);
-            
+
             // Valid block?
             if (blockx >= 0
-                && blockx < bmapwidth
-                && blocky >= 0
-                && blocky < bmapheight
-            ) {
+                    && blockx < bmapwidth
+                    && blocky >= 0
+                    && blocky < bmapheight) {
                 // Get said block.
                 link = blocklinks[blocky * bmapwidth + blockx];
                 thing.bprev = null; // Thing is put at head of block...
@@ -201,12 +201,13 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         if (numnodes == 0) {
             return subsectors[0];
         }
-        
+
         nodenum = numnodes - 1;
-        
+
         while (!C2JUtils.flags(nodenum, NF_SUBSECTOR)) {
             node = nodes[nodenum];
-            R_PointOnSide: {
+            R_PointOnSide:
+            {
                 side = node.PointOnSide(x, y);
             }
             nodenum = node.children[side];
@@ -220,11 +221,10 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     // New code added to speed up calculation of internal blockmap
     // Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
     //
-
     /**
      * places to shift rel position for cell num
      */
-    protected static final int BLOCK_SHIFT = 7; 
+    protected static final int BLOCK_SHIFT = 7;
 
     /**
      * mask for rel position within cell
@@ -238,9 +238,9 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
     // jff 10/8/98 use guardband>0
     // jff 10/12/98 0 ok with + 1 in rows,cols
-
     protected class linelist_t // type used to list lines in each block
     {
+
         public int num;
 
         public linelist_t next;
@@ -257,11 +257,12 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * @param lineno
      */
     private void AddBlockLine(linelist_t[] lists, int[] count, boolean[] done, int blockno, int lineno) {
-        long a=System.nanoTime();
+        long a = System.nanoTime();
         linelist_t l;
 
-        if (done[blockno])
+        if (done[blockno]) {
             return;
+        }
 
         l = new linelist_t();
         l.num = lineno;
@@ -269,13 +270,13 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         lists[blockno] = l;
         count[blockno]++;
         done[blockno] = true;
-        long b=System.nanoTime();
-        
-        total+=(b-a);
+        long b = System.nanoTime();
+
+        total += (b - a);
     }
 
-    long total=0;
-    
+    long total = 0;
+
     /**
      * Actually construct the blockmap lump from the level data This finds the
      * intersection of each linedef with the column and row lines at the left
@@ -284,7 +285,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * important that LINEDEFS and VERTEXES are already read-in and defined, so
      * it is necessary to change map lump ordering for this to work.
      */
-
     protected final void CreateBlockMap() {
         int xorg, yorg; // blockmap origin (lower left)
         int nrows, ncols; // blockmap dimensions
@@ -301,18 +301,19 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         long a = System.nanoTime();
 
         // scan for map limits, which the blockmap must enclose
-
         for (int i = 0; i < numvertexes; i++) {
             int t;
 
-            if ((t = vertexes[i].x) < map_minx)
+            if ((t = vertexes[i].x) < map_minx) {
                 map_minx = t;
-            else if (t > map_maxx)
+            } else if (t > map_maxx) {
                 map_maxx = t;
-            if ((t = vertexes[i].y) < map_miny)
+            }
+            if ((t = vertexes[i].y) < map_miny) {
                 map_miny = t;
-            else if (t > map_maxy)
+            } else if (t > map_maxy) {
                 map_maxy = t;
+            }
         }
         map_minx >>= FRACBITS; // work in map coords, not fixed_t
         map_maxx >>= FRACBITS;
@@ -320,20 +321,18 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         map_maxy >>= FRACBITS;
 
         // set up blockmap area to enclose level plus margin
-
         xorg = map_minx - BLOCK_MARGIN;
         yorg = map_miny - BLOCK_MARGIN;
         ncols = (map_maxx + BLOCK_MARGIN - xorg + 1 + BLOCK_MASK) >> BLOCK_SHIFT; // jff
-                                                                         // 10/12/98
+        // 10/12/98
         nrows = (map_maxy + BLOCK_MARGIN - yorg + 1 + BLOCK_MASK) >> BLOCK_SHIFT; // +1
-                                                                         // needed
-                                                                         // for
+        // needed
+        // for
         NBlocks = ncols * nrows; // map exactly 1 cell
 
         // create the array of pointers on NBlocks to blocklists
         // also create an array of linelist counts on NBlocks
         // finally make an array in which we can mark blocks done per line
-
         // CPhipps - calloc's
         blocklists = new linelist_t[NBlocks];
         blockcount = new int[NBlocks];
@@ -342,7 +341,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // initialize each blocklist, and enter the trailing -1 in all
         // blocklists
         // note the linked list of lines grows backwards
-
         for (int i = 0; i < NBlocks; i++) {
             blocklists[i] = new linelist_t();
             blocklists[i].num = -1;
@@ -353,7 +351,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // For each linedef in the wad, determine all blockmap blocks it
         // touches,
         // and add the linedef number to the blocklists for those blocks
-
         for (int i = 0; i < numlines; i++) {
             int x1 = lines[i].v1x >> FRACBITS; // lines[i] map coords
             int y1 = lines[i].v1y >> FRACBITS;
@@ -372,11 +369,9 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             int maxy = y1 > y2 ? y1 : y2;
 
             // no blocks done for this linedef yet
-
             C2JUtils.memset(blockdone, false, NBlocks);
 
             // The line always belongs to the blocks containing its endpoints
-
             bx = (x1 - xorg) >> BLOCK_SHIFT;
             by = (y1 - yorg) >> BLOCK_SHIFT;
             AddBlockLine(blocklists, blockcount, blockdone, by * ncols + bx, i);
@@ -388,7 +383,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             // it contains, intersects the Linedef i. Add i to each
             // corresponding
             // blocklist.
-
             if (!vert) // don't interesect vertical lines with columns
             {
                 for (int j = 0; j < ncols; j++) {
@@ -402,14 +396,17 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                     int yp = (y - yorg) & BLOCK_MASK; // y position within block
 
                     if (yb < 0 || yb > nrows - 1) // outside blockmap, continue
+                    {
                         continue;
+                    }
 
                     if (x < minx || x > maxx) // line doesn't touch column
+                    {
                         continue;
+                    }
 
                     // The cell that contains the intersection point is always
                     // added
-
                     AddBlockLine(blocklists, blockcount, blockdone, ncols * yb
                             + j, i);
 
@@ -418,31 +415,36 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                     // (and whether the line extends past the intersection)
                     // which
                     // blocks are hit
-
                     if (yp == 0) // intersection at a corner
                     {
                         if (sneg) // \ - blocks x,y-, x-,y
                         {
-                            if (yb > 0 && miny < y)
+                            if (yb > 0 && miny < y) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * (yb - 1) + j, i);
-                            if (j > 0 && minx < x)
+                                        ncols * (yb - 1) + j, i);
+                            }
+                            if (j > 0 && minx < x) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * yb + j - 1, i);
+                                        ncols * yb + j - 1, i);
+                            }
                         } else if (spos) // / - block x-,y-
                         {
-                            if (yb > 0 && j > 0 && minx < x)
+                            if (yb > 0 && j > 0 && minx < x) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * (yb - 1) + j - 1, i);
+                                        ncols * (yb - 1) + j - 1, i);
+                            }
                         } else if (horiz) // - - block x-,y
                         {
-                            if (j > 0 && minx < x)
+                            if (j > 0 && minx < x) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * yb + j - 1, i);
+                                        ncols * yb + j - 1, i);
+                            }
                         }
                     } else if (j > 0 && minx < x) // else not at corner: x-,y
+                    {
                         AddBlockLine(blocklists, blockcount, blockdone, ncols
                                 * yb + j - 1, i);
+                    }
                 }
             }
 
@@ -450,7 +452,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             // it contains, intersects the Linedef i. Add i to all the
             // corresponding
             // blocklists.
-
             if (!horiz) {
                 for (int j = 0; j < nrows; j++) {
                     // intersection of Linedef with y=yorg+(j<<blkshift)
@@ -463,14 +464,17 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                     int xp = (x - xorg) & BLOCK_MASK; // x position within block
 
                     if (xb < 0 || xb > ncols - 1) // outside blockmap, continue
+                    {
                         continue;
+                    }
 
                     if (y < miny || y > maxy) // line doesn't touch row
+                    {
                         continue;
+                    }
 
                     // The cell that contains the intersection point is always
                     // added
-
                     AddBlockLine(blocklists, blockcount, blockdone, ncols * j
                             + xb, i);
 
@@ -479,38 +483,42 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                     // (and whether the line extends past the intersection)
                     // which
                     // blocks are hit
-
                     if (xp == 0) // intersection at a corner
                     {
                         if (sneg) // \ - blocks x,y-, x-,y
                         {
-                            if (j > 0 && miny < y)
+                            if (j > 0 && miny < y) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * (j - 1) + xb, i);
-                            if (xb > 0 && minx < x)
+                                        ncols * (j - 1) + xb, i);
+                            }
+                            if (xb > 0 && minx < x) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * j + xb - 1, i);
+                                        ncols * j + xb - 1, i);
+                            }
                         } else if (vert) // | - block x,y-
                         {
-                            if (j > 0 && miny < y)
+                            if (j > 0 && miny < y) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * (j - 1) + xb, i);
+                                        ncols * (j - 1) + xb, i);
+                            }
                         } else if (spos) // / - block x-,y-
                         {
-                            if (xb > 0 && j > 0 && miny < y)
+                            if (xb > 0 && j > 0 && miny < y) {
                                 AddBlockLine(blocklists, blockcount, blockdone,
-                                    ncols * (j - 1) + xb - 1, i);
+                                        ncols * (j - 1) + xb - 1, i);
+                            }
                         }
                     } else if (j > 0 && miny < y) // else not on a corner: x,y-
+                    {
                         AddBlockLine(blocklists, blockcount, blockdone, ncols
                                 * (j - 1) + xb, i);
+                    }
                 }
             }
         }
 
         // Add initial 0 to all blocklists
         // count the total number of lines (and 0's and -1's)
-
         C2JUtils.memset(blockdone, false, NBlocks);
 
         linetotal = 0;
@@ -521,7 +529,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         }
 
         // Create the blockmap lump
-
         // blockmaplump = malloc_IfSameLevel(blockmaplump, 4 + NBlocks +
         // linetotal);
         blockmaplump = new int[(4 + NBlocks + linetotal)];
@@ -533,17 +540,16 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         blockmaplump[3] = bmapheight = nrows;
 
         // offsets to lists and block lists
-
         for (int i = 0; i < NBlocks; i++) {
             linelist_t bl = blocklists[i];
-            int offs =
-                blockmaplump[4 + i] = // set offset to block's list
+            int offs
+                    = blockmaplump[4 + i]
+                    = // set offset to block's list
                     (i != 0 ? blockmaplump[4 + i - 1] : 4 + NBlocks)
-                            + (i != 0 ? blockcount[i - 1] : 0);
+                    + (i != 0 ? blockcount[i - 1] : 0);
 
             // add the lines in each block's list to the blockmaplump
             // delete each list node as we go
-
             while (bl != null) {
                 linelist_t tmp = bl.next;
                 blockmaplump[offs++] = bl.num;
@@ -553,13 +559,12 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
         long b = System.nanoTime();
 
-        System.err.printf("Blockmap generated in %f sec\n", (b - a) / 1e9);
-        System.err.printf("Time spend in AddBlockLine : %f sec\n", total / 1e9);
+        LOGGER.log(Level.WARNING, String.format("Blockmap generated in %f sec", (b - a) / 1e9));
+        LOGGER.log(Level.WARNING, String.format("Time spend in AddBlockLine : %f sec", total / 1e9));
     }
 
     // jff 10/6/98
     // End new code added to speed up calculation of internal blockmap
-
     //
     // P_VerifyBlockMap
     //
@@ -581,7 +586,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
                 // check that block offset is in bounds
                 if (blockoffset >= p_maxoffs) {
-                    System.err.printf("P_VerifyBlockMap: block offset overflow\n");
+                    LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: block offset overflow"));
                     return false;
                 }
 
@@ -589,7 +594,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
                 // check that list offset is in bounds
                 if (offset < 4 || offset >= count) {
-                    System.err.printf("P_VerifyBlockMap: list offset overflow\n");
+                    LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: list offset overflow"));
                     return false;
                 }
 
@@ -599,17 +604,19 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
                 for (tmplist = p_list;; tmplist++) {
                     // we have overflowed the lump?
                     if (tmplist >= p_maxoffs) {
-                        System.err.printf("P_VerifyBlockMap: open blocklist\n");
+                        LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: open blocklist"));
                         return false;
                     }
                     if (blockmaplump[tmplist] == -1) // found -1
+                    {
                         break;
+                    }
                 }
 
                 // scan the list for out-of-range linedef indicies in list
                 for (tmplist = p_list; blockmaplump[tmplist] != -1; tmplist++) {
                     if (blockmaplump[tmplist] < 0 || blockmaplump[tmplist] >= numlines) {
-                        System.err.printf("P_VerifyBlockMap: index >= numlines\n");
+                        LOGGER.log(Level.WARNING, String.format("P_VerifyBlockMap: index >= numlines"));
                         return false;
                     }
                 }
@@ -633,7 +640,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * 
      * @return
      */
-
     protected float rejectDensity() {
         // float[] rowdensity=new float[numsectors];
         float tabledensity;
@@ -661,8 +667,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
 
     }
 
-    protected static int[] POKE_REJECT = new int[] { 1, 2, 4, 8, 16, 32, 64,
-            128 };
+    protected static int[] POKE_REJECT = new int[]{1, 2, 4, 8, 16, 32, 64,
+        128};
 
     /**
      * Updates Reject table dynamically based on what expensive LOS checks say.
@@ -675,7 +681,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * @param x
      * @param y
      */
-
     protected void pokeIntoReject(int x, int y) {
         // Locate bit pointer e.g. for a 4x4 table, x=2 and y=3 give
         // 3*4+2=14
@@ -699,8 +704,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // next time.
         rejectmatrix[bytenum] |= POKE_REJECT[bitnum];
 
-        System.out.println(rejectDensity());
-
+        rejectDensity();
     }
 
     protected void retrieveFromReject(int x, int y, boolean value) {
@@ -726,7 +730,7 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // next time.
         rejectmatrix[bytenum] |= POKE_REJECT[bitnum];
 
-        System.out.println(rejectDensity());
+        rejectDensity();
 
     }
 
@@ -743,7 +747,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     // Full 512x512 blockmaps get this value set to -1.
     // A 511x511 blockmap would still have a valid negative number
     // e.g. -1..510, so they would be set to -2
-    
     public static final boolean FIX_BLOCKMAP_512 = Engine.getConfig().equals(Settings.fix_blockmap, Boolean.TRUE);
     public int blockmapxneg = -257;
     public int blockmapyneg = -257;
@@ -754,7 +757,6 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * 
      * @return
      */
-
     protected final int[] getMapBoundingBox(boolean playable) {
 
         int minx = Integer.MAX_VALUE;
@@ -793,8 +795,8 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
             }
         }
 
-        System.err.printf("Map bounding %d %d %d %d\n", minx >> FRACBITS,
-            miny >> FRACBITS, maxx >> FRACBITS, maxy >> FRACBITS);
+        LOGGER.log(Level.WARNING, String.format("Map bounding %d %d %d %d\n", minx >> FRACBITS,
+                miny >> FRACBITS, maxx >> FRACBITS, maxy >> FRACBITS));
 
         // Blow up bounding to the closest 128-sized block, adding 8 units as
         // padding.
@@ -804,10 +806,10 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         int bckx = ((BLOCKMAPPADDING + maxx) - orgx);
         int bcky = ((BLOCKMAPPADDING + maxy) - orgy);
 
-        System.err.printf("%d %d %d %d\n", orgx >> FRACBITS, orgy >> FRACBITS,
-            1 + (bckx >> MAPBLOCKSHIFT), 1 + (bcky >> MAPBLOCKSHIFT));
+        LOGGER.log(Level.WARNING, String.format("%d %d %d %d", orgx >> FRACBITS, orgy >> FRACBITS,
+                1 + (bckx >> MAPBLOCKSHIFT), 1 + (bcky >> MAPBLOCKSHIFT)));
 
-        return new int[] { orgx, orgy, bckx, bcky };
+        return new int[]{orgx, orgy, bckx, bcky};
     }
 
     protected void LoadReject(int lumpnum) {
@@ -831,24 +833,24 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
         // zeroes.
         // Much better than overflowing.
         // TODO: build-in a REJECT-matrix rebuilder?
-        rejectmatrix =
-            new byte[(int) (Math
-                    .ceil((this.numsectors * this.numsectors) / 8.0))];
+        rejectmatrix
+                = new byte[(int) (Math
+                        .ceil((this.numsectors * this.numsectors) / 8.0))];
         System.arraycopy(tmpreject, 0, rejectmatrix, 0,
-            Math.min(tmpreject.length, rejectmatrix.length));
+                Math.min(tmpreject.length, rejectmatrix.length));
 
         // Do warn on atypical reject map lengths, but use either default
         // all-zeroes one,
         // or whatever you happened to read anyway.
         if (tmpreject.length < rejectmatrix.length) {
-            System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",
-                tmpreject.length, rejectmatrix.length);
+            LOGGER.log(Level.WARNING, String.format("BROKEN REJECT MAP! Length %d expected %d\n",
+                    tmpreject.length, rejectmatrix.length));
         }
 
         // Maes: purely academic. Most maps are well above 0.68
         // System.out.printf("Reject table density: %f",rejectDensity());
     }
-    
+
     /**
      * Added config switch to turn on/off support
      * 
@@ -859,24 +861,22 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
      * @return
      */
     @SourceCode.Compatible("blockx >> MAPBLOCKSHIFT")
-    public final int getSafeBlockX(int blockx){
+    public final int getSafeBlockX(int blockx) {
         blockx >>= MAPBLOCKSHIFT;
         return (FIX_BLOCKMAP_512 && blockx <= this.blockmapxneg) ? blockx & 0x1FF : blockx;
     }
-    
+
     @SourceCode.Compatible("blockx >> MAPBLOCKSHIFT")
     public final int getSafeBlockX(long blockx) {
         blockx >>= MAPBLOCKSHIFT;
         return (int) ((FIX_BLOCKMAP_512 && blockx <= this.blockmapxneg) ? blockx & 0x1FF : blockx);
     }
-    
+
     /** Gets the proper blockmap block for a given Y 16.16 Coordinate, sanitized
      *  for 512-wide blockmaps. 
      * 
      * @param blocky
      * @return     */
-
-    
     @SourceCode.Compatible("blocky >> MAPBLOCKSHIFT")
     public final int getSafeBlockY(int blocky) {
         blocky >>= MAPBLOCKSHIFT;
@@ -890,34 +890,34 @@ public abstract class AbstractLevelLoader implements ILevelLoader {
     }
 
     /// Sector tag stuff, lifted off Boom
-    
-  /** Hash the sector tags across the sectors and linedefs.
-   *  Call in SpawnSpecials.
-   */
-    
-    public void InitTagLists()
-    {
-      int i;
+    /** Hash the sector tags across the sectors and linedefs.
+     *  Call in SpawnSpecials.
+     */
+    public void InitTagLists() {
+        int i;
 
-      for (i=numsectors; --i>=0; )        // Initially make all slots empty.
-        sectors[i].firsttag = -1;
-      for (i=numsectors; --i>=0; )        // Proceed from last to first sector
+        for (i = numsectors; --i >= 0;) // Initially make all slots empty.
+        {
+            sectors[i].firsttag = -1;
+        }
+        for (i = numsectors; --i >= 0;) // Proceed from last to first sector
         {                                 // so that lower sectors appear first
-          int j = sectors[i].tag % numsectors; // Hash func
-          sectors[i].nexttag = sectors[j].firsttag;   // Prepend sector to chain
-          sectors[j].firsttag = i;
+            int j = sectors[i].tag % numsectors; // Hash func
+            sectors[i].nexttag = sectors[j].firsttag;   // Prepend sector to chain
+            sectors[j].firsttag = i;
         }
 
-      // killough 4/17/98: same thing, only for linedefs
-
-      for (i=numlines; --i>=0; )        // Initially make all slots empty.
-        lines[i].firsttag = -1;
-      for (i=numlines; --i>=0; )        // Proceed from last to first linedef
+        // killough 4/17/98: same thing, only for linedefs
+        for (i = numlines; --i >= 0;) // Initially make all slots empty.
+        {
+            lines[i].firsttag = -1;
+        }
+        for (i = numlines; --i >= 0;) // Proceed from last to first linedef
         {                               // so that lower linedefs appear first
-          int j = lines[i].tag % numlines; // Hash func
-          lines[i].nexttag = lines[j].firsttag;   // Prepend linedef to chain
-          lines[j].firsttag = i;
+            int j = lines[i].tag % numlines; // Hash func
+            lines[i].nexttag = lines[j].firsttag;   // Prepend linedef to chain
+            lines[j].firsttag = i;
         }
     }
-    
+
 }

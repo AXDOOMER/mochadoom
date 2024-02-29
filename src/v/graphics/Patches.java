@@ -17,6 +17,7 @@
 package v.graphics;
 
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import mochadoom.Loggers;
 import rr.patch_t;
 import utils.C2JUtils;
@@ -56,6 +57,8 @@ import v.scale.VideoScale;
  */
 public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
 
+    static final Logger LOGGER = Loggers.getLogger(Patches.class.getName());
+
     /**
      * V_DrawPatch
      * 
@@ -64,7 +67,7 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
     default void DrawPatch(E screen, patch_t patch, int x, int y, int... flags) {
         DrawPatchScaled(screen, patch, null, x, y, flags);
     }
-    
+
     /**
      * V_DrawPatch
      * 
@@ -73,7 +76,7 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
     default void DrawPatchCentered(E screen, patch_t patch, int y, int... flags) {
         Patches.this.DrawPatchCenteredScaled(screen, patch, null, y, flags);
     }
-    
+
     /**
      * V_DrawScaledPatch like V_DrawPatch, but scaled with IVideoScale object scaling
      * Centers the x coordinate on a screen based on patch width and offset
@@ -82,7 +85,7 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
      * 
      * It uses FLAGS (see above) (now as a separate - Good Sign 2017/04/04) parameter, to be
      * parsed afterwards. Shamelessly ripped from Doom Legacy (for menus, etc) by _D_ ;-)
-     */ 
+     */
     default void DrawPatchCenteredScaled(E screen, patch_t patch, VideoScale vs, int y, int... flags) {
         final int flagsV = flags.length > 0 ? flags[0] : 0;
         int dupx, dupy;
@@ -93,7 +96,9 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
                 dupx = vs.getScalingX();
                 dupy = vs.getScalingY();
             }
-        } else dupx = dupy = 1;
+        } else {
+            dupx = dupy = 1;
+        }
         final boolean predevide = C2JUtils.flags(flagsV, V_PREDIVIDE);
         // By default we scale, if V_NOSCALEOFFSET we dont scale unless V_SCALEOFFSET (restores Default Behavior)
         final boolean scaleOffset = !C2JUtils.flags(flagsV, V_NOSCALEOFFSET) || C2JUtils.flags(flagsV, V_SCALEOFFSET);
@@ -105,11 +110,11 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
         final int halfWidth = noScalePatch ? patch.width / 2 : patch.width * dupx / 2;
         int x = getScreenWidth() / 2 - halfWidth - (scaleOffset ? patch.leftoffset * dupx : patch.leftoffset);
         y = applyScaling(y, patch.topoffset, dupy, predevide, scaleOffset, scaleStart);
-        
+
         if (noScalePatch) {
             dupx = dupy = 1;
         }
-        
+
         try {
             doRangeCheck(x, y, patch, dupx, dupy);
             DrawPatchColumns(getScreen(screen), patch, x, y, dupx, dupy, flip);
@@ -123,27 +128,27 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
      *  - Good Sign 2017/04/22
      */
     default void printDebugPatchInfo(patch_t patch, int x, int y, final boolean predevide, final boolean scaleOffset, final boolean scaleStart, int dupx, int dupy) {
-        Loggers.getLogger(Patches.class.getName()).log(Level.INFO, () -> String.format(
-            "V_DrawPatch: bad patch (ignored)\n" +
-            "Patch %s at %d, %d exceeds LFB\n" + 
-            "\tpredevide: %s\n" +
-            "\tscaleOffset: %s\n" +
-            "\tscaleStart: %s\n" +
-            "\tdupx: %s, dupy: %s\n" +
-            "\tleftoffset: %s\n" +
-            "\ttopoffset: %s\n",
-            patch.name, x, y,
-            predevide, scaleOffset, scaleStart, dupx, dupy, patch.leftoffset, patch.topoffset
+        LOGGER.log(Level.INFO, () -> String.format(
+                "V_DrawPatch: bad patch (ignored)\n"
+                + "Patch %s at %d, %d exceeds LFB\n"
+                + "\tpredevide: %s\n"
+                + "\tscaleOffset: %s\n"
+                + "\tscaleStart: %s\n"
+                + "\tdupx: %s, dupy: %s\n"
+                + "\tleftoffset: %s\n"
+                + "\ttopoffset: %s\n",
+                patch.name, x, y,
+                predevide, scaleOffset, scaleStart, dupx, dupy, patch.leftoffset, patch.topoffset
         ));
     }
-    
+
     /**
      * V_DrawPatch
      * 
      * V_DrawScaledPatch like V_DrawPatch, but scaled with IVideoScale object scaling
      * I have completely reworked column drawing code, so it resides in another class, and supports parallelism
      *  - Good Sign 2017/04/04
-     */ 
+     */
     default void DrawPatchScaled(E screen, patch_t patch, VideoScale vs, int x, int y, int... flags) {
         final int flagsV = flags.length > 0 ? flags[0] : 0;
         int dupx, dupy;
@@ -154,7 +159,9 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
                 dupx = vs.getScalingX();
                 dupy = vs.getScalingY();
             }
-        } else dupx = dupy = 1;
+        } else {
+            dupx = dupy = 1;
+        }
         final boolean predevide = C2JUtils.flags(flagsV, V_PREDIVIDE);
         // By default we scale, if V_NOSCALEOFFSET we dont scale unless V_SCALEOFFSET (restores Default Behavior)
         final boolean scaleOffset = !C2JUtils.flags(flagsV, V_NOSCALEOFFSET) || C2JUtils.flags(flagsV, V_SCALEOFFSET);
@@ -165,11 +172,11 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
         final boolean flip = C2JUtils.flags(flagsV, V_FLIPPEDPATCH);
         x = applyScaling(x, patch.leftoffset, dupx, predevide, scaleOffset, scaleStart);
         y = applyScaling(y, patch.topoffset, dupy, predevide, scaleOffset, scaleStart);
-        
+
         if (noScalePatch) {
             dupx = dupy = 1;
         }
-        
+
         try {
             doRangeCheck(x, y, patch, dupx, dupy);
             DrawPatchColumns(getScreen(screen), patch, x, y, dupx, dupy, flip);
@@ -178,7 +185,7 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
             printDebugPatchInfo(patch, x, y, predevide, scaleOffset, scaleStart, dupx, dupy);
         }
     }
-    
+
     /**
      * Replaces DrawPatchCol for bunny scrolled in Finale.
      * Also uses my reworked column code, but that one is not parallelized
@@ -188,26 +195,28 @@ public interface Patches<V, E extends Enum<E>> extends Columns<V, E> {
         final int dupx = vs.getScalingX(), dupy = vs.getScalingY();
         x -= patch.leftoffset;
         x *= dupx;
-        
+
         DrawColumn(
-            getScreen(screen),
-            patch.columns[col],
-            new Horizontal(point(x, 0), dupx),
-            convertPalettedBlock(patch.columns[col].data),
-            getScreenWidth(),
-            dupy
+                getScreen(screen),
+                patch.columns[col],
+                new Horizontal(point(x, 0), dupx),
+                convertPalettedBlock(patch.columns[col].data),
+                getScreenWidth(),
+                dupy
         );
     }
-    
+
     default int applyScaling(int c, int offset, int dup, boolean predevide, boolean scaleOffset, boolean scaleStart) {
         // A very common operation, eliminates the need to pre-divide.
-        if (predevide)
+        if (predevide) {
             c /= getScalingX();
-        
+        }
+
         // Scale start before offsetting, it seems right to do so - Good Sign 2017/04/04
-        if (scaleStart)
+        if (scaleStart) {
             c *= dup;
-        
+        }
+
         // MAES: added this fix so that non-zero patch offsets can be
         // taken into account, regardless of whether we use pre-scaled
         // coords or not. Only Doomguy's face needs this hack for now.

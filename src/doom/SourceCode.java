@@ -16,42 +16,59 @@
  */
 package doom;
 
-import java.lang.annotation.*;
-import static java.lang.annotation.ElementType.*;
+import java.lang.annotation.Documented;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import java.lang.annotation.Retention;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
+import java.lang.annotation.Target;
 
 @Target({})
 @Retention(SOURCE)
 public @interface SourceCode {
-    
+
     public enum AM_Map {
         AM_Responder,
         AM_Ticker,
         AM_Drawer,
         AM_Stop;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { AM_Map value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            AM_Map value();
+        }
     }
-    
+
     public enum D_Main {
         D_DoomLoop,
         D_ProcessEvents;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { D_Main value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            D_Main value();
+        }
     }
-    
+
     public enum F_Finale {
         F_Responder,
         F_Ticker,
         F_Drawer,
         F_StartFinale;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { F_Finale value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            F_Finale value();
+        }
     }
-    
+
     public enum G_Game {
         G_BuildTiccmd,
         G_DoCompleted,
@@ -81,9 +98,13 @@ public @interface SourceCode {
         G_Ticker,
         G_Responder,
         G_ScreenShot;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { G_Game value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            G_Game value();
+        }
     }
 
     public enum HU_Lib {
@@ -107,11 +128,15 @@ public @interface SourceCode {
         HUlib_keyInIText,
         HUlib_drawIText,
         HUlib_eraseIText;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { HU_Lib value(); }
-    }    
-    
+        @Retention(SOURCE)
+        public @interface C {
+
+            HU_Lib value();
+        }
+    }
+
     public enum HU_Stuff {
         HU_Init,
         HU_Start,
@@ -121,11 +146,15 @@ public @interface SourceCode {
         HU_queueChatChar,
         HU_dequeueChatChar,
         HU_Erase;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { HU_Stuff value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            HU_Stuff value();
+        }
     }
-    
+
     public enum I_IBM {
         I_GetTime,
         I_WaitVBL,
@@ -134,38 +163,54 @@ public @interface SourceCode {
         I_StartTic,
         I_InitNetwork,
         I_NetCmd;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { I_IBM value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            I_IBM value();
+        }
     }
 
     public enum M_Argv {
         M_CheckParm;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { M_Argv value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            M_Argv value();
+        }
     }
-    
+
     public enum M_Menu {
         M_Responder,
         M_Ticker,
         M_Drawer,
         M_Init,
         M_StartControlPanel;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { M_Menu value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            M_Menu value();
+        }
     }
-    
+
     public enum M_Random {
         M_Random,
         P_Random,
         M_ClearRandom;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { M_Random value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            M_Random value();
+        }
     }
-    
+
     public enum P_Doors {
         T_VerticalDoor,
         EV_VerticalDoor,
@@ -177,11 +222,15 @@ public @interface SourceCode {
         P_FindSlidingDoorType,
         T_SlidingDoor,
         EV_SlidingDoor;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Doors value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Doors value();
+        }
     }
-    
+
     public enum P_Map {
         P_CheckPosition,
         PIT_CheckThing,
@@ -193,11 +242,15 @@ public @interface SourceCode {
         PTR_AimTraverse,
         PTR_ShootTraverse,
         PTR_UseTraverse;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Map value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Map value();
+        }
     }
-    
+
     public enum P_MapUtl {
         P_BlockThingsIterator,
         P_BlockLinesIterator,
@@ -206,11 +259,15 @@ public @interface SourceCode {
         P_SetThingPosition,
         PIT_AddLineIntercepts,
         PIT_AddThingIntercepts;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_MapUtl value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_MapUtl value();
+        }
     }
-    
+
     public enum P_Mobj {
         G_PlayerReborn,
         P_SpawnMapThing,
@@ -229,18 +286,26 @@ public @interface SourceCode {
         P_CheckMissileSpawn,
         P_SpawnMissile,
         P_SpawnPlayerMissile;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Mobj value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Mobj value();
+        }
     }
-    
+
     public enum P_Enemy {
         PIT_VileCheck;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Enemy value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Enemy value();
+        }
     }
-    
+
     public enum P_Lights {
         T_FireFlicker,
         P_SpawnFireFlicker,
@@ -253,11 +318,15 @@ public @interface SourceCode {
         EV_LightTurnOn,
         T_Glow,
         P_SpawnGlowingLight;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Lights value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Lights value();
+        }
     }
-    
+
     public enum P_SaveG {
         P_ArchivePlayers,
         P_UnArchivePlayers,
@@ -267,19 +336,27 @@ public @interface SourceCode {
         P_UnArchiveThinkers,
         P_ArchiveSpecials,
         P_UnArchiveSpecials;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_SaveG value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_SaveG value();
+        }
     }
-    
+
     public enum P_Setup {
         P_SetupLevel,
         P_LoadThings;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Setup value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Setup value();
+        }
     }
-    
+
     public enum P_Spec {
         P_InitPicAnims,
         P_SpawnSpecials,
@@ -319,18 +396,26 @@ public @interface SourceCode {
         EV_DoFloor,
         T_MoveFloor,
         EV_Teleport;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Spec value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Spec value();
+        }
     }
-    
+
     public enum P_Ceiling {
         EV_DoCeiling;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Ceiling value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Ceiling value();
+        }
     }
-    
+
     public enum P_Tick {
         P_InitThinkers,
         P_RemoveThinker,
@@ -338,11 +423,15 @@ public @interface SourceCode {
         P_AllocateThinker,
         P_RunThinkers,
         P_Ticker;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Tick value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Tick value();
+        }
     }
-    
+
     public enum P_Pspr {
         P_SetPsprite,
         P_CalcSwing,
@@ -374,11 +463,15 @@ public @interface SourceCode {
         A_BFGsound,
         P_SetupPsprites,
         P_MovePsprites;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { P_Pspr value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            P_Pspr value();
+        }
     }
-    
+
     public enum R_Data {
         R_GetColumn,
         R_InitData,
@@ -386,18 +479,26 @@ public @interface SourceCode {
         R_FlatNumForName,
         R_TextureNumForName,
         R_CheckTextureNumForName;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { R_Data value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            R_Data value();
+        }
     }
-    
+
     public enum R_Draw {
         R_FillBackScreen;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { R_Draw value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            R_Draw value();
+        }
     }
-    
+
     public enum R_Main {
         R_PointOnSide,
         R_PointOnSegSide,
@@ -410,22 +511,30 @@ public @interface SourceCode {
         R_RenderPlayerView,
         R_Init,
         R_SetViewSize;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { R_Main value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            R_Main value();
+        }
     }
-    
+
     public enum ST_Stuff {
         ST_Responder,
         ST_Ticker,
         ST_Drawer,
         ST_Start,
         ST_Init;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { ST_Stuff value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            ST_Stuff value();
+        }
     }
-    
+
     public enum W_Wad {
         W_InitMultipleFiles,
         W_Reload,
@@ -435,11 +544,15 @@ public @interface SourceCode {
         W_ReadLump,
         W_CacheLumpNum,
         W_CacheLumpName;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { W_Wad value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            W_Wad value();
+        }
     }
-    
+
     public enum WI_Stuff {
         WI_initVariables,
         WI_loadData,
@@ -450,48 +563,61 @@ public @interface SourceCode {
         WI_Ticker,
         WI_Drawer,
         WI_Start;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { WI_Stuff value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            WI_Stuff value();
+        }
     }
-    
+
     public interface D_Think {
+
         public enum actionf_t {
             acp1,
             acv,
             acp2
         }
-        
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { actionf_t value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            actionf_t value();
+        }
     }
-    
+
     public enum Z_Zone {
         Z_Malloc;
+
         @Documented
-        @Retention(SOURCE) public
-        @interface C { Z_Zone value(); }
+        @Retention(SOURCE)
+        public @interface C {
+
+            Z_Zone value();
+        }
     }
-    
+
     @Documented
     @Retention(SOURCE)
     public @interface Exact {
-        String description() default
-            "Indicates that the method behaves exactly in vanilla way\n" +
-            " and can be skipped when traversing for compatibility";
+
+        String description() default "Indicates that the method behaves exactly in vanilla way\n"
+                + " and can be skipped when traversing for compatibility";
     }
 
     @Documented
     @Retention(SOURCE)
     public @interface Compatible {
+
         String[] value() default "";
-        String description() default
-            "Indicates that the method can behave differently from vanilla way,\n" +
-            " but this behavior is reviewed and can be turned back to vanilla as an option." +
-            "A value might be specivied with the equivalent vanilla code";
+
+        String description() default "Indicates that the method can behave differently from vanilla way,\n"
+                + " but this behavior is reviewed and can be turned back to vanilla as an option."
+                + "A value might be specivied with the equivalent vanilla code";
     }
-    
+
     public enum CauseOfDesyncProbability {
         LOW,
         MEDIUM,
@@ -500,43 +626,51 @@ public @interface SourceCode {
 
     @Documented
     @Retention(SOURCE)
-    public @interface Suspicious  {
+    public @interface Suspicious {
+
         CauseOfDesyncProbability value() default CauseOfDesyncProbability.HIGH;
-        String description() default
-            "Indicates that the method contains behavior totally different\n" +
-            "from vanilla, and by so should be considered suspicious\n" +
-            "in terms of compatibility";
+
+        String description() default "Indicates that the method contains behavior totally different\n"
+                + "from vanilla, and by so should be considered suspicious\n"
+                + "in terms of compatibility";
     }
 
     @Documented
     @Retention(SOURCE)
     @Target({METHOD, FIELD, LOCAL_VARIABLE, PARAMETER})
-    public @interface angle_t {}
-    
+    public @interface angle_t {
+    }
+
     @Documented
     @Retention(SOURCE)
     @Target({METHOD, FIELD, LOCAL_VARIABLE, PARAMETER})
-    public @interface fixed_t {}
-    
+    public @interface fixed_t {
+    }
+
     @Documented
     @Retention(SOURCE)
-    public @interface actionf_p1 {}
-    
+    public @interface actionf_p1 {
+    }
+
     @Documented
     @Retention(SOURCE)
-    public @interface actionf_v {}
-    
+    public @interface actionf_v {
+    }
+
     @Documented
     @Retention(SOURCE)
-    public @interface actionf_p2 {}
-    
+    public @interface actionf_p2 {
+    }
+
     @Documented
     @Retention(SOURCE)
     @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
-    public @interface thinker_t {}
-    
+    public @interface thinker_t {
+    }
+
     @Documented
     @Retention(SOURCE)
     @Target({FIELD, LOCAL_VARIABLE, PARAMETER})
-    public @interface think_t {}
+    public @interface think_t {
+    }
 }

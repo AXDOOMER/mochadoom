@@ -42,14 +42,23 @@ import static utils.C2JUtils.eval;
 public interface ActionsUseEvents extends ActionTrait {
 
     void VerticalDoor(line_t line, mobj_t thing);
+
     void LightTurnOn(line_t line, int i);
+
     boolean BuildStairs(line_t line, stair_e stair_e);
+
     boolean DoDonut(line_t line);
+
     boolean DoFloor(line_t line, floor_e floor_e);
+
     boolean DoDoor(line_t line, vldoor_e vldoor_e);
+
     boolean DoPlat(line_t line, plattype_e plattype_e, int i);
+
     boolean DoCeiling(line_t line, ceiling_e ceiling_e);
+
     boolean DoLockedDoor(line_t line, vldoor_e vldoor_e, mobj_t thing);
+
     boolean PathTraverse(int x1, int y1, int x2, int y2, int flags, Predicate<intercept_t> trav);
 
     /**

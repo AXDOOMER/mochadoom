@@ -48,7 +48,9 @@ import static utils.C2JUtils.eval;
 public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
 
     result_e MovePlane(sector_t sector, int speed, int floorheight, boolean b, int i, int direction);
+
     void RemoveThinker(thinker_t door);
+
     int FindSectorFromLineTag(line_t line, int secnum);
 
     //
@@ -76,7 +78,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                             break;
                         default:
-                        	break;
+                            break;
                     }
                 }
                 break;
@@ -91,7 +93,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                             break;
                         default:
-                        	break;
+                            break;
                     }
                 }
                 break;
@@ -117,7 +119,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             door.topcountdown = 35 * 30;
                             break;
                         default:
-                        	break;
+                            break;
                     }
                 } else if (res == result_e.crushed) {
                     switch (door.type) {
@@ -149,7 +151,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                             RemoveThinker(door);  // unlink and free
                             break;
                         default:
-                        	break;
+                            break;
                     }
                 }
                 break;
@@ -198,7 +200,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                 /*        if ( p==null )
              return false; */
                 if (!p.cards[card_t.it_yellowcard.ordinal()]
-                    && !p.cards[card_t.it_yellowskull.ordinal()]) {
+                        && !p.cards[card_t.it_yellowskull.ordinal()]) {
                     p.message = PD_YELLOWO;
                     StartSound(null, sounds.sfxenum_t.sfx_oof);
                     return false;
@@ -273,7 +275,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
                         StartSound(door.sector.soundorg, sounds.sfxenum_t.sfx_doropn);
                     }
                 default:
-                	break;
+                    break;
             }
 
         }
@@ -424,7 +426,7 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
         door.topheight = sec.FindLowestCeilingSurrounding();
         door.topheight -= 4 * FRACUNIT;
     }
-    
+
     //
     // Spawn a door that closes after 30 seconds
     //
@@ -433,11 +435,13 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
     default void SpawnDoorCloseIn30(sector_t sector) {
         vldoor_t door;
 
-        Z_Malloc: {
+        Z_Malloc:
+        {
             door = new vldoor_t();
         }
 
-        P_AddThinker: {
+        P_AddThinker:
+        {
             AddThinker(door);
         }
 
@@ -460,23 +464,26 @@ public interface ActionsDoors extends ActionsMoveEvents, ActionsUseEvents {
     default void SpawnDoorRaiseIn5Mins(sector_t sector, int secnum) {
         vldoor_t door;
 
-        Z_Malloc: {
+        Z_Malloc:
+        {
             door = new vldoor_t();
         }
 
-        P_AddThinker: {
+        P_AddThinker:
+        {
             AddThinker(door);
         }
-        
+
         sector.specialdata = door;
         sector.special = 0;
-        
+
         door.thinkerFunction = T_VerticalDoor;
         door.sector = sector;
         door.direction = 2;
         door.type = vldoor_e.raiseIn5Mins;
         door.speed = VDOORSPEED;
-        P_FindLowestCeilingSurrounding: {
+        P_FindLowestCeilingSurrounding:
+        {
             door.topheight = sector.FindLowestCeilingSurrounding();
         }
         door.topheight -= 4 * FRACUNIT;
