@@ -1,16 +1,15 @@
 package f;
 
-import w.animenum_t;
 import rr.patch_t;
+import w.animenum_t;
 
 //
 //Animation.
 //There is another anim_t used in p_spec.
 //
-
 public class anim_t {
 
-        public anim_t(animenum_t type, int period, int nanims, point_t loc,
+    public anim_t(animenum_t type, int period, int nanims, point_t loc,
             int data1, int data2, patch_t[] p, int nexttic, int lastdrawn,
             int ctr, int state) {
         this.type = type;
@@ -25,62 +24,62 @@ public class anim_t {
         this.ctr = ctr;
         this.state = state;
     }
-        // Partial constructor, only 4 first fields.
-        public anim_t(animenum_t animAlways, int period, int nanims, point_t loc
-               ) {
-            this.type = animAlways;
-            this.period = period;
-            this.nanims = nanims;
-            this.loc = loc;
-        }
-        
-        // Partial constructor, only 5 first fields.
-        public anim_t(animenum_t type, int period, int nanims, point_t loc, int data1
-               ) {
-            this.type = type;
-            this.period = period;
-            this.nanims = nanims;
-            this.loc = loc;
-            this.data1=data1;
-        }
-        
-        public animenum_t  type;
+    // Partial constructor, only 4 first fields.
 
-        // period in tics between animations
-        public int     period;
+    public anim_t(animenum_t animAlways, int period, int nanims, point_t loc
+    ) {
+        this.type = animAlways;
+        this.period = period;
+        this.nanims = nanims;
+        this.loc = loc;
+    }
 
-        // number of animation frames
-        public int     nanims;
+    // Partial constructor, only 5 first fields.
+    public anim_t(animenum_t type, int period, int nanims, point_t loc, int data1
+    ) {
+        this.type = type;
+        this.period = period;
+        this.nanims = nanims;
+        this.loc = loc;
+        this.data1 = data1;
+    }
 
-        // location of animation
-        point_t loc;
+    public animenum_t type;
 
-        // ALWAYS: n/a,
-        // RANDOM: period deviation (<256),
-        // LEVEL: level
-        public int     data1;
+    // period in tics between animations
+    public int period;
 
-        // ALWAYS: n/a,
-        // RANDOM: random base period,
-        // LEVEL: n/a
-        public int     data2; 
+    // number of animation frames
+    public int nanims;
 
-        // actual graphics for frames of animations
-        //Maes: was pointer to array
-        public patch_t[] p= new patch_t[3];
+    // location of animation
+    point_t loc;
 
-        // following must be initialized to zero before use!
+    // ALWAYS: n/a,
+    // RANDOM: period deviation (<256),
+    // LEVEL: level
+    public int data1;
 
-        // next value of bcnt (used in conjunction with period)
-        public int     nexttic;
+    // ALWAYS: n/a,
+    // RANDOM: random base period,
+    // LEVEL: n/a
+    public int data2;
 
-        // last drawn animation frame
-        public int     lastdrawn;
+    // actual graphics for frames of animations
+    //Maes: was pointer to array
+    public patch_t[] p = new patch_t[3];
 
-        // next frame number to animate
-        public int     ctr;
-        
-        // used by RANDOM and LEVEL when animating
-        public int     state;  
+    // following must be initialized to zero before use!
+    // next value of bcnt (used in conjunction with period)
+    public int nexttic;
 
-    } 
+    // last drawn animation frame
+    public int lastdrawn;
+
+    // next frame number to animate
+    public int ctr;
+
+    // used by RANDOM and LEVEL when animating
+    public int state;
+
+}

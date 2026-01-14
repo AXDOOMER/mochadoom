@@ -22,7 +22,7 @@ package v.graphics;
  * @author Good Sign
  */
 public class Horizontal {
-    
+
     public int start;
     public int length;
 

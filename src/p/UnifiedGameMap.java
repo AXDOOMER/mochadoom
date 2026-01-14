@@ -10,7 +10,8 @@ import doom.DoomMain;
 import doom.SourceCode;
 import doom.SourceCode.CauseOfDesyncProbability;
 import doom.SourceCode.P_Tick;
-import static doom.SourceCode.P_Tick.*;
+import static doom.SourceCode.P_Tick.P_AddThinker;
+import static doom.SourceCode.P_Tick.P_InitThinkers;
 import doom.thinker_t;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -26,17 +27,17 @@ import static utils.C2JUtils.eval;
 import static utils.GenericCopy.malloc;
 
 // // FROM SIGHT
-
 public abstract class UnifiedGameMap implements ThinkerList {
+
     private static final Logger LOGGER = Loggers.getLogger(UnifiedGameMap.class.getName());
-    
+
     /**
      * killough's code for thinkers seems to be totally broken in M.D,
      * so commented it out and will not probably restore, but may invent
      * something new in future
      * - Good Sign 2017/05/1
      */
-    public UnifiedGameMap(DoomMain<?, ?> DOOM){
+    public UnifiedGameMap(DoomMain<?, ?> DOOM) {
         this.SW = new Switches();
         this.SPECS = new Specials();
         this.thinkercap = new thinker_t();
@@ -54,12 +55,10 @@ public abstract class UnifiedGameMap implements ThinkerList {
             FUNS.doWireState(state);
         }*/
     }
-    
-    /////////////////// STATUS ///////////////////
 
+    /////////////////// STATUS ///////////////////
     final DoomMain<?, ?> DOOM;
 
-    
     // //////////// Internal singletons //////////////
     public ActionFunctions A;
 
@@ -68,12 +67,9 @@ public abstract class UnifiedGameMap implements ThinkerList {
     Switches SW;
 
     // ////////////////////////////////////////////
-
     //
     // THING POSITION SETTING
     //
-
-
     //
     // BLOCK MAP ITERATORS
     // For each line/thing in the given mapblock,
@@ -81,9 +77,8 @@ public abstract class UnifiedGameMap implements ThinkerList {
     // If the function returns false,
     // exit with false without checking anything else.
     //
-
     int ptflags;
-    
+
     /**
      * killough's code for thinkers seems to be totally broken in M.D,
      * this method is unused
@@ -107,7 +102,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
         {
             /* Remove from current thread, if in one */
-            /*if ((th = thinker.cnext) != null) {
+ /*if ((th = thinker.cnext) != null) {
                 (th.cprev = thinker.cprev).cnext = th;
             }
         }
@@ -121,15 +116,11 @@ public abstract class UnifiedGameMap implements ThinkerList {
     }
 
     protected final thinker_t[] thinkerclasscap=new thinker_t[th_class.NUMTHCLASS];*/
-
     public boolean sight_debug;
-
-
 
     //
     // P_InitPicAnims
     //
-
     /**
      * Floor/ceiling animation sequences, defined by first and last frame, i.e.
      * the flat (64x64 tile) name to be used. The full animation sequence is
@@ -142,16 +133,13 @@ public abstract class UnifiedGameMap implements ThinkerList {
         new animdef_t(false, "SWATER4", "SWATER1", 8),
         new animdef_t(false, "LAVA4", "LAVA1", 8),
         new animdef_t(false, "BLOOD3", "BLOOD1", 8),
-
         // DOOM II flat animations.
         new animdef_t(false, "RROCK08", "RROCK05", 8),
         new animdef_t(false, "SLIME04", "SLIME01", 8),
         new animdef_t(false, "SLIME08", "SLIME05", 8),
         new animdef_t(false, "SLIME12", "SLIME09", 8),
-
         new animdef_t(true, "BLODGR4", "BLODGR1", 8),
         new animdef_t(true, "SLADRIP3", "SLADRIP1", 8),
-
         new animdef_t(true, "BLODRIP4", "BLODRIP1", 8),
         new animdef_t(true, "FIREWALL", "FIREWALA", 8),
         new animdef_t(true, "GSTFONT3", "GSTFONT1", 8),
@@ -159,27 +147,26 @@ public abstract class UnifiedGameMap implements ThinkerList {
         new animdef_t(true, "FIREMAG3", "FIREMAG1", 8),
         new animdef_t(true, "FIREBLU2", "FIREBLU1", 8),
         new animdef_t(true, "ROCKRED3", "ROCKRED1", 8),
-
         new animdef_t(true, "BFALL4", "BFALL1", 8),
         new animdef_t(true, "SFALL4", "SFALL1", 8),
         new animdef_t(true, "WFALL4", "WFALL1", 8),
         new animdef_t(true, "DBRAIN4", "DBRAIN1", 8)
     };
-    
+
     // MAES: this was a cheap trick to mark the end of the sequence
     // with a value of "-1".
     // It won't work in Java, so just use animdefs.length-1
     // new animdef_t(false, "", "", 0) };
-
     //
     // SPECIAL SPAWNING
     //
     public class Specials {
+
         public static final int OK = 0, CRUSHED = 1, PASTDEST = 2;
 
         public line_t[] linespeciallist = new line_t[Limits.MAXLINEANIMS];
         public short numlinespecials;
-        
+
         /**
          * These are NOT the same anims found in defines. Dunno why they fucked up
          * this one so badly. Even the type has the same name, but is entirely
@@ -198,9 +185,9 @@ public abstract class UnifiedGameMap implements ThinkerList {
         public boolean levelTimer;
 
         public int levelTimeCount;
-        
+
         private Specials() {
-            
+
         }
 
         public void UpdateSpecials() {
@@ -211,23 +198,24 @@ public abstract class UnifiedGameMap implements ThinkerList {
             // LEVEL TIMER
             if (levelTimer == true) {
                 levelTimeCount--;
-                if (levelTimeCount == 0)
+                if (levelTimeCount == 0) {
                     DOOM.ExitLevel();
+                }
             }
 
             // ANIMATE FLATS AND TEXTURES GLOBALLY
-
             for (int j = 0; j < lastanim; j++) {
                 anim = anims[j];
-                
+
                 for (int i = anim.basepic; i < anim.basepic + anim.numpics; i++) {
-                    pic =
-                        anim.basepic
-                                + ((DOOM.leveltime / anim.speed + i) % anim.numpics);
-                    if (anim.istexture)
-                        DOOM.textureManager.setTextureTranslation(i,pic);
-                    else
-                        DOOM.textureManager.setFlatTranslation(i,pic);
+                    pic
+                            = anim.basepic
+                            + ((DOOM.leveltime / anim.speed + i) % anim.numpics);
+                    if (anim.istexture) {
+                        DOOM.textureManager.setTextureTranslation(i, pic);
+                    } else {
+                        DOOM.textureManager.setFlatTranslation(i, pic);
+                    }
                 }
             }
 
@@ -235,10 +223,10 @@ public abstract class UnifiedGameMap implements ThinkerList {
             for (int i = 0; i < numlinespecials; i++) {
                 line = linespeciallist[i];
                 switch (line.special) {
-                case 48:
-                    // EFFECT FIRSTCOL SCROLL +
-                    DOOM.levelLoader.sides[line.sidenum[0]].textureoffset += MAPFRACUNIT;
-                    break;
+                    case 48:
+                        // EFFECT FIRSTCOL SCROLL +
+                        DOOM.levelLoader.sides[line.sidenum[0]].textureoffset += MAPFRACUNIT;
+                        break;
                 }
             }
 
@@ -248,7 +236,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
         public void InitPicAnims() {
             Arrays.setAll(anims, i -> new anim_t());
-            anim_t lstanim; 
+            anim_t lstanim;
             // Init animation. MAES: sneaky base pointer conversion ;-)
             this.lastanim = 0;
             // MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
@@ -277,7 +265,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
 
                 if (lstanim.numpics < 2) {
                     DOOM.doomSystem.Error("P_InitPicAnims: bad cycle from %s to %s",
-                        animdefs[i].startname, animdefs[i].endname);
+                            animdefs[i].startname, animdefs[i].endname);
                 }
 
                 lstanim.speed = animdefs[i].speed;
@@ -288,16 +276,16 @@ public abstract class UnifiedGameMap implements ThinkerList {
         public final void resizeLinesSpecialList() {
             linespeciallist = C2JUtils.resize(linespeciallist[0], linespeciallist, linespeciallist.length * 2);
         }
-        
+
     }
 
     public class Switches {
 
-    	private Switches() {
-    		switchlist= new int[MAXSWITCHES];
-    		initButtonList();
-    	}
-        
+        private Switches() {
+            switchlist = new int[MAXSWITCHES];
+            initButtonList();
+        }
+
         public void doButtons() {
             for (final button_t buttonlist1 : buttonlist) {
                 if (eval(buttonlist1.btimer)) {
@@ -319,7 +307,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
                     }
                 }
             }
-		}
+        }
 
         //
         // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
@@ -345,7 +333,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
             new switchlist_t("SW1STON2", "SW2STON2", 1),
             new switchlist_t("SW1STONE", "SW2STONE", 1),
             new switchlist_t("SW1STRTN", "SW2STRTN", 1),
-
             // Doom registered episodes 2&3 switches
             new switchlist_t("SW1BLUE", "SW2BLUE", 2),
             new switchlist_t("SW1CMT", "SW2CMT", 2),
@@ -357,7 +344,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
             new switchlist_t("SW1SKIN", "SW2SKIN", 2),
             new switchlist_t("SW1VINE", "SW2VINE", 2),
             new switchlist_t("SW1WOOD", "SW2WOOD", 2),
-
             // Doom II switches
             new switchlist_t("SW1PANEL", "SW2PANEL", 3),
             new switchlist_t("SW1ROCK", "SW2ROCK", 3),
@@ -370,7 +356,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
             new switchlist_t("SW1TEK", "SW2TEK", 3),
             new switchlist_t("SW1MARB", "SW2MARB", 3),
             new switchlist_t("SW1SKULL", "SW2SKULL", 3),
-
             new switchlist_t("\0", "\0", 0)
         };
 
@@ -378,7 +363,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
         int[] switchlist;
         int numswitches;
         button_t[] buttonlist;
-        
+
         //
         // P_InitSwitchList
         // Only called at game initialization.
@@ -399,14 +384,14 @@ public abstract class UnifiedGameMap implements ThinkerList {
             }
 
             for (index = 0, i = 0; i < MAXSWITCHES; i++) {
-            	if (index>=switchlist.length) {
-            		// Remove limit
-            		switchlist = Arrays.copyOf(switchlist, switchlist.length > 0 ? switchlist.length * 2 : 8);
+                if (index >= switchlist.length) {
+                    // Remove limit
+                    switchlist = Arrays.copyOf(switchlist, switchlist.length > 0 ? switchlist.length * 2 : 8);
                 }
-                
-            	// Trickery. Looks for "end of list" marker
-            	// Since the list has pairs of switches, the
-            	// actual number of distinct switches is index/2
+
+                // Trickery. Looks for "end of list" marker
+                // Since the list has pairs of switches, the
+                // actual number of distinct switches is index/2
                 if (alphSwitchList[i].episode == 0) {
                     numswitches = index / 2;
                     switchlist[index] = -1;
@@ -437,7 +422,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
                     return;
                 }
             }
-            
+
             // At this point, it may mean that THE button of that particular
             // line was not active, or simply that there were not enough 
             // buttons in buttonlist to support an additional entry.
@@ -452,7 +437,7 @@ public abstract class UnifiedGameMap implements ThinkerList {
                     return;
                 }
             }
-            
+
             /**
              * Added config option to disable resize
              * - Good Sign 2017/04/26
@@ -480,8 +465,9 @@ public abstract class UnifiedGameMap implements ThinkerList {
             int texBot;
             int sound;
 
-            if (!useAgain)
+            if (!useAgain) {
                 line.special = 0;
+            }
 
             texTop = DOOM.levelLoader.sides[line.sidenum[0]].toptexture;
             texMid = DOOM.levelLoader.sides[line.sidenum[0]].midtexture;
@@ -529,29 +515,25 @@ public abstract class UnifiedGameMap implements ThinkerList {
                 }
             }
         }
-        
-		public final void initButtonList() {
-			// Unlike plats, buttonlist needs statically allocated and reusable
-			// objects. The MAXBUTTONS limit actually applied to buttons PRESSED
-			// or ACTIVE at once, not how many there can actually be in a map.
-			
+
+        public final void initButtonList() {
+            // Unlike plats, buttonlist needs statically allocated and reusable
+            // objects. The MAXBUTTONS limit actually applied to buttons PRESSED
+            // or ACTIVE at once, not how many there can actually be in a map.
+
             buttonlist = malloc(button_t::new, button_t[]::new, MAXBUTTONS);
         }
     }
 
-   /* enum PTR {
+    /* enum PTR {
         SlideTraverse,
         AimTraverse,
         ShootTraverse,
         UseTraverse
     } */
-
- 
     /////////// BEGIN MAP OBJECT CODE, USE AS BASIC
-
     // //////////////////////////////// THINKER CODE, GLOBALLY VISIBLE
     // /////////////////
-
     //
     // THINKERS
     // All thinkers should be allocated by Z_Malloc
@@ -559,7 +541,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
     // The actual structures will vary in size,
     // but the first element must be thinker_t.
     //
-
     /** Both the head and the tail of the thinkers list */
     public thinker_t thinkercap;
 
@@ -575,10 +556,9 @@ public abstract class UnifiedGameMap implements ThinkerList {
     @SourceCode.Suspicious(CauseOfDesyncProbability.MEDIUM)
     @P_Tick.C(P_InitThinkers)
     public void InitThinkers() {
-    	
+
         /*for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
             thinkerclasscap[i].cprev = thinkerclasscap[i].cnext = thinkerclasscap[i];*/
-        
         thinker_t next = thinkercap.next;
         thinker_t prev = thinkercap.prev;
 
@@ -616,7 +596,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
         th = cl == th_class.th_all ? th.next : th.cnext;
         return th == top ? null : th;
     }*/
-    
     /**
      * killough's code for thinkers seems to be totally broken in M.D,
      * so commented it out and will not probably restore, but may invent
@@ -634,15 +613,14 @@ public abstract class UnifiedGameMap implements ThinkerList {
         thinker.next = thinkercap;
         thinker.prev = thinkercap.prev;
         thinkercap.prev = thinker;
-        
+
         // killough 8/29/98: set sentinel pointers, and then add to appropriate list
         /*thinker.cnext = thinker.cprev = null;
         UpdateThinker(thinker);*/
-        
         // [Maes] seems only used for interpolations
         //newthinkerpresent = true;
     }
-   
+
     //
     // P_AllocateThinker
     // Allocates memory and adds a new thinker at the end of the list.
@@ -660,7 +638,6 @@ public abstract class UnifiedGameMap implements ThinkerList {
         return th;
     }
 
-
     //
     // P_Init
     //
@@ -674,24 +651,20 @@ public abstract class UnifiedGameMap implements ThinkerList {
     public thinker_t getThinkerCap() {
         return thinkercap;
     }
-    
+
     /**
      * killough 11/98:
      *
      * Make currentthinker external, so that P_RemoveThinkerDelayed
      * can adjust currentthinker when thinkers self-remove.
      */
-
     protected thinker_t currentthinker;
-    
+
     //protected final P_RemoveThinkerDelayed RemoveThinkerDelayed; 
-    
     //public class P_RemoveThinkerDelayed implements p.ActionFunctions.TypedAction <thinker_t>{
-        
     //@Override
     //public void accept(thinker_t thinker) {
-        
-    	/*
+    /*
         try {
         System.err.printf("Delete: %s %d<= %s %d => %s %d\n",
             ((mobj_t)thinker.prev).type,((mobj_t)thinker.prev).thingnum,
@@ -700,34 +673,30 @@ public abstract class UnifiedGameMap implements ThinkerList {
         } catch (ClassCastException e){
             
         } */
-        
-        // Unlike Boom, if we reach here it gets zapped anyway
-        //if (!thinker->references)
-        //{
-          //{ /* Remove from main thinker list */
-            //thinker_t next = thinker.next;
-            /* Note that currentthinker is guaranteed to point to us,
+    // Unlike Boom, if we reach here it gets zapped anyway
+    //if (!thinker->references)
+    //{
+    //{ /* Remove from main thinker list */
+    //thinker_t next = thinker.next;
+    /* Note that currentthinker is guaranteed to point to us,
              * and since we're freeing our memory, we had better change that. So
              * point it to thinker->prev, so the iterator will correctly move on to
              * thinker->prev->next = thinker->next */
-            //(next.prev = currentthinker = thinker.prev).next = next;
-            //thinker.next=thinker.prev=null;
-            //try {
-           // System.err.printf("Delete: %s %d <==> %s %d\n",
-           //     ((mobj_t)currentthinker.prev).type,((mobj_t)currentthinker.prev).thingnum,
-           //     ((mobj_t)currentthinker.next).type,((mobj_t)currentthinker.next).thingnum);
-            //} catch (ClassCastException e){
-                
-            //}
-            
-          //}
-          //{
-            /* Remove from current thinker class list */
-            //thinker_t th = thinker.cnext;
-            //(th.cprev = thinker.cprev).cnext = th;
-            //thinker.cnext=thinker.cprev=null;
-          //}
-        //}
+    //(next.prev = currentthinker = thinker.prev).next = next;
+    //thinker.next=thinker.prev=null;
+    //try {
+    // System.err.printf("Delete: %s %d <==> %s %d\n",
+    //     ((mobj_t)currentthinker.prev).type,((mobj_t)currentthinker.prev).thingnum,
+    //     ((mobj_t)currentthinker.next).type,((mobj_t)currentthinker.next).thingnum);
+    //} catch (ClassCastException e){
     //}
-    
+    //}
+    //{
+    /* Remove from current thinker class list */
+    //thinker_t th = thinker.cnext;
+    //(th.cprev = thinker.cprev).cnext = th;
+    //thinker.cnext=thinker.cprev=null;
+    //}
+    //}
+    //}
 } // End unified map

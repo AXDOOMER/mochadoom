@@ -6,10 +6,13 @@ import doom.DoomMain;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
+import mochadoom.Loggers;
 import pooling.AudioChunkPool;
 
 /**
@@ -26,9 +29,9 @@ import pooling.AudioChunkPool;
  * 
  * @author Maes
  */
+public class ClassicDoomSoundDriver extends AbstractSoundDriver {
 
-public class ClassicDoomSoundDriver extends AbstractSoundDriver
-         {
+    private static final Logger LOGGER = Loggers.getLogger(ClassicDoomSoundDriver.class.getName());
 
     protected final Semaphore produce;
 
@@ -38,15 +41,14 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
     // protected FileOutputStream fos;
     // protected DataOutputStream dao;
-
     // The one and only line
     protected SourceDataLine line = null;
 
-    protected HashMap<Integer, byte[]> cachedSounds =
-        new HashMap<Integer, byte[]>();
+    protected HashMap<Integer, byte[]> cachedSounds
+            = new HashMap<>();
 
-    public ClassicDoomSoundDriver(DoomMain<?,?> DM, int numChannels) {
-    	super(DM,numChannels);
+    public ClassicDoomSoundDriver(DoomMain<?, ?> DM, int numChannels) {
+        super(DM, numChannels);
         channelleftvol_lookup = new int[numChannels][];
         channelrightvol_lookup = new int[numChannels][];
         channelstep = new int[numChannels];
@@ -57,7 +59,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         produce = new Semaphore(1);
         consume = new Semaphore(1);
         produce.drainPermits();
-        mixbuffer= new byte[MIXBUFFERSIZE];
+        mixbuffer = new byte[MIXBUFFERSIZE];
     }
 
     /** The channel step amount... */
@@ -99,7 +101,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
      * hardware channels (left and right, that is). This function currently
      * supports only 16bit.
      */
-
     public void UpdateSound() {
 
         mixed = false;
@@ -112,7 +113,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
         // Pointers in global mixbuffer, left, right, end.
         // Maes: those were explicitly signed short pointers...
-
         int leftout;
         int rightout;
         int leftend;
@@ -136,15 +136,15 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         leftend = SAMPLECOUNT * step;
 
         for (chan = 0; chan < numChannels; chan++) {
-            if (channels[chan] != null)
-                // SOME mixing has taken place.
+            if (channels[chan] != null) // SOME mixing has taken place.
+            {
                 mixed = true;
+            }
         }
 
         // Mix sounds into the mixing buffer.
         // Loop over step*SAMPLECOUNT,
         // that is SAMPLECOUNT values for two channels.
-
         while (leftout < leftend) {
             // Reset left/right value.
             dl = 0;
@@ -153,7 +153,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
             // Love thy L2 chache - made this a loop.
             // Now more channels could be set at compile time
             // as well. Thus loop those channels.
-
             for (chan = 0; chan < numChannels; chan++) {
 
                 // if (D) System.err.printf("Checking channel %d\n",chan);
@@ -164,15 +163,14 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
                     // Get the raw data from the channel.
                     // Maes: this is supposed to be an 8-bit unsigned value.
-                        sample = 0x00FF & channels[chan][channel_pointer];
-                        
+                    sample = 0x00FF & channels[chan][channel_pointer];
+
                     // Add left and right part for this channel (sound)
                     // to the current data. Adjust volume accordingly.                        
                     // Q: could this be optimized by converting samples to 16-bit
                     // at load time, while also allowing for stereo samples?
                     // A: Only for the stereo part. You would still look a lookup
                     // for the CURRENT volume level.
-
                     dl += channelleftvol_lookup[chan][sample];
                     dr += channelrightvol_lookup[chan][sample];
 
@@ -192,19 +190,18 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
                     // Check whether we are done. Also to avoid overflows.
                     if (channel_pointer >= channelsend[chan]) {
                         // Reset pointer for a channel.
-                        if (D)
-                            System.err
-                                    .printf(
-                                        "Channel %d handle %d pointer %d thus done, stopping\n",
-                                        chan, this.channelhandles[chan],
-                                        channel_pointer);
+                        if (D) {
+                            LOGGER.log(Level.INFO, String.format(
+                                    "Channel %d handle %d pointer %d thus done, stopping",
+                                    chan, this.channelhandles[chan],
+                                    channel_pointer));
+                        }
                         channels[chan] = null;
                         channel_pointer = 0;
                     }
 
                     // Write pointer back, so we know where a certain channel
                     // is the next time UpdateSounds is called.
-
                     p_channels[chan] = channel_pointer;
                 }
 
@@ -213,28 +210,28 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
             // MAES: at this point, the actual values for a single sample
             // (YIKES!) are in d1 and d2. We must use the leftout/rightout
             // pointers to write them back into the mixbuffer.
-
             // Clamp to range. Left hardware channel.
             // Remnant of 8-bit mixing code? That must have raped ears
             // and made them bleed.
             // if (dl > 127) *leftout = 127;
             // else if (dl < -128) *leftout = -128;
             // else *leftout = dl;
-
-            if (dl > 0x7fff)
+            if (dl > 0x7fff) {
                 dl = 0x7fff;
-            else if (dl < -0x8000)
+            } else if (dl < -0x8000) {
                 dl = -0x8000;
+            }
 
             // Write left channel
             mixbuffer[leftout] = (byte) ((dl & 0xFF00) >>> 8);
             mixbuffer[leftout + 1] = (byte) (dl & 0x00FF);
 
             // Same for right hardware channel.
-            if (dr > 0x7fff)
+            if (dr > 0x7fff) {
                 dr = 0x7fff;
-            else if (dr < -0x8000)
+            } else if (dr < -0x8000) {
                 dr = -0x8000;
+            }
 
             // Write right channel.
             mixbuffer[rightout] = (byte) ((dr & 0xFF00) >>> 8);
@@ -252,7 +249,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // Q: what's the purpose of channelremainder etc?
         // A: pitch variations were done with fractional pointers 16.16
         // style.
-
     }
 
     /**
@@ -260,7 +256,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
      * the old DPMS based DOS version, this were simply dummies in the Linux
      * version. See soundserver initdata().
      */
-
     @Override
     public void SetChannels(int numChannels) {
         // Init internal lookups (raw data, mixing buffer, channels).
@@ -273,12 +268,12 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         for (int i = 0; i < this.numChannels; i++) {
             channels[i] = null;
         }
-        
+
         generateStepTable(steptablemid);
 
         generateVolumeLUT();
     }
-    
+
     protected MixServer SOUNDSRV;
 
     protected Thread SOUNDTHREAD;
@@ -287,7 +282,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     public boolean InitSound() {
 
         // Secure and configure sound device first.
-        System.out.println("I_InitSound: ");
+        LOGGER.log(Level.INFO, "I_InitSound");
 
         // We only need a single data line.
         // PCM, signed, 16-bit, stereo, 22025 KHz, 2048 bytes per "frame",
@@ -298,20 +293,19 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
         if (AudioSystem.isLineSupported(info))
             try {
-                line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
-                line.open(format,AUDIOLINE_BUFFER);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.err.print("Could not play signed 16 data\n");
-                return false;
-            }
+            line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
+            line.open(format, AUDIOLINE_BUFFER);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Could not play signed 16 data", e);
+            return false;
+        }
 
         if (line != null) {
-            System.err.print(" configured audio device\n");
+            LOGGER.log(Level.INFO, "configured audio device");
             line.start();
         } else {
-        	 System.err.print(" could not configure audio device\n");
-        	 return false;
+            LOGGER.log(Level.SEVERE, "could not configure audio device");
+            return false;
         }
 
         // This was here only for debugging purposes
@@ -320,27 +314,25 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
          * DataOutputStream(fos); } catch (FileNotFoundException e) {
          * Auto-generated catch block e.printStackTrace(); }
          */
-
         SOUNDSRV = new MixServer(line);
         SOUNDTHREAD = new Thread(SOUNDSRV);
         SOUNDTHREAD.start();
 
         // Initialize external data (all sounds) at start, keep static.
-        System.err.print("I_InitSound: ");
+        LOGGER.log(Level.INFO, "I_InitSound");
 
         super.initSound8();
 
-        System.err.print(" pre-cached all sound data\n");
+        LOGGER.log(Level.INFO, "pre-cached all sound data");
 
         // Now initialize mixbuffer with zero.
         initMixBuffer();
 
         // Finished initialization.
-        System.err.print("I_InitSound: sound module ready\n");
+        LOGGER.log(Level.INFO, "I_InitSound: sound module ready");
 
         return true;
     }
-
 
     @Override
     protected int addsfx(int sfxid, int volume, int step, int seperation) {
@@ -354,8 +346,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         int rightvol;
         int leftvol;
 
-        int broken=-1;
-        
+        int broken = -1;
+
         // Chainsaw troubles.
         // Play these sound effects only one at a time.
         if ((sfxid >= sfxenum_t.sfx_sawup.ordinal()
@@ -368,37 +360,38 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
                 if ((channels[i] != null) && (channelids[i] == sfxid)) {
                     // Reset.
                     this.p_channels[i] = 0;
-                    this.channels[i]=null;
+                    this.channels[i] = null;
                     // We are sure that iff,
                     // there will only be one.
-                    broken=i;
+                    broken = i;
                     break;
                 }
             }
         }
 
         // Loop all channels to find oldest SFX.
-        if (broken>=0) {
-        	i=broken;
-        	oldestnum=broken;
-        }
-        else
-        for (i = 0; (i < numChannels) && (channels[i] != null); i++) {
-            if (channelstart[i] < oldest) {
-                oldestnum = i;
+        if (broken >= 0) {
+            i = broken;
+            oldestnum = broken;
+        } else {
+            for (i = 0; (i < numChannels) && (channels[i] != null); i++) {
+                if (channelstart[i] < oldest) {
+                    oldestnum = i;
+                }
             }
         }
 
         oldest = channelstart[oldestnum];
-        
+
         // Tales from the cryptic.
         // If we found a channel, fine.
         // If not, we simply overwrite the first one, 0.
         // Probably only happens at startup.
-        if (i == numChannels)
+        if (i == numChannels) {
             slot = oldestnum;
-        else
+        } else {
             slot = i;
+        }
 
         // Okay, in the less recent channel,
         // we will handle the new SFX.
@@ -413,7 +406,9 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
         // Reset current handle number, limited to 0..100.
         if (handlenums == 0) // was !handlenums, so it's actually 1...100?
+        {
             handlenums = 100;
+        }
 
         // Assign current handle number.
         // Preserved so sounds could be stopped (unused).
@@ -443,11 +438,18 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
         // Sanity check, clamp volume.
         // Maes: better to clamp than to crash, no?
-
-        if (rightvol < 0) rightvol=0;
-        if (rightvol >127) rightvol=127;
-        if (leftvol < 0) leftvol=0;
-        if (leftvol >127) leftvol=127;
+        if (rightvol < 0) {
+            rightvol = 0;
+        }
+        if (rightvol > 127) {
+            rightvol = 127;
+        }
+        if (leftvol < 0) {
+            leftvol = 0;
+        }
+        if (leftvol > 127) {
+            leftvol = 127;
+        }
 
         // Get the proper lookup table piece
         // for this volume level???
@@ -458,10 +460,14 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // e.g. for avoiding duplicates of chainsaw.
         channelids[slot] = sfxid;
 
-        if (D) System.err.println(channelStatus());
-        if (D) System.err.printf(
-                "Playing sfxid %d handle %d length %d vol %d on channel %d\n",
-                sfxid, rc, S_sfx[sfxid].data.length, volume, slot);
+        if (D) {
+            LOGGER.log(Level.FINE, String.valueOf(channelStatus()));
+        }
+        if (D) {
+            LOGGER.log(Level.FINE, String.format(
+                    "Playing sfxid %d handle %d length %d vol %d on channel %d",
+                    sfxid, rc, S_sfx[sfxid].data.length, volume, slot));
+        }
 
         // You tell me.
         return rc;
@@ -482,11 +488,11 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
             }
 
             // System.err.printf("%d channels died off\n",i);
-
             UpdateSound();
             SubmitSound();
-            if (i == numChannels)
+            if (i == numChannels) {
                 done = true;
+            }
         }
 
         this.line.drain();
@@ -496,7 +502,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         try {
             SOUNDTHREAD.join();
         } catch (InterruptedException e) {
-        	// Well, I don't care.
+            // Well, I don't care.
         }
         line.close();
 
@@ -513,8 +519,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
         private SourceDataLine auline;
 
-        private ArrayBlockingQueue<AudioChunk> audiochunks =
-            new ArrayBlockingQueue<AudioChunk>(BUFFER_CHUNKS * 2);
+        private ArrayBlockingQueue<AudioChunk> audiochunks
+                = new ArrayBlockingQueue<>(BUFFER_CHUNKS * 2);
 
         public void addChunk(AudioChunk chunk) {
             audiochunks.offer(chunk);
@@ -527,28 +533,24 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
             while (!terminate) {
 
                 // while (timing[mixstate]<=mytime){
-
                 // Try acquiring a produce permit before going on.
-
                 try {
                     // System.err.println("Waiting for a permit...");
                     produce.acquire();
                     // System.err.println("Got a permit");
                 } catch (InterruptedException e) {
                     // Well, ouch.
-                    e.printStackTrace();
+                    LOGGER.log(Level.SEVERE, "MixServer run failure", e);
                 }
 
                 int chunks = 0;
 
                 // System.err.printf("Audio queue has %d chunks\n",audiochunks.size());
-
                 // Play back only at most a given number of chunks once you reach
                 // this spot
-                
-                int atMost=Math.min(ISoundDriver.BUFFER_CHUNKS,audiochunks.size());
-                
-                while (atMost-->0){
+                int atMost = Math.min(ISoundDriver.BUFFER_CHUNKS, audiochunks.size());
+
+                while (atMost-- > 0) {
 
                     AudioChunk chunk = null;
                     try {
@@ -566,7 +568,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
                 // Signal that we consumed a whole buffer and we are ready for
                 // another one.
-                
                 consume.release();
             }
         }
@@ -589,8 +590,9 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     protected int getChannelFromHandle(int handle) {
         // Which channel has it?
         for (int i = 0; i < numChannels; i++) {
-            if (channelhandles[i] == handle)
+            if (channelhandles[i] == handle) {
                 return i;
+            }
         }
 
         return BUSY_HANDLE;
@@ -613,13 +615,12 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // It's possible for us to stay silent and give the audio
         // queue a chance to get drained.
         if (mixed) {
-            silence=0;
+            silence = 0;
             AudioChunk gunk = audiochunkpool.checkOut();
             // Ha ha you're ass is mine!
             gunk.free = false;
 
             // System.err.printf("Submitted sound chunk %d to buffer %d \n",chunk,mixstate);
-
             // Copy the currently mixed chunk into its position inside the
             // master buffer.
             System.arraycopy(mixbuffer, 0, gunk.buffer, 0, MIXBUFFERSIZE);
@@ -627,28 +628,28 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
             this.SOUNDSRV.addChunk(gunk);
 
             // System.err.println(chunk++);
-
             chunk++;
             // System.err.println(chunk);
 
-            if (consume.tryAcquire())
+            if (consume.tryAcquire()) {
                 produce.release();
+            }
 
         } else {
             silence++;
             // MAES: attempt to fix lingering noise error
-            if (silence >ISoundDriver.BUFFER_CHUNKS*5){
+            if (silence > ISoundDriver.BUFFER_CHUNKS * 5) {
                 line.flush();
-                silence=0;
-                }
+                silence = 0;
+            }
             // System.err.println("SILENT_CHUNK");
             // this.SOUNDSRV.addChunk(SILENT_CHUNK);
         }
         // line.write(mixbuffer, 0, mixbuffer.length);
 
     }
-    
-    private int silence=0; 
+
+    private int silence = 0;
 
     @Override
     public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
@@ -662,12 +663,13 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         int rightvol = vol - ((vol * sep * sep) >> 16);
 
         // Sanity check, clamp volume.
-
-        if (rightvol < 0 || rightvol > 127)
+        if (rightvol < 0 || rightvol > 127) {
             DM.doomSystem.Error("rightvol out of bounds");
+        }
 
-        if (leftvol < 0 || leftvol > 127)
+        if (leftvol < 0 || leftvol > 127) {
             DM.doomSystem.Error("leftvol out of bounds");
+        }
 
         // Get the proper lookup table piece
         // for this volume level???
@@ -685,10 +687,11 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     public String channelStatus() {
         sb.setLength(0);
         for (int i = 0; i < numChannels; i++) {
-            if (channels[i] != null)
+            if (channels[i] != null) {
                 sb.append(i);
-            else
+            } else {
                 sb.append('-');
+            }
         }
 
         return sb.toString();

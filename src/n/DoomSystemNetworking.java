@@ -21,15 +21,12 @@ package n;
 //  System specific network interface stuff.
 //
 //-----------------------------------------------------------------------------
-
-public interface DoomSystemNetworking{
-
+public interface DoomSystemNetworking {
 
 // Called by D_DoomMain.
+    public void InitNetwork();
 
-public void InitNetwork ();
-public void NetCmd ();
-
+    public void NetCmd();
 
 }
 

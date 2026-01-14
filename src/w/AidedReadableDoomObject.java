@@ -9,8 +9,7 @@ import java.io.IOException;
  * @author Maes
  *
  */
-
 public interface AidedReadableDoomObject {
-    
-    public void read(DataInputStream f, int len) throws IOException ;
+
+    public void read(DataInputStream f, int len) throws IOException;
 }

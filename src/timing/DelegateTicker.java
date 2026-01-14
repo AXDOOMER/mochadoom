@@ -21,6 +21,7 @@ package timing;
  * @author Good Sign
  */
 public class DelegateTicker implements ITicker {
+
     private final FastTicker ft = new FastTicker();
     private final MilliTicker mt = new MilliTicker();
     private final NanoTicker nt = new NanoTicker();
@@ -30,7 +31,7 @@ public class DelegateTicker implements ITicker {
     public int GetTime() {
         return currentTicker.GetTime();
     }
-    
+
     public void changeTicker() {
         if (currentTicker == nt) {
             currentTicker = mt;

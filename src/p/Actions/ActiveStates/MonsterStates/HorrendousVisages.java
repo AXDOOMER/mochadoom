@@ -30,16 +30,18 @@ import p.mobj_t;
 import utils.TraitFactory.ContextKey;
 
 public interface HorrendousVisages extends Sounds {
+
     ContextKey<Brain> KEY_BRAIN = ACTION_KEY_CHAIN.newKey(HorrendousVisages.class, Brain::new);
 
     final class Brain {
+
         // Brain status
         mobj_t[] braintargets = new mobj_t[Limits.NUMBRAINTARGETS];
         int numbraintargets;
         int braintargeton;
         int easy = 0;
     }
-    
+
     default void A_BrainAwake(mobj_t mo) {
         final Brain brain = contextRequire(KEY_BRAIN);
         thinker_t thinker;

@@ -38,11 +38,13 @@ import p.mobj_t;
 import static p.mobj_t.MF_SKULLFLY;
 
 public interface PainsSouls extends ActionTrait {
+
     static final int SKULLSPEED = 20 * m.fixed_t.MAPFRACUNIT;
-    
+
     void A_FaceTarget(mobj_t actor);
+
     void A_Fall(mobj_t actor);
-    
+
     /**
      * SkullAttack
      * Fly at the player like a missile.
@@ -82,10 +84,12 @@ public interface PainsSouls extends ActionTrait {
      *
      */
     default void A_PainShootSkull(mobj_t actor, Long angle) {
-        @fixed_t int x, y, z;
+        @fixed_t
+        int x, y, z;
 
         mobj_t newmobj;
-        @angle_t int an;
+        @angle_t
+        int an;
         int prestep;
         int count;
         thinker_t currentthinker;
@@ -96,7 +100,7 @@ public interface PainsSouls extends ActionTrait {
         currentthinker = getThinkerCap().next;
         while (currentthinker != getThinkerCap()) {
             if ((currentthinker.thinkerFunction == ActiveStates.P_MobjThinker)
-                && ((mobj_t) currentthinker).type == mobjtype_t.MT_SKULL) {
+                    && ((mobj_t) currentthinker).type == mobjtype_t.MT_SKULL) {
                 count++;
             }
             currentthinker = currentthinker.next;
@@ -112,8 +116,8 @@ public interface PainsSouls extends ActionTrait {
         an = Tables.toBAMIndex(angle);
 
         prestep
-            = 4 * FRACUNIT
-            + 3 * (actor.info.radius + mobjinfo[mobjtype_t.MT_SKULL.ordinal()].radius) / 2;
+                = 4 * FRACUNIT
+                + 3 * (actor.info.radius + mobjinfo[mobjtype_t.MT_SKULL.ordinal()].radius) / 2;
 
         x = actor.x + FixedMul(prestep, finecosine[an]);
         y = actor.y + FixedMul(prestep, finesine[an]);

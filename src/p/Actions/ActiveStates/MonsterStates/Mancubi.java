@@ -27,8 +27,9 @@ import p.Actions.ActionTrait;
 import p.mobj_t;
 
 public interface Mancubi extends ActionTrait {
+
     static final long FATSPREAD = Tables.ANG90 / 8;
-    
+
     void A_FaceTarget(mobj_t actor);
 
     //

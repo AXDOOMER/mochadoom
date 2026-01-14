@@ -29,19 +29,21 @@ import w.IWadLoader;
  * @author Good Sign
  */
 public class RendererFactory {
-    private RendererFactory() {}
-    
+
+    private RendererFactory() {
+    }
+
     public static <T, V> Clear<T, V> newBuilder() {
         return new Builder<>();
     }
 
     private static class Builder<T, V>
-        implements Clear<T, V>, WithVideoScale<T, V>, WithBppMode<T, V>, WithWadLoader<T, V>
-    {
+            implements Clear<T, V>, WithVideoScale<T, V>, WithBppMode<T, V>, WithWadLoader<T, V> {
+
         private IWadLoader wadLoader;
         private VideoScale videoScale;
         private BppMode bppMode;
-        
+
         @Override
         public WithVideoScale<T, V> setVideoScale(VideoScale videoScale) {
             this.videoScale = Objects.requireNonNull(videoScale);
@@ -80,26 +82,36 @@ public class RendererFactory {
             return wadLoader;
         }
     }
-    
+
     public interface Clear<T, V> {
+
         WithVideoScale<T, V> setVideoScale(VideoScale videoScale);
     }
 
     public interface WithVideoScale<T, V> {
+
         WithBppMode<T, V> setBppMode(BppMode bppMode);
+
         VideoScale getVideoScale();
     }
-    
+
     public interface WithBppMode<T, V> {
+
         WithWadLoader<T, V> setWadLoader(IWadLoader wadLoader);
+
         VideoScale getVideoScale();
+
         BppMode getBppMode();
     }
-    
+
     public interface WithWadLoader<T, V> {
+
         DoomGraphicSystem<T, V> build();
+
         VideoScale getVideoScale();
+
         BppMode getBppMode();
+
         IWadLoader getWadLoader();
     }
 }

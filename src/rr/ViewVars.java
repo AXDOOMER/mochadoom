@@ -12,20 +12,18 @@ import v.scale.VideoScale;
 public class ViewVars {
 
     public ViewVars(VideoScale vs) {
-         negonearray = new short[vs.getScreenWidth()]; // MAES: in scaling
-         screenheightarray = new short[vs.getScreenWidth()];// MAES: in scaling
-         xtoviewangle = new long[vs.getScreenWidth() + 1];
-         C2JUtils.memset(negonearray, (short)-1, negonearray.length);
+        negonearray = new short[vs.getScreenWidth()]; // MAES: in scaling
+        screenheightarray = new short[vs.getScreenWidth()];// MAES: in scaling
+        xtoviewangle = new long[vs.getScreenWidth() + 1];
+        C2JUtils.memset(negonearray, (short) -1, negonearray.length);
     }
-    
-    
-    
+
     // Found in draw_c. Only ever used in renderer.
     public int windowx;
     public int windowy;
     public int width;
     public int height;
-    
+
     // MAES: outsiders have no business peeking into this.
     // Or...well..maybe they do. It's only used to center the "pause" X
     // position.
@@ -33,7 +31,7 @@ public class ViewVars {
     public int scaledwidth;
     public int centerx;
     public int centery;
-    
+
     /** Used to determine the view center and projection in view units fixed_t */
     public int centerxfrac, centeryfrac, projection;
 
@@ -51,25 +49,24 @@ public class ViewVars {
     public player_t player;
 
     /** Heretic/freeview stuff? */
-
     public int lookdir;
-    
+
     // 0 = high, 1 = low. Normally only the menu and the interface can change
     // that.
     public int detailshift;
-    
+
     public int WEAPONADJUST;
     public int BOBADJUST;
-	
-	/**
-	 * constant arrays used for psprite clipping and initializing clipping
-	 */
+
+    /**
+     * constant arrays used for psprite clipping and initializing clipping
+     */
     public final short[] negonearray; // MAES: in scaling
     public short[] screenheightarray;// MAES: in scaling
-    
+
     /** Mirrors the one in renderer... */
     public long[] xtoviewangle;
-	
+
     public final long PointToAngle(int x, int y) {
         // MAES: note how we don't use &BITS32 here. That is because
         // we know that the maximum possible value of tantoangle is angle
@@ -78,8 +75,9 @@ public class ViewVars {
         x -= this.x;
         y -= this.y;
 
-        if ((x == 0) && (y == 0))
+        if ((x == 0) && (y == 0)) {
             return 0;
+        }
 
         if (x >= 0) {
             // x >=0
@@ -134,16 +132,16 @@ public class ViewVars {
         // This is actually unreachable.
         // return 0;
     }
-    
-    public final int getViewWindowX(){
+
+    public final int getViewWindowX() {
         return windowx;
     }
 
-    public final int getViewWindowY(){
+    public final int getViewWindowY() {
         return windowy;
     }
-        
-    public final int getScaledViewWidth(){
+
+    public final int getScaledViewWidth() {
         return scaledwidth;
     }
 

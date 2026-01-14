@@ -21,6 +21,7 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 public class GenericCopy {
+
     private static final boolean[] BOOL_0 = {false};
     private static final byte[] BYTE_0 = {0};
     private static final short[] SHORT_0 = {0};
@@ -29,14 +30,14 @@ public class GenericCopy {
     private static final float[] FLOAT_0 = {0};
     private static final long[] LONG_0 = {0};
     private static final double[] DOUBLE_0 = {0};
-    
+
     public static void memset(long[] array, int start, int length, long... value) {
         if (length > 0) {
             if (value.length == 0) {
                 value = LONG_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -49,7 +50,7 @@ public class GenericCopy {
                 value = INT_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -62,7 +63,7 @@ public class GenericCopy {
                 value = SHORT_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -75,7 +76,7 @@ public class GenericCopy {
                 value = CHAR_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -88,7 +89,7 @@ public class GenericCopy {
                 value = BYTE_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -101,7 +102,7 @@ public class GenericCopy {
                 value = DOUBLE_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -114,7 +115,7 @@ public class GenericCopy {
                 value = FLOAT_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -127,7 +128,7 @@ public class GenericCopy {
                 value = BOOL_0;
             }
             System.arraycopy(value, 0, array, start, value.length);
-        
+
             for (int i = value.length; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
@@ -138,29 +139,31 @@ public class GenericCopy {
     public static <T> void memset(T array, int start, int length, T value, int valueStart, int valueLength) {
         if (length > 0 && valueLength > 0) {
             System.arraycopy(value, valueStart, array, start, valueLength);
-        
+
             for (int i = valueLength; i < length; i += i) {
                 System.arraycopy(array, start, array, start + i, ((length - i) < i) ? (length - i) : i);
             }
         }
     }
-    
+
     @SuppressWarnings("SuspiciousSystemArraycopy")
     public static <T> void memcpy(T srcArray, int srcStart, T dstArray, int dstStart, int length) {
         System.arraycopy(srcArray, srcStart, dstArray, dstStart, length);
     }
-    
+
     public static <T> T[] malloc(final ArraySupplier<T> supplier, final IntFunction<T[]> generator, final int length) {
         final T[] array = generator.apply(length);
         Arrays.setAll(array, supplier::getWithInt);
         return array;
     }
-    
+
     public interface ArraySupplier<T> extends Supplier<T> {
+
         default T getWithInt(int ignoredInt) {
             return get();
         }
     }
-    
-    private GenericCopy() {}
+
+    private GenericCopy() {
+    }
 }

@@ -23,16 +23,10 @@ package data;
 //
 //-----------------------------------------------------------------------------
 
-
-
-    
 // The most basic types we use, portability.
 //#include "doomtype.h"
-
 // Some global defines, that configure the game.
-
-
-public class doomdata{
+public class doomdata {
 //
 // Map level types.
 // The following data structures define the persistent format
@@ -43,72 +37,65 @@ public class doomdata{
 // to provide a complete scene geometry description.
 // Maes: this was defined as a typeless enum, probably intended to be used as cardinality?
 // Turning it into "ML" enum or int consts.
-public static enum ML
-{
-  ML_LABEL,		// A separator, name, ExMx or MAPxx
-  ML_THINGS,		// Monsters, items..
-  ML_LINEDEFS,		// LineDefs, from editing
-  ML_SIDEDEFS,		// SideDefs, from editing
-  ML_VERTEXES,		// Vertices, edited and BSP splits generated
-  ML_SEGS,		// LineSegs, from LineDefs split by BSP
-  ML_SSECTORS,		// SubSectors, list of LineSegs
-  ML_NODES,		// BSP nodes
-  ML_SECTORS,		// Sectors, from editing
-  ML_REJECT,		// LUT, sector-sector visibility	
-  ML_BLOCKMAP		// LUT, motion clipping, walls/grid element
-};
-
+    public static enum ML {
+        ML_LABEL, // A separator, name, ExMx or MAPxx
+        ML_THINGS, // Monsters, items..
+        ML_LINEDEFS, // LineDefs, from editing
+        ML_SIDEDEFS, // SideDefs, from editing
+        ML_VERTEXES, // Vertices, edited and BSP splits generated
+        ML_SEGS, // LineSegs, from LineDefs split by BSP
+        ML_SSECTORS, // SubSectors, list of LineSegs
+        ML_NODES, // BSP nodes
+        ML_SECTORS, // Sectors, from editing
+        ML_REJECT, // LUT, sector-sector visibility	
+        ML_BLOCKMAP		// LUT, motion clipping, walls/grid element
+    };
 
 // A single Vertex.
-static class mapvertex_t
-{
-  short		x;
-  short		y;
-};
+    static class mapvertex_t {
 
+        short x;
+        short y;
+    };
 
 // A SideDef, defining the visual appearance of a wall,
 // by setting textures and offsets.
-static class  mapsidedef_t
-{
-  short		textureoffset;
-  short		rowoffset;
-  char[]		toptexture=new char[8];
-  char[]		bottomtexture=new char[8];
-  char[]		midtexture=new char[8];
-  // Front sector, towards viewer.
-  short		sector;
-}
+    static class mapsidedef_t {
 
-
+        short textureoffset;
+        short rowoffset;
+        char[] toptexture = new char[8];
+        char[] bottomtexture = new char[8];
+        char[] midtexture = new char[8];
+        // Front sector, towards viewer.
+        short sector;
+    }
 
 // A LineDef, as used for editing, and as input
 // to the BSP builder.
-static class maplinedef_t
-{
-  short		v1;
-  short		v2;
-  short		flags;
-  short		special;
-  short		tag;
-  // sidenum[1] will be -1 if one sided
-  int[]		sidenum=new int[2];		
-} 
+    static class maplinedef_t {
 
+        short v1;
+        short v2;
+        short flags;
+        short special;
+        short tag;
+        // sidenum[1] will be -1 if one sided
+        int[] sidenum = new int[2];
+    }
 
 //
 // LineDef attributes.
 //
-
 // Solid, is an obstacle.
-public static final int ML_BLOCKING		=1;
+    public static final int ML_BLOCKING = 1;
 
 // Blocks monsters only.
-public static final int ML_BLOCKMONSTERS=	2;
+    public static final int ML_BLOCKMONSTERS = 2;
 
 // Backside will not be present at all
 //  if not two sided.
-public static final int ML_TWOSIDED		=4;
+    public static final int ML_TWOSIDED = 4;
 
 // If a texture is pegged, the texture will have
 // the end exposed to air held constant at the
@@ -118,85 +105,77 @@ public static final int ML_TWOSIDED		=4;
 // Unpegged textures allways have the first row of
 // the texture at the top pixel of the line for both
 // top and bottom textures (use next to windows).
-
 // upper texture unpegged
-public static final int ML_DONTPEGTOP=8;
+    public static final int ML_DONTPEGTOP = 8;
 
 // lower texture unpegged
-public static final int ML_DONTPEGBOTTOM=	16	;
+    public static final int ML_DONTPEGBOTTOM = 16;
 
 // In AutoMap: don't map as two sided: IT'S A SECRET!
-public static final int ML_SECRET=		32;
+    public static final int ML_SECRET = 32;
 
 // Sound rendering: don't let sound cross two of these.
-public static final int ML_SOUNDBLOCK=		64;
+    public static final int ML_SOUNDBLOCK = 64;
 
 // Don't draw on the automap at all.
-public static final int ML_DONTDRAW=		128;
+    public static final int ML_DONTDRAW = 128;
 
 // Set if already seen, thus drawn in automap.
-public static final int ML_MAPPED		=256;
-
-
-
+    public static final int ML_MAPPED = 256;
 
 // Sector definition, from editing.
-class mapsector_t
-{
-  short		floorheight;
-  short		ceilingheight;
-  char[] floorpic=new char[8];
-  char[]		ceilingpic=new char[8];
-  short		lightlevel;
-  short		special;
-  short		tag;
-};
+    class mapsector_t {
+
+        short floorheight;
+        short ceilingheight;
+        char[] floorpic = new char[8];
+        char[] ceilingpic = new char[8];
+        short lightlevel;
+        short special;
+        short tag;
+    };
 
 // SubSector, as generated by BSP.
-class mapsubsector_t
-{
-  short		numsegs;
-  // Index of first one, segs are stored sequentially.
-  short		firstseg;	
-};
+    class mapsubsector_t {
 
+        short numsegs;
+        // Index of first one, segs are stored sequentially.
+        short firstseg;
+    };
 
 // LineSeg, generated by splitting LineDefs
 // using partition lines selected by BSP builder.
-class mapseg_t
-{
-  short		v1;
-  short		v2;
-  short		angle;		
-  short		linedef;
-  short		side;
-  short		offset;
-};
+    class mapseg_t {
 
-
+        short v1;
+        short v2;
+        short angle;
+        short linedef;
+        short side;
+        short offset;
+    };
 
 // BSP node structure.
-
 // Indicate a leaf.
-public static int	NF_SUBSECTOR	=0x8000;
+    public static int NF_SUBSECTOR = 0x8000;
 
-class mapnode_t
-{
-  // Partition line from (x,y) to x+dx,y+dy)
-  short		x;
-  short		y;
-  short		dx;
-  short		dy;
+    class mapnode_t {
+        // Partition line from (x,y) to x+dx,y+dy)
 
-  // Bounding box for each child,
-  // clip against view frustum.
-  short[][]		bbox=new short[2][4];
+        short x;
+        short y;
+        short dx;
+        short dy;
 
-  // If NF_SUBSECTOR its a subsector,
-  // else it's a node of another subtree.
-  //Maes: used to be unsigned short
-  int[] children=new int[2];
+        // Bounding box for each child,
+        // clip against view frustum.
+        short[][] bbox = new short[2][4];
 
-} ;
+        // If NF_SUBSECTOR its a subsector,
+        // else it's a node of another subtree.
+        //Maes: used to be unsigned short
+        int[] children = new int[2];
+
+    };
 
 }

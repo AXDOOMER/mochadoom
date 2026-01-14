@@ -25,24 +25,23 @@ import java.util.List;
  * @author Good Sign
  */
 public enum Direction {
-    LEFT_UP,      UP,      RIGHT_UP,
+    LEFT_UP, UP, RIGHT_UP,
     /*  \         ||         /   */
     /*    \       ||       /     */
     /*      \     ||     /       */
     /*        \   ||   /         */
-    LEFT,/*===*/CENTER,/*===*/RIGHT,
+    LEFT,/*===*/ CENTER,/*===*/ RIGHT,
     /*        /   ||   \         */
     /*      /     ||     \       */
     /*    /       ||       \     */
     /*  /         ||         \   */
-    LEFT_DOWN,   DOWN,   RIGHT_DOWN;
-    
+    LEFT_DOWN, DOWN, RIGHT_DOWN;
+
     public static final List<Direction> directions = Collections.unmodifiableList(Arrays.asList(values()));
 
     /**
      * Categorization constants
      */
-    
     // LEFT_UP, UP, RIGHT_UP
     public final boolean hasTop = ordinal() < 3;
     // LEFT_UP, LEFT, LEFT_DOWN
@@ -52,25 +51,25 @@ public enum Direction {
     // LEFT_DOWN, DOWN, RIGHT_DOWN
     public final boolean hasBottom = ordinal() > 5;
     // UP, LEFT, RIGHT, DOWN
-    public final boolean straight = ordinal() % 2 != 0; 
+    public final boolean straight = ordinal() % 2 != 0;
 
     public boolean isAdjacent(Direction dir) {
         return this.straight ^ dir.straight;
     }
-    
+
     /**
      * Conversions
      */
-
     public Direction next() {
-        if (this == RIGHT_DOWN)
+        if (this == RIGHT_DOWN) {
             return LEFT_UP;
-        
+        }
+
         return directions.get(ordinal() + 1);
     }
-    
+
     public Direction opposite() {
-        switch(this) {
+        switch (this) {
             case LEFT_UP:
                 return RIGHT_DOWN;
             case UP:
@@ -91,12 +90,13 @@ public enum Direction {
                 return LEFT_UP;
         }
     }
-    
+
     public Direction rotationHor(int sign) {
-        if (sign == 0)
+        if (sign == 0) {
             return this;
-        
-        switch(this) {
+        }
+
+        switch (this) {
             case LEFT_UP:
                 return sign > 0 ? UP : LEFT;
             case UP:
@@ -117,12 +117,13 @@ public enum Direction {
                 return sign > 0 ? RIGHT : DOWN;
         }
     }
-    
+
     public Direction rotationVert(int sign) {
-        if (sign == 0)
+        if (sign == 0) {
             return this;
-        
-        switch(this) {
+        }
+
+        switch (this) {
             case LEFT_UP:
                 return sign > 0 ? LEFT : UP;
             case UP:
@@ -143,21 +144,22 @@ public enum Direction {
                 return sign > 0 ? DOWN : RIGHT;
         }
     }
-    
+
     public Direction rotation(int signX, int signY) {
         final Direction rotX = rotationHor(signX), rotY = rotationHor(signY);
-        
+
         if (rotX.isAdjacent(rotY)) {
-            if (signX > 0 && signY > 0)
+            if (signX > 0 && signY > 0) {
                 return RIGHT_DOWN;
-            else if (signX > 0 && signY < 0)
+            } else if (signX > 0 && signY < 0) {
                 return RIGHT_UP;
-            else if (signX < 0 && signY > 0)
+            } else if (signX < 0 && signY > 0) {
                 return LEFT_DOWN;
-            else if (signX < 0 && signY < 0)
+            } else if (signX < 0 && signY < 0) {
                 return LEFT_UP;
+            }
         }
-        
+
         // otherwise, 2nd takes precedence
         return rotY;
     }

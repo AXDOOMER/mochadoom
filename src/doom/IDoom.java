@@ -7,17 +7,19 @@ import java.io.IOException;
  * @author Maes
  *
  */
-
-
 public interface IDoom {
 
+    /** Called by IO functions when input is detected. */
+    void PostEvent(event_t ev);
 
-	/** Called by IO functions when input is detected. */
-	void PostEvent (event_t ev);
-	void PageTicker ();
-	void PageDrawer ();
-	void AdvanceDemo ();
-	void StartTitle ();
-    void QuitNetGame() throws IOException; 
+    void PageTicker();
+
+    void PageDrawer();
+
+    void AdvanceDemo();
+
+    void StartTitle();
+
+    void QuitNetGame() throws IOException;
 
 }

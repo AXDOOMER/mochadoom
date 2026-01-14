@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.renderers;
 
 import java.awt.image.IndexColorModel;
@@ -37,7 +36,7 @@ abstract class SoftwareIndexedVideoRenderer extends SoftwareGraphicsSystem<byte[
 
     SoftwareIndexedVideoRenderer(RendererFactory.WithWadLoader<byte[], byte[]> rf) {
         super(rf, byte[].class);
-        
+
         /**
          * create gamma levels
          * Now we can reuse existing array of cmaps, not allocating more memory
@@ -47,8 +46,15 @@ abstract class SoftwareIndexedVideoRenderer extends SoftwareGraphicsSystem<byte[
         blurryTable = new BlurryTable(liteColorMaps);
     }
 
-    @Override public int getBaseColor(byte color) { return color; }
-    @Override public byte[] convertPalettedBlock(byte... src) { return src; }
+    @Override
+    public int getBaseColor(byte color) {
+        return color;
+    }
+
+    @Override
+    public byte[] convertPalettedBlock(byte... src) {
+        return src;
+    }
 
     @Override
     public BlurryTable getBlurryTable() {

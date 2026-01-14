@@ -19,10 +19,10 @@ package v.renderers;
 import doom.CVarManager;
 import doom.CommandVariable;
 import doom.DoomMain;
-import mochadoom.Engine;
 import java.awt.Transparency;
 import java.util.function.Function;
 import m.Settings;
+import mochadoom.Engine;
 import rr.SceneRenderer;
 import v.DoomGraphicSystem;
 
@@ -35,7 +35,7 @@ public enum BppMode {
     HiColor(5, BufferedRenderer16::new, BppMode::SceneGen_16, Transparency.OPAQUE),
     TrueColor(8, BufferedRenderer32::new, BppMode::SceneGen_32, Transparency.OPAQUE),
     AlphaTrueColor(8, BufferedRenderer32::new, BppMode::SceneGen_32, Transparency.TRANSLUCENT);
-    
+
     public final int transparency;
     public final int lightBits;
     final RenderGen<?, ?> renderGen;
@@ -47,14 +47,14 @@ public enum BppMode {
         this.scenerGen = scenerGen;
         this.transparency = transparency;
     }
-    
+
     @SuppressWarnings("unchecked")
-	public <T, V> DoomGraphicSystem<T, V> graphics(RendererFactory.WithWadLoader<T, V> rf) {
+    public <T, V> DoomGraphicSystem<T, V> graphics(RendererFactory.WithWadLoader<T, V> rf) {
         return ((RenderGen<T, V>) renderGen).apply(rf);
     }
 
     @SuppressWarnings("unchecked")
-	public <T, V> SceneRenderer<T, V> sceneRenderer(DoomMain<T, V> DOOM) {
+    public <T, V> SceneRenderer<T, V> sceneRenderer(DoomMain<T, V> DOOM) {
         return ((ScenerGen<T, V>) scenerGen).apply(DOOM);
     }
 
@@ -71,22 +71,25 @@ public enum BppMode {
             return Engine.getConfig().getValue(Settings.color_depth, BppMode.class);
         }
     }
-    
+
     @SuppressWarnings("unchecked")
-	private static <T, V> SceneRenderer<T, V> SceneGen_8(DoomMain<T, V> DOOM) {
+    private static <T, V> SceneRenderer<T, V> SceneGen_8(DoomMain<T, V> DOOM) {
         return (SceneRenderer<T, V>) SceneRendererMode.getMode().indexedGen.apply((DoomMain<byte[], byte[]>) DOOM);
     }
-    
+
     @SuppressWarnings("unchecked")
     private static <T, V> SceneRenderer<T, V> SceneGen_16(DoomMain<T, V> DOOM) {
         return (SceneRenderer<T, V>) SceneRendererMode.getMode().hicolorGen.apply((DoomMain<byte[], short[]>) DOOM);
     }
-    
+
     @SuppressWarnings("unchecked")
     private static <T, V> SceneRenderer<T, V> SceneGen_32(DoomMain<T, V> DOOM) {
         return (SceneRenderer<T, V>) SceneRendererMode.getMode().truecolorGen.apply((DoomMain<byte[], int[]>) DOOM);
     }
-    
-    interface ScenerGen<T, V> extends Function<DoomMain<T, V>, SceneRenderer<T, V>> {}
-    interface RenderGen<T, V> extends Function<RendererFactory.WithWadLoader<T, V>, SoftwareGraphicsSystem<T, V>> {}
+
+    interface ScenerGen<T, V> extends Function<DoomMain<T, V>, SceneRenderer<T, V>> {
+    }
+
+    interface RenderGen<T, V> extends Function<RendererFactory.WithWadLoader<T, V>, SoftwareGraphicsSystem<T, V>> {
+    }
 }

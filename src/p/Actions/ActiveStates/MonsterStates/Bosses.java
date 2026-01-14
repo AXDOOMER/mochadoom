@@ -29,8 +29,9 @@ import p.vldoor_e;
 import rr.line_t;
 
 public interface Bosses extends ActionTrait {
+
     void A_Fall(mobj_t mo);
-    
+
     /**
      * A_BossDeath
      * Possibly trigger special effects
@@ -53,7 +54,7 @@ public interface Bosses extends ActionTrait {
             }
 
             if ((mo.type != mobjtype_t.MT_FATSO)
-                && (mo.type != mobjtype_t.MT_BABY)) {
+                    && (mo.type != mobjtype_t.MT_BABY)) {
                 return;
             }
         } else {
@@ -136,8 +137,8 @@ public interface Bosses extends ActionTrait {
 
             mo2 = (mobj_t) th;
             if (mo2 != mo
-                && mo2.type == mo.type
-                && mo2.health > 0) {
+                    && mo2.type == mo.type
+                    && mo2.health > 0) {
                 // other boss not dead
                 return;
             }
@@ -182,7 +183,7 @@ public interface Bosses extends ActionTrait {
 
         D.ExitLevel();
     }
-    
+
     default void A_KeenDie(mobj_t mo) {
         thinker_t th;
         mobj_t mo2;
@@ -199,8 +200,8 @@ public interface Bosses extends ActionTrait {
 
             mo2 = (mobj_t) th;
             if (mo2 != mo
-                && mo2.type == mo.type
-                && mo2.health > 0) {
+                    && mo2.type == mo.type
+                    && mo2.health > 0) {
                 // other Keen not dead
                 return;
             }

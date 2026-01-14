@@ -1,9 +1,8 @@
 package p;
 
 /** YEAH, I'M USING THE CONSTANTS INTERFACE PATTERN. DEAL WITH IT */
-
 public interface MobjFlags {
- // // MF_ flags for mobjs.
+    // // MF_ flags for mobjs.
 
     // Call P_SpecialThing when touched.
     public static final long MF_SPECIAL = 1;
@@ -89,22 +88,20 @@ public interface MobjFlags {
     // Hmm ???.
     public static final long MF_TRANSSHIFT = 26;
 
-    public static final long  MF_UNUSED2      =(0x0000000010000000);
-    public static final long  MF_UNUSED3      =(0x0000000020000000);
+    public static final long MF_UNUSED2 = (0x0000000010000000);
+    public static final long MF_UNUSED3 = (0x0000000020000000);
 
-        // Translucent sprite?                                          // phares
-    public static final long  MF_TRANSLUCENT  =(0x0000000040000000);
+    // Translucent sprite?                                          // phares
+    public static final long MF_TRANSLUCENT = (0x0000000040000000);
 
     // this is free            LONGLONG(0x0000000100000000)
-
     // these are greater than an int. That's why the flags below are now uint_64_t
+    public static final long MF_TOUCHY = (0x0000000100000000L);
+    public static final long MF_BOUNCES = (0x0000000200000000L);
+    public static final long MF_FRIEND = (0x0000000400000000L);
 
-    public static final long  MF_TOUCHY = (0x0000000100000000L);
-    public static final long  MF_BOUNCES =(0x0000000200000000L);
-    public static final long  MF_FRIEND = (0x0000000400000000L);
+    public static final long MF_RESSURECTED = (0x0000001000000000L);
+    public static final long MF_NO_DEPTH_TEST = (0x0000002000000000L);
+    public static final long MF_FOREGROUND = (0x0000004000000000L);
 
-    public static final long  MF_RESSURECTED =(0x0000001000000000L);
-    public static final long  MF_NO_DEPTH_TEST =(0x0000002000000000L);
-    public static final long  MF_FOREGROUND = (0x0000004000000000L);
-    
 }

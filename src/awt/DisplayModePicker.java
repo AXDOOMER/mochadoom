@@ -8,7 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class DisplayModePicker {
-    
+
     protected GraphicsDevice device;
     protected DisplayMode default_mode;
 
@@ -16,7 +16,7 @@ public class DisplayModePicker {
         this.device = device;
         this.default_mode = device.getDisplayMode();
     }
-    
+
     public DisplayMode pickClosest(int width, int height) {
 
         DisplayMode[] modes = device.getDisplayModes();
@@ -26,20 +26,20 @@ public class DisplayModePicker {
         HeightComparator hc = new HeightComparator();
 
         // Filter out those with too small dimensions.
-        for (DisplayMode dm: modes) {
+        for (DisplayMode dm : modes) {
             if (dm.getWidth() >= width && dm.getHeight() >= height) {
                 picks.add(dm);
             }
         }
 
-        if (picks.size() > 0) {
+        if (!picks.isEmpty()) {
             Collections.sort(picks, wc.thenComparing(hc));
         }
 
         // First one is the minimum that satisfies the desired criteria.
         return picks.get(0);
     }
-    
+
     /** 
      *  Return offsets to center rasters too oddly shaped to fit entirely into 
      *  a standard display mode (unfortunately, this means most stuff > 640 x 400),

@@ -12,7 +12,7 @@ import w.CacheableDoomObject;
 import w.DoomBuffer;
 import w.DoomIO;
 
-public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
+public class VanillaDoomDemo implements IDoomDemo, CacheableDoomObject {
 
     // This stuff is in the demo header, in the order it appears
     // However everything is byte-sized when read from disk or to memory.
@@ -37,12 +37,12 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
     // (e.g. there is no consistency) and their handling is modified.
     VanillaTiccmd[] commands;
     List<IDemoTicCmd> demorecorder;
-     
+
     public VanillaDoomDemo() {
-        this.demorecorder = new ArrayList<IDemoTicCmd>();
+        this.demorecorder = new ArrayList<>();
     }
-     
-     @Override
+
+    @Override
     public void unpack(ByteBuffer b) {
         // Just the Header info for vanilla should be 13 bytes.
         // 1 byte at the end is the end-demo marker
@@ -66,7 +66,7 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
         } catch (Exception e) {
             skill = null;
         }
-        
+
         episode = b.get();
         map = b.get();
         deathmatch = b.get() != 0;
@@ -92,11 +92,12 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
 
     @Override
     public IDemoTicCmd getNextTic() {
-        if ((commands!=null)&&(p_demo<commands.length)){
+        if ((commands != null) && (p_demo < commands.length)) {
 
-        return commands[p_demo++];
+            return commands[p_demo++];
+        } else {
+            return null;
         }
-        else return null;
     }
 
     @Override
@@ -194,7 +195,7 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
     public void setConsoleplayer(int consoleplayer) {
         this.consoleplayer = consoleplayer;
     }
-    
+
     @Override
     public boolean[] getPlayeringame() {
         return playeringame;
@@ -208,9 +209,9 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
     @Override
     public void write(DataOutputStream f)
             throws IOException {
-        
-        f.writeByte(version);        
-        f.writeByte(skill.ordinal()); 
+
+        f.writeByte(version);
+        f.writeByte(skill.ordinal());
         f.writeByte(episode);
         f.writeByte(map);
         f.writeBoolean(deathmatch);
@@ -218,24 +219,20 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
         f.writeBoolean(fastparm);
         f.writeBoolean(nomonsters);
         f.writeByte(consoleplayer);
-        DoomIO.writeBoolean(f,this.playeringame,MAXPLAYERS);
-        for (IDemoTicCmd i: demorecorder) {            
+        DoomIO.writeBoolean(f, this.playeringame, MAXPLAYERS);
+        for (IDemoTicCmd i : demorecorder) {
             i.write(f);
         }
         f.writeByte(DEMOMARKER);
-        
+
         // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void resetDemo() {
-        this.p_demo=0;
-        
+        this.p_demo = 0;
+
     }
-    
+
     /////////////////////// VARIOUS BORING GETTERS /////////////////////
-    
-    
-	
 }

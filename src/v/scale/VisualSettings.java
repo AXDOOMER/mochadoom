@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.scale;
 
 import doom.CVarManager;
@@ -27,16 +26,15 @@ public class VisualSettings {
     public final static VideoScale double_vanilla = new VideoScaleInfo(2.0f);
     public final static VideoScale triple_vanilla = new VideoScaleInfo(3.0f);
     public final static VideoScale default_scale = triple_vanilla;
-    
+
     /** Parses the command line for resolution-specific commands, and creates
      *  an appropriate IVideoScale object.
      *  
      * @param CM
      * @return
      */
-    
-    public final static VideoScale parse(CVarManager CVM){
-        
+    public final static VideoScale parse(CVarManager CVM) {
+
         { // check multiply
             // -multiply parameter defined from linux doom.
             // It gets priority over all others, if present.
@@ -48,10 +46,10 @@ public class VisualSettings {
                 return new VideoScaleInfo(multiply);
             }
         } // forget multiply
-        
+
         // At least one of them is not a dud.
         final int mulx, muly, mulf;
-        
+
         // check width & height
         final int width = CVM.get(CommandVariable.WIDTH, Integer.class, 0).orElse(-1);
         final int height = CVM.get(CommandVariable.HEIGHT, Integer.class, 0).orElse(-1);
@@ -64,7 +62,7 @@ public class VisualSettings {
         // Break them down to the nearest multiple of the base width or height.
         mulx = Math.round((float) width / VideoScale.BASE_WIDTH);
         muly = Math.round((float) height / VideoScale.BASE_HEIGHT);
-        
+
         // Do not accept zero or sub-vanilla resolutions
         if (mulx > 0 || muly > 0) {
             // Use the maximum multiplier. We don't support skewed
@@ -74,7 +72,7 @@ public class VisualSettings {
                 return new VideoScaleInfo(mulf);
             }
         }
-        
+
         // In all other cases...
         return default_scale;
     }

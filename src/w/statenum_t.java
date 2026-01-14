@@ -2,19 +2,18 @@ package w;
 
 public enum statenum_t {
 
-        NoState(-1),
-        StatCount(0),
-        ShowNextLoc(1);
-        
-        private int value;
-        
-        private statenum_t(int val){
-            this.value=val;
-        }
+    NoState(-1),
+    StatCount(0),
+    ShowNextLoc(1);
 
-        public int getValue() {
-            return value;
-        }
-        
-    
+    private int value;
+
+    private statenum_t(int val) {
+        this.value = val;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
 }

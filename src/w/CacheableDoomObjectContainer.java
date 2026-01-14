@@ -13,37 +13,35 @@ import java.nio.ByteBuffer;
  *  abuse? ;-)
  * 
  */
-
 public class CacheableDoomObjectContainer<T extends CacheableDoomObject> implements CacheableDoomObject {
-	
-	private T[] stuff;
-	
-	public CacheableDoomObjectContainer(T[] stuff){
-		this.stuff=stuff;
-	}
-	
-	public T[] getStuff(){
-		return stuff;
-	}
-	
-	@Override
-	public void unpack(ByteBuffer buf) throws IOException {
-		for (int i = 0; i < stuff.length; i++) {
-				stuff[i].unpack(buf);
-			}
-		}
-	
-	/** Statically usable method
-	 * 
-	 * @param buf
-	 * @param stuff
-	 * @throws IOException
-	 */
-	
-	public static void unpack(ByteBuffer buf, CacheableDoomObject[] stuff) throws IOException{
-	       for (int i = 0; i < stuff.length; i++) {
-               stuff[i].unpack(buf);
-           }
-	}
+
+    private T[] stuff;
+
+    public CacheableDoomObjectContainer(T[] stuff) {
+        this.stuff = stuff;
+    }
+
+    public T[] getStuff() {
+        return stuff;
+    }
+
+    @Override
+    public void unpack(ByteBuffer buf) throws IOException {
+        for (int i = 0; i < stuff.length; i++) {
+            stuff[i].unpack(buf);
+        }
+    }
+
+    /** Statically usable method
+     * 
+     * @param buf
+     * @param stuff
+     * @throws IOException
+     */
+    public static void unpack(ByteBuffer buf, CacheableDoomObject[] stuff) throws IOException {
+        for (int i = 0; i < stuff.length; i++) {
+            stuff[i].unpack(buf);
+        }
+    }
 
 }

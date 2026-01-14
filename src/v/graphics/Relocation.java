@@ -23,7 +23,7 @@ package v.graphics;
  * @author Good Sign
  */
 public final class Relocation {
-    
+
     public int source;
     public int destination;
     public int length;
@@ -42,7 +42,7 @@ public final class Relocation {
         this.destination += amount;
         return this;
     }
-    
+
     public Relocation retarget(int source, int destination) {
         this.source = source;
         this.destination = destination;

@@ -7,22 +7,22 @@ import java.nio.ByteOrder;
 public class z_vertex_t
         extends vertex_t {
 
-    public z_vertex_t(){
+    public z_vertex_t() {
         super();
     }
-    
+
     /** Notice how we auto-expand to fixed_t */
     @Override
     public void unpack(ByteBuffer buf)
             throws IOException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        this.x=buf.getInt();
-        this.y=buf.getInt();
-        
+        this.x = buf.getInt();
+        this.y = buf.getInt();
+
     }
-    
+
     public final static int sizeOf() {
         return 8;
     }
-    
+
 }

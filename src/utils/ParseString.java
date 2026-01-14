@@ -21,21 +21,22 @@ import java.util.Optional;
 /**
  * @author Good Sign
  */
-public enum ParseString {;
+public enum ParseString {
+    ;
     public static Object parseString(String stringSource) {
         final Optional<QuoteType> qt = QuoteType.getQuoteType(stringSource);
         final boolean quoted = qt.isPresent();
         if (quoted) {
             stringSource = qt.get().unQuote(stringSource);
         }
-        
+
         if (quoted && stringSource.length() == 1) {
             final Character test = stringSource.charAt(0);
             if (test >= 0 && test < 255) {
                 return test;
             }
         }
-        
+
         Optional<? extends Object> ret = checkInt(stringSource);
         if (!ret.isPresent()) {
             ret = checkDouble(stringSource);
@@ -46,42 +47,46 @@ public enum ParseString {;
                 }
             }
         }
-        
+
         return ret.get();
     }
-    
+
     public static Optional<Object> checkInt(final String stringSource) {
         Optional<Object> ret;
         try {
             long longRet = Long.parseLong(stringSource);
             return longRet < Integer.MAX_VALUE
-                ? Optional.of((int) longRet)
-                : Optional.of(longRet);
-        } catch (NumberFormatException e) {}
+                    ? Optional.of((int) longRet)
+                    : Optional.of(longRet);
+        } catch (NumberFormatException e) {
+        }
 
         try {
             long longRet = Long.decode(stringSource);
             return longRet < Integer.MAX_VALUE
-                ? Optional.of((int) longRet)
-                : Optional.of(longRet);
-        } catch (NumberFormatException e) {}
+                    ? Optional.of((int) longRet)
+                    : Optional.of(longRet);
+        } catch (NumberFormatException e) {
+        }
 
         return Optional.empty();
     }
-    
+
     public static Optional<Double> checkDouble(final String stringSource) {
         try {
             return Optional.of(Double.parseDouble(stringSource));
-        } catch (NumberFormatException e) {}
+        } catch (NumberFormatException e) {
+        }
 
         return Optional.empty();
     }
-    
+
     public static Optional<Boolean> checkBoolean(final String stringSource) {
         try {
             return Optional.of(Boolean.parseBoolean(stringSource));
-        } catch (NumberFormatException e) {}
-        
+        } catch (NumberFormatException e) {
+        }
+
         if ("false".compareToIgnoreCase(stringSource) == 0) {
             return Optional.of(Boolean.FALSE);
         }

@@ -6,7 +6,10 @@ import static data.Tables.ANG90;
 import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FixedDiv;
+import mochadoom.Loggers;
 import utils.C2JUtils;
 import v.scale.VideoScale;
 
@@ -14,40 +17,39 @@ import v.scale.VideoScale;
  *  This allows more encapsulation and some neat hacks like sharing 
  *  visplane data among parallel renderers, without duplicating them.
  */
-
 public class Visplanes {
 
-    private static final boolean DEBUG2=false;
+    private static final Logger LOGGER = Loggers.getLogger(Visplanes.class.getName());
+
+    private static final boolean DEBUG2 = false;
 
     protected final ViewVars view;
     protected final TextureManager<?> TexMan;
     protected final VideoScale vs;
-    
-    public Visplanes(VideoScale vs, ViewVars view, TextureManager<?> TexMan){
+
+    public Visplanes(VideoScale vs, ViewVars view, TextureManager<?> TexMan) {
         this.vs = vs;
-        this.view=view;
-        this.TexMan=TexMan;
+        this.view = view;
+        this.TexMan = TexMan;
         MAXOPENINGS = vs.getScreenWidth() * 64;
         openings = new short[MAXOPENINGS];
         BLANKCACHEDHEIGHT = new int[vs.getScreenHeight()];
         yslope = new int[vs.getScreenHeight()];
     }
-    
 
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
-    public int[] cachedheight,BLANKCACHEDHEIGHT;
+    public int[] cachedheight, BLANKCACHEDHEIGHT;
 
-    
     /** To treat as fixed_t */
     public int basexscale, baseyscale;
-    
+
     /** To treat at fixed_t */
     protected int[] yslope;
-    
+
     // initially.
     public int MAXVISPLANES = Limits.MAXVISPLANES;
     public int MAXOPENINGS;
-    
+
     /** visplane_t*, treat as indexes into visplanes */
     public int lastvisplane, floorplane, ceilingplane;
     public visplane_t[] visplanes = new visplane_t[MAXVISPLANES];
@@ -59,57 +61,54 @@ public class Visplanes {
     public short[] openings;
     /** Maes: this is supposed to be a pointer inside openings */
     public int lastopening;
-    
+
     protected int skyscale;
 
-    
     /**
      * Call only after visplanes have been properly resized for resolution.
      * In case of dynamic resolution changes, the old ones should just be
      * discarded, as they would be nonsensical.
      */
-
     public void initVisplanes() {
         cachedheight = new int[vs.getScreenHeight()];
         Arrays.setAll(visplanes, j -> new visplane_t());
     }
-    
-    public int getBaseXScale(){
+
+    public int getBaseXScale() {
         return basexscale;
     }
 
-    public int getBaseYScale(){
+    public int getBaseYScale() {
         return baseyscale;
     }
 
-    public int getSkyScale(){
+    public int getSkyScale() {
         return skyscale;
     }
-    
+
     public void setSkyScale(int i) {
-        skyscale=i;        
+        skyscale = i;
     }
-    
-    public int getLength(){
+
+    public int getLength() {
         return visplanes.length;
     }
-    
+
     /** Return the last of visplanes, allocating a new one if needed */
-    
-    public visplane_t allocate(){
+    public visplane_t allocate() {
         if (lastvisplane == visplanes.length) {
             //  visplane overflows could occur at this point.
             resizeVisplanes();
         }
-        
+
         return visplanes[lastvisplane++];
     }
-    
+
     public final void resizeVisplanes() {
         // Bye bye, old visplanes.
-        visplanes = C2JUtils.resize(visplanes[0], visplanes, visplanes.length*2);
+        visplanes = C2JUtils.resize(visplanes[0], visplanes, visplanes.length * 2);
     }
-    
+
     /**
      * R_FindPlane
      * 
@@ -126,7 +125,6 @@ public class Visplanes {
      * @param lightlevel
      * @return was visplane_t*, returns index into visplanes[]
      */
-
     public final int FindPlane(int height, int picnum, int lightlevel) {
         // System.out.println("\tChecking for visplane merging...");
         int check = 0; // visplane_t*
@@ -168,12 +166,11 @@ public class Visplanes {
 
         return check;
     }
-    
+
     /**
      * R_ClearPlanes At begining of frame.
      * 
      */
-
     public void ClearPlanes() {
         int angle;
 
@@ -182,7 +179,6 @@ public class Visplanes {
          * setting them "just outside" the borders of the screen (-1 and
          * viewheight).
          */
-
         // Point to #1 in visplane list? OK... ?!
         lastvisplane = 0;
 
@@ -205,7 +201,7 @@ public class Visplanes {
         basexscale = FixedDiv(finecosine[angle], view.centerxfrac);
         baseyscale = -FixedDiv(finesine[angle], view.centerxfrac);
     }
-    
+
     /**
      * R_CheckPlane
      * 
@@ -214,12 +210,11 @@ public class Visplanes {
      * Presumably decides if a visplane should be split or not?
      * 
      */
-
     public int CheckPlane(int index, int start, int stop) {
 
-        if (DEBUG2)
-            System.out.println("Checkplane " + index + " between " + start
-                    + " and " + stop);
+        if (DEBUG2) {
+            LOGGER.log(Level.FINER, String.format("Checkplane %d between %d and %d", index, start, stop));
+        }
 
         // Interval ?
         int intrl;
@@ -231,8 +226,9 @@ public class Visplanes {
         // OK, so we check out ONE particular visplane.
         visplane_t pl = visplanes[index];
 
-        if (DEBUG2)
-            System.out.println("Checking out plane " + pl);
+        if (DEBUG2) {
+            LOGGER.log(Level.FINER, String.format("Checking out plane %s", String.valueOf(pl)));
+        }
 
         int x;
 
@@ -271,7 +267,6 @@ public class Visplanes {
         // Same as before, for for stop and maxx.
         // This time, intrh comes before unionh.
         //
-
         if (stop > pl.maxx) {
             intrh = pl.maxx;
             unionh = stop;
@@ -283,17 +278,17 @@ public class Visplanes {
         // An interval is now defined, which is entirely contained in the
         // visplane.
         //
-
         // If the value FF is NOT stored ANYWWHERE inside it, we bail out
         // early
-        for (x = intrl; x <= intrh; x++)
-            if (pl.getTop(x) != Character.MAX_VALUE)
+        for (x = intrl; x <= intrh; x++) {
+            if (pl.getTop(x) != Character.MAX_VALUE) {
                 break;
+            }
+        }
 
         // This can only occur if the loop above completes,
         // else the visplane we were checking has non-visible/clipped
         // portions within that range: we must split.
-
         if (x > intrh) {
             // Merge the visplane
             pl.minx = unionl;
@@ -305,8 +300,7 @@ public class Visplanes {
 
         // SPLIT: make a new visplane at "last" position, copying materials
         // and light.
-
-        visplane_t last=allocate();
+        visplane_t last = allocate();
         last.height = pl.height;
         last.picnum = pl.picnum;
         last.lightlevel = pl.lightlevel;
@@ -319,11 +313,10 @@ public class Visplanes {
         pl.clearTop();
 
         // return pl;
-
         // System.out.println("New plane created: "+pl);
         return lastvisplane - 1;
     }
-    
+
     /*
      
        /**
@@ -332,13 +325,13 @@ public class Visplanes {
      * convenience, but we can search them in the hashtable too -as a bonus, we
      * can reuse previously created planes that match newer ones-.
      */
-    /*
+ /*
     Hashtable<visplane_t, Integer> planehash = new Hashtable<visplane_t, Integer>(
             128);
     visplane_t check = new visplane_t();
-    */
+     */
 
-    /*
+ /*
     protected final int FindPlane2(int height, int picnum, int lightlevel) {
         // System.out.println("\tChecking for visplane merging...");
         // int check=0; // visplane_t*
@@ -395,6 +388,5 @@ public class Visplanes {
 
         return checknum;
     }
-    */
-    
+     */
 }

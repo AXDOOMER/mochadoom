@@ -7,7 +7,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiMessage;
@@ -17,6 +18,7 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Synthesizer;
+import mochadoom.Loggers;
 
 /** A {@link Receiver} that scales channel volumes.
  * 
@@ -29,6 +31,8 @@ import javax.sound.midi.Synthesizer;
  */
 public class VolumeScalingReceiver implements Receiver {
 
+    private static final Logger LOGGER = Loggers.getLogger(VolumeScalingReceiver.class.getName());
+
     /** Guess which is the "best" available synthesizer & create a
      *  VolumeScalingReceiver that forwards to it.
      *
@@ -38,11 +42,10 @@ public class VolumeScalingReceiver implements Receiver {
      */
     public static VolumeScalingReceiver getInstance() {
         try {
-            List<MidiDevice.Info> dInfos =
-                new ArrayList<MidiDevice.Info>(Arrays.asList(MidiSystem.getMidiDeviceInfo()));
+            List<MidiDevice.Info> dInfos
+                    = new ArrayList<>(Arrays.asList(MidiSystem.getMidiDeviceInfo()));
             for (Iterator<MidiDevice.Info> it = dInfos.iterator();
-                 it.hasNext();
-                 ) {
+                    it.hasNext();) {
                 MidiDevice.Info dInfo = it.next();
                 MidiDevice dev = MidiSystem.getMidiDevice(dInfo);
                 if (dev.getMaxReceivers() == 0) {
@@ -50,7 +53,9 @@ public class VolumeScalingReceiver implements Receiver {
                     it.remove();
                 }
             }
-            if (dInfos.isEmpty()) return null;
+            if (dInfos.isEmpty()) {
+                return null;
+            }
             Collections.sort(dInfos, new MidiDeviceComparator());
             MidiDevice.Info dInfo = dInfos.get(0);
             MidiDevice dev = MidiSystem.getMidiDevice((MidiDevice.Info) dInfo);
@@ -76,7 +81,7 @@ public class VolumeScalingReceiver implements Receiver {
     /** Set the scaling factor to be applied to all channel volumes */
     public synchronized void setGlobalVolume(float globalVolume) {
         this.globalVolume = globalVolume;
-        for (int chan = 0; chan < 16; ++ chan) {
+        for (int chan = 0; chan < 16; ++chan) {
             int volScaled = (int) Math.round(channelVolume[chan] * globalVolume);
             sendVolumeChange(chan, volScaled, -1);
         }
@@ -84,6 +89,7 @@ public class VolumeScalingReceiver implements Receiver {
 
     /** A collection of kludges to pick a synthesizer until cvars are implemented */
     static class MidiDeviceComparator implements Comparator<MidiDevice.Info> {
+
         @Override
         public int compare(MidiDevice.Info o1, MidiDevice.Info o2) {
             float score1 = score(o1), score2 = score(o2);
@@ -95,6 +101,7 @@ public class VolumeScalingReceiver implements Receiver {
                 return 0;
             }
         }
+
         /** Guess how suitable a MidiDevice is for music output. */
         private float score(MidiDevice.Info info) {
             String lcName = info.getName().toLowerCase(Locale.ENGLISH);
@@ -170,7 +177,7 @@ public class VolumeScalingReceiver implements Receiver {
             message.setMessage(0xb0 | (chan & 15), 7, newVolScaled);
             synthReceiver.send(message, timeStamp);
         } catch (InvalidMidiDataException ex) {
-            System.err.println(ex);
+            LOGGER.log(Level.SEVERE, "sendVolumeChange failure", ex);
         }
     }
 
@@ -182,8 +189,8 @@ public class VolumeScalingReceiver implements Receiver {
     private int getVolumeChangeChannel(MidiMessage message) {
         if (message.getLength() >= 3) {
             byte[] mBytes = message.getMessage();
-            if ((byte) 0xb0 <= mBytes[0] && mBytes[0] < (byte) 0xc0 &&
-                mBytes[1] == 7) {
+            if ((byte) 0xb0 <= mBytes[0] && mBytes[0] < (byte) 0xc0
+                    && mBytes[1] == 7) {
                 return mBytes[0] & 15;
             }
         }

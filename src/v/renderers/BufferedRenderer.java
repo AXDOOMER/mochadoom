@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
- package v.renderers;
+package v.renderers;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
@@ -24,6 +23,7 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 
 class BufferedRenderer extends SoftwareIndexedVideoRenderer {
+
     private final WritableRaster[] rasters = new WritableRaster[SCREENS_COUNT];
 
     /**
@@ -32,7 +32,7 @@ class BufferedRenderer extends SoftwareIndexedVideoRenderer {
      */
     BufferedRenderer(RendererFactory.WithWadLoader<byte[], byte[]> rf) {
         super(rf);
-        for (DoomScreen s: DoomScreen.values()) {
+        for (DoomScreen s : DoomScreen.values()) {
             final int index = s.ordinal();
             // Only create non-visible data, pegged to the raster. Create visible images only on-demand.
             final DataBufferByte db = (DataBufferByte) newBuffer(s);

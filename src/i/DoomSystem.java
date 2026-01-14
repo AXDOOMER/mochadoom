@@ -109,13 +109,16 @@ import awt.MsgBox;
 import doom.DoomMain;
 import doom.ticcmd_t;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 public class DoomSystem implements IDoomSystem {
 
+    private static final Logger LOGGER = Loggers.getLogger(DoomSystem.class.getName());
+
     public static void MiscError(String error, Object... args) {
-        System.err.print("Error: ");
-        System.err.print(error);
-        System.err.print("\n");
+        LOGGER.log(Level.SEVERE, String.format("Error: %s", error));
     }
 
     static int mb_used = 6;
@@ -159,8 +162,7 @@ public class DoomSystem implements IDoomSystem {
         try {
             DM.QuitNetGame();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error: Quit() / DM.QuitNetGame()", e);
         }
         //DM.debugEnd();
         /**
@@ -187,8 +189,7 @@ public class DoomSystem implements IDoomSystem {
         try {
             Thread.sleep(count * 1000 / 70);
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error: WaitVBL / Thread.sleep()", e);
         }
     }
 
@@ -209,7 +210,8 @@ public class DoomSystem implements IDoomSystem {
 
     @Override
     public void AllocLow(int length) {
-        ; // Dummy
+        // Dummy
+
     }
 
     //
@@ -217,12 +219,9 @@ public class DoomSystem implements IDoomSystem {
     //
     @Override
     public void Error(String error, Object... args) {
+        LOGGER.log(Level.SEVERE, String.format("Error: " + error, args));
 
-        System.err.print("Error: ");
-        System.err.printf(error, args);
-        System.err.print("\n");
         //va_end (argptr);
-
         //fflush( stderr );
         // Shutdown. Here might be other errors.
         if (DM.demorecording) {
@@ -232,8 +231,7 @@ public class DoomSystem implements IDoomSystem {
         try {
             DM.QuitNetGame();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error: Error() / DM.QuitNetGame()", e);
         }
         // DM.VI.ShutdownGraphics();
 
@@ -246,9 +244,7 @@ public class DoomSystem implements IDoomSystem {
 
         // Message first.
         //va_start (argptr,error);
-        System.err.print("Error: ");
-        System.err.printf(error);
-        System.err.print("\n");
+        LOGGER.log(Level.SEVERE, String.format("Error: %s", error));
         //va_end (argptr);
 
         //fflush( stderr );
@@ -262,8 +258,8 @@ public class DoomSystem implements IDoomSystem {
 
     // This particular implementation will generate a popup box.// 
     @Override
-    public boolean GenerateAlert(String title, String cause) {
-        MsgBox alert = new MsgBox(null, title, cause, true);
+    public boolean GenerateAlert(String title, String cause, boolean showCancelButton) {
+        MsgBox alert = new MsgBox(null, title, cause, showCancelButton);
         return alert.isOk();
     }
 }

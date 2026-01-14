@@ -55,7 +55,9 @@ public interface ActionsSectors extends ActionsLights, ActionsFloors, ActionsDoo
     ContextKey<Crushes> KEY_CRUSHES = ACTION_KEY_CHAIN.newKey(ActionsSectors.class, Crushes::new);
 
     void RemoveMobj(mobj_t thing);
+
     void DamageMobj(mobj_t thing, mobj_t tmthing, mobj_t tmthing0, int damage);
+
     mobj_t SpawnMobj(@fixed_t int x, @fixed_t int y, @fixed_t int z, mobjtype_t type);
 
     final class Crushes {
@@ -464,7 +466,7 @@ public interface ActionsSectors extends ActionsLights, ActionsFloors, ActionsDoo
     default boolean twoSided(int sector, int line) {
         return eval((levelLoader().sectors[sector].lines[line]).flags & ML_TWOSIDED);
     }
-    
+
     default void ClearRespawnQueue() {
         // clear special respawning que
         final RespawnQueue rq = contextRequire(KEY_RESP_QUEUE);

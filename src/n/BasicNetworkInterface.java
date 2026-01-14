@@ -16,6 +16,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import w.DoomBuffer;
 
 // Emacs style mode select   -*- C++ -*- 
@@ -62,6 +65,8 @@ import w.DoomBuffer;
 //
 //-----------------------------------------------------------------------------
 public class BasicNetworkInterface implements DoomSystemNetworking {
+
+    static final Logger LOGGER = Loggers.getLogger(BasicNetworkInterface.class.getName());
 
     protected DoomMain<?, ?> DOOM;
 
@@ -183,7 +188,6 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
                 sendPacket.setSocketAddress(sendsocket.getRemoteSocketAddress());
                 sendSocketPacket(sendsocket, sendPacket);
             } catch (Exception e) {
-                e.printStackTrace();
                 DOOM.doomSystem.Error("SendPacket error: %s", e.getMessage());
             }
 
@@ -240,7 +244,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
                     sb.append(" 0x");
                     sb.append(DoomBuffer.getBEInt(recvData.retransmitfrom, recvData.starttic, recvData.player, recvData.numtics));
                     sb.append("numtics: ").append(recvData.numtics);
-                    System.out.println(sb.toString());
+                    LOGGER.log(Level.FINE, sb.toString());
                     first = false;
                 }
             }
@@ -325,7 +329,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
 
         DOOM.cVarManager.with(CommandVariable.PORT, 0, (Integer port) -> {
             DOOMPORT = port;
-            System.out.println("using alternate port " + DOOMPORT);
+            LOGGER.log(Level.INFO, String.format("using alternate port %d", DOOMPORT));
         });
 
         // parse network game options,
@@ -355,7 +359,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
         doomcom.numnodes = 1;  // this node for sure
 
         String[] hosts = DOOM.cVarManager.get(CommandVariable.NET, String[].class, 1).get();
-        for (String host: hosts) {
+        for (String host : hosts) {
             try {
                 InetAddress addr = InetAddress.getByName(host);
                 DatagramSocket ds = new DatagramSocket(null);
@@ -364,7 +368,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
 
                 sendaddress[doomcom.numnodes] = ds;
             } catch (SocketException | UnknownHostException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "InitNetwork: failure", e);
             }
 
             doomcom.numnodes++;
@@ -380,8 +384,7 @@ public class BasicNetworkInterface implements DoomSystemNetworking {
             insocket.setSoTimeout(1);
             insocket.bind(new InetSocketAddress(RECVPORT));
         } catch (SocketException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
+            LOGGER.log(Level.SEVERE, "InitNetwork: failure", e1);
         }
     }
 

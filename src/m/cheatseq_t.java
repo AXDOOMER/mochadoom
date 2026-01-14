@@ -63,14 +63,12 @@ package m;
 // Cheat sequence checking.
 //
 // -----------------------------------------------------------------------------
-
 /**
  * Cheat sequence checking. MAES: all of this stuff used to be in cheat.h and
  * cheat.c, but seeing how all manipulation is done on "cheatseq_t" objects, it
  * makes more sense to move this functionality in here, and go OO all the way.
  * So away with the fugly static methods!!!
  */
-
 public class cheatseq_t {
 
     // This holds the actual data (was a char*).
@@ -90,16 +88,16 @@ public class cheatseq_t {
         this.p = 0;
     }
 
-    public cheatseq_t(String sequence, boolean prescrambled){
-    	if (prescrambled){
-    		this.sequence=sequence.toCharArray();
-    		p=0;
-    	} else {
-    		this.sequence=scrambleString(sequence);
-    		p=0;
-    	}    	
-    	}
-    
+    public cheatseq_t(String sequence, boolean prescrambled) {
+        if (prescrambled) {
+            this.sequence = sequence.toCharArray();
+            p = 0;
+        } else {
+            this.sequence = scrambleString(sequence);
+            p = 0;
+        }
+    }
+
     /**
      * This was in cheat.c, but makes more sense to be used as an
      * initializer/constructor.
@@ -124,8 +122,9 @@ public class cheatseq_t {
             this.sequence[ptr++] = 0;
         } while ((c != 0) && (this.sequence[ptr] != 0xff));
 
-        if (this.sequence[ptr] == 0xff)
+        if (this.sequence[ptr] == 0xff) {
             buffer[bptr] = 0;
+        }
 
     }
 
@@ -137,26 +136,26 @@ public class cheatseq_t {
      * @param key
      * @return
      */
-
     public boolean CheckCheat(cheatseq_t cht, int key) {
         boolean rc = false;
 
-        if (cht.p < 0)
+        if (cht.p < 0) {
             cht.p = 0; // initialize if first time
-
-        if (cht.p == 0)
-            // This actually points inside "sequence"
-            // *(cht->p++) = key;
+        }
+        if (cht.p == 0) // This actually points inside "sequence"
+        // *(cht->p++) = key;
+        {
             cht.sequence[cht.p++] = (char) key;
-        else if (cheat_xlate_table[(char) key] == cht.sequence[cht.p])
+        } else if (cheat_xlate_table[(char) key] == cht.sequence[cht.p]) {
             cht.p++;
-        else
-            // Failure: back to the beginning.
+        } else // Failure: back to the beginning.
+        {
             cht.p = 0;
+        }
 
-        if (cht.sequence[cht.p] == 1)
+        if (cht.sequence[cht.p] == 1) {
             cht.p++;
-        else if (cht.sequence[cht.p] == 0xff) // end of sequence character
+        } else if (cht.sequence[cht.p] == 0xff) // end of sequence character
         {
             cht.p = 0;
             rc = true;
@@ -172,26 +171,26 @@ public class cheatseq_t {
      * @param key
      * @return
      */
-
     public boolean CheckCheat(int key) {
         boolean rc = false;
 
-        if (this.p < 0)
+        if (this.p < 0) {
             this.p = 0; // initialize if first time
-
-        if (sequence[p] == 0)
-            // This actually points inside "sequence"
-            // *(cht->p++) = key;
+        }
+        if (sequence[p] == 0) // This actually points inside "sequence"
+        // *(cht->p++) = key;
+        {
             sequence[p++] = (char) key;
-            //p++;  //_D_: this fixed cheat with parm problem (IDCLIP)
-        else if (cheat_xlate_table[(char) key] == sequence[p])
+        } //p++;  //_D_: this fixed cheat with parm problem (IDCLIP)
+        else if (cheat_xlate_table[(char) key] == sequence[p]) {
             p++;
-        else
-            // Failure: back to the beginning.
+        } else // Failure: back to the beginning.
+        {
             p = 0;
-        if (sequence[p] == 1)
+        }
+        if (sequence[p] == 1) {
             p++;
-        else if (sequence[p] == 0xff) // end of sequence character
+        } else if (sequence[p] == 0xff) // end of sequence character
         {
             p = 0;
             rc = true;
@@ -212,16 +211,16 @@ public class cheatseq_t {
                 + (((a) & 8) << 1) + (((a) & 16) >>> 1) + ((a) & 32)
                 + (((a) & 64) >>> 5) + (((a) & 128) >>> 7));
     }
-    
-    public static char[] scrambleString(String s){
-    	
-    	char[] tmp=new char[s.length()+1];
-    	for (int i=0;i<s.length();i++){
-    		tmp[i]=SCRAMBLE(s.charAt(i));
-    	}    	
-    	tmp[s.length()]=0xff;    	
-    	
-    	return tmp;    	
+
+    public static char[] scrambleString(String s) {
+
+        char[] tmp = new char[s.length() + 1];
+        for (int i = 0; i < s.length(); i++) {
+            tmp[i] = SCRAMBLE(s.charAt(i));
+        }
+        tmp[s.length()] = 0xff;
+
+        return tmp;
     }
 
     /**
@@ -232,11 +231,12 @@ public class cheatseq_t {
 
     public static char[] cheat_xlate_table = new char[256];
 
-   static {
-       if (firsttime) {
-           firsttime = false;
-           for (char i = 0; i < 256; i++)
-               cheat_xlate_table[i] = SCRAMBLE(i);
-       }
-   }
+    static {
+        if (firsttime) {
+            firsttime = false;
+            for (char i = 0; i < 256; i++) {
+                cheat_xlate_table[i] = SCRAMBLE(i);
+            }
+        }
+    }
 }

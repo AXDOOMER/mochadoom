@@ -22,20 +22,19 @@ package data;
 //    
 //-----------------------------------------------------------------------------
 
-
 public class doomtype {
 
 // C's "chars" are actually Java signed bytes.
-public static byte MAXCHAR =((byte)0x7f);
-public static short MAXSHORT=	((short)0x7fff);
+    public static byte MAXCHAR = ((byte) 0x7f);
+    public static short MAXSHORT = ((short) 0x7fff);
 
 // Max pos 32-bit int.
-public static int MAXINT=((int)0x7fffffff);	
-public static long MAXLONG=((long)0x7fffffff);
-public static byte MINCHAR=((byte)0x80);
-public static short MINSHORT=((short)0x8000);
+    public static int MAXINT = ((int) 0x7fffffff);
+    public static long MAXLONG = ((long) 0x7fffffff);
+    public static byte MINCHAR = ((byte) 0x80);
+    public static short MINSHORT = ((short) 0x8000);
 
 // Max negative 32-bit integer.
-public static int MININT=((int)0x80000000);
-public static long MINLONG=((long)0x80000000);
+    public static int MININT = ((int) 0x80000000);
+    public static long MINLONG = ((long) 0x80000000);
 }

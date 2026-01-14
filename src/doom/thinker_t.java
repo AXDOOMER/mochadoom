@@ -5,9 +5,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import p.ActiveStates;
-import static utils.C2JUtils.pointer;
-
 import p.ThinkerStates;
+import static utils.C2JUtils.pointer;
 import w.CacheableDoomObject;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -31,7 +30,6 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
      * Next, previous thinkers in same class
      */
     //public thinker_t cnext, cprev;
-
     /**
      * extra fields, to use when archiving/unarchiving for
      * identification. Also in blocklinks, etc.
@@ -40,7 +38,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
 
     @Override
     public void read(DataInputStream f)
-        throws IOException {
+            throws IOException {
         readbuffer.position(0);
         readbuffer.order(ByteOrder.LITTLE_ENDIAN);
         f.read(readbuffer.array());
@@ -52,7 +50,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
      */
     @Override
     public void pack(ByteBuffer b)
-        throws IOException {
+            throws IOException {
         // It's possible to reconstruct even by hashcodes.
         // As for the function, that should be implied by the mobj_t type.
         b.order(ByteOrder.LITTLE_ENDIAN);
@@ -64,7 +62,7 @@ public class thinker_t implements CacheableDoomObject, IReadableDoomObject, IPac
 
     @Override
     public void unpack(ByteBuffer b)
-        throws IOException {
+            throws IOException {
         // We are supposed to archive pointers to other thinkers,
         // but they are rather useless once on disk.
         b.order(ByteOrder.LITTLE_ENDIAN);

@@ -22,6 +22,7 @@ import v.tables.ColorTint;
  * Package containing individual color modification and transformation methods
  */
 public interface Colors {
+
     /**
      * Get alpha from packed argb long word.
      *
@@ -31,7 +32,7 @@ public interface Colors {
     default int getAlpha(int argb8888) {
         return (argb8888 >>> 24) & 0xFF;
     }
-    
+
     /**
      * Get red from packed argb long word.
      *
@@ -81,7 +82,7 @@ public interface Colors {
     default int getBlue(int rgb888) {
         return 0xFF & rgb888;
     }
-    
+
     /**
      * Get blue from packed rgb555
      *
@@ -102,7 +103,7 @@ public interface Colors {
         container[3] = getBlue(argb8888);
         return container;
     }
-    
+
     /**
      * Get all four color channels into an array
      */
@@ -112,7 +113,7 @@ public interface Colors {
         container[2] = getBlue(rgb888);
         return container;
     }
-    
+
     /**
      * Get all three colors into an array
      */
@@ -122,28 +123,28 @@ public interface Colors {
         container[2] = getBlue5(rgb555);
         return container;
     }
-    
+
     /**
      * Compose rgb888 color (opaque)
      */
     default int toRGB888(int r, int g, int b) {
         return 0xFF000000 + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
     }
-    
+
     /**
      * Compose argb8888 color
      */
     default int toARGB8888(int a, int r, int g, int b) {
         return ((a & 0xFF) << 24) + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
     }
-    
+
     /**
      * Compose rgb888 color
      */
     default short toRGB555(int r, int g, int b) {
         return (short) (((r & 0x1F) << 10) + ((g & 0x1F) << 5) + (b & 0x1F));
     }
-    
+
     /**
      * Alter rgb888 color by applying a tint to it
      * @param int[] rgbInput an array containing rgb888 color components
@@ -165,11 +166,11 @@ public interface Colors {
         rgbOutput[2] = tint.tintBlue5(rgbInput[2]);
         return rgbOutput;
     }
-    
+
     default double sigmoid(double r) {
         return (1 / (1 + Math.pow(Math.E, (-1 * r))));
     }
-    
+
     default int sigmoidGradient(int component1, int component2, float ratio) {
         return (int) ((ratio * component1) + ((1 - ratio) * component2));
     }
@@ -181,7 +182,7 @@ public interface Colors {
         final long distance = ColorDistance888(rgb888_1, rgb888_2);
         return distance > 0 ? 1 : distance < 0 ? -1 : 0;
     }
-    
+
     /**
      * Computes simplified Euclidean color distance (without extracting square root) between two packed rbg888 ints
      */
@@ -192,7 +193,7 @@ public interface Colors {
                 r2 = getRed(rgb888_2),
                 g2 = getGreen(rgb888_2),
                 b2 = getBlue(rgb888_2);
-        
+
         final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
         return dr * dr + dg * dg + db * db;
     }
@@ -204,19 +205,19 @@ public interface Colors {
         final long distance = ColorDistanceHSV888(rgb888_1, rgb888_2);
         return distance > 0 ? 1 : distance < 0 ? -1 : 0;
     }
-    
+
     /**
      * Computes simplified Euclidean color distance (without extracting square root) between two packed rbg888 ints
      * based on hue, saturation and value
      */
     default long ColorDistanceHSV888(int rgb888_1, int rgb888_2) {
         final int r1 = (int) (0.21 * getRed(rgb888_1)),
-                  g1 = (int) (0.72 * getGreen(rgb888_1)),
-                  b1 = (int) (0.07 * getBlue(rgb888_1)),
-                  r2 = (int) (0.21 * getRed(rgb888_2)),
-                  g2 = (int) (0.72 * getGreen(rgb888_2)),
-                  b2 = (int) (0.07 * getBlue(rgb888_2));
-        
+                g1 = (int) (0.72 * getGreen(rgb888_1)),
+                b1 = (int) (0.07 * getBlue(rgb888_1)),
+                r2 = (int) (0.21 * getRed(rgb888_2)),
+                g2 = (int) (0.72 * getGreen(rgb888_2)),
+                b2 = (int) (0.07 * getBlue(rgb888_2));
+
         final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
         return dr * dr + dg * dg + db * db;
     }
@@ -228,18 +229,18 @@ public interface Colors {
         final long distance = ColorDistance555(rgb555_1, rgb555_2);
         return distance > 0 ? 1 : distance < 0 ? -1 : 0;
     }
-    
+
     /**
      * Computes simplified Euclidean color distance (without extracting square root) between two packed rbg555 shorts
      */
     default long ColorDistance555(short rgb1, short rgb2) {
         final int r1 = getRed5(rgb1),
-                  g1 = getGreen5(rgb1),
-                  b1 = getBlue5(rgb1),
-                  r2 = getRed5(rgb2),
-                  g2 = getGreen5(rgb2),
-                  b2 = getBlue5(rgb2);
-        
+                g1 = getGreen5(rgb1),
+                b1 = getBlue5(rgb1),
+                r2 = getRed5(rgb2),
+                g2 = getGreen5(rgb2),
+                b2 = getBlue5(rgb2);
+
         final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
         return dr * dr + dg * dg + db * db;
     }
@@ -251,19 +252,19 @@ public interface Colors {
         final long distance = ColorDistanceHSV555(rgb555_1, rgb555_2);
         return distance > 0 ? 1 : distance < 0 ? -1 : 0;
     }
-    
+
     /**
      * Computes simplified Euclidean color distance (without extracting square root) between two packed rbg888 ints
      * based on hue, saturation and value
      */
     default long ColorDistanceHSV555(short rgb555_1, int rgb555_2) {
         final int r1 = (int) (0.21 * getRed5(rgb555_1)),
-                  g1 = (int) (0.72 * getGreen5(rgb555_1)),
-                  b1 = (int) (0.07 * getBlue5(rgb555_1)),
-                  r2 = (int) (0.21 * getRed5(rgb555_2)),
-                  g2 = (int) (0.72 * getGreen5(rgb555_2)),
-                  b2 = (int) (0.07 * getBlue5(rgb555_2));
-        
+                g1 = (int) (0.72 * getGreen5(rgb555_1)),
+                b1 = (int) (0.07 * getBlue5(rgb555_1)),
+                r2 = (int) (0.21 * getRed5(rgb555_2)),
+                g2 = (int) (0.72 * getGreen5(rgb555_2)),
+                b2 = (int) (0.07 * getBlue5(rgb555_2));
+
         final long dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
         return dr * dr + dg * dg + db * db;
     }
@@ -274,7 +275,7 @@ public interface Colors {
         }
         return out;
     }
-    
+
     /**
      * Get ARGB_8888 from RGB_555, with proper higher-bit
      * replication.
@@ -330,7 +331,7 @@ public interface Colors {
     default short rgb888to555(int r, int g, int b) {
         return toRGB555(r >> 3, g >> 3, b >> 3);
     }
-    
+
     /**
      * Finds a color in the palette's range from rangel to rangeh closest to specified r, g, b
      * by distortion, the lesst distorted color is the result. Used for rgb555 invulnerability colormap

@@ -23,23 +23,42 @@ package st;
 // Does palette indicators as well (red pain/berserk, bright pickup)
 //
 // -----------------------------------------------------------------------------
-
-import static data.Defines.*;
+import static data.Defines.NUMAMMO;
+import static data.Defines.NUMCARDS;
+import static data.Defines.NUMWEAPONS;
+import static data.Defines.PU_STATIC;
+import static data.Defines.TICRATE;
+import static data.Defines.pw_invulnerability;
+import static data.Defines.pw_ironfeet;
+import static data.Defines.pw_strength;
 import static data.Limits.MAXPLAYERS;
-import static data.Tables.*;
+import static data.Tables.ANG180;
+import static data.Tables.ANG45;
 import data.sounds.musicenum_t;
-import defines.*;
+import defines.ammotype_t;
 import doom.DoomMain;
 import doom.SourceCode;
 import doom.SourceCode.CauseOfDesyncProbability;
 import doom.SourceCode.ST_Stuff;
 import static doom.SourceCode.ST_Stuff.ST_Responder;
-import static doom.englsh.*;
+import static doom.englsh.STSTR_BEHOLD;
+import static doom.englsh.STSTR_BEHOLDX;
+import static doom.englsh.STSTR_CHOPPERS;
+import static doom.englsh.STSTR_CLEV;
+import static doom.englsh.STSTR_DQDOFF;
+import static doom.englsh.STSTR_DQDON;
+import static doom.englsh.STSTR_FAADDED;
+import static doom.englsh.STSTR_KFAADDED;
+import static doom.englsh.STSTR_MUS;
+import static doom.englsh.STSTR_NCOFF;
+import static doom.englsh.STSTR_NCON;
+import static doom.englsh.STSTR_NOMUS;
 import doom.event_t;
 import doom.evtype_t;
-import static doom.items.*;
+import static doom.items.weaponinfo;
 import doom.player_t;
-import static doom.player_t.*;
+import static doom.player_t.CF_GODMODE;
+import static doom.player_t.CF_NOCLIP;
 import doom.weapontype_t;
 import g.Signals;
 import java.awt.Rectangle;
@@ -47,22 +66,25 @@ import m.Settings;
 import m.cheatseq_t;
 import p.mobj_t;
 import rr.patch_t;
-import static v.DoomGraphicSystem.*;
-import static v.renderers.DoomScreen.*;
+import static v.DoomGraphicSystem.V_NOSCALESTART;
+import static v.DoomGraphicSystem.V_PREDIVIDE;
+import static v.DoomGraphicSystem.V_SAFESCALE;
+import static v.DoomGraphicSystem.V_SCALEOFFSET;
+import static v.DoomGraphicSystem.V_TRANSLUCENTPATCH;
+import static v.renderers.DoomScreen.BG;
+import static v.renderers.DoomScreen.FG;
+import static v.renderers.DoomScreen.SB;
 
 public class StatusBar extends AbstractStatusBar {
-    public static final String rcsid =
-        "$Id: StatusBar.java,v 1.47 2011/11/01 23:46:37 velktron Exp $";
 
-   
-    
+    public static final String rcsid
+            = "$Id: StatusBar.java,v 1.47 2011/11/01 23:46:37 velktron Exp $";
+
     // Size of statusbar.
     // Now sensitive for scaling.
-
     //
     // STATUS BAR DATA
     //
-
     // Palette indices.
     // For damage/bonus red-/gold-shifts
     private static int STARTREDPALS = 1;
@@ -93,7 +115,6 @@ public class StatusBar extends AbstractStatusBar {
     // Should be set to patch width
     // for tall numbers later on
     // TODO: private static int ST_TALLNUMWIDTH = (tallnum[0].width);
-
     // Number of status faces.
     private static int ST_NUMPAINFACES = 5;
 
@@ -103,13 +124,13 @@ public class StatusBar extends AbstractStatusBar {
 
     private static int ST_NUMSPECIALFACES = 3;
 
-    private static int ST_FACESTRIDE =
-        (ST_NUMSTRAIGHTFACES + ST_NUMTURNFACES + ST_NUMSPECIALFACES);
+    private static int ST_FACESTRIDE
+            = (ST_NUMSTRAIGHTFACES + ST_NUMTURNFACES + ST_NUMSPECIALFACES);
 
     private static int ST_NUMEXTRAFACES = 2;
 
-    private static int ST_NUMFACES =
-        (ST_FACESTRIDE * ST_NUMPAINFACES + ST_NUMEXTRAFACES);
+    private static int ST_NUMFACES
+            = (ST_FACESTRIDE * ST_NUMPAINFACES + ST_NUMEXTRAFACES);
 
     private static int ST_TURNOFFSET = (ST_NUMSTRAIGHTFACES);
 
@@ -146,14 +167,13 @@ public class StatusBar extends AbstractStatusBar {
     // Problem is, is the stuff rendered
     // into a buffer,
     // or into the frame buffer?
-
     // AMMO number pos.
     private int ST_AMMOWIDTH;
     private int ST_AMMOX;
     private int ST_AMMOY;
 
     // HEALTH number pos.
-    private int ST_HEALTHWIDTH=3;
+    private int ST_HEALTHWIDTH = 3;
     private int ST_HEALTHX;
     private int ST_HEALTHY;
 
@@ -242,7 +262,7 @@ public class StatusBar extends AbstractStatusBar {
 
     private int ST_MAXAMMO3X;
     private int ST_MAXAMMO3Y;
-    
+
     // pistol
     private int ST_WEAPON0X;
     private int ST_WEAPON0Y;
@@ -301,10 +321,8 @@ public class StatusBar extends AbstractStatusBar {
 
     // TODO private static int ST_MAPWIDTH =
     // (mapnames[(gameepisode-1)*9+(gamemap-1)].length));
-
     // TODO private static int ST_MAPTITLEX = (SCREENWIDTH - ST_MAPWIDTH *
     // ST_CHATFONTWIDTH);
-
     private static int ST_MAPTITLEY = 0;
 
     private static int ST_MAPHEIGHT = 1;
@@ -314,10 +332,10 @@ public class StatusBar extends AbstractStatusBar {
 
     // ST_Start() has just been called, OR we want to force an redraw anyway.
     private boolean st_firsttime;
-    
+
     @Override
-    public void forceRefresh(){
-        st_firsttime=true;
+    public void forceRefresh() {
+        st_firsttime = true;
     }
 
     // used to execute ST_Init() only once
@@ -342,7 +360,7 @@ public class StatusBar extends AbstractStatusBar {
      *  (and others like it) are necessary in order to have something
      *  close to a pointer.
      */
-    private boolean[] st_statusbaron={false};
+    private boolean[] st_statusbaron = {false};
 
     // whether status bar chat is active
     private boolean st_chat;
@@ -351,16 +369,16 @@ public class StatusBar extends AbstractStatusBar {
     private boolean st_oldchat;
 
     // whether chat window has the cursor on
-    private boolean[] st_cursoron={false};
+    private boolean[] st_cursoron = {false};
 
     /** !deathmatch */
-    private boolean[] st_notdeathmatch={true};
+    private boolean[] st_notdeathmatch = {true};
 
     /** !deathmatch && st_statusbaron */
-    private boolean[] st_armson={true};
+    private boolean[] st_armson = {true};
 
     /** !deathmatch */
-    private boolean[] st_fragson={false};
+    private boolean[] st_fragson = {false};
 
     // main bar left
     private patch_t sbar;
@@ -388,9 +406,8 @@ public class StatusBar extends AbstractStatusBar {
 
     // weapon ownership patches
     private patch_t[][] arms = new patch_t[6][2];
-   
-    // // WIDGETS /////
 
+    // // WIDGETS /////
     // ready-weapon widget
     private st_number_t w_ready;
 
@@ -422,9 +439,8 @@ public class StatusBar extends AbstractStatusBar {
     private st_number_t[] w_maxammo = new st_number_t[4];
 
     // / END WIDGETS ////
-
     // number of frags so far in deathmatch
-    private int[] st_fragscount={0};
+    private int[] st_fragscount = {0};
 
     // used to use appopriately pained face
     private int st_oldhealth = -1;
@@ -443,55 +459,55 @@ public class StatusBar extends AbstractStatusBar {
 
     // a random number per tick
     private int st_randomnumber;
-    
+
     // idmypos toggle mode
-    private boolean st_idmypos=false;
+    private boolean st_idmypos = false;
 
     // Massive bunches of cheat shit
     // to keep it from being easy to figure them out.
     // Yeah, right...
-    private char cheat_mus_seq[] =
-        { 0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff };
+    private char cheat_mus_seq[]
+            = {0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff};
 
-    private char cheat_choppers_seq[] =
-        { 0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
+    private char cheat_choppers_seq[]
+            = {0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
         };
 
-    private char cheat_god_seq[] = { 0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff // iddqd
-        };
+    private char cheat_god_seq[] = {0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff // iddqd
+};
 
-    private char cheat_ammo_seq[] = { 0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff // idkfa
-        };
+    private char cheat_ammo_seq[] = {0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff // idkfa
+};
 
-    private char cheat_ammonokey_seq[] = { 0xb2, 0x26, 0x66, 0xa2, 0xff // idfa
-        };
+    private char cheat_ammonokey_seq[] = {0xb2, 0x26, 0x66, 0xa2, 0xff // idfa
+};
 
     // Smashing Pumpkins Into Samml Piles Of Putried Debris.
-    private char cheat_noclip_seq[] = { 0xb2, 0x26, 0xea, 0x2a, 0xb2, // idspispopd
-            0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff };
+    private char cheat_noclip_seq[] = {0xb2, 0x26, 0xea, 0x2a, 0xb2, // idspispopd
+        0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff};
 
     //
-    private char cheat_commercial_noclip_seq[] =
-        { 0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff // idclip
+    private char cheat_commercial_noclip_seq[]
+            = {0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff // idclip
         };
 
-    private char cheat_powerup_seq[][] =
-        { { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, // beholdv
-                { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, // beholds
-                { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff }, // beholdi
-                { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff }, // beholdr
-                { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff }, // beholda
-                { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff }, // beholdl
-                { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff } // behold
+    private char cheat_powerup_seq[][]
+            = {{0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff}, // beholdv
+            {0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff}, // beholds
+            {0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff}, // beholdi
+            {0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff}, // beholdr
+            {0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff}, // beholda
+            {0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff}, // beholdl
+            {0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff} // behold
         };
 
-    private char cheat_clev_seq[] =
-        { 0xb2, 0x26, 0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff // idclev
+    private char cheat_clev_seq[]
+            = {0xb2, 0x26, 0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff // idclev
         };
 
     // my position cheat
-    private char cheat_mypos_seq[] =
-        { 0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff // idmypos
+    private char cheat_mypos_seq[]
+            = {0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff // idmypos
         };
 
     // Now what?
@@ -505,25 +521,25 @@ public class StatusBar extends AbstractStatusBar {
 
     cheatseq_t cheat_noclip = new cheatseq_t(cheat_noclip_seq, 0);
 
-    cheatseq_t cheat_commercial_noclip =
-        new cheatseq_t(cheat_commercial_noclip_seq, 0);
+    cheatseq_t cheat_commercial_noclip
+            = new cheatseq_t(cheat_commercial_noclip_seq, 0);
 
-    cheatseq_t[] cheat_powerup =
-        { new cheatseq_t(cheat_powerup_seq[0], 0),
+    cheatseq_t[] cheat_powerup
+            = {new cheatseq_t(cheat_powerup_seq[0], 0),
                 new cheatseq_t(cheat_powerup_seq[1], 0),
                 new cheatseq_t(cheat_powerup_seq[2], 0),
                 new cheatseq_t(cheat_powerup_seq[3], 0),
                 new cheatseq_t(cheat_powerup_seq[4], 0),
                 new cheatseq_t(cheat_powerup_seq[5], 0),
-                new cheatseq_t(cheat_powerup_seq[6], 0) };
+                new cheatseq_t(cheat_powerup_seq[6], 0)};
 
     cheatseq_t cheat_choppers = new cheatseq_t(cheat_choppers_seq, 0);
 
     cheatseq_t cheat_clev = new cheatseq_t(cheat_clev_seq, 0);
 
     cheatseq_t cheat_mypos = new cheatseq_t(cheat_mypos_seq, 0);
-    
-    cheatseq_t cheat_tnthom= new cheatseq_t("tnthom",false);
+
+    cheatseq_t cheat_tnthom = new cheatseq_t("tnthom", false);
 
     // 
     String[] mapnames;
@@ -531,171 +547,167 @@ public class StatusBar extends AbstractStatusBar {
     //
     // STATUS BAR CODE
     //
-
     public StatusBar(DoomMain<?, ?> DOOM) {
-    	super(DOOM);
-	    ST_HEIGHT =32*DOOM.vs.getSafeScaling();
-	    ST_WIDTH  =DOOM.vs.getScreenWidth();
-	    ST_Y      =(DOOM.vs.getScreenHeight() - ST_HEIGHT);
-	    ST_X2 = (int) (104*DOOM.vs.getSafeScaling());
-	    ST_FX = (int) (143*DOOM.vs.getSafeScaling());
-	    ST_FY = (int) (169*DOOM.vs.getSafeScaling());
-	    ST_FACESX = (int) (143*DOOM.vs.getSafeScaling());
+        super(DOOM);
+        ST_HEIGHT = 32 * DOOM.vs.getSafeScaling();
+        ST_WIDTH = DOOM.vs.getScreenWidth();
+        ST_Y = (DOOM.vs.getScreenHeight() - ST_HEIGHT);
+        ST_X2 = (int) (104 * DOOM.vs.getSafeScaling());
+        ST_FX = (int) (143 * DOOM.vs.getSafeScaling());
+        ST_FY = (int) (169 * DOOM.vs.getSafeScaling());
+        ST_FACESX = (int) (143 * DOOM.vs.getSafeScaling());
 
-	    ST_FACESY = (int) (168*DOOM.vs.getSafeScaling());
-	    
-	     // AMMO number pos.
-	     ST_AMMOWIDTH= 3;	    
-	     ST_AMMOX = (int) (44*DOOM.vs.getSafeScaling());
-	     ST_AMMOY = (int) (171*DOOM.vs.getSafeScaling());
+        ST_FACESY = (int) (168 * DOOM.vs.getSafeScaling());
 
-	     // HEALTH number pos
-	     ST_HEALTHWIDTH= 3;
-	     ST_HEALTHX = (int) (90*DOOM.vs.getSafeScaling());
-	     ST_HEALTHY = (int) (171*DOOM.vs.getSafeScaling());
+        // AMMO number pos.
+        ST_AMMOWIDTH = 3;
+        ST_AMMOX = (int) (44 * DOOM.vs.getSafeScaling());
+        ST_AMMOY = (int) (171 * DOOM.vs.getSafeScaling());
 
-	    // Weapon pos.
-	     ST_ARMSX = (int) (111*DOOM.vs.getSafeScaling());
-	     ST_ARMSY = (int) (172*DOOM.vs.getSafeScaling());
-	     ST_ARMSBGX = (int) (104*DOOM.vs.getSafeScaling());
-	     ST_ARMSBGY = (int) (168*DOOM.vs.getSafeScaling());
-	     ST_ARMSXSPACE = 12*DOOM.vs.getSafeScaling();;
-	     ST_ARMSYSPACE = 10*DOOM.vs.getSafeScaling();;
-	     
-	     // Frags pos.
-	     ST_FRAGSX = (int) (138*DOOM.vs.getSafeScaling());
-	     ST_FRAGSY = (int) (171*DOOM.vs.getSafeScaling());
-	     ST_FRAGSWIDTH=2;
-	     
-	     //
-	     
+        // HEALTH number pos
+        ST_HEALTHWIDTH = 3;
+        ST_HEALTHX = (int) (90 * DOOM.vs.getSafeScaling());
+        ST_HEALTHY = (int) (171 * DOOM.vs.getSafeScaling());
 
-	     
-	     ST_ARMORX = (int) (221*DOOM.vs.getSafeScaling());
+        // Weapon pos.
+        ST_ARMSX = (int) (111 * DOOM.vs.getSafeScaling());
+        ST_ARMSY = (int) (172 * DOOM.vs.getSafeScaling());
+        ST_ARMSBGX = (int) (104 * DOOM.vs.getSafeScaling());
+        ST_ARMSBGY = (int) (168 * DOOM.vs.getSafeScaling());
+        ST_ARMSXSPACE = 12 * DOOM.vs.getSafeScaling();;
+        ST_ARMSYSPACE = 10 * DOOM.vs.getSafeScaling();;
 
-	     ST_ARMORY = (int) (171*DOOM.vs.getSafeScaling());
+        // Frags pos.
+        ST_FRAGSX = (int) (138 * DOOM.vs.getSafeScaling());
+        ST_FRAGSY = (int) (171 * DOOM.vs.getSafeScaling());
+        ST_FRAGSWIDTH = 2;
 
-	     // Key icon positions.
-	     ST_KEY0WIDTH = 8*DOOM.vs.getSafeScaling();;
-	     ST_KEY0HEIGHT = 5*DOOM.vs.getSafeScaling();;
-	     
-	     ST_KEY0X = (int) (239*DOOM.vs.getSafeScaling());
-	     ST_KEY0Y = (int) (171*DOOM.vs.getSafeScaling());
+        //
+        ST_ARMORX = (int) (221 * DOOM.vs.getSafeScaling());
 
-	     ST_KEY1WIDTH = ST_KEY0WIDTH;
-	     ST_KEY1X = (int) (239*DOOM.vs.getSafeScaling());
-	     ST_KEY1Y = (int) (181*DOOM.vs.getSafeScaling());
+        ST_ARMORY = (int) (171 * DOOM.vs.getSafeScaling());
 
-	     ST_KEY2WIDTH = ST_KEY0WIDTH;
-	     ST_KEY2X = (int) (239*DOOM.vs.getSafeScaling());
-	     ST_KEY2Y = (int) (191*DOOM.vs.getSafeScaling());
+        // Key icon positions.
+        ST_KEY0WIDTH = 8 * DOOM.vs.getSafeScaling();;
+        ST_KEY0HEIGHT = 5 * DOOM.vs.getSafeScaling();
 
-	    // Ammunition counter.
-	    ST_AMMO0WIDTH = 3*DOOM.vs.getSafeScaling();
-	    ST_AMMO0HEIGHT = 6*DOOM.vs.getSafeScaling();
+        ST_KEY0X = (int) (239 * DOOM.vs.getSafeScaling());
+        ST_KEY0Y = (int) (171 * DOOM.vs.getSafeScaling());
 
-	     ST_AMMO0X = (int) (288*DOOM.vs.getSafeScaling());
+        ST_KEY1WIDTH = ST_KEY0WIDTH;
+        ST_KEY1X = (int) (239 * DOOM.vs.getSafeScaling());
+        ST_KEY1Y = (int) (181 * DOOM.vs.getSafeScaling());
 
-	     ST_AMMO0Y = (int) (173*DOOM.vs.getSafeScaling());
+        ST_KEY2WIDTH = ST_KEY0WIDTH;
+        ST_KEY2X = (int) (239 * DOOM.vs.getSafeScaling());
+        ST_KEY2Y = (int) (191 * DOOM.vs.getSafeScaling());
 
-	    ST_AMMO1WIDTH = ST_AMMO0WIDTH;
+        // Ammunition counter.
+        ST_AMMO0WIDTH = 3 * DOOM.vs.getSafeScaling();
+        ST_AMMO0HEIGHT = 6 * DOOM.vs.getSafeScaling();
 
-	     ST_AMMO1X = (int) (288*DOOM.vs.getSafeScaling());
+        ST_AMMO0X = (int) (288 * DOOM.vs.getSafeScaling());
 
-	     ST_AMMO1Y = (int) (179*DOOM.vs.getSafeScaling());
+        ST_AMMO0Y = (int) (173 * DOOM.vs.getSafeScaling());
 
-	    ST_AMMO2WIDTH = ST_AMMO0WIDTH;
+        ST_AMMO1WIDTH = ST_AMMO0WIDTH;
 
-	     ST_AMMO2X = (int) (288*DOOM.vs.getSafeScaling());
+        ST_AMMO1X = (int) (288 * DOOM.vs.getSafeScaling());
 
-	     ST_AMMO2Y = (int) (191*DOOM.vs.getSafeScaling());
+        ST_AMMO1Y = (int) (179 * DOOM.vs.getSafeScaling());
 
-	    ST_AMMO3WIDTH = ST_AMMO0WIDTH;
+        ST_AMMO2WIDTH = ST_AMMO0WIDTH;
 
-	     ST_AMMO3X = (int) (288*DOOM.vs.getSafeScaling());
+        ST_AMMO2X = (int) (288 * DOOM.vs.getSafeScaling());
 
-	     ST_AMMO3Y = (int) (185*DOOM.vs.getSafeScaling());
+        ST_AMMO2Y = (int) (191 * DOOM.vs.getSafeScaling());
 
-	    // Indicate maximum ammunition.
-	    // Only needed because backpack exists.
-	    ST_MAXAMMO0WIDTH = 3*DOOM.vs.getSafeScaling();
-	    ST_MAXAMMO0HEIGHT = 5*DOOM.vs.getSafeScaling();
+        ST_AMMO3WIDTH = ST_AMMO0WIDTH;
 
-	     ST_MAXAMMO0X = (int) (314*DOOM.vs.getSafeScaling());
-	     ST_MAXAMMO0Y = (int) (173*DOOM.vs.getSafeScaling());
+        ST_AMMO3X = (int) (288 * DOOM.vs.getSafeScaling());
 
-	    ST_MAXAMMO1WIDTH = ST_MAXAMMO0WIDTH;
-	    ST_MAXAMMO1X = 314*DOOM.vs.getSafeScaling();
-	     ST_MAXAMMO1Y = (int) (179*DOOM.vs.getSafeScaling());
+        ST_AMMO3Y = (int) (185 * DOOM.vs.getSafeScaling());
 
-	    ST_MAXAMMO2WIDTH = ST_MAXAMMO0WIDTH;
-	     ST_MAXAMMO2X = (int) (314*DOOM.vs.getSafeScaling());
-	     ST_MAXAMMO2Y = (int) (191*DOOM.vs.getSafeScaling());
+        // Indicate maximum ammunition.
+        // Only needed because backpack exists.
+        ST_MAXAMMO0WIDTH = 3 * DOOM.vs.getSafeScaling();
+        ST_MAXAMMO0HEIGHT = 5 * DOOM.vs.getSafeScaling();
 
-	    ST_MAXAMMO3WIDTH = ST_MAXAMMO0WIDTH;
-	     ST_MAXAMMO3X = (int) (314*DOOM.vs.getSafeScaling());
-	     ST_MAXAMMO3Y = (int) (185*DOOM.vs.getSafeScaling());
+        ST_MAXAMMO0X = (int) (314 * DOOM.vs.getSafeScaling());
+        ST_MAXAMMO0Y = (int) (173 * DOOM.vs.getSafeScaling());
 
-	    // pistol
-	     ST_WEAPON0X = (int) (110*DOOM.vs.getSafeScaling());
-	     ST_WEAPON0Y = (int) (172*DOOM.vs.getSafeScaling());
+        ST_MAXAMMO1WIDTH = ST_MAXAMMO0WIDTH;
+        ST_MAXAMMO1X = 314 * DOOM.vs.getSafeScaling();
+        ST_MAXAMMO1Y = (int) (179 * DOOM.vs.getSafeScaling());
 
-	    // shotgun
-	     ST_WEAPON1X = (int) (122*DOOM.vs.getSafeScaling());
-	     ST_WEAPON1Y = (int) (172*DOOM.vs.getSafeScaling());
+        ST_MAXAMMO2WIDTH = ST_MAXAMMO0WIDTH;
+        ST_MAXAMMO2X = (int) (314 * DOOM.vs.getSafeScaling());
+        ST_MAXAMMO2Y = (int) (191 * DOOM.vs.getSafeScaling());
 
-	    // chain gun
-	     ST_WEAPON2X = (int) (134*DOOM.vs.getSafeScaling());
+        ST_MAXAMMO3WIDTH = ST_MAXAMMO0WIDTH;
+        ST_MAXAMMO3X = (int) (314 * DOOM.vs.getSafeScaling());
+        ST_MAXAMMO3Y = (int) (185 * DOOM.vs.getSafeScaling());
 
-	     ST_WEAPON2Y = (int) (172*DOOM.vs.getSafeScaling());
+        // pistol
+        ST_WEAPON0X = (int) (110 * DOOM.vs.getSafeScaling());
+        ST_WEAPON0Y = (int) (172 * DOOM.vs.getSafeScaling());
 
-	    // missile launcher
-	     ST_WEAPON3X = (int) (110*DOOM.vs.getSafeScaling());
+        // shotgun
+        ST_WEAPON1X = (int) (122 * DOOM.vs.getSafeScaling());
+        ST_WEAPON1Y = (int) (172 * DOOM.vs.getSafeScaling());
 
-	     ST_WEAPON3Y = (int) (181*DOOM.vs.getSafeScaling());
+        // chain gun
+        ST_WEAPON2X = (int) (134 * DOOM.vs.getSafeScaling());
 
-	    // plasma gun
-	     ST_WEAPON4X = (int) (122*DOOM.vs.getSafeScaling());
+        ST_WEAPON2Y = (int) (172 * DOOM.vs.getSafeScaling());
 
-	     ST_WEAPON4Y = (int) (181*DOOM.vs.getSafeScaling());
+        // missile launcher
+        ST_WEAPON3X = (int) (110 * DOOM.vs.getSafeScaling());
 
-	    // bfg
-	     ST_WEAPON5X = (int) (134*DOOM.vs.getSafeScaling());
+        ST_WEAPON3Y = (int) (181 * DOOM.vs.getSafeScaling());
 
-	     ST_WEAPON5Y = (int) (181*DOOM.vs.getSafeScaling());
+        // plasma gun
+        ST_WEAPON4X = (int) (122 * DOOM.vs.getSafeScaling());
 
-	    // WPNS title
-	     ST_WPNSX = (int) (109*DOOM.vs.getSafeScaling());
+        ST_WEAPON4Y = (int) (181 * DOOM.vs.getSafeScaling());
 
-	     ST_WPNSY = (int) (191*DOOM.vs.getSafeScaling());
+        // bfg
+        ST_WEAPON5X = (int) (134 * DOOM.vs.getSafeScaling());
 
-	    // DETH title
-	     ST_DETHX = (int) (109*DOOM.vs.getSafeScaling());
+        ST_WEAPON5Y = (int) (181 * DOOM.vs.getSafeScaling());
 
-	     ST_DETHY = (int) (191*DOOM.vs.getSafeScaling());
+        // WPNS title
+        ST_WPNSX = (int) (109 * DOOM.vs.getSafeScaling());
 
-         ST_RECT = new Rectangle(ST_X, 0, ST_WIDTH, ST_HEIGHT);
-    	//this.plyr=DM.players[DM.]
+        ST_WPNSY = (int) (191 * DOOM.vs.getSafeScaling());
+
+        // DETH title
+        ST_DETHX = (int) (109 * DOOM.vs.getSafeScaling());
+
+        ST_DETHY = (int) (191 * DOOM.vs.getSafeScaling());
+
+        ST_RECT = new Rectangle(ST_X, 0, ST_WIDTH, ST_HEIGHT);
+        //this.plyr=DM.players[DM.]
     }
 
     public void refreshBackground() {
 
         if (st_statusbaron[0]) {
-            DOOM.graphicSystem.DrawPatchScaled(SB, sbar, DOOM.vs, ST_X, 0, V_SAFESCALE|V_NOSCALESTART);
+            DOOM.graphicSystem.DrawPatchScaled(SB, sbar, DOOM.vs, ST_X, 0, V_SAFESCALE | V_NOSCALESTART);
             //V.DrawPatch(ST_X, 0, BG, sbar);
 
             if (DOOM.netgame) {
-                DOOM.graphicSystem.DrawPatchScaled(SB, faceback, DOOM.vs, ST_FX, ST_Y, V_SAFESCALE|V_NOSCALESTART);
+                DOOM.graphicSystem.DrawPatchScaled(SB, faceback, DOOM.vs, ST_FX, ST_Y, V_SAFESCALE | V_NOSCALESTART);
                 //V.DrawPatch(ST_FX, 0, BG, faceback);
             }
-                
+
             // Buffers the background.
             DOOM.graphicSystem.CopyRect(SB, ST_RECT, FG, DOOM.graphicSystem.point(ST_X, ST_Y));
             //V.CopyRect(ST_X, 0, SCREEN_SB, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, SCREEN_FG);
         }
 
     }
-    
+
     public void Init() {
         veryfirsttime = 0;
         loadData();
@@ -717,8 +729,9 @@ public class StatusBar extends AbstractStatusBar {
     }
 
     public void Stop() {
-        if (st_stopped)
+        if (st_stopped) {
             return;
+        }
         // Reset palette.
         DOOM.graphicSystem.setPalette(0);
 
@@ -731,11 +744,10 @@ public class StatusBar extends AbstractStatusBar {
     }
 
     // Filter automap on/off.
-    
     @Override
     public void NotifyAMEnter() {
-            st_gamestate = st_stateenum_t.AutomapState;
-            st_firsttime = true;
+        st_gamestate = st_stateenum_t.AutomapState;
+        st_firsttime = true;
     }
 
     @Override
@@ -746,7 +758,6 @@ public class StatusBar extends AbstractStatusBar {
 
     // Respond to keyboard input events,
     // intercept cheats.
-
     @Override
     @ST_Stuff.C(ST_Responder)
     public boolean Responder(event_t ev) {
@@ -759,42 +770,42 @@ public class StatusBar extends AbstractStatusBar {
                 if (ev.ifKeyAsciiChar(cheat_god::CheckCheat)) {
                     plyr.cheats ^= CF_GODMODE;
                     if ((plyr.cheats & CF_GODMODE) != 0) {
-                        if (plyr.mo != null)
+                        if (plyr.mo != null) {
                             plyr.mo.health = 100;
+                        }
 
                         plyr.health[0] = 100;
                         plyr.message = STSTR_DQDON;
-                    } else
+                    } else {
                         plyr.message = STSTR_DQDOFF;
-                }
-                // 'fa' cheat for killer fucking arsenal
+                    }
+                } // 'fa' cheat for killer fucking arsenal
                 else if (ev.ifKeyAsciiChar(cheat_ammonokey::CheckCheat)) {
                     plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
-                    for (int i = 0; i < NUMWEAPONS; i++)
+                    for (int i = 0; i < NUMWEAPONS; i++) {
                         plyr.weaponowned[i] = true; // true
-                    
+                    }
                     System.arraycopy(plyr.maxammo, 0, plyr.ammo, 0, NUMAMMO);
 
                     plyr.message = STSTR_FAADDED;
-                }
-                // 'kfa' cheat for key full ammo
+                } // 'kfa' cheat for key full ammo
                 else if (ev.ifKeyAsciiChar(cheat_ammo::CheckCheat)) {
                     plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
-                    for (int i = 0; i < NUMWEAPONS; i++)
+                    for (int i = 0; i < NUMWEAPONS; i++) {
                         plyr.weaponowned[i] = true; // true
-                    
+                    }
                     System.arraycopy(plyr.maxammo, 0, plyr.ammo, 0, NUMAMMO);
 
-                    for (int i = 0; i < NUMCARDS; i++)
+                    for (int i = 0; i < NUMCARDS; i++) {
                         plyr.cards[i] = true;
+                    }
 
                     plyr.message = STSTR_KFAADDED;
-                }
-                // 'mus' cheat for changing music
+                } // 'mus' cheat for changing music
                 else if (ev.ifKeyAsciiChar(cheat_mus::CheckCheat)) {
 
                     char[] buf = new char[3];
@@ -804,44 +815,47 @@ public class StatusBar extends AbstractStatusBar {
                     cheat_mus.GetParam(buf);
 
                     if (DOOM.isCommercial()) {
-                        musnum =
-                            musicenum_t.mus_runnin.ordinal() + (buf[0] - '0')
-                                    * 10 + buf[1] - '0' - 1;
+                        musnum
+                                = musicenum_t.mus_runnin.ordinal() + (buf[0] - '0')
+                                * 10 + buf[1] - '0' - 1;
 
-                        if (((buf[0] - '0') * 10 + buf[1] - '0') > 35)
+                        if (((buf[0] - '0') * 10 + buf[1] - '0') > 35) {
                             plyr.message = STSTR_NOMUS;
-                        else
-                        DOOM.doomSound.ChangeMusic(musnum, true);
+                        } else {
+                            DOOM.doomSound.ChangeMusic(musnum, true);
+                        }
                     } else {
-                        musnum =
-                            musicenum_t.mus_e1m1.ordinal() + (buf[0] - '1') * 9
-                                    + (buf[1] - '1');
+                        musnum
+                                = musicenum_t.mus_e1m1.ordinal() + (buf[0] - '1') * 9
+                                + (buf[1] - '1');
 
-                        if (((buf[0] - '1') * 9 + buf[1] - '1') > 31)
+                        if (((buf[0] - '1') * 9 + buf[1] - '1') > 31) {
                             plyr.message = STSTR_NOMUS;
-                        else
-                       DOOM.doomSound.ChangeMusic(musnum, true);
+                        } else {
+                            DOOM.doomSound.ChangeMusic(musnum, true);
+                        }
                     }
-                }
-                // Simplified, accepting both "noclip" and "idspispopd".
+                } // Simplified, accepting both "noclip" and "idspispopd".
                 // no clipping mode cheat
                 else if (ev.ifKeyAsciiChar(cheat_noclip::CheckCheat) || ev.ifKeyAsciiChar(cheat_commercial_noclip::CheckCheat)) {
                     plyr.cheats ^= CF_NOCLIP;
 
-                    if ((plyr.cheats & CF_NOCLIP) != 0)
+                    if ((plyr.cheats & CF_NOCLIP) != 0) {
                         plyr.message = STSTR_NCON;
-                    else
+                    } else {
                         plyr.message = STSTR_NCOFF;
+                    }
                 }
                 // 'behold?' power-up cheats
                 for (int i = 0; i < 6; i++) {
                     if (ev.ifKeyAsciiChar(cheat_powerup[i]::CheckCheat)) {
-                        if (plyr.powers[i] == 0)
-                           plyr.GivePower(i);
-                        else if (i != pw_strength)
+                        if (plyr.powers[i] == 0) {
+                            plyr.GivePower(i);
+                        } else if (i != pw_strength) {
                             plyr.powers[i] = 1;
-                        else
+                        } else {
                             plyr.powers[i] = 0;
+                        }
 
                         plyr.message = STSTR_BEHOLDX;
                     }
@@ -850,22 +864,19 @@ public class StatusBar extends AbstractStatusBar {
                 // 'behold' power-up menu
                 if (ev.ifKeyAsciiChar(cheat_powerup[6]::CheckCheat)) {
                     plyr.message = STSTR_BEHOLD;
-                }
-                // 'choppers' invulnerability & chainsaw
+                } // 'choppers' invulnerability & chainsaw
                 else if (ev.ifKeyAsciiChar(cheat_choppers::CheckCheat)) {
                     plyr.weaponowned[weapontype_t.wp_chainsaw.ordinal()] = true;
                     plyr.powers[pw_invulnerability] = 1; // true
                     plyr.message = STSTR_CHOPPERS;
-                }
-                // 'mypos' for player position
+                } // 'mypos' for player position
                 else if (ev.ifKeyAsciiChar(cheat_mypos::CheckCheat)) {
                     // MAES: made into a toggleable cheat.
-                   this.st_idmypos=!st_idmypos;
-                }
-                else if (ev.ifKeyAsciiChar(cheat_tnthom::CheckCheat)) {
+                    this.st_idmypos = !st_idmypos;
+                } else if (ev.ifKeyAsciiChar(cheat_tnthom::CheckCheat)) {
                     // MAES: made into a toggleable cheat.
-                	plyr.message = (DOOM.flashing_hom = !DOOM.flashing_hom) ? "HOM Detection On" :
-                	    "HOM Detection Off";
+                    plyr.message = (DOOM.flashing_hom = !DOOM.flashing_hom) ? "HOM Detection On"
+                            : "HOM Detection Off";
                 }
             }
 
@@ -887,29 +898,35 @@ public class StatusBar extends AbstractStatusBar {
                 }
 
                 // Catch invalid maps.
-                if (epsd < 1 && (!DOOM.isCommercial()))
+                if (epsd < 1 && (!DOOM.isCommercial())) {
                     return false;
+                }
 
-                if (map < 1)
+                if (map < 1) {
                     return false;
+                }
 
                 // Ohmygod - this is not going to work.
                 if (DOOM.isRetail()
-                        && ((epsd > 4) || (map > 9)))
+                        && ((epsd > 4) || (map > 9))) {
                     return false;
+                }
 
                 // MAES: If it's doom.wad but not ultimate
-                if (DOOM.isRegistered()&& !DOOM.isRetail()
-                        && ((epsd > 3) || (map > 9)))
+                if (DOOM.isRegistered() && !DOOM.isRetail()
+                        && ((epsd > 3) || (map > 9))) {
                     return false;
+                }
 
                 if (DOOM.isShareware()
-                        && ((epsd > 1) || (map > 9)))
+                        && ((epsd > 1) || (map > 9))) {
                     return false;
+                }
 
                 if (DOOM.isCommercial()
-                        && ((epsd > 1) || (map > 34)))
+                        && ((epsd > 1) || (map > 34))) {
                     return false;
+                }
 
                 // So be it.
                 plyr.message = STSTR_CLEV;
@@ -929,8 +946,8 @@ public class StatusBar extends AbstractStatusBar {
         health = plyr.health[0] > 100 ? 100 : plyr.health[0];
 
         if (health != oldhealth) {
-            lastcalc =
-                ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
+            lastcalc
+                    = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
             oldhealth = health;
         }
         return lastcalc;
@@ -991,15 +1008,14 @@ public class StatusBar extends AbstractStatusBar {
                  * - Good Sign 2017/04/02
                  */
                 if ((DOOM.CM.equals(Settings.fix_ouch_face, Boolean.TRUE)
-                    ? st_oldhealth - plyr.health[0]
-                    : plyr.health[0] - st_oldhealth) > ST_MUCHPAIN)
-                {
+                        ? st_oldhealth - plyr.health[0]
+                        : plyr.health[0] - st_oldhealth) > ST_MUCHPAIN) {
                     st_facecount = ST_TURNCOUNT;
                     st_faceindex[0] = calcPainOffset() + ST_OUCHOFFSET;
                 } else {
-                    badguyangle =
-                        DOOM.sceneRenderer.PointToAngle2(plyr.mo.x, plyr.mo.y, plyr.attacker.x,
-                            plyr.attacker.y);
+                    badguyangle
+                            = DOOM.sceneRenderer.PointToAngle2(plyr.mo.x, plyr.mo.y, plyr.attacker.x,
+                                    plyr.attacker.y);
                     boolean obtuse; // that's another "i"
 
                     if (badguyangle > plyr.mo.angle) {
@@ -1037,9 +1053,8 @@ public class StatusBar extends AbstractStatusBar {
                  * - Good Sign 2017/04/02
                  */
                 if ((DOOM.CM.equals(Settings.fix_ouch_face, Boolean.TRUE)
-                    ? st_oldhealth - plyr.health[0]
-                    : plyr.health[0] - st_oldhealth) > ST_MUCHPAIN)
-                {
+                        ? st_oldhealth - plyr.health[0]
+                        : plyr.health[0] - st_oldhealth) > ST_MUCHPAIN) {
                     priority = 7;
                     st_facecount = ST_TURNCOUNT;
                     st_faceindex[0] = calcPainOffset() + ST_OUCHOFFSET;
@@ -1056,16 +1071,17 @@ public class StatusBar extends AbstractStatusBar {
         if (priority < 6) {
             // rapid firing
             if (plyr.attackdown) {
-                if (lastattackdown == -1)
+                if (lastattackdown == -1) {
                     lastattackdown = ST_RAMPAGEDELAY;
-                else if (--lastattackdown == 0) {
+                } else if (--lastattackdown == 0) {
                     priority = 5;
                     st_faceindex[0] = calcPainOffset() + ST_RAMPAGEOFFSET;
                     st_facecount = 1;
                     lastattackdown = 1;
                 }
-            } else
+            } else {
                 lastattackdown = -1;
+            }
 
         }
 
@@ -1107,7 +1123,6 @@ public class StatusBar extends AbstractStatusBar {
      * updates are performed by the Drawer.
      * 
      */
-
     public void updateWidgets() {
 
         int i;
@@ -1115,23 +1130,22 @@ public class StatusBar extends AbstractStatusBar {
         // MAES: sticky idmypos cheat that is actually useful
         // TODO: this spams the player message queue at every tic.
         // A direct overlay with a widget would be more useful.
-        
-        if (this.st_idmypos){
+        if (this.st_idmypos) {
             mobj_t mo = DOOM.players[DOOM.consoleplayer].mo;
             plyr.message = String.format("ang= 0x%x; x,y= (%x, %x)",
-                        (int)mo.angle,mo.x,mo.y);
+                    (int) mo.angle, mo.x, mo.y);
 
         }
-        
 
         // must redirect the pointer if the ready weapon has changed.
         // if (w_ready.data != plyr.readyweapon)
         // {
-        if (weaponinfo[plyr.readyweapon.ordinal()].ammo == ammotype_t.am_noammo)
+        if (weaponinfo[plyr.readyweapon.ordinal()].ammo == ammotype_t.am_noammo) {
             w_ready.numindex = largeammo;
-        else
-            w_ready.numindex =
-                weaponinfo[plyr.readyweapon.ordinal()].ammo.ordinal();
+        } else {
+            w_ready.numindex
+                    = weaponinfo[plyr.readyweapon.ordinal()].ammo.ordinal();
+        }
 
         w_ready.data = plyr.readyweapon.ordinal();
 
@@ -1139,13 +1153,13 @@ public class StatusBar extends AbstractStatusBar {
         // STlib_updateNum(&w_ready, true);
         // refresh weapon change
         // }
-
         // update keycard multiple widgets
         for (i = 0; i < 3; i++) {
             keyboxes[i] = plyr.cards[i] ? i : -1;
 
-            if (plyr.cards[i + 3])
+            if (plyr.cards[i + 3]) {
                 keyboxes[i] = i + 3;
+            }
         }
 
         // refresh everything if this is him coming back to life
@@ -1155,22 +1169,24 @@ public class StatusBar extends AbstractStatusBar {
         st_notdeathmatch[0] = !DOOM.deathmatch;
 
         // used by w_arms[] widgets
-        st_armson[0] = st_statusbaron[0] && !(DOOM.altdeath||DOOM.deathmatch);
+        st_armson[0] = st_statusbaron[0] && !(DOOM.altdeath || DOOM.deathmatch);
 
         // used by w_frags widget
-        st_fragson[0] = (DOOM.altdeath||DOOM.deathmatch) && st_statusbaron[0];
+        st_fragson[0] = (DOOM.altdeath || DOOM.deathmatch) && st_statusbaron[0];
         st_fragscount[0] = 0;
 
         for (i = 0; i < MAXPLAYERS; i++) {
-            if (i != DOOM.consoleplayer)
+            if (i != DOOM.consoleplayer) {
                 st_fragscount[0] += plyr.frags[i];
-            else
+            } else {
                 st_fragscount[0] -= plyr.frags[i];
+            }
         }
 
         // get rid of chat window if up because of message
-        if (--st_msgcounter == 0)
+        if (--st_msgcounter == 0) {
             st_chat = st_oldchat;
+        }
 
     }
 
@@ -1198,33 +1214,33 @@ public class StatusBar extends AbstractStatusBar {
             // slowly fade the berzerk out
             bzc = 12 - (plyr.powers[pw_strength] >> 6);
 
-            if (bzc > cnt)
+            if (bzc > cnt) {
                 cnt = bzc;
+            }
         }
 
         if (cnt != 0) {
             palette = (cnt + 7) >> 3;
 
-            if (palette >= NUMREDPALS)
+            if (palette >= NUMREDPALS) {
                 palette = NUMREDPALS - 1;
+            }
 
             palette += STARTREDPALS;
-        }
-
-        else if (plyr.bonuscount != 0) {
+        } else if (plyr.bonuscount != 0) {
             palette = (plyr.bonuscount + 7) >> 3;
 
-            if (palette >= NUMBONUSPALS)
+            if (palette >= NUMBONUSPALS) {
                 palette = NUMBONUSPALS - 1;
+            }
 
             palette += STARTBONUSPALS;
-        }
-
-        else if (plyr.powers[pw_ironfeet] > 4 * 32
-                || (plyr.powers[pw_ironfeet] & 8) != 0)
+        } else if (plyr.powers[pw_ironfeet] > 4 * 32
+                || (plyr.powers[pw_ironfeet] & 8) != 0) {
             palette = RADIATIONPAL;
-        else
+        } else {
             palette = 0;
+        }
 
         if (palette != st_palette) {
             st_palette = palette;
@@ -1237,7 +1253,7 @@ public class StatusBar extends AbstractStatusBar {
         int i;
 
         // used by w_arms[] widgets
-        st_armson[0] = st_statusbaron[0] && !(DOOM.altdeath||DOOM.deathmatch);
+        st_armson[0] = st_statusbaron[0] && !(DOOM.altdeath || DOOM.deathmatch);
 
         // used by w_frags widget
         st_fragson[0] = DOOM.deathmatch && st_statusbaron[0];
@@ -1253,13 +1269,15 @@ public class StatusBar extends AbstractStatusBar {
 
         w_armsbg.update(refresh);
 
-        for (i = 0; i < 6; i++)
+        for (i = 0; i < 6; i++) {
             w_arms[i].update(refresh);
+        }
 
         w_faces.update(refresh);
 
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 3; i++) {
             w_keyboxes[i].update(refresh);
+        }
 
         w_frags.update(refresh);
 
@@ -1292,11 +1310,12 @@ public class StatusBar extends AbstractStatusBar {
         doPaletteStuff();
 
         // If just after ST_Start(), refresh all
-        if (st_firsttime)
+        if (st_firsttime) {
             doRefresh();
-        // Otherwise, update as little as possible
-        else
+        } // Otherwise, update as little as possible
+        else {
             diffDraw();
+        }
 
     }
 
@@ -1322,7 +1341,7 @@ public class StatusBar extends AbstractStatusBar {
         // Note: why not load STMINUS here, too?
         tallpercent = DOOM.wadLoader.CachePatchName("STTPRCNT", PU_STATIC);
         // MAES: in fact, I do this for sanity. Fuck them. Seriously.
-        sttminus= DOOM.wadLoader.CachePatchName("STTMINUS");
+        sttminus = DOOM.wadLoader.CachePatchName("STTMINUS");
 
         // key cards
         for (i = 0; i < NUMCARDS; i++) {
@@ -1375,54 +1394,50 @@ public class StatusBar extends AbstractStatusBar {
     }
 
     public void unloadGraphics() {
-    	
-          int i; // unload the numbers, tall and short 
-          for (i=0;i<10;i++) {
-        	  DOOM.wadLoader.UnlockLumpNum(tallnum[i]);
-        	  tallnum[i]=null;
-        	  DOOM.wadLoader.UnlockLumpNum(shortnum[i]);
-        	  shortnum[i]=null;
-          }
-        
-       // unload tall percent
-          DOOM.wadLoader.UnlockLumpNum(tallpercent);
-          tallpercent=null;
-          	
-        	  
-         // unload arms background          
-          DOOM.wadLoader.UnlockLumpNum(armsbg);
-          armsbg=null;
-         // unload gray #'s          
-          for (i=0;i<6;i++) { 
-        	  DOOM.wadLoader.UnlockLumpNum(arms[i][0]);
-        	  arms[i][0]=null;
-        	  DOOM.wadLoader.UnlockLumpNum(arms[i][1]);
-        	  arms[i][1]=null;
 
-          }
-          
-          // unload the key cards for (i=0;i<NUMCARDS;i++)
-          
-          for (i=0;i<6;i++) { 
-        	  DOOM.wadLoader.UnlockLumpNum(keys[i]);
-        	  keys[i]=null;
-          }
-          
-          DOOM.wadLoader.UnlockLumpNum(sbar);
-          sbar=null;
-          
-          DOOM.wadLoader.UnlockLumpNum(faceback);
-          faceback=null;
-          
-           for (i=0;i<ST_NUMFACES;i++){
-        	   DOOM.wadLoader.UnlockLumpNum(faces[i]);
-        	   faces[i]=null;
-           	}
-         
+        int i; // unload the numbers, tall and short 
+        for (i = 0; i < 10; i++) {
+            DOOM.wadLoader.UnlockLumpNum(tallnum[i]);
+            tallnum[i] = null;
+            DOOM.wadLoader.UnlockLumpNum(shortnum[i]);
+            shortnum[i] = null;
+        }
+
+        // unload tall percent
+        DOOM.wadLoader.UnlockLumpNum(tallpercent);
+        tallpercent = null;
+
+        // unload arms background          
+        DOOM.wadLoader.UnlockLumpNum(armsbg);
+        armsbg = null;
+        // unload gray #'s          
+        for (i = 0; i < 6; i++) {
+            DOOM.wadLoader.UnlockLumpNum(arms[i][0]);
+            arms[i][0] = null;
+            DOOM.wadLoader.UnlockLumpNum(arms[i][1]);
+            arms[i][1] = null;
+
+        }
+
+        // unload the key cards for (i=0;i<NUMCARDS;i++)
+        for (i = 0; i < 6; i++) {
+            DOOM.wadLoader.UnlockLumpNum(keys[i]);
+            keys[i] = null;
+        }
+
+        DOOM.wadLoader.UnlockLumpNum(sbar);
+        sbar = null;
+
+        DOOM.wadLoader.UnlockLumpNum(faceback);
+        faceback = null;
+
+        for (i = 0; i < ST_NUMFACES; i++) {
+            DOOM.wadLoader.UnlockLumpNum(faces[i]);
+            faces[i] = null;
+        }
 
         // Note: nobody ain't seen no unloading
         // of stminus yet. Dude.
-
     }
 
     public void unloadData() {
@@ -1449,11 +1464,13 @@ public class StatusBar extends AbstractStatusBar {
 
         st_oldhealth = -1;
 
-        for (i = 0; i < NUMWEAPONS; i++)
+        for (i = 0; i < NUMWEAPONS; i++) {
             oldweaponsowned[i] = plyr.weaponowned[i];
+        }
 
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 3; i++) {
             keyboxes[i] = -1;
+        }
 
         Init();
 
@@ -1465,105 +1482,102 @@ public class StatusBar extends AbstractStatusBar {
      * by the global refresh functions. We can only do this with some
      * limitations in Java (e.g. passing an array AND an index).
      */
-
     public void createWidgets() {
 
         int i;
 
         // ready weapon ammo
-
-        w_ready =
-            new st_number_t(ST_AMMOX, ST_AMMOY, tallnum, plyr.ammo,
-                    weaponinfo[plyr.readyweapon.ordinal()].ammo.ordinal(),
-                    st_statusbaron, 0,ST_AMMOWIDTH);
+        w_ready
+                = new st_number_t(ST_AMMOX, ST_AMMOY, tallnum, plyr.ammo,
+                        weaponinfo[plyr.readyweapon.ordinal()].ammo.ordinal(),
+                        st_statusbaron, 0, ST_AMMOWIDTH);
 
         // the last weapon type
         w_ready.data = plyr.readyweapon.ordinal();
 
         // health percentage
-        w_health =
-            new st_percent_t(ST_HEALTHX, ST_HEALTHY, tallnum, plyr.health,
-                    0, st_statusbaron,0, tallpercent);
+        w_health
+                = new st_percent_t(ST_HEALTHX, ST_HEALTHY, tallnum, plyr.health,
+                        0, st_statusbaron, 0, tallpercent);
 
         // arms background
-        w_armsbg =
-            new st_binicon_t(ST_ARMSBGX, ST_ARMSBGY, armsbg, st_notdeathmatch,0,
-                    st_statusbaron,0);
+        w_armsbg
+                = new st_binicon_t(ST_ARMSBGX, ST_ARMSBGY, armsbg, st_notdeathmatch, 0,
+                        st_statusbaron, 0);
 
         // weapons owned
         for (i = 0; i < 6; i++) {
-            w_arms[i] =
-                new st_multicon_t(ST_ARMSX + (i % 3) * ST_ARMSXSPACE, ST_ARMSY
-                        + (i / 3) * ST_ARMSYSPACE, arms[i], plyr.weaponowned,
-                        i + 1, st_armson,0);
+            w_arms[i]
+                    = new st_multicon_t(ST_ARMSX + (i % 3) * ST_ARMSXSPACE, ST_ARMSY
+                            + (i / 3) * ST_ARMSYSPACE, arms[i], plyr.weaponowned,
+                            i + 1, st_armson, 0);
         }
 
         // frags sum
-        w_frags =
-            new st_number_t(ST_FRAGSX, ST_FRAGSY, tallnum, st_fragscount, 0, // dummy,
-                                                                             // we're
-                                                                             // passing
-                                                                             // an
-                                                                             // integer.
-                    st_fragson,0, ST_FRAGSWIDTH);
+        w_frags
+                = new st_number_t(ST_FRAGSX, ST_FRAGSY, tallnum, st_fragscount, 0, // dummy,
+                        // we're
+                        // passing
+                        // an
+                        // integer.
+                        st_fragson, 0, ST_FRAGSWIDTH);
 
         // faces
-        w_faces =
-            new st_multicon_t(ST_FACESX, ST_FACESY, faces, st_faceindex, 0,
-                    st_statusbaron,0);
+        w_faces
+                = new st_multicon_t(ST_FACESX, ST_FACESY, faces, st_faceindex, 0,
+                        st_statusbaron, 0);
 
         // armor percentage - should be colored later
-        w_armor =
-            new st_percent_t(ST_ARMORX, ST_ARMORY, tallnum, plyr.armorpoints,
-                    0, st_statusbaron, 0,tallpercent);
+        w_armor
+                = new st_percent_t(ST_ARMORX, ST_ARMORY, tallnum, plyr.armorpoints,
+                        0, st_statusbaron, 0, tallpercent);
 
         // keyboxes 0-2
-        w_keyboxes[0] =
-            new st_multicon_t(ST_KEY0X, ST_KEY0Y, keys, keyboxes, 0,
-                    st_statusbaron,0);
+        w_keyboxes[0]
+                = new st_multicon_t(ST_KEY0X, ST_KEY0Y, keys, keyboxes, 0,
+                        st_statusbaron, 0);
 
-        w_keyboxes[1] =
-            new st_multicon_t(ST_KEY1X, ST_KEY1Y, keys, keyboxes, 1,
-                    st_statusbaron,0);
+        w_keyboxes[1]
+                = new st_multicon_t(ST_KEY1X, ST_KEY1Y, keys, keyboxes, 1,
+                        st_statusbaron, 0);
 
-        w_keyboxes[2] =
-            new st_multicon_t(ST_KEY2X, ST_KEY2Y, keys, keyboxes, 2,
-                    st_statusbaron,0);
+        w_keyboxes[2]
+                = new st_multicon_t(ST_KEY2X, ST_KEY2Y, keys, keyboxes, 2,
+                        st_statusbaron, 0);
 
         // ammo count (all four kinds)
+        w_ammo[0]
+                = new st_number_t(ST_AMMO0X, ST_AMMO0Y, shortnum, plyr.ammo, 0,
+                        st_statusbaron, 0, ST_AMMO0WIDTH);
 
-        w_ammo[0] =
-            new st_number_t(ST_AMMO0X, ST_AMMO0Y, shortnum, plyr.ammo, 0,
-                    st_statusbaron,0, ST_AMMO0WIDTH);
+        w_ammo[1]
+                = new st_number_t(ST_AMMO1X, ST_AMMO1Y, shortnum, plyr.ammo, 1,
+                        st_statusbaron, 0, ST_AMMO1WIDTH);
 
-        w_ammo[1] =
-            new st_number_t(ST_AMMO1X, ST_AMMO1Y, shortnum, plyr.ammo, 1,
-                    st_statusbaron,0, ST_AMMO1WIDTH);
+        w_ammo[2]
+                = new st_number_t(ST_AMMO2X, ST_AMMO2Y, shortnum, plyr.ammo, 2,
+                        st_statusbaron, 0, ST_AMMO2WIDTH);
 
-        w_ammo[2] =
-            new st_number_t(ST_AMMO2X, ST_AMMO2Y, shortnum, plyr.ammo, 2,
-                    st_statusbaron,0, ST_AMMO2WIDTH);
-
-        w_ammo[3] =
-            new st_number_t(ST_AMMO3X, ST_AMMO3Y, shortnum, plyr.ammo, 3,
-                    st_statusbaron,0, ST_AMMO3WIDTH);
+        w_ammo[3]
+                = new st_number_t(ST_AMMO3X, ST_AMMO3Y, shortnum, plyr.ammo, 3,
+                        st_statusbaron, 0, ST_AMMO3WIDTH);
 
         // max ammo count (all four kinds)
-        w_maxammo[0] =
-            new st_number_t(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, plyr.maxammo,
-                    0, st_statusbaron,0, ST_MAXAMMO0WIDTH);
+        w_maxammo[0]
+                = new st_number_t(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, plyr.maxammo,
+                        0, st_statusbaron, 0, ST_MAXAMMO0WIDTH);
 
-        w_maxammo[1] =
-            new st_number_t(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, plyr.maxammo,
-                    1, st_statusbaron,0, ST_MAXAMMO1WIDTH);
+        w_maxammo[1]
+                = new st_number_t(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, plyr.maxammo,
+                        1, st_statusbaron, 0, ST_MAXAMMO1WIDTH);
 
-        w_maxammo[2] =
-            new st_number_t(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, plyr.maxammo,
-                    2, st_statusbaron,0, ST_MAXAMMO2WIDTH);
+        w_maxammo[2]
+                = new st_number_t(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, plyr.maxammo,
+                        2, st_statusbaron, 0, ST_MAXAMMO2WIDTH);
 
-        w_maxammo[3] =
-            new st_number_t(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, plyr.maxammo,
-                    3, st_statusbaron,0, ST_MAXAMMO3WIDTH);
+        w_maxammo[3]
+                = new st_number_t(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, plyr.maxammo,
+                        3, st_statusbaron, 0, ST_MAXAMMO3WIDTH);
 
     }
 
@@ -1572,7 +1586,6 @@ public class StatusBar extends AbstractStatusBar {
      *  or you don't.
      * 
      * */
-
     class st_binicon_t
             implements StatusBarWidget {
 
@@ -1592,23 +1605,22 @@ public class StatusBar extends AbstractStatusBar {
             stating whether to update icon */
         boolean[] on;
         int onindex;
-        
+
         patch_t p; // icon
 
         int data; // user data
 
         // Binary Icon widget routines
-
         public st_binicon_t(int x, int y, patch_t i, boolean[] val, int valindex, boolean[] on, int onindex) {
             this.x = x;
             this.y = y;
             this.oldval = false;
             this.val = val;
-            this.valindex=valindex;
+            this.valindex = valindex;
             this.on = on;
-            this.onindex=onindex;
+            this.onindex = onindex;
             this.p = i;
-            this.val[valindex]=false;;
+            this.val[valindex] = false;
         }
 
         @Override
@@ -1625,17 +1637,18 @@ public class StatusBar extends AbstractStatusBar {
                 w = bi.p.width;
                 h = bi.p.height;
 
-                if (y - ST_Y < 0)
-                    DOOM.doomSystem.Error("updateBinIcon: y - ST_Y < 0");                    
+                if (y - ST_Y < 0) {
+                    DOOM.doomSystem.Error("updateBinIcon: y - ST_Y < 0");
+                }
                 if (bi.val[valindex]) {
-                    final Rectangle rect = new Rectangle(x, ST_Y, w*DOOM.vs.getScalingX(), h*DOOM.vs.getScalingY());
+                    final Rectangle rect = new Rectangle(x, ST_Y, w * DOOM.vs.getScalingX(), h * DOOM.vs.getScalingY());
                     DOOM.graphicSystem.CopyRect(FG, rect, BG, DOOM.graphicSystem.point(rect.x, rect.y));
                     DOOM.graphicSystem.DrawPatchScaled(FG, bi.p, DOOM.vs, bi.x, bi.y, V_PREDIVIDE);
                 } else {
-                    final Rectangle rect = new Rectangle(x, ST_Y, w*DOOM.vs.getScalingX(), h*DOOM.vs.getScalingY());
+                    final Rectangle rect = new Rectangle(x, ST_Y, w * DOOM.vs.getScalingX(), h * DOOM.vs.getScalingY());
                     DOOM.graphicSystem.CopyRect(FG, rect, BG, DOOM.graphicSystem.point(rect.x, rect.y));
                 }
-                
+
                 bi.oldval = bi.val[valindex];
             }
 
@@ -1644,7 +1657,6 @@ public class StatusBar extends AbstractStatusBar {
     }
 
     /** Icon widget */
-
     class st_multicon_t
             implements StatusBarWidget {
 
@@ -1680,7 +1692,7 @@ public class StatusBar extends AbstractStatusBar {
         protected int[] asint;
 
         public st_multicon_t(int x, int y, patch_t[] il, Object iarray,
-                int inum, boolean []on,int onindex) {
+                int inum, boolean[] on, int onindex) {
             this.x = x;
             this.y = y;
             this.oldinum = -1;
@@ -1690,11 +1702,10 @@ public class StatusBar extends AbstractStatusBar {
             if (iarray instanceof boolean[]) {
                 status = 0;
                 asboolean = (boolean[]) iarray;
-            } else 
-                if (iarray instanceof int[]){
-                    status = 1;
-                asint = (int[]) iarray;               
-            }  
+            } else if (iarray instanceof int[]) {
+                status = 1;
+                asint = (int[]) iarray;
+            }
         }
 
         @Override
@@ -1708,12 +1719,12 @@ public class StatusBar extends AbstractStatusBar {
             // Actual value to be considered. Poor man's generics!
             int thevalue = -1;
             switch (status) {
-            case 0:
-                thevalue = asboolean[inum] ? 1 : 0;
-                break;
-            case 1:
-                thevalue = asint[inum];
-                break;            
+                case 0:
+                    thevalue = asboolean[inum] ? 1 : 0;
+                    break;
+                case 1:
+                    thevalue = asint[inum];
+                    break;
             }
 
             // Unified treatment of boolean and integer references
@@ -1724,25 +1735,26 @@ public class StatusBar extends AbstractStatusBar {
             // d) We actually asked for a refresh.
             if (this.on[onindex] && ((this.oldinum != thevalue) || refresh)
                     && (thevalue != -1)) {
-            	// Previous value must not have been -1.
-                if (this.oldinum != -1) { 
-                    x = this.x - this.p[this.oldinum].leftoffset*DOOM.vs.getScalingX();
-                    y = this.y - this.p[this.oldinum].topoffset*DOOM.vs.getScalingY();
-                    w = this.p[this.oldinum].width*DOOM.vs.getScalingX();
-                    h = this.p[this.oldinum].height*DOOM.vs.getScalingY();
+                // Previous value must not have been -1.
+                if (this.oldinum != -1) {
+                    x = this.x - this.p[this.oldinum].leftoffset * DOOM.vs.getScalingX();
+                    y = this.y - this.p[this.oldinum].topoffset * DOOM.vs.getScalingY();
+                    w = this.p[this.oldinum].width * DOOM.vs.getScalingX();
+                    h = this.p[this.oldinum].height * DOOM.vs.getScalingY();
                     Rectangle rect = new Rectangle(x, y - ST_Y, w, h);
 
-                    if (y - ST_Y < 0)
+                    if (y - ST_Y < 0) {
                         DOOM.doomSystem.Error("updateMultIcon: y - ST_Y < 0");
+                    }
                     //System.out.printf("Restoring at x y %d %d w h %d %d\n",x, y - ST_Y,w,h);
                     DOOM.graphicSystem.CopyRect(SB, rect, FG, DOOM.graphicSystem.point(x, y));
                     //V.CopyRect(x, y - ST_Y, SCREEN_SB, w, h, x, y, SCREEN_FG);
                     //V.FillRect(x, y - ST_Y, w, h, FG);
                 }
-                
+
                 //System.out.printf("Drawing at x y %d %d w h %d %d\n",this.x,this.y,p[thevalue].width,p[thevalue].height);
-                DOOM.graphicSystem.DrawPatchScaled(FG, this.p[thevalue], DOOM.vs, this.x,this.y, V_SCALEOFFSET|V_NOSCALESTART);
-                
+                DOOM.graphicSystem.DrawPatchScaled(FG, this.p[thevalue], DOOM.vs, this.x, this.y, V_SCALEOFFSET | V_NOSCALESTART);
+
                 this.oldinum = thevalue;
             }
         }
@@ -1751,7 +1763,6 @@ public class StatusBar extends AbstractStatusBar {
     protected patch_t sttminus;
 
     /** Number widget */
-
     class st_number_t
             implements StatusBarWidget {
 
@@ -1787,13 +1798,12 @@ public class StatusBar extends AbstractStatusBar {
         int data;
 
         // Number widget routines
-
         public st_number_t(int x, int y, patch_t[] pl, int[] numarray,
-                int numindex, boolean[] on,int onindex, int width) {
-                init(x, y, pl, numarray, numindex, on,onindex, width);
-                    }
+                int numindex, boolean[] on, int onindex, int width) {
+            init(x, y, pl, numarray, numindex, on, onindex, width);
+        }
 
-        public void init(int x, int y, patch_t[] pl, int[] numarray,int numindex,
+        public void init(int x, int y, patch_t[] pl, int[] numarray, int numindex,
                 boolean[] on, int onindex, int width) {
             this.x = x;
             this.y = y;
@@ -1801,9 +1811,9 @@ public class StatusBar extends AbstractStatusBar {
             this.width = width;
             this.numarray = numarray;
             this.on = on;
-            this.onindex=onindex;
+            this.onindex = onindex;
             this.p = pl;
-            this.numindex=numindex; // _D_ fixed this bug
+            this.numindex = numindex; // _D_ fixed this bug
         }
 
         // 
@@ -1815,7 +1825,7 @@ public class StatusBar extends AbstractStatusBar {
 
             //st_number_t n = this;
             int numdigits = this.width; // HELL NO. This only worked while the width happened
-            							// to be 3.
+            // to be 3.
 
             int w = this.p[0].width * DOOM.vs.getScalingX();
             int h = this.p[0].height * DOOM.vs.getScalingY();
@@ -1837,8 +1847,9 @@ public class StatusBar extends AbstractStatusBar {
             //V.CopyRect(x+(numdigits-3)*w, y- ST_Y, SCREEN_SB, w * 3, h, x+(numdigits-3)*w, y, SCREEN_FG);
 
             // if non-number, do not draw it
-            if (numindex == largeammo)
+            if (numindex == largeammo) {
                 return;
+            }
 
             int num = this.numarray[this.numindex];
 
@@ -1849,10 +1860,11 @@ public class StatusBar extends AbstractStatusBar {
             neg = num < 0;
 
             if (neg) {
-                if (numdigits == 2 && num < -9)
+                if (numdigits == 2 && num < -9) {
                     num = -9;
-                else if (numdigits == 3 && num < -99)
+                } else if (numdigits == 3 && num < -99) {
                     num = -99;
+                }
 
                 num = -num;
             }
@@ -1860,29 +1872,31 @@ public class StatusBar extends AbstractStatusBar {
             x = this.x;
 
             // in the special case of 0, you draw 0
-            if (num == 0)
-                //V.DrawPatch(x - w, n.y, FG, n.p[0]);
-                DOOM.graphicSystem.DrawPatchScaled(FG, p[0], DOOM.vs, x - w, this.y, V_NOSCALESTART|V_TRANSLUCENTPATCH);
-                
-                
+            if (num == 0) //V.DrawPatch(x - w, n.y, FG, n.p[0]);
+            {
+                DOOM.graphicSystem.DrawPatchScaled(FG, p[0], DOOM.vs, x - w, this.y, V_NOSCALESTART | V_TRANSLUCENTPATCH);
+            }
+
             // draw the new number
             while (((num != 0) && (numdigits-- != 0))) {
                 x -= w;
                 //V.DrawPatch(x, n.y, FG, n.p[num % 10]);
-                DOOM.graphicSystem.DrawPatchScaled(FG, p[num % 10], DOOM.vs, x, this.y, V_NOSCALESTART|V_TRANSLUCENTPATCH);
+                DOOM.graphicSystem.DrawPatchScaled(FG, p[num % 10], DOOM.vs, x, this.y, V_NOSCALESTART | V_TRANSLUCENTPATCH);
                 num /= 10;
             }
 
             // draw a minus sign if necessary
-            if (neg)
-                DOOM.graphicSystem.DrawPatchScaled/*DrawPatch*/(FG, sttminus, DOOM.vs, x - 8*DOOM.vs.getScalingX(), this.y, V_NOSCALESTART|V_TRANSLUCENTPATCH);
-                //V.DrawPatch(x - sttminus.width*vs.getScalingX(), n.y, FG, sttminus);
+            if (neg) {
+                DOOM.graphicSystem.DrawPatchScaled/*DrawPatch*/(FG, sttminus, DOOM.vs, x - 8 * DOOM.vs.getScalingX(), this.y, V_NOSCALESTART | V_TRANSLUCENTPATCH);
+            }
+            //V.DrawPatch(x - sttminus.width*vs.getScalingX(), n.y, FG, sttminus);
         }
 
         @Override
         public void update(boolean refresh) {
-            if (this.on[onindex])
+            if (this.on[onindex]) {
                 drawNum(refresh);
+            }
         }
 
     }
@@ -1900,14 +1914,15 @@ public class StatusBar extends AbstractStatusBar {
 
         public st_percent_t(int x, int y, patch_t[] pl, int[] numarray,
                 int numindex, boolean[] on, int onindex, patch_t percent) {
-            n = new st_number_t(x, y, pl, numarray, numindex, on,onindex, 3);
+            n = new st_number_t(x, y, pl, numarray, numindex, on, onindex, 3);
             p = percent;
         }
 
         @Override
         public void update(boolean refresh) {
-            if (this.n.on[0])
+            if (this.n.on[0]) {
                 DOOM.graphicSystem.DrawPatchScaled(FG, p, DOOM.vs, n.x, n.y, V_NOSCALESTART);
+            }
 
             n.update(refresh);
         }
@@ -1915,14 +1930,15 @@ public class StatusBar extends AbstractStatusBar {
     }
 
     interface StatusBarWidget {
+
         public void update(boolean refresh);
     }
-	
-	// Size of statusbar.
-	// Now sensitive for scaling.
-	public int ST_HEIGHT;
-	public int ST_WIDTH;
-	public int ST_Y;
+
+    // Size of statusbar.
+    // Now sensitive for scaling.
+    public int ST_HEIGHT;
+    public int ST_WIDTH;
+    public int ST_Y;
 
     @Override
     public int getHeight() {

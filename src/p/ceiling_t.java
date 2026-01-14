@@ -13,9 +13,12 @@ import w.IReadableDoomObject;
 public class ceiling_t extends SectorAction implements CacheableDoomObject, IReadableDoomObject, IPackableDoomObject {
 
     public ceiling_e type;
-    @fixed_t public int bottomheight;
-    @fixed_t public int topheight;
-    @fixed_t public int speed;
+    @fixed_t
+    public int bottomheight;
+    @fixed_t
+    public int topheight;
+    @fixed_t
+    public int speed;
     public boolean crush;
 
     // 1 = up, 0 = waiting, -1 = down

@@ -3,7 +3,6 @@ package data;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 
 /**
@@ -12,7 +11,6 @@ import w.CacheableDoomObject;
  * lump: it is not individually cacheable, even though it implements
  * CacheableDoomObject.
  */
-
 public class mapvertex_t
         implements CacheableDoomObject {
 

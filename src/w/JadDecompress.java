@@ -1,13 +1,20 @@
 package w;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
+
 public class JadDecompress {
+
+    private static final Logger LOGGER = Loggers.getLogger(JadDecompress.class.getName());
 
     public final static int WINDOW_SIZE = 4096;
 
     public final static int LOOKAHEAD_SIZE = 16;
 
-    public final static int LENSHIFT = 4; /* this must be log2(LOOKAHEAD_SIZE) */
+    public final static int LENSHIFT = 4;
 
+    /* this must be log2(LOOKAHEAD_SIZE) */
     public static void decode(byte[] input, byte[] output) {
         /*
          * #ifdef JAGUAR decomp_input = input; decomp_output = output;
@@ -24,7 +31,9 @@ public class JadDecompress {
         while (true) {
 
             /* get a new idbyte if necessary */
-            if (getidbyte == 0) idbyte = 0xFF & input[input_ptr++];
+            if (getidbyte == 0) {
+                idbyte = 0xFF & input[input_ptr++];
+            }
             getidbyte = (getidbyte + 1) & 7;
 
             if ((idbyte & 1) != 0) {
@@ -35,10 +44,12 @@ public class JadDecompress {
 
                 len = ((0xFF & input[input_ptr++]) & 0xf) + 1;
 
-                if (len == 1)
+                if (len == 1) {
                     break;
-                for (i = 0; i < len; i++)
+                }
+                for (i = 0; i < len; i++) {
                     output[output_ptr++] = output[source_ptr++];
+                }
             } else {
                 output[output_ptr++] = input[input_ptr++];
             }
@@ -47,7 +58,7 @@ public class JadDecompress {
 
         }
 
-        System.out.printf("Expanded %d to %d\n", input_ptr, output_ptr);
+        LOGGER.log(Level.INFO, String.format("Expanded %d to %d", input_ptr, output_ptr));
     }
 
 }

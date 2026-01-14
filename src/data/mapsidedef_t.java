@@ -3,7 +3,6 @@ package data;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 
@@ -11,8 +10,7 @@ import w.DoomBuffer;
  * A SideDef, defining the visual appearance of a wall, by setting textures and
  * offsets. ON-DISK.
  */
-
-public class mapsidedef_t implements CacheableDoomObject{
+public class mapsidedef_t implements CacheableDoomObject {
 
     public mapsidedef_t() {
 
@@ -42,10 +40,10 @@ public class mapsidedef_t implements CacheableDoomObject{
         buf.order(ByteOrder.LITTLE_ENDIAN);
         this.textureoffset = buf.getShort();
         this.rowoffset = buf.getShort();
-        this.toptexture=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
-        this.bottomtexture=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
-        this.midtexture=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
+        this.toptexture = DoomBuffer.getNullTerminatedString(buf, 8).toUpperCase();
+        this.bottomtexture = DoomBuffer.getNullTerminatedString(buf, 8).toUpperCase();
+        this.midtexture = DoomBuffer.getNullTerminatedString(buf, 8).toUpperCase();
         this.sector = buf.getShort();
-        
+
     }
 }

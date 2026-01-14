@@ -2,7 +2,6 @@ package rr;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 
@@ -12,95 +11,90 @@ import w.CacheableDoomObject;
  * some stuff to make my life easier.
  * 
  */
+public class column_t implements CacheableDoomObject {
 
-public class column_t implements CacheableDoomObject{
-    
     /** Static buffers used during I/O. 
      *  There's ABSO-FUCKING-LUTELY no reason to manipulate them externally!!!
      *  I'M NOT KIDDING!!!11!!
      */
-    
-    private static final int[] guesspostofs=new int[256];
-    private static final short[] guesspostlens=new short[256];
-    private static final short[] guesspostdeltas=new short[256];
-    
-    
+    private static final int[] guesspostofs = new int[256];
+    private static final short[] guesspostlens = new short[256];
+    private static final short[] guesspostdeltas = new short[256];
+
     // MAES: there are useless, since the renderer is using raw byte data anyway, and the per-post
     // data is available in the special arrays.
     // public short        topdelta;   // -1 is the last post in a column (actually 0xFF, since this was unsigned???)
     // public short        length;     // length data bytes follows (actually add +2)
-	//public column_t[]      posts;    // This is quite tricky to read.
+    //public column_t[]      posts;    // This is quite tricky to read.
     /** The RAW data (includes initial header and padding, because no post gets preferential treatment). */
-    public byte[] data; 
+    public byte[] data;
     /** Actual number of posts inside this column. All guesswork is done while loading */
-	public int posts;
-	/** Positions of posts inside the raw data (point at headers) */
-	public int[] postofs; 
-	/** Posts lengths, intended as actual drawable pixels.  Add +4 to get the whole post length */
-	public short[] postlen;
-	/** Vertical offset of each post. In theory it should be possible to quickly
-	 *  clip to the next visible post when drawing a column */
-	public short[] postdeltas;
-	
+    public int posts;
+    /** Positions of posts inside the raw data (point at headers) */
+    public int[] postofs;
+    /** Posts lengths, intended as actual drawable pixels.  Add +4 to get the whole post length */
+    public short[] postlen;
+    /** Vertical offset of each post. In theory it should be possible to quickly
+     *  clip to the next visible post when drawing a column */
+    public short[] postdeltas;
+
     @Override
-		public void unpack(ByteBuffer buf) throws IOException {
-	        // Mark current position.
-	        buf.mark();
-	        int skipped=0;
-	        short postlen=0;
-	        int colheight=0;	        
-	        int len=0; // How long is the WHOLE column, until the final FF?
-	        int postno=0; // Actual number of posts.
-	        int topdelta=0;
-	        int prevdelta=-1; // HACK for DeepSea tall patches.
-	        
-	        // Scan every byte until we encounter an 0xFF which definitively marks the end of a column.
-	        while((topdelta=C2JUtils.toUnsignedByte(buf.get()))!=0xFF){
-	        
-	        // From the wiki:
-	        // A column's topdelta is compared to the previous column's topdelta 
-	        // (or to -1 if there is no previous column in this row). If the new 
-	        //  topdelta is lesser than the previous, it is interpreted as a tall
-	        // patch and the two values are added together, the sum serving as the 
-	        // current column's actual offset.
-	            
-	         int tmp=topdelta;    
-	            
-	        if (topdelta<prevdelta) {	            
-	            topdelta+=prevdelta;
-	            }
+    public void unpack(ByteBuffer buf) throws IOException {
+        // Mark current position.
+        buf.mark();
+        int skipped = 0;
+        short postlen = 0;
+        int colheight = 0;
+        int len = 0; // How long is the WHOLE column, until the final FF?
+        int postno = 0; // Actual number of posts.
+        int topdelta = 0;
+        int prevdelta = -1; // HACK for DeepSea tall patches.
 
-            prevdelta=tmp;
-	        
-	        // First byte of a post should be its "topdelta"
-            guesspostdeltas[postno]=(short)topdelta;
-            
-	        guesspostofs[postno]=skipped+3; // 0 for first post
+        // Scan every byte until we encounter an 0xFF which definitively marks the end of a column.
+        while ((topdelta = C2JUtils.toUnsignedByte(buf.get())) != 0xFF) {
 
-	        // Read one more byte...this should be the post length.
-	        postlen=(short)C2JUtils.toUnsignedByte(buf.get());
-	        guesspostlens[postno++]=(short) (postlen);
-	        
-	        // So, we already read 2 bytes (topdelta + length)
-	        // Two further bytes are padding so we can safely skip 2+2+postlen bytes until the next post
-	        skipped+=4+postlen;
-	        buf.position(buf.position()+2+postlen);
-	        
-	        // Obviously, this adds to the height of the column, which might not be equal to the patch that
-	        // contains it.
-	        colheight+=postlen;
-	        }
-	        
-	        // Skip final padding byte ?
-	        skipped++;
-	        
-	        len = finalizeStatus(skipped, colheight, postno);
-	        
-	        // Go back...and read the raw data. That's what will actually be used in the renderer.
-	        buf.reset();
-	        buf.get(data, 0, len);
-	    }
+            // From the wiki:
+            // A column's topdelta is compared to the previous column's topdelta 
+            // (or to -1 if there is no previous column in this row). If the new 
+            //  topdelta is lesser than the previous, it is interpreted as a tall
+            // patch and the two values are added together, the sum serving as the 
+            // current column's actual offset.
+            int tmp = topdelta;
 
+            if (topdelta < prevdelta) {
+                topdelta += prevdelta;
+            }
+
+            prevdelta = tmp;
+
+            // First byte of a post should be its "topdelta"
+            guesspostdeltas[postno] = (short) topdelta;
+
+            guesspostofs[postno] = skipped + 3; // 0 for first post
+
+            // Read one more byte...this should be the post length.
+            postlen = (short) C2JUtils.toUnsignedByte(buf.get());
+            guesspostlens[postno++] = (short) (postlen);
+
+            // So, we already read 2 bytes (topdelta + length)
+            // Two further bytes are padding so we can safely skip 2+2+postlen bytes until the next post
+            skipped += 4 + postlen;
+            buf.position(buf.position() + 2 + postlen);
+
+            // Obviously, this adds to the height of the column, which might not be equal to the patch that
+            // contains it.
+            colheight += postlen;
+        }
+
+        // Skip final padding byte ?
+        skipped++;
+
+        len = finalizeStatus(skipped, colheight, postno);
+
+        // Go back...and read the raw data. That's what will actually be used in the renderer.
+        buf.reset();
+        buf.get(data, 0, len);
+    }
 
     /** This -almost- completes reading, by filling in the header information
      *  before the raw column data is read in.
@@ -110,39 +104,37 @@ public class column_t implements CacheableDoomObject{
      * @param postno
      * @return
      */
-    
     private int finalizeStatus(int skipped, int colheight, int postno) {
         int len;
         // That's the TOTAL length including all padding.
         // This means we redundantly read some data
-        len=(int) (skipped);
-        this.data=new byte[len];
-        
-        this.postofs=new int[postno];
-        this.postlen=new short[postno];
+        len = (int) (skipped);
+        this.data = new byte[len];
+
+        this.postofs = new int[postno];
+        this.postlen = new short[postno];
         // this.length=(short) colheight;
-        this.postdeltas=new short[postno];
-        
-        System.arraycopy(guesspostofs, 0,this.postofs, 0, postno);
-        System.arraycopy(guesspostlens, 0,this.postlen, 0, postno);
-        System.arraycopy(guesspostdeltas, 0,this.postdeltas, 0, postno);
-        
-        this.posts=postno;
+        this.postdeltas = new short[postno];
+
+        System.arraycopy(guesspostofs, 0, this.postofs, 0, postno);
+        System.arraycopy(guesspostlens, 0, this.postlen, 0, postno);
+        System.arraycopy(guesspostdeltas, 0, this.postdeltas, 0, postno);
+
+        this.posts = postno;
         return len;
     }
-    
+
     /** based on raw data */
-    public int getTopDelta(){
+    public int getTopDelta() {
         return C2JUtils.toUnsignedByte(data[0]);
     }
-    
+
     /** based on raw data */
-    public int getLength(){
+    public int getLength() {
         return C2JUtils.toUnsignedByte(data[1]);
     }
-   
-}
 
+}
 
 // $Log: column_t.java,v $
 // Revision 1.18  2011/10/04 14:34:08  velktron

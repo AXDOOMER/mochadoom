@@ -7,7 +7,10 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
- 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
+
 /**
  * An executor that make sure tasks submitted with the same key
  * will be executed in the same order as task submission
@@ -24,10 +27,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * * @param <K> type of keys.
  */
 public class OrderedExecutor<K> {
- 
+
+    private static final Logger LOGGER = Loggers.getLogger(OrderedExecutor.class.getName());
+
     private final Executor executor;
     private final Map<K, Task> tasks;
- 
+
     /**
      * Constructs a {@code OrderedExecutor}.
      *
@@ -35,9 +40,9 @@ public class OrderedExecutor<K> {
      */
     public OrderedExecutor(Executor executor) {
         this.executor = executor;
-        this.tasks = new HashMap<K, Task>();
+        this.tasks = new HashMap<>();
     }
- 
+
     /**
      * Adds a new task to run for the given key.
      *
@@ -52,21 +57,21 @@ public class OrderedExecutor<K> {
         }
         task.add(runnable);
     }
- 
+
     /**
      * Private inner class for running tasks for each key.
      * Each key submitted will have one instance of this class.
      */
     private class Task implements Runnable {
- 
+
         private final Lock lock;
         private final Queue<Runnable> queue;
- 
+
         Task() {
             this.lock = new ReentrantLock();
-            this.queue = new LinkedList<Runnable>();
+            this.queue = new LinkedList<>();
         }
- 
+
         public void add(Runnable runnable) {
             boolean runTask;
             lock.lock();
@@ -81,7 +86,7 @@ public class OrderedExecutor<K> {
                 executor.execute(this);
             }
         }
- 
+
         @Override
         public void run() {
             // Pick a task to run.
@@ -95,7 +100,7 @@ public class OrderedExecutor<K> {
             try {
                 runnable.run();
             } catch (Exception ex) {
-                ex.printStackTrace();
+                LOGGER.log(Level.SEVERE, "OrderedExecutor run failure", ex);
             }
             // Check to see if there are queued task, if yes, submit for execution.
             lock.lock();

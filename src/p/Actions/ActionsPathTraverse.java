@@ -201,7 +201,7 @@ public interface ActionsPathTraverse extends ActionsSectors {
             }
 
             if (mapx == xt2
-                && mapy == yt2) {
+                    && mapy == yt2) {
                 break;
             }
 
@@ -233,7 +233,7 @@ public interface ActionsPathTraverse extends ActionsSectors {
 
         // avoid precision problems with two routines
         if (sp.trace.dx > FRACUNIT * 16 || sp.trace.dy > FRACUNIT * 16
-            || sp.trace.dx < -FRACUNIT * 16 || sp.trace.dy < -FRACUNIT * 16) {
+                || sp.trace.dx < -FRACUNIT * 16 || sp.trace.dy < -FRACUNIT * 16) {
             s1 = sp.trace.PointOnDivlineSide(ld.v1x, ld.v1y);
             s2 = sp.trace.PointOnDivlineSide(ld.v2x, ld.v2y);
             //s1 = obs.trace.DivlineSide(ld.v1x, ld.v1.y);

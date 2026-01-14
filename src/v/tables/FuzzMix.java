@@ -28,8 +28,9 @@ package v.tables;
  *  - Good Sign 2017/04/16
  * 
  * @author velktron
-*/
+ */
 public interface FuzzMix {
+
     /**
      * Was used by:
      * R_DrawFuzzColumn.HiColor
@@ -38,7 +39,7 @@ public interface FuzzMix {
      * Now used by BlurryTable::computePixel
      * only if the option fuzz_mix enabled
      */
-    default short fuzzMixHi(short rgb){
+    default short fuzzMixHi(short rgb) {
         // super-fast half-brite trick
         // 3DEF and >> 1: ok hue, but too dark
         // 7BDE, no shift:  good compromise
@@ -55,7 +56,7 @@ public interface FuzzMix {
      * 
      * AX: This is what makes it blurry
      */
-    default int fuzzMixTrue(int rgb){
+    default int fuzzMixTrue(int rgb) {
         // Proper half-brite alpha!
         return rgb & 0x10FFFFFF;
     }

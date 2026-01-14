@@ -7,7 +7,7 @@ package rr;
  * @author admin
  *
  */
-
 public interface ILimitResettable {
-    public void resetLimits();   
+
+    public void resetLimits();
 }

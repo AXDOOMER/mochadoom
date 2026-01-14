@@ -1,15 +1,48 @@
 package doom;
 
-import static data.Defines.*;
-import static data.Limits.*;
+import static data.Defines.BT_CHANGE;
+import static data.Defines.BT_SPECIAL;
+import static data.Defines.BT_USE;
+import static data.Defines.BT_WEAPONMASK;
+import static data.Defines.BT_WEAPONSHIFT;
+import static data.Defines.INFRATICS;
+import static data.Defines.INVISTICS;
+import static data.Defines.INVULNTICS;
+import static data.Defines.IRONTICS;
+import static data.Defines.NUMAMMO;
+import static data.Defines.NUMPOWERS;
+import static data.Defines.NUMWEAPONS;
+import static data.Defines.PST_DEAD;
+import static data.Defines.PST_LIVE;
+import static data.Defines.PST_REBORN;
+import static data.Defines.TIC_MUL;
+import static data.Defines.TOCENTER;
+import static data.Defines.VIEWHEIGHT;
+import static data.Defines.pw_infrared;
+import static data.Defines.pw_invisibility;
+import static data.Defines.pw_invulnerability;
+import static data.Defines.pw_ironfeet;
+import static data.Defines.pw_strength;
+import static data.Limits.MAXHEALTH;
+import static data.Limits.MAXPLAYERS;
 import data.Tables;
-import static data.Tables.*;
-import static data.info.*;
+import static data.Tables.ANG180;
+import static data.Tables.ANG90;
+import static data.Tables.BITS32;
+import static data.Tables.FINEANGLES;
+import static data.Tables.FINEMASK;
+import static data.Tables.finecosine;
+import static data.Tables.finesine;
+import static data.info.states;
 import data.sounds.sfxenum_t;
 import data.state_t;
-import defines.*;
+import defines.ammotype_t;
+import defines.card_t;
+import defines.skill_t;
+import defines.statenum_t;
 import doom.SourceCode.G_Game;
-import static doom.SourceCode.G_Game.*;
+import static doom.SourceCode.G_Game.G_PlayerFinishLevel;
+import static doom.SourceCode.G_Game.G_PlayerReborn;
 import doom.SourceCode.P_Pspr;
 import static doom.SourceCode.P_Pspr.P_BringUpWeapon;
 import static doom.SourceCode.P_Pspr.P_SetPsprite;
@@ -20,14 +53,22 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import static m.fixed_t.*;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.FixedMul;
+import static m.fixed_t.MAPFRACUNIT;
 import p.ActiveStates.PlayerSpriteConsumer;
 import p.mobj_t;
-import static p.mobj_t.*;
+import static p.mobj_t.MF_JUSTATTACKED;
+import static p.mobj_t.MF_NOCLIP;
+import static p.mobj_t.MF_SHADOW;
 import p.pspdef_t;
 import rr.sector_t;
 import utils.C2JUtils;
-import static utils.C2JUtils.*;
+import static utils.C2JUtils.eval;
+import static utils.C2JUtils.flags;
+import static utils.C2JUtils.memset;
+import static utils.C2JUtils.pointer;
 import static utils.GenericCopy.malloc;
 import v.graphics.Palettes;
 import w.DoomBuffer;
@@ -254,7 +295,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
     @Override
     public player_t clone()
-        throws CloneNotSupportedException {
+            throws CloneNotSupportedException {
         return (player_t) super.clone();
     }
 
@@ -300,7 +341,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         }
 
         if ((cmd.forwardmove != 0 || cmd.sidemove != 0)
-            && mo.mobj_state == states[statenum_t.S_PLAY.ordinal()]) {
+                && mo.mobj_state == states[statenum_t.S_PLAY.ordinal()]) {
             this.mo.SetMobjState(statenum_t.S_PLAY_RUN1);
         }
 
@@ -408,7 +449,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         }
 
         if (DOOM.gameskill == skill_t.sk_baby
-            || DOOM.gameskill == skill_t.sk_nightmare) {
+                || DOOM.gameskill == skill_t.sk_nightmare) {
             // give double ammo in trainer mode,
             // you'll need in nightmare
             num <<= 1;
@@ -444,7 +485,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
             case am_shell:
                 if (readyweapon == weapontype_t.wp_fist
-                    || readyweapon == weapontype_t.wp_pistol) {
+                        || readyweapon == weapontype_t.wp_pistol) {
                     if (weaponowned[weapontype_t.wp_shotgun.ordinal()]) {
                         pendingweapon = weapontype_t.wp_shotgun;
                     }
@@ -453,7 +494,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
             case am_cell:
                 if (readyweapon == weapontype_t.wp_fist
-                    || readyweapon == weapontype_t.wp_pistol) {
+                        || readyweapon == weapontype_t.wp_pistol) {
                     if (weaponowned[weapontype_t.wp_plasma.ordinal()]) {
                         pendingweapon = weapontype_t.wp_plasma;
                     }
@@ -485,7 +526,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         int weapon = weapn.ordinal();
 
         if (DOOM.netgame && (DOOM.deathmatch != true) // ???? was "2"
-            && !dropped) {
+                && !dropped) {
             // leave placed weapons forever on net games
             if (weaponowned[weapon]) {
                 return false;
@@ -676,7 +717,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
             case 4:
                 // STROBE HURT
                 if (!eval(powers[pw_ironfeet])
-                    || (DOOM.random.P_Random() < 5)) {
+                        || (DOOM.random.P_Random() < 5)) {
                     if (!flags(DOOM.leveltime, 0x1f)) {
                         DOOM.actions.DamageMobj(mo, null, null, 20);
                     }
@@ -705,7 +746,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
             default:
                 DOOM.doomSystem.Error("P_PlayerInSpecialSector: unknown special %d", sector.special);
                 break;
-        };
+        }
     }
 
     //
@@ -723,8 +764,8 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         // Note: a LUT allows for effects
         //  like a ramp with low health.
         this.bob
-            = FixedMul(mo.momx, mo.momx)
-            + FixedMul(mo.momy, mo.momy);
+                = FixedMul(mo.momx, mo.momx)
+                + FixedMul(mo.momy, mo.momy);
 
         this.bob >>= 2;
 
@@ -807,9 +848,9 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
         if (attacker != null && attacker != mo) {
             angle = DOOM.sceneRenderer.PointToAngle2(mo.x,
-                mo.y,
-                attacker.x,
-                attacker.y);
+                    mo.y,
+                    attacker.x,
+                    attacker.y);
 
             delta = Tables.addAngles(angle, -mo.angle);
 
@@ -939,8 +980,8 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
     /* psprnum_t enum */
     public static int ps_weapon = 0,
-        ps_flash = 1,
-        NUMPSPRITES = 2;
+            ps_flash = 1,
+            NUMPSPRITES = 2;
 
     public static int LOWERSPEED = MAPFRACUNIT * 6;
     public static int RAISESPEED = MAPFRACUNIT * 6;
@@ -1044,7 +1085,8 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         }
 
         if (pendingweapon == weapontype_t.wp_chainsaw) {
-            S_StartSound: {
+            S_StartSound:
+            {
                 DOOM.doomSound.StartSound(mo, sfxenum_t.sfx_sawup);
             }
         }
@@ -1054,7 +1096,8 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         pendingweapon = weapontype_t.wp_nochange;
         psprites[ps_weapon].sy = WEAPONBOTTOM;
 
-        P_SetPsprite: {
+        P_SetPsprite:
+        {
             this.SetPsprite(ps_weapon, newstate);
         }
     }
@@ -1088,29 +1131,29 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
         // Preferences are set here.
         do {
             if (weaponowned[weapontype_t.wp_plasma.ordinal()]
-                && (this.ammo[ammotype_t.am_cell.ordinal()] != 0)
-                && !DOOM.isShareware()) {
+                    && (this.ammo[ammotype_t.am_cell.ordinal()] != 0)
+                    && !DOOM.isShareware()) {
                 pendingweapon = weapontype_t.wp_plasma;
             } else if (weaponowned[weapontype_t.wp_supershotgun.ordinal()]
-                && this.ammo[ammotype_t.am_shell.ordinal()] > 2
-                && DOOM.isCommercial()) {
+                    && this.ammo[ammotype_t.am_shell.ordinal()] > 2
+                    && DOOM.isCommercial()) {
                 pendingweapon = weapontype_t.wp_supershotgun;
             } else if (weaponowned[weapontype_t.wp_chaingun.ordinal()]
-                && this.ammo[ammotype_t.am_clip.ordinal()] != 0) {
+                    && this.ammo[ammotype_t.am_clip.ordinal()] != 0) {
                 pendingweapon = weapontype_t.wp_chaingun;
             } else if (weaponowned[weapontype_t.wp_shotgun.ordinal()]
-                && this.ammo[ammotype_t.am_shell.ordinal()] != 0) {
+                    && this.ammo[ammotype_t.am_shell.ordinal()] != 0) {
                 pendingweapon = weapontype_t.wp_shotgun;
             } else if (this.ammo[ammotype_t.am_clip.ordinal()] != 0) {
                 pendingweapon = weapontype_t.wp_pistol;
             } else if (weaponowned[weapontype_t.wp_chainsaw.ordinal()]) {
                 pendingweapon = weapontype_t.wp_chainsaw;
             } else if (weaponowned[weapontype_t.wp_missile.ordinal()]
-                && this.ammo[ammotype_t.am_misl.ordinal()] != 0) {
+                    && this.ammo[ammotype_t.am_misl.ordinal()] != 0) {
                 pendingweapon = weapontype_t.wp_missile;
             } else if (weaponowned[weapontype_t.wp_bfg.ordinal()]
-                && this.ammo[ammotype_t.am_cell.ordinal()] > 40
-                && !DOOM.isShareware()) {
+                    && this.ammo[ammotype_t.am_cell.ordinal()] > 40
+                    && !DOOM.isShareware()) {
                 pendingweapon = weapontype_t.wp_bfg;
             } else {
                 // If everything fails.
@@ -1121,8 +1164,8 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
         // Now set appropriate weapon overlay.
         this.SetPsprite(
-            ps_weapon,
-            weaponinfo[readyweapon.ordinal()].downstate);
+                ps_weapon,
+                weaponinfo[readyweapon.ordinal()].downstate);
 
         return false;
     }
@@ -1133,8 +1176,8 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
      */
     public void DropWeapon() {
         this.SetPsprite(
-            ps_weapon,
-            weaponinfo[readyweapon.ordinal()].downstate);
+                ps_weapon,
+                weaponinfo[readyweapon.ordinal()].downstate);
     }
 
     /**
@@ -1214,27 +1257,27 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
             // If chainsaw is available, it won't change back to the fist 
             // unless player also has berserk.
             if (newweapon == weapontype_t.wp_fist
-                && player.weaponowned[weapontype_t.wp_chainsaw.ordinal()]
-                && !(player.readyweapon == weapontype_t.wp_chainsaw
-                && eval(player.powers[pw_strength]))) {
+                    && player.weaponowned[weapontype_t.wp_chainsaw.ordinal()]
+                    && !(player.readyweapon == weapontype_t.wp_chainsaw
+                    && eval(player.powers[pw_strength]))) {
                 newweapon = weapontype_t.wp_chainsaw;
             }
 
             // Will switch between SG and SSG in Doom 2.
             if (DOOM.isCommercial()
-                && newweapon == weapontype_t.wp_shotgun
-                && player.weaponowned[weapontype_t.wp_supershotgun.ordinal()]
-                && player.readyweapon != weapontype_t.wp_supershotgun) {
+                    && newweapon == weapontype_t.wp_shotgun
+                    && player.weaponowned[weapontype_t.wp_supershotgun.ordinal()]
+                    && player.readyweapon != weapontype_t.wp_supershotgun) {
                 newweapon = weapontype_t.wp_supershotgun;
             }
 
             if (player.weaponowned[newweapon.ordinal()]
-                && newweapon != player.readyweapon) {
+                    && newweapon != player.readyweapon) {
                 // Do not go to plasma or BFG in shareware,
                 //  even if cheated.
                 if ((newweapon != weapontype_t.wp_plasma
-                    && newweapon != weapontype_t.wp_bfg)
-                    || !DOOM.isShareware()) {
+                        && newweapon != weapontype_t.wp_bfg)
+                        || !DOOM.isShareware()) {
                     player.pendingweapon = newweapon;
                 }
             }
@@ -1294,7 +1337,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
             }
         } else if (eval(player.powers[pw_infrared])) {
             if (player.powers[pw_infrared] > 4 * 32
-                || flags(player.powers[pw_infrared], 8)) {
+                    || flags(player.powers[pw_infrared], 8)) {
                 // almost full bright
                 player.fixedcolormap = Palettes.COLORMAP_BULLBRIGHT;
             } else {
@@ -1452,7 +1495,7 @@ public class player_t /*extends mobj_t */ implements Cloneable, IReadableDoomObj
 
     @Override
     public void pack(ByteBuffer buf)
-        throws IOException {
+            throws IOException {
 
         ByteOrder bo = ByteOrder.LITTLE_ENDIAN;
         buf.order(bo);

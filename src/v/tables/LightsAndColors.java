@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.tables;
 
 import doom.DoomMain;
@@ -32,16 +31,14 @@ import v.renderers.BppMode;
  *
  * @param <V> The data type of the SCREEN
  */
-
 public class LightsAndColors<V> {
-    
+
     private final LCData LC_DATA;
-    
+
     /** For HiColor, these are, effectively, a bunch of 555 RGB palettes,
      *  for TrueColor they are a bunch of 32-bit ARGB palettes etc.
      *  Only for indexed they represent index remappings.  
      */
-
     /** "peg" this to the one from RendererData */
     public V[] colormaps;
 
@@ -50,12 +47,12 @@ public class LightsAndColors<V> {
 
     /** Use in conjunction with player.fixedcolormap */
     public V fixedcolormap;
-	
-	/**
-	 * Color tables for different players, translate a limited part to another
-	 * (color ramps used for suit colors).
-	 */
-	public byte[][] translationtables;
+
+    /**
+     * Color tables for different players, translate a limited part to another
+     * (color ramps used for suit colors).
+     */
+    public byte[][] translationtables;
 
     // bumped light from gun blasts
     public int extralight;
@@ -104,7 +101,7 @@ public class LightsAndColors<V> {
     public int numColorMaps() {
         return LC_DATA.NUMCOLORMAPS;
     }
-    
+
     /**
      * player_t.fixedcolormap have a range of 0..31 in vanilla.
      * We must respect it. However, we can have more lightlevels then vanilla.
@@ -117,7 +114,7 @@ public class LightsAndColors<V> {
         if (LC_DATA.bpp.lightBits > 5) {
             return colormaps[player.fixedcolormap << (LC_DATA.bpp.lightBits - 5)];
         }
-        
+
         return colormaps[player.fixedcolormap];
     }
 
@@ -126,8 +123,9 @@ public class LightsAndColors<V> {
     }
 
     private static class LCData {
+
         final BppMode bpp;
-        
+
         /**
          * These two are tied by an inverse relationship. E.g. 256 levels, 0 shift
          * 128 levels, 1 shift ...etc... 16 levels, 4 shift (default). Or even less,
@@ -138,28 +136,21 @@ public class LightsAndColors<V> {
          * levels, you also put more memory pressure, and due to their being only
          * 256 colors to begin with, visually, there won't be many differences.
          */
-
-
         final int LIGHTLEVELS;
         final int LIGHTSEGSHIFT;
-
 
         /** Number of diminishing brightness levels.
            There a 0-31, i.e. 32 LUT in the COLORMAP lump. 
            TODO: how can those be distinct from the light levels???
-           */    
-
+         */
         final int NUMCOLORMAPS;
 
-
         // These are a bit more tricky to figure out though.
-
         /** Maximum index used for light levels of sprites. In practice,
          *  it's capped by the number of light levels???
          *  
          *  Normally set to 48 (32 +16???)
          */
-
         final int MAXLIGHTSCALE;
 
         /** Used to scale brightness of walls and sprites. Their "scale" is shifted by
@@ -171,7 +162,6 @@ public class LightsAndColors<V> {
 
         /** This one seems arbitrary. Will auto-fit to 128 possible levels? */
         final int MAXLIGHTZ;
-
 
         final int LIGHTBRIGHT;
 

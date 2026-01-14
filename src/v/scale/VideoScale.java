@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.scale;
 
 /**
@@ -40,8 +39,11 @@ public interface VideoScale {
     public static final int BASE_HEIGHT = (int) (INV_ASPECT_RATIO * 320); // 200
 
     int getScreenWidth();
+
     int getScreenHeight();
+
     int getScalingX();
+
     int getScalingY();
 
     /**

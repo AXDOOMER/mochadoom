@@ -23,14 +23,15 @@ import rr.patch_t;
  * @author Good Sign
  */
 public interface Points<V, E extends Enum<E>> extends Screens<V, E> {
+
     default void doRangeCheck(int x, int y, int width, int height) throws BadRangeException {
         if (x >= 0 && y >= 0) {
             final int scrWidth = this.getScreenWidth();
             final int scrHeight = this.getScreenHeight();
             if (x + width > scrWidth || y + height > scrWidth) {
                 throw new BadRangeException(String.format(
-                    "Coordinates overflow screen space: (%d, %d, %d, %d) on screen %dx%d",
-                    x, y, x + width, y + height, scrWidth, scrHeight)
+                        "Coordinates overflow screen space: (%d, %d, %d, %d) on screen %dx%d",
+                        x, y, x + width, y + height, scrWidth, scrHeight)
                 );
             }
         } else {
@@ -45,11 +46,11 @@ public interface Points<V, E extends Enum<E>> extends Screens<V, E> {
     default void doRangeCheck(int x, int y, patch_t patch, int dupx, int dupy) throws BadRangeException {
         doRangeCheck(x, y, patch.width * dupx, patch.height * dupy);
     }
-    
+
     default int point(int x, int y) {
         return y * getScreenWidth() + x;
     }
-    
+
     default int point(int x, int y, int width) {
         return y * width + x;
     }

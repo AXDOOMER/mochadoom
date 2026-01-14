@@ -27,12 +27,12 @@ import java.util.Map;
  */
 public enum DoomScreen {
     FG, BG, WS, WE, SB;
-    
+
     @SuppressWarnings("unchecked")
     static <V> Map<DoomScreen, V> mapScreensToBuffers(Class<V> bufferType, int bufferLen) {
         return Arrays.stream(values())
-            .collect(() -> new EnumMap<>(DoomScreen.class),
-                (map, screen) -> map.put(screen, (V) Array.newInstance(bufferType.getComponentType(), bufferLen)),
-                EnumMap::putAll);
+                .collect(() -> new EnumMap<>(DoomScreen.class),
+                        (map, screen) -> map.put(screen, (V) Array.newInstance(bufferType.getComponentType(), bufferLen)),
+                        EnumMap::putAll);
     }
 }

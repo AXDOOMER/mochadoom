@@ -3,10 +3,8 @@ package rr;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import p.Resettable;
-
 import static m.fixed_t.FRACBITS;
+import p.Resettable;
 import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -18,6 +16,7 @@ import w.IReadableDoomObject;
  */
 public class side_t
         implements IReadableDoomObject, IPackableDoomObject, Resettable {
+
     /** (fixed_t) add this to the calculated texture column */
     public int textureoffset;
 

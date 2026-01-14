@@ -10,9 +10,7 @@ import v.scale.VideoScale;
  * @param <T>
  * @param <V>
  */
-
-
-public final class SimpleThings<T,V> extends AbstractThings<T,V> {
+public final class SimpleThings<T, V> extends AbstractThings<T, V> {
 
     public SimpleThings(VideoScale vs, SceneRenderer<T, V> R) {
         super(vs, R);

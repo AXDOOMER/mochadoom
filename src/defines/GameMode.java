@@ -1,6 +1,17 @@
 package defines;
 
-import static defines.DoomVersion.*;
+import static defines.DoomVersion.DOOM1_WAD;
+import static defines.DoomVersion.DOOM2F_WAD;
+import static defines.DoomVersion.DOOM2_WAD;
+import static defines.DoomVersion.DOOMU_WAD;
+import static defines.DoomVersion.DOOM_WAD;
+import static defines.DoomVersion.FREEDM_WAD;
+import static defines.DoomVersion.FREEDOOM1_WAD;
+import static defines.DoomVersion.FREEDOOM2_WAD;
+import static defines.DoomVersion.PLUTONIA_WAD;
+import static defines.DoomVersion.TNT_WAD;
+import static defines.DoomVersion.UDOOM_WAD;
+import static defines.DoomVersion.XBLA_WAD;
 import doom.CommandVariable;
 
 /**
@@ -19,13 +30,13 @@ public enum GameMode {
     freedoom1("data_se", FREEDOOM1_WAD, CommandVariable.FR1DEV), // Freedoom phase 1 
     freedoom2("cdata", FREEDOOM2_WAD, CommandVariable.FR2DEV), // Freedoom phase 2
     indetermined("data_se", null, null);  // Well, no IWAD found.  
-    
+
     public final String devDir;
     public final DoomVersion version;
     public final CommandVariable devVar;
-    
+
     public static GameMode forVersion(DoomVersion v) {
-        switch(v) {
+        switch (v) {
             case DOOM1_WAD:
                 return shareware;
             case DOOM2F_WAD:
@@ -57,7 +68,7 @@ public enum GameMode {
         this.version = version;
         this.devVar = devVar;
     }
-    
+
     public boolean hasTexture2() {
         return !(this == GameMode.shareware || this == GameMode.freedoom2 || this == GameMode.commercial);
     }

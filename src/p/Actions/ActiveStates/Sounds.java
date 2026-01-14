@@ -25,8 +25,11 @@ import p.mobj_t;
 import p.pspdef_t;
 
 public interface Sounds extends ActionTrait {
+
     void A_Chase(mobj_t mo);
+
     void A_ReFire(player_t player, pspdef_t psp);
+
     void A_SpawnFly(mobj_t mo);
 
     default void A_Scream(mobj_t actor) {
@@ -54,13 +57,14 @@ public interface Sounds extends ActionTrait {
 
         // Check for bosses.
         if (actor.type == mobjtype_t.MT_SPIDER
-            || actor.type == mobjtype_t.MT_CYBORG) {
+                || actor.type == mobjtype_t.MT_CYBORG) {
             // full volume
             StartSound(null, sound);
         } else {
             StartSound(actor, sound);
         }
     }
+
     default void A_Hoof(mobj_t mo) {
         StartSound(mo, sounds.sfxenum_t.sfx_hoof);
         A_Chase(mo);
@@ -89,7 +93,7 @@ public interface Sounds extends ActionTrait {
     default void A_BrainPain(mobj_t mo) {
         StartSound(null, sounds.sfxenum_t.sfx_bospn);
     }
-    
+
     default void A_Metal(mobj_t mo) {
         StartSound(mo, sounds.sfxenum_t.sfx_metal);
         A_Chase(mo);
@@ -99,13 +103,13 @@ public interface Sounds extends ActionTrait {
         StartSound(mo, sounds.sfxenum_t.sfx_bspwlk);
         A_Chase(mo);
     }
-    
+
     // travelling cube sound
     default void A_SpawnSound(mobj_t mo) {
         StartSound(mo, sounds.sfxenum_t.sfx_boscub);
         A_SpawnFly(mo);
     }
-    
+
     default void A_PlayerScream(mobj_t actor) {
         // Default death sound.
         sounds.sfxenum_t sound = sounds.sfxenum_t.sfx_pldeth;

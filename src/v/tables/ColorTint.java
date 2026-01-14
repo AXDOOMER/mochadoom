@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package v.tables;
 
 import java.util.Arrays;
@@ -32,52 +31,50 @@ import java.util.List;
  *  - Good Sign
  */
 public class ColorTint {
-    public final static ColorTint
-        NORMAL = new ColorTint(0, 0, 0, .0f),
-        RED_11 = new ColorTint(255, 2, 3, 0.11f),
-        RED_22 = new ColorTint(255, 0, 0, 0.22f),
-        RED_33 = new ColorTint(255, 0, 0, 0.33f),
-        RED_44 = new ColorTint(255, 0, 0, 0.44f),
-        RED_55 = new ColorTint(255, 0, 0, 0.55f),
-        RED_66 = new ColorTint(255, 0, 0, 0.66f),
-        RED_77 = new ColorTint(255, 0, 0, 0.77f),
-        RED_88 = new ColorTint(255, 0, 0, 0.88f),
-        BERSERK_SLIGHT = new ColorTint(215, 185, 68, 0.12f),
-        BERSERK_SOMEWHAT = new ColorTint(215, 185, 68, 0.25f),
-        BERSERK_NOTICABLE = new ColorTint(215, 185, 68, 0.375f),
-        BERSERK_HEAVY = new ColorTint(215, 185, 68, 0.50f),
-        RADSUIT = new ColorTint(3, 253, 3, 0.125f),
 
-        GREY_NORMAL = new ColorTint(NORMAL.mid(), NORMAL.mid5(), NORMAL.purepart),
-        GREY_RED_11 = new ColorTint(RED_11.mid(), RED_11.mid5(), RED_11.purepart),
-        GREY_RED_22 = new ColorTint(RED_22.mid(), RED_22.mid5(), RED_22.purepart),
-        GREY_RED_33 = new ColorTint(RED_33.mid(), RED_33.mid5(), RED_33.purepart),
-        GREY_RED_44 = new ColorTint(RED_44.mid(), RED_44.mid5(), RED_44.purepart),
-        GREY_RED_55 = new ColorTint(RED_55.mid(), RED_55.mid5(), RED_55.purepart),
-        GREY_RED_66 = new ColorTint(RED_66.mid(), RED_66.mid5(), RED_66.purepart),
-        GREY_RED_77 = new ColorTint(RED_77.mid(), RED_77.mid5(), RED_77.purepart),
-        GREY_RED_88 = new ColorTint(RED_88.mid(), RED_88.mid5(), RED_88.purepart),
-        GREY_BERSERK_SLIGHT = new ColorTint(BERSERK_SLIGHT.mid(), BERSERK_SLIGHT.mid5(), BERSERK_SLIGHT.purepart),
-        GREY_BERSERK_SOMEWHAT = new ColorTint(BERSERK_SOMEWHAT.mid(), BERSERK_SOMEWHAT.mid5(), BERSERK_SOMEWHAT.purepart),
-        GREY_BERSERK_NOTICABLE = new ColorTint(BERSERK_NOTICABLE.mid(), BERSERK_NOTICABLE.mid5(), BERSERK_NOTICABLE.purepart),
-        GREY_BERSERK_HEAVY = new ColorTint(BERSERK_HEAVY.mid(), BERSERK_HEAVY.mid5(), BERSERK_HEAVY.purepart),
-        GREY_RADSUIT = new ColorTint(RADSUIT.mid(), RADSUIT.mid5(), RADSUIT.purepart);
-    
+    public final static ColorTint NORMAL = new ColorTint(0, 0, 0, .0f),
+            RED_11 = new ColorTint(255, 2, 3, 0.11f),
+            RED_22 = new ColorTint(255, 0, 0, 0.22f),
+            RED_33 = new ColorTint(255, 0, 0, 0.33f),
+            RED_44 = new ColorTint(255, 0, 0, 0.44f),
+            RED_55 = new ColorTint(255, 0, 0, 0.55f),
+            RED_66 = new ColorTint(255, 0, 0, 0.66f),
+            RED_77 = new ColorTint(255, 0, 0, 0.77f),
+            RED_88 = new ColorTint(255, 0, 0, 0.88f),
+            BERSERK_SLIGHT = new ColorTint(215, 185, 68, 0.12f),
+            BERSERK_SOMEWHAT = new ColorTint(215, 185, 68, 0.25f),
+            BERSERK_NOTICABLE = new ColorTint(215, 185, 68, 0.375f),
+            BERSERK_HEAVY = new ColorTint(215, 185, 68, 0.50f),
+            RADSUIT = new ColorTint(3, 253, 3, 0.125f),
+            GREY_NORMAL = new ColorTint(NORMAL.mid(), NORMAL.mid5(), NORMAL.purepart),
+            GREY_RED_11 = new ColorTint(RED_11.mid(), RED_11.mid5(), RED_11.purepart),
+            GREY_RED_22 = new ColorTint(RED_22.mid(), RED_22.mid5(), RED_22.purepart),
+            GREY_RED_33 = new ColorTint(RED_33.mid(), RED_33.mid5(), RED_33.purepart),
+            GREY_RED_44 = new ColorTint(RED_44.mid(), RED_44.mid5(), RED_44.purepart),
+            GREY_RED_55 = new ColorTint(RED_55.mid(), RED_55.mid5(), RED_55.purepart),
+            GREY_RED_66 = new ColorTint(RED_66.mid(), RED_66.mid5(), RED_66.purepart),
+            GREY_RED_77 = new ColorTint(RED_77.mid(), RED_77.mid5(), RED_77.purepart),
+            GREY_RED_88 = new ColorTint(RED_88.mid(), RED_88.mid5(), RED_88.purepart),
+            GREY_BERSERK_SLIGHT = new ColorTint(BERSERK_SLIGHT.mid(), BERSERK_SLIGHT.mid5(), BERSERK_SLIGHT.purepart),
+            GREY_BERSERK_SOMEWHAT = new ColorTint(BERSERK_SOMEWHAT.mid(), BERSERK_SOMEWHAT.mid5(), BERSERK_SOMEWHAT.purepart),
+            GREY_BERSERK_NOTICABLE = new ColorTint(BERSERK_NOTICABLE.mid(), BERSERK_NOTICABLE.mid5(), BERSERK_NOTICABLE.purepart),
+            GREY_BERSERK_HEAVY = new ColorTint(BERSERK_HEAVY.mid(), BERSERK_HEAVY.mid5(), BERSERK_HEAVY.purepart),
+            GREY_RADSUIT = new ColorTint(RADSUIT.mid(), RADSUIT.mid5(), RADSUIT.purepart);
+
     public static final List<ColorTint> NORMAL_TINTS = Collections.unmodifiableList(Arrays.asList(
-        NORMAL,
-        RED_11, RED_22, RED_33, RED_44, RED_55, RED_66, RED_77, RED_88,
-        BERSERK_SLIGHT, BERSERK_SOMEWHAT, BERSERK_NOTICABLE, BERSERK_HEAVY, RADSUIT
+            NORMAL,
+            RED_11, RED_22, RED_33, RED_44, RED_55, RED_66, RED_77, RED_88,
+            BERSERK_SLIGHT, BERSERK_SOMEWHAT, BERSERK_NOTICABLE, BERSERK_HEAVY, RADSUIT
     ));
-    
+
     public static final List<ColorTint> GREY_TINTS = Collections.unmodifiableList(Arrays.asList(
-        GREY_NORMAL,
-        GREY_RED_11, GREY_RED_22, GREY_RED_33, GREY_RED_44, GREY_RED_55, GREY_RED_66, GREY_RED_77, GREY_RED_88,
-        GREY_BERSERK_SLIGHT, GREY_BERSERK_SOMEWHAT, GREY_BERSERK_NOTICABLE, GREY_BERSERK_HEAVY, GREY_RADSUIT
+            GREY_NORMAL,
+            GREY_RED_11, GREY_RED_22, GREY_RED_33, GREY_RED_44, GREY_RED_55, GREY_RED_66, GREY_RED_77, GREY_RED_88,
+            GREY_BERSERK_SLIGHT, GREY_BERSERK_SOMEWHAT, GREY_BERSERK_NOTICABLE, GREY_BERSERK_HEAVY, GREY_RADSUIT
     ));
-    
+
     /*public static List<ColorTint> generateTints(byte cmaps[][]) {
     }*/
-    
     ColorTint(int r, int g, int b, float tint) {
         this(r * tint, (r >> 3) * tint, g * tint, (g >> 3) * tint, b * tint, (b >> 3) * tint, 1 - tint);
     }
@@ -85,7 +82,7 @@ public class ColorTint {
     ColorTint(float mid8, float mid5, float purepart) {
         this(mid8, mid5, mid8, mid5, mid8, mid5, purepart);
     }
-    
+
     ColorTint(float r, float r5, float g, float g5, float b, float b5, float purepart) {
         this.r = r;
         this.r5 = r5;
@@ -117,7 +114,7 @@ public class ColorTint {
     public final byte[][] LUT_r5 = new byte[5][0x20];
     public final byte[][] LUT_g5 = new byte[5][0x20];
     public final byte[][] LUT_b5 = new byte[5][0x20];
-    
+
     public float mid() {
         return (r + g + b) / 3;
     }

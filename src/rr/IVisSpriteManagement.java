@@ -8,16 +8,13 @@ package rr;
  *
  * @param <V>
  */
-
-
 public interface IVisSpriteManagement<V> extends ILimitResettable {
-    
+
     void AddSprites(sector_t sec);
-    
+
     /** Cache the sprite manager, if possible */
-    
     void cacheSpriteManager(ISpriteManager SM);
-    
+
     void SortVisSprites();
 
     int getNumVisSprites();
@@ -25,5 +22,5 @@ public interface IVisSpriteManagement<V> extends ILimitResettable {
     vissprite_t<V>[] getVisSprites();
 
     void ClearSprites();
-    
+
 }

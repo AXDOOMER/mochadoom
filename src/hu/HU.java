@@ -20,16 +20,31 @@ package hu;
 // DESCRIPTION: Heads-up displays
 //
 // -----------------------------------------------------------------------------
-
-import static data.Defines.*;
-import static data.Limits.*;
+import static data.Defines.HU_BROADCAST;
+import static data.Defines.HU_FONTSIZE;
+import static data.Defines.HU_FONTSTART;
+import static data.Defines.HU_MAXLINELENGTH;
+import static data.Defines.HU_MAXLINES;
+import static data.Defines.HU_MSGHEIGHT;
+import static data.Defines.HU_MSGREFRESH;
+import static data.Defines.HU_MSGTIMEOUT;
+import static data.Defines.HU_MSGX;
+import static data.Defines.HU_MSGY;
+import static data.Defines.PU_STATIC;
+import static data.Limits.MAXPLAYERS;
 import data.sounds.sfxenum_t;
-import defines.*;
+import defines.GameMode;
+import defines.Language_t;
 import doom.DoomMain;
 import doom.SourceCode;
 import doom.SourceCode.CauseOfDesyncProbability;
 import doom.SourceCode.HU_Lib;
-import static doom.SourceCode.HU_Lib.*;
+import static doom.SourceCode.HU_Lib.HUlib_addCharToTextLine;
+import static doom.SourceCode.HU_Lib.HUlib_clearTextLine;
+import static doom.SourceCode.HU_Lib.HUlib_delCharFromIText;
+import static doom.SourceCode.HU_Lib.HUlib_delCharFromTextLine;
+import static doom.SourceCode.HU_Lib.HUlib_keyInIText;
+import static doom.SourceCode.HU_Lib.HUlib_resetIText;
 import doom.SourceCode.HU_Stuff;
 import static doom.SourceCode.HU_Stuff.HU_Responder;
 import static doom.SourceCode.HU_Stuff.HU_queueChatChar;
@@ -43,17 +58,17 @@ import java.util.Arrays;
 import rr.ViewVars;
 import rr.patch_t;
 import utils.C2JUtils;
-import static v.renderers.DoomScreen.*;
-        
+import static v.renderers.DoomScreen.BG;
+import static v.renderers.DoomScreen.FG;
 
-public class HU implements IHeadsUp{
+public class HU implements IHeadsUp {
+
     // MAES: Status and wad data.
     final DoomMain<?, ?> DOOM;
 
     //
     // Locally used constants, shortcuts.
     // MAES: Some depend on STATE, so moved into constructor.
-
     String HU_TITLE, HU_TITLE2, HU_TITLEP, HU_TITLET;
 
     protected final static int HU_TITLEHEIGHT = 1;
@@ -69,25 +84,24 @@ public class HU implements IHeadsUp{
     protected int HU_INPUTY;// = (HU_MSGY +
 
     // HU_MSGHEIGHT*(Swap.SHORT(hu_font[0].height) +1));
-
     protected final static int HU_INPUTWIDTH = 64;
 
     protected final static int HU_INPUTHEIGHT = 1;
 
-    public String[] chat_macros =
-        { HUSTR_CHATMACRO0, HUSTR_CHATMACRO1, HUSTR_CHATMACRO2,
+    public String[] chat_macros
+            = {HUSTR_CHATMACRO0, HUSTR_CHATMACRO1, HUSTR_CHATMACRO2,
                 HUSTR_CHATMACRO3, HUSTR_CHATMACRO4, HUSTR_CHATMACRO5,
                 HUSTR_CHATMACRO6, HUSTR_CHATMACRO7, HUSTR_CHATMACRO8,
-                HUSTR_CHATMACRO9 };
-    
+                HUSTR_CHATMACRO9};
+
     @Override
-    public void setChatMacro(int i, String s){
-        this.chat_macros[i]=s;
+    public void setChatMacro(int i, String s) {
+        this.chat_macros[i] = s;
     }
 
     /** Needs to be seen by DoomGame */
-    public final static String[] player_names =
-        { HUSTR_PLRGREEN, HUSTR_PLRINDIGO, HUSTR_PLRBROWN, HUSTR_PLRRED };
+    public final static String[] player_names
+            = {HUSTR_PLRGREEN, HUSTR_PLRINDIGO, HUSTR_PLRBROWN, HUSTR_PLRRED};
 
     char chat_char; // remove later.
 
@@ -100,14 +114,13 @@ public class HU implements IHeadsUp{
     char[] chat_dest = new char[MAXPLAYERS];
 
     // MAES: these used to be defined in hu_lib. We're going 100% OO here...
-
     hu_itext_t[] w_inputbuffer;
 
-    hu_textline_t w_title ;
+    hu_textline_t w_title;
 
     hu_itext_t w_chat;
 
-    boolean[] always_off = { false };
+    boolean[] always_off = {false};
 
     // Needs to be referenced by one of the widgets.
     public boolean[] chat_on = new boolean[1];
@@ -127,70 +140,61 @@ public class HU implements IHeadsUp{
     // need to share Menu context.
     // int showMessages;
     // MAES: I think this is supposed to be visible by the various hu_ crap...
-   // boolean automapactive;
-
+    // boolean automapactive;
     boolean headsupactive = false;
 
     //
     // Builtin map names.
     // The actual names can be found in DStrings.h.
     //
-
-    protected String[] mapnames = // DOOM shareware/registered/retail (Ultimate)
-        // names.
-        {
-
-        HUSTR_E1M1, HUSTR_E1M2, HUSTR_E1M3, HUSTR_E1M4, HUSTR_E1M5, HUSTR_E1M6,
+    protected String[] mapnames
+            = // DOOM shareware/registered/retail (Ultimate)
+            // names.
+            {
+                HUSTR_E1M1, HUSTR_E1M2, HUSTR_E1M3, HUSTR_E1M4, HUSTR_E1M5, HUSTR_E1M6,
                 HUSTR_E1M7, HUSTR_E1M8, HUSTR_E1M9,
-
                 HUSTR_E2M1, HUSTR_E2M2, HUSTR_E2M3, HUSTR_E2M4, HUSTR_E2M5,
                 HUSTR_E2M6, HUSTR_E2M7, HUSTR_E2M8, HUSTR_E2M9,
-
                 HUSTR_E3M1, HUSTR_E3M2, HUSTR_E3M3, HUSTR_E3M4, HUSTR_E3M5,
                 HUSTR_E3M6, HUSTR_E3M7, HUSTR_E3M8, HUSTR_E3M9,
-
                 HUSTR_E4M1, HUSTR_E4M2, HUSTR_E4M3, HUSTR_E4M4, HUSTR_E4M5,
                 HUSTR_E4M6, HUSTR_E4M7, HUSTR_E4M8, HUSTR_E4M9,
-
                 "NEWLEVEL", "NEWLEVEL", "NEWLEVEL", "NEWLEVEL", "NEWLEVEL",
-                "NEWLEVEL", "NEWLEVEL", "NEWLEVEL", "NEWLEVEL" };
+                "NEWLEVEL", "NEWLEVEL", "NEWLEVEL", "NEWLEVEL"};
 
-    protected String[] mapnames2 = // DOOM 2 map names.
-        { HUSTR_1, HUSTR_2, HUSTR_3, HUSTR_4, HUSTR_5, HUSTR_6, HUSTR_7,
+    protected String[] mapnames2
+            = // DOOM 2 map names.
+            {HUSTR_1, HUSTR_2, HUSTR_3, HUSTR_4, HUSTR_5, HUSTR_6, HUSTR_7,
                 HUSTR_8, HUSTR_9, HUSTR_10, HUSTR_11,
-
                 HUSTR_12, HUSTR_13, HUSTR_14, HUSTR_15, HUSTR_16, HUSTR_17,
                 HUSTR_18, HUSTR_19, HUSTR_20,
-
                 HUSTR_21, HUSTR_22, HUSTR_23, HUSTR_24, HUSTR_25, HUSTR_26,
-                HUSTR_27, HUSTR_28, HUSTR_29, HUSTR_30, HUSTR_31, HUSTR_32,HUSTR_33 };
+                HUSTR_27, HUSTR_28, HUSTR_29, HUSTR_30, HUSTR_31, HUSTR_32, HUSTR_33};
 
-    protected String[] mapnamesp = // Plutonia WAD map names.
-        { PHUSTR_1, PHUSTR_2, PHUSTR_3, PHUSTR_4, PHUSTR_5, PHUSTR_6, PHUSTR_7,
+    protected String[] mapnamesp
+            = // Plutonia WAD map names.
+            {PHUSTR_1, PHUSTR_2, PHUSTR_3, PHUSTR_4, PHUSTR_5, PHUSTR_6, PHUSTR_7,
                 PHUSTR_8, PHUSTR_9, PHUSTR_10, PHUSTR_11,
-
                 PHUSTR_12, PHUSTR_13, PHUSTR_14, PHUSTR_15, PHUSTR_16,
                 PHUSTR_17, PHUSTR_18, PHUSTR_19, PHUSTR_20,
-
                 PHUSTR_21, PHUSTR_22, PHUSTR_23, PHUSTR_24, PHUSTR_25,
                 PHUSTR_26, PHUSTR_27, PHUSTR_28, PHUSTR_29, PHUSTR_30,
-                PHUSTR_31, PHUSTR_32 };
+                PHUSTR_31, PHUSTR_32};
 
-    protected String[] mapnamest = // TNT WAD map names.
-        { THUSTR_1, THUSTR_2, THUSTR_3, THUSTR_4, THUSTR_5, THUSTR_6, THUSTR_7,
+    protected String[] mapnamest
+            = // TNT WAD map names.
+            {THUSTR_1, THUSTR_2, THUSTR_3, THUSTR_4, THUSTR_5, THUSTR_6, THUSTR_7,
                 THUSTR_8, THUSTR_9, THUSTR_10, THUSTR_11,
-
                 THUSTR_12, THUSTR_13, THUSTR_14, THUSTR_15, THUSTR_16,
                 THUSTR_17, THUSTR_18, THUSTR_19, THUSTR_20,
-
                 THUSTR_21, THUSTR_22, THUSTR_23, THUSTR_24, THUSTR_25,
                 THUSTR_26, THUSTR_27, THUSTR_28, THUSTR_29, THUSTR_30,
-                THUSTR_31, THUSTR_32 };
+                THUSTR_31, THUSTR_32};
 
     char[] shiftxform;
 
-    public static final char[] french_shiftxform =
-        {
+    public static final char[] french_shiftxform
+            = {
                 0,
                 1,
                 2,
@@ -269,10 +273,10 @@ public class HU implements IHeadsUp{
                 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
                 'Y', 'Z', '{', '|', '}', '~', 127
 
-        };
+            };
 
-    public static final char[] english_shiftxform =
-        {
+    public static final char[] english_shiftxform
+            = {
                 0,
                 1,
                 2,
@@ -349,11 +353,11 @@ public class HU implements IHeadsUp{
                 '\'', // shift-`
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
                 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-                'Y', 'Z', '{', '|', '}', '~', 127 };
+                'Y', 'Z', '{', '|', '}', '~', 127};
 
     // Maes: char?
-    char[] frenchKeyMap =
-        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    char[] frenchKeyMap
+            = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
                 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, ' ', '!', '"',
                 '#', '$', '%', '&', '%', '(', ')', '*', '+', ';', '-', ':',
                 '!', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':',
@@ -362,7 +366,7 @@ public class HU implements IHeadsUp{
                 'S', 'T', 'U', 'V', 'Z', 'X', 'Y', 'W', '^', '\\', '$', '^',
                 '_', '@', 'Q', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
                 'K', 'L', ',', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V',
-                'Z', 'X', 'Y', 'W', '^', '\\', '$', '^', 127 };
+                'Z', 'X', 'Y', 'W', '^', '\\', '$', '^', 127};
 
     protected final char ForeignTranslation(char ch) {
         return ch < 128 ? frenchKeyMap[ch] : ch;
@@ -386,7 +390,6 @@ public class HU implements IHeadsUp{
      * 
      * @throws Exception
      */
-
     @Override
     public void Init() {
         if (DOOM.language == Language_t.french) {
@@ -415,7 +418,7 @@ public class HU implements IHeadsUp{
         HU_INPUTY = (HU_MSGY + HU_MSGHEIGHT * hu_font[0].height + 1);
 
     }
-    
+
     @Override
     public void Stop() {
         headsupactive = false;
@@ -427,19 +430,18 @@ public class HU implements IHeadsUp{
 
         int i;
         String s;
-        
+
         // MAES: fugly hax. These were compile-time inlines,
         // so they can either work as functions, or be set whenever the HU is started
         // (typically once per level). They need to be aware of game progress,
         // and episode numbers <1 will cause it to bomb.
         // MAES: hack to handle Betray in XBLA 31/5/2011
-        if ((DOOM.gamemap>32) && (DOOM.getGameMode()==GameMode.pack_xbla)){
-        this.HU_TITLE = mapnames[(DOOM.gameepisode - 1) * 9 + DOOM.gamemap - 2];
+        if ((DOOM.gamemap > 32) && (DOOM.getGameMode() == GameMode.pack_xbla)) {
+            this.HU_TITLE = mapnames[(DOOM.gameepisode - 1) * 9 + DOOM.gamemap - 2];
 
-
-        this.HU_TITLE2 = mapnames2[DOOM.gamemap - 1];
-        this.HU_TITLEP = mapnamesp[DOOM.gamemap - 2]; // fixed from HU_TITLEPw
-        this.HU_TITLET = mapnamest[DOOM.gamemap - 2];
+            this.HU_TITLE2 = mapnames2[DOOM.gamemap - 1];
+            this.HU_TITLEP = mapnamesp[DOOM.gamemap - 2]; // fixed from HU_TITLEPw
+            this.HU_TITLET = mapnamest[DOOM.gamemap - 2];
         } else {
             this.HU_TITLE = mapnames[(DOOM.gameepisode - 1) * 9 + DOOM.gamemap - 1];
             this.HU_TITLE2 = mapnames2[DOOM.gamemap - 1];
@@ -447,8 +449,9 @@ public class HU implements IHeadsUp{
             this.HU_TITLET = mapnamest[DOOM.gamemap - 1];
         }
 
-        if (headsupactive)
+        if (headsupactive) {
             this.Stop();
+        }
 
         plr = DOOM.players[DOOM.consoleplayer];
         message_on[0] = false;
@@ -458,7 +461,7 @@ public class HU implements IHeadsUp{
 
         // create the message widget
         this.w_message.initSText(HU_MSGX, HU_MSGY, HU_MSGHEIGHT, hu_font,
-            HU_FONTSTART, this.message_on);
+                HU_FONTSTART, this.message_on);
 
         // create the map title widget
         this.w_title.initTextLine(HU_TITLEX, HU_TITLEY, hu_font, HU_FONTSTART);
@@ -488,15 +491,14 @@ public class HU implements IHeadsUp{
 
         // MAES: oh great, more pointer-char magic... oh no you don't, you ugly
         // cow horse and reindeer lover.
-
         // while (*s) this.w_title.addCharToTextLine(*(s++));
-        int ptr=0;
-        while(ptr<s.length()){
-        this.w_title.addCharToTextLine(s.charAt(ptr++));
+        int ptr = 0;
+        while (ptr < s.length()) {
+            this.w_title.addCharToTextLine(s.charAt(ptr++));
         }
         // create the chat widget
         this.w_chat.initIText(HU_INPUTX, HU_INPUTY, hu_font, HU_FONTSTART,
-            chat_on);
+                chat_on);
 
         // create the inputbuffer widgets
         for (i = 0; i < MAXPLAYERS; i++) {
@@ -511,8 +513,9 @@ public class HU implements IHeadsUp{
     public void Drawer() {
         this.w_message.drawSText();
         this.w_chat.drawIText();
-        if (DOOM.automapactive)
+        if (DOOM.automapactive) {
             this.w_title.drawTextLine(false);
+        }
     }
 
     @Override
@@ -553,15 +556,17 @@ public class HU implements IHeadsUp{
         // check for incoming chat characters
         if (DOOM.netgame) {
             for (i = 0; i < MAXPLAYERS; i++) {
-                if (!DOOM.playeringame[i])
+                if (!DOOM.playeringame[i]) {
                     continue;
+                }
                 if ((i != DOOM.consoleplayer)
                         && ((c = DOOM.players[i].cmd.chatchar) != 0)) {
-                    if (c <= HU_BROADCAST)
+                    if (c <= HU_BROADCAST) {
                         chat_dest[i] = c;
-                    else {
-                        if (c >= 'a' && c <= 'z')
+                    } else {
+                        if (c >= 'a' && c <= 'z') {
                             c = (char) shiftxform[c];
+                        }
                         rc = w_inputbuffer[i].keyInIText(c);
                         if (rc && c == ScanCode.SC_ENTER.c) {
                             if ((w_inputbuffer[i].l.len != 0)
@@ -572,12 +577,12 @@ public class HU implements IHeadsUp{
                                 message_nottobefuckedwith = true;
                                 message_on[0] = true;
                                 message_counter = HU_MSGTIMEOUT;
-                                if (DOOM.isCommercial())
+                                if (DOOM.isCommercial()) {
                                     DOOM.doomSound.StartSound(null, sfxenum_t.sfx_radio);
-                                    
-                                else
+                                } else {
                                     DOOM.doomSound.StartSound(null, sfxenum_t.sfx_tink);
-                                    
+                                }
+
                             }
                             w_inputbuffer[i].resetIText();
                         }
@@ -631,7 +636,7 @@ public class HU implements IHeadsUp{
 
     protected boolean altdown = false;
 
-    protected char[] destination_keys = { HUSTR_KEYGREEN, HUSTR_KEYINDIGO, HUSTR_KEYBROWN, HUSTR_KEYRED };
+    protected char[] destination_keys = {HUSTR_KEYGREEN, HUSTR_KEYINDIGO, HUSTR_KEYBROWN, HUSTR_KEYRED};
 
     protected int num_nobrainers = 0;
 
@@ -640,7 +645,7 @@ public class HU implements IHeadsUp{
     @HU_Stuff.C(HU_Responder)
     public boolean Responder(event_t ev) {
 
-    	//System.out.println("Player "+DM.players[0].mo.x);
+        //System.out.println("Player "+DM.players[0].mo.x);
         int numplayers = 0;
         // MAES: Adding BOOLEANS to ints, are we ?!
         for (int i = 0; i < MAXPLAYERS; i++) {
@@ -655,8 +660,9 @@ public class HU implements IHeadsUp{
             return false;
         }
 
-        if (!ev.isType(evtype_t.ev_keydown))
+        if (!ev.isType(evtype_t.ev_keydown)) {
             return false;
+        }
 
         final boolean eatkey;
         if (!chat_on[0]) {
@@ -666,10 +672,12 @@ public class HU implements IHeadsUp{
                 eatkey = true;
             } else if (DOOM.netgame && ev.isKey(HU_INPUTTOGGLE)) {
                 eatkey = chat_on[0] = true;
-                HUlib_resetIText: {
+                HUlib_resetIText:
+                {
                     w_chat.resetIText();
                 }
-                HU_queueChatChar: {
+                HU_queueChatChar:
+                {
                     this.queueChatChar(HU_BROADCAST);
                 }
             } else if (DOOM.netgame && numplayers > 2) {
@@ -679,111 +687,121 @@ public class HU implements IHeadsUp{
                         if (sc.c == destination_keys[i]) {
                             if (DOOM.playeringame[i] && i != DOOM.consoleplayer) {
                                 r = chat_on[0] = true;
-                                HUlib_resetIText: {
+                                HUlib_resetIText:
+                                {
                                     w_chat.resetIText();
                                 }
-                                HU_queueChatChar: {
+                                HU_queueChatChar:
+                                {
                                     this.queueChatChar((char) (i + 1));
                                 }
                                 break;
                             } else if (i == DOOM.consoleplayer) {
                                 num_nobrainers++;
-                                if (num_nobrainers < 3)
+                                if (num_nobrainers < 3) {
                                     plr.message = HUSTR_TALKTOSELF1;
-                                else if (num_nobrainers < 6)
+                                } else if (num_nobrainers < 6) {
                                     plr.message = HUSTR_TALKTOSELF2;
-                                else if (num_nobrainers < 9)
+                                } else if (num_nobrainers < 9) {
                                     plr.message = HUSTR_TALKTOSELF3;
-                                else if (num_nobrainers < 32)
+                                } else if (num_nobrainers < 32) {
                                     plr.message = HUSTR_TALKTOSELF4;
-                                else
+                                } else {
                                     plr.message = HUSTR_TALKTOSELF5;
+                                }
                             }
                         }
                     }
                     return r;
                 });
-            } else eatkey = false;
-        } else eatkey = ev.ifKey(sc -> {
-            final boolean ret;
-            char c = sc.c;
-            // send a macro
-            if (altdown) {
-                c = (char) (c - '0');
-                if (c > 9)
-                    return false;
-                
-                // fprintf(stderr, "got here\n");
-                char[] macromessage = chat_macros[c].toCharArray();
-
-                // kill last message with a '\n'
-                HU_queueChatChar: {
-                    this.queueChatChar(ScanCode.SC_ENTER.c);
-                } // DEBUG!!!
-
-                // send the macro message
-                int index = 0;
-                while (macromessage[index] != 0) {
-                    HU_queueChatChar: {
-                        this.queueChatChar(macromessage[index]);
-                    }
-                }
-                HU_queueChatChar: {
-                    this.queueChatChar(ScanCode.SC_ENTER.c);
-                }
-
-                // leave chat mode and notify that it was sent
-                chat_on[0] = false;
-                lastmessage.setLength(0);
-                lastmessage.append(chat_macros[c]);
-                plr.message = lastmessage.toString();
-                ret = true;
             } else {
-                if (DOOM.language == Language_t.french) {
-                    c = ForeignTranslation(c);
-                }
-                if (shiftdown || (c >= 'a' && c <= 'z')) {
-                    c = shiftxform[c];
-                }
-                HUlib_keyInIText: {
-                    ret = w_chat.keyInIText(c);
-                }
-                if (ret) {
-                    // static unsigned char buf[20]; // DEBUG
-                    HU_queueChatChar: {
-                        this.queueChatChar(c);
+                eatkey = false;
+            }
+        } else {
+            eatkey = ev.ifKey(sc -> {
+                final boolean ret;
+                char c = sc.c;
+                // send a macro
+                if (altdown) {
+                    c = (char) (c - '0');
+                    if (c > 9) {
+                        return false;
                     }
 
-                    // sprintf(buf, "KEY: %d => %d", ev->data1, c);
-                    // plr->message = buf;
-                }
-                if (c == ScanCode.SC_ENTER.c) {
-                    chat_on[0] = false;
-                    if ((w_chat.l.len != 0)) {
-                        lastmessage.setLength(0);
-                        lastmessage.append( w_chat.l.text);
-                        plr.message = new String(lastmessage);
+                    // fprintf(stderr, "got here\n");
+                    char[] macromessage = chat_macros[c].toCharArray();
+
+                    // kill last message with a '\n'
+                    HU_queueChatChar:
+                    {
+                        this.queueChatChar(ScanCode.SC_ENTER.c);
+                    } // DEBUG!!!
+
+                    // send the macro message
+                    int index = 0;
+                    while (macromessage[index] != 0) {
+                        HU_queueChatChar:
+                        {
+                            this.queueChatChar(macromessage[index]);
+                        }
                     }
-                } else if (c == ScanCode.SC_ESCAPE.c) {
+                    HU_queueChatChar:
+                    {
+                        this.queueChatChar(ScanCode.SC_ENTER.c);
+                    }
+
+                    // leave chat mode and notify that it was sent
                     chat_on[0] = false;
+                    lastmessage.setLength(0);
+                    lastmessage.append(chat_macros[c]);
+                    plr.message = lastmessage.toString();
+                    ret = true;
+                } else {
+                    if (DOOM.language == Language_t.french) {
+                        c = ForeignTranslation(c);
+                    }
+                    if (shiftdown || (c >= 'a' && c <= 'z')) {
+                        c = shiftxform[c];
+                    }
+                    HUlib_keyInIText:
+                    {
+                        ret = w_chat.keyInIText(c);
+                    }
+                    if (ret) {
+                        // static unsigned char buf[20]; // DEBUG
+                        HU_queueChatChar:
+                        {
+                            this.queueChatChar(c);
+                        }
+
+                        // sprintf(buf, "KEY: %d => %d", ev->data1, c);
+                        // plr->message = buf;
+                    }
+                    if (c == ScanCode.SC_ENTER.c) {
+                        chat_on[0] = false;
+                        if ((w_chat.l.len != 0)) {
+                            lastmessage.setLength(0);
+                            lastmessage.append(w_chat.l.text);
+                            plr.message = new String(lastmessage);
+                        }
+                    } else if (c == ScanCode.SC_ESCAPE.c) {
+                        chat_on[0] = false;
+                    }
                 }
-            }
-            return ret;
-        });
+                return ret;
+            });
+        }
 
         return eatkey;
     }
 
     // ///////////////////////////////// STRUCTS
     // ///////////////////////////////////
-
     /**
      *  Input Text Line widget
      *  (child of Text Line widget)
      */
-    
     class hu_itext_t {
-
 
         hu_textline_t l; // text line to input on
 
@@ -795,10 +813,10 @@ public class HU implements IHeadsUp{
 
         boolean laston; // last value of *->on;
 
-        public hu_itext_t(){
-        	
+        public hu_itext_t() {
+
         }
-        
+
         public void initIText(int x, int y, patch_t[] font, int startchar,
                 boolean[] on) {
             this.lm = 0; // default left margin is start of text
@@ -812,15 +830,17 @@ public class HU implements IHeadsUp{
         @HU_Lib.C(HUlib_delCharFromIText)
         public void delCharFromIText() {
             if (this.l.len != this.lm) {
-                HUlib_delCharFromTextLine: {
+                HUlib_delCharFromTextLine:
+                {
                     this.l.delCharFromTextLine();
                 }
             }
         }
 
         public void eraseLineFromIText() {
-            while (this.lm != this.l.len)
+            while (this.lm != this.l.len) {
                 l.delCharFromTextLine();
+            }
         }
 
         // Resets left margin as well
@@ -855,11 +875,13 @@ public class HU implements IHeadsUp{
         public boolean keyInIText(char ch) {
 
             if (ch >= ' ' && ch <= '_') {
-                HUlib_addCharToTextLine: {
+                HUlib_addCharToTextLine:
+                {
                     this.l.addCharToTextLine(ch);
                 }
             } else if (ch == ScanCode.SC_BACKSPACE.c) {
-                HUlib_delCharFromIText: {
+                HUlib_delCharFromIText:
+                {
                     this.delCharFromIText();
                 }
             } else if (ch != ScanCode.SC_ENTER.c) {
@@ -871,15 +893,17 @@ public class HU implements IHeadsUp{
 
         public void drawIText() {
 
-            if (!this.on[0])
+            if (!this.on[0]) {
                 return;
+            }
             this.l.drawTextLine(true); // draw the line w/ cursor
 
         }
 
         void eraseIText() {
-            if (this.laston && !this.on[0])
+            if (this.laston && !this.on[0]) {
                 this.l.needsupdate = 4;
+            }
             this.l.eraseTextLine();
             this.laston = this.on[0];
         }
@@ -888,8 +912,7 @@ public class HU implements IHeadsUp{
 
     /** Scrolling Text window widget
      *  (child of Text Line widget)
-     */  
-
+     */
     class hu_stext_t {
 
         hu_textline_t[] lines = new hu_textline_t[HU_MAXLINES]; // text lines to draw
@@ -903,10 +926,10 @@ public class HU implements IHeadsUp{
 
         boolean laston; // last value of *->on.
 
-        public hu_stext_t(){
-        	
+        public hu_stext_t() {
+
         }
-        
+
         public hu_stext_t(int x, int y, int h, patch_t[] font, int startchar,
                 boolean[] on) {
             this.initSText(x, y, h, font, startchar, on);
@@ -915,29 +938,32 @@ public class HU implements IHeadsUp{
         public void initSText(int x, int y, int h, patch_t[] font,
                 int startchar, boolean[] on) {
 
-        	for (int i=0;i<HU_MAXLINES;i++){
-        		this.lines[i]=new hu_textline_t();
-        	}
+            for (int i = 0; i < HU_MAXLINES; i++) {
+                this.lines[i] = new hu_textline_t();
+            }
             this.height = h;
             this.on = on;
             this.laston = true;
             this.currline = 0;
-            for (int i = 0; i < h; i++)
+            for (int i = 0; i < h; i++) {
                 this.lines[i].initTextLine(x, y - i
                         * (font[0].height + 1), font, startchar);
+            }
 
         }
 
         public void addLineToSText() {
 
             // add a clear line
-            if (++this.currline == this.height)
+            if (++this.currline == this.height) {
                 this.currline = 0;
+            }
             this.lines[this.currline].clearTextLine();
 
             // everything needs updating
-            for (int i = 0; i < this.height; i++)
+            for (int i = 0; i < this.height; i++) {
                 this.lines[i].needsupdate = 4;
+            }
 
         }
 
@@ -945,41 +971,44 @@ public class HU implements IHeadsUp{
             this.addLineToSText();
             int ptr = 0;
             if ((prefix != null) && (prefix.length > 0)) {
-                
-                while ((ptr < prefix.length) && (prefix[ptr] > 0))
+
+                while ((ptr < prefix.length) && (prefix[ptr] > 0)) {
                     this.lines[this.currline].addCharToTextLine(prefix[ptr++]);
                 }
-            
-                ptr = 0;
-                while ((ptr < msg.length) && (msg[ptr] > 0))
-                    this.lines[this.currline].addCharToTextLine(msg[ptr++]);
             }
+
+            ptr = 0;
+            while ((ptr < msg.length) && (msg[ptr] > 0)) {
+                this.lines[this.currline].addCharToTextLine(msg[ptr++]);
+            }
+        }
 
         public void addMessageToSText(String prefix, String msg) {
             this.addLineToSText();
             if ((prefix != null) && (prefix.length() > 0)) {
-                for (int i = 0; i < prefix.length(); i++)
+                for (int i = 0; i < prefix.length(); i++) {
                     this.lines[this.currline].addCharToTextLine(prefix.charAt(i));
+                }
             }
-                for (int i = 0; i < msg.length(); i++)
-                    this.lines[this.currline].addCharToTextLine(msg.charAt(i));
+            for (int i = 0; i < msg.length(); i++) {
+                this.lines[this.currline].addCharToTextLine(msg.charAt(i));
+            }
         }
 
         public void drawSText() {
             int i, idx;
             hu_textline_t l;
 
-            if (!this.on[0])
+            if (!this.on[0]) {
                 return; // if not on, don't draw
+            }
 
-            
-            
             // draw everything
-            for (i = 0; i < this.height; i++) {                
+            for (i = 0; i < this.height; i++) {
                 idx = this.currline - i;
-                if (idx < 0)
+                if (idx < 0) {
                     idx += this.height; // handle queue of lines
-
+                }
                 l = this.lines[idx];
 
                 // need a decision made here on whether to skip the draw
@@ -990,8 +1019,9 @@ public class HU implements IHeadsUp{
 
         public void eraseSText() {
             for (int i = 0; i < this.height; i++) {
-                if (laston && !on[0])
+                if (laston && !on[0]) {
                     lines[i].needsupdate = 4;
+                }
                 this.lines[i].eraseTextLine();
             }
             laston = on[0];
@@ -1018,7 +1048,6 @@ public class HU implements IHeadsUp{
         /**
          * Same here.
          */
-
         // TODO: boolean : whether the screen is always erased
         protected boolean noterased; // =viewwindowx;
 
@@ -1029,10 +1058,10 @@ public class HU implements IHeadsUp{
         public void setNoterased(boolean noterased) {
             this.noterased = noterased;
         }
-        
-        StringBuilder sb=new StringBuilder();
-        
-        public String toString(){
+
+        StringBuilder sb = new StringBuilder();
+
+        public String toString() {
             sb.setLength(0);
             sb.append(this.lines[0].text);
             sb.append(this.lines[1].text);
@@ -1045,7 +1074,6 @@ public class HU implements IHeadsUp{
 
     // Text Line widget
     // (parent of Scrolling Text and Input Text widgets)
-
     class hu_textline_t {
 
         // left-justified position of scrolling text window
@@ -1058,28 +1086,27 @@ public class HU implements IHeadsUp{
 
         int sc; // start character
 
-        char[] text = new char[HU_MAXLINELENGTH+1]; // line of text
+        char[] text = new char[HU_MAXLINELENGTH + 1]; // line of text
 
         int len; // current line length
 
         // whether this line needs to be udpated
         int needsupdate;
 
-        public hu_textline_t(){
-        	
+        public hu_textline_t() {
+
         }
-        
+
         @SourceCode.Compatible
         @HU_Lib.C(HUlib_clearTextLine)
         public void clearTextLine() {
             this.len = 0;
-            C2JUtils.memset(this.text, (char)0,this.text.length);
+            C2JUtils.memset(this.text, (char) 0, this.text.length);
             // It's actually used as a status, go figure.
             this.needsupdate = 1;
         }
 
         // Maes: this could as well be the contructor
-
         public void initTextLine(int x, int y, patch_t[] f, int sc) {
             this.x = x;
             this.y = y;
@@ -1100,11 +1127,11 @@ public class HU implements IHeadsUp{
         @HU_Lib.C(HUlib_addCharToTextLine)
         public boolean addCharToTextLine(char ch) {
 
-            if (len == HU_MAXLINELENGTH)
+            if (len == HU_MAXLINELENGTH) {
                 return false;
-            else {
-                this.text[len++]=ch;
-                this.text[len]=(char)0;
+            } else {
+                this.text[len++] = ch;
+                this.text[len] = (char) 0;
                 // this.l[this.len] = 0;
                 // MAES: for some reason this is set as "4", so this is a status
                 // rather than a boolean.
@@ -1121,7 +1148,7 @@ public class HU implements IHeadsUp{
          * @param s
          * @return
          */
-/*
+        /*
         public boolean addStringToTextLine(String s) {
             int index = 0;
             if (this.len == HU_MAXLINELENGTH)
@@ -1140,15 +1167,14 @@ public class HU implements IHeadsUp{
             this.needsupdate = 4;
             return true;
         } */
-
         @SourceCode.Exact
         @HU_Lib.C(HUlib_delCharFromTextLine)
         boolean delCharFromTextLine() {
 
-            if (this.len == 0)
+            if (this.len == 0) {
                 return false;
-            else {
-                this.text[--len]= (char)0;
+            } else {
+                this.text[--len] = (char) 0;
                 this.needsupdate = 4;
                 return true;
             }
@@ -1169,16 +1195,18 @@ public class HU implements IHeadsUp{
                 if (c != ' ' && c >= this.sc && c <= '_') {
                     // MAES: fixed a FUCKING STUPID bug caused by SWAP.SHORT
                     w = this.f[c - this.sc].width;
-                    if (x + w > DOOM.vs.getScreenWidth())
+                    if (x + w > DOOM.vs.getScreenWidth()) {
                         break;
-                    
+                    }
+
                     DOOM.graphicSystem.DrawPatchScaled(FG, f[c - sc], DOOM.vs, x, y);
                     x += w;
                 } else {
                     // Leave a space
                     x += 4;
-                    if (x >= DOOM.vs.getScreenWidth())
+                    if (x >= DOOM.vs.getScreenWidth()) {
                         break;
+                    }
                 }
             }
 
@@ -1205,15 +1233,14 @@ public class HU implements IHeadsUp{
         public void eraseTextLine() {
             if (!DOOM.automapactive && DOOM.sceneRenderer.getView().windowx != 0 && this.needsupdate > 0) {
                 final ViewVars active = DOOM.sceneRenderer.getView();
-                final int
-                    // active part of the screen
-                    activeEndX = active.x + active.width,
-                    activeEndY = active.y + active.height,
-                    // scaled text ranges
-                    dupY = DOOM.graphicSystem.getScalingY(),
-                    lineY = y * dupY,
-                    lineHeight = (this.f[0].height + 1) * dupY,
-                    lineEndY = lineY + lineHeight;
+                final int // active part of the screen
+                        activeEndX = active.x + active.width,
+                        activeEndY = active.y + active.height,
+                        // scaled text ranges
+                        dupY = DOOM.graphicSystem.getScalingY(),
+                        lineY = y * dupY,
+                        lineHeight = (this.f[0].height + 1) * dupY,
+                        lineEndY = lineY + lineHeight;
 
                 final Rectangle rect = new Rectangle(0, lineY, DOOM.vs.getScreenWidth(), lineHeight);
 
@@ -1256,15 +1283,16 @@ public class HU implements IHeadsUp{
                     DOOM.graphicSystem.CopyRect(BG, rect, FG);
                 }
             }
-            
+
             lastautomapactive = DOOM.automapactive;
-            if (this.needsupdate != 0)
+            if (this.needsupdate != 0) {
                 this.needsupdate--;
+            }
         }
     }
 
     @Override
-    public patch_t[] getHUFonts() {        
+    public patch_t[] getHUFonts() {
         return this.hu_font;
     }
 }

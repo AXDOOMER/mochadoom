@@ -169,33 +169,61 @@ package automap;
 // DESCRIPTION: the automap code
 //
 // -----------------------------------------------------------------------------
-
-import static data.Defines.*;
-import static data.Limits.*;
-import static data.Tables.*;
+import static data.Defines.MAPBLOCKUNITS;
+import static data.Defines.PLAYERRADIUS;
+import static data.Defines.pw_allmap;
+import static data.Defines.pw_invisibility;
+import static data.Limits.MAXINT;
+import static data.Limits.MAXPLAYERS;
+import static data.Tables.finecosine;
+import static data.Tables.finesine;
+import static data.Tables.toBAMIndex;
 import doom.DoomMain;
 import doom.SourceCode.AM_Map;
 import static doom.SourceCode.AM_Map.AM_Responder;
-import static doom.englsh.*;
+import static doom.englsh.AMSTR_FOLLOWOFF;
+import static doom.englsh.AMSTR_FOLLOWON;
+import static doom.englsh.AMSTR_GRIDOFF;
+import static doom.englsh.AMSTR_GRIDON;
+import static doom.englsh.AMSTR_MARKEDSPOT;
+import static doom.englsh.AMSTR_MARKSCLEARED;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import g.Signals.ScanCode;
-import static g.Signals.ScanCode.*;
+import static g.Signals.ScanCode.SC_0;
+import static g.Signals.ScanCode.SC_C;
+import static g.Signals.ScanCode.SC_DOWN;
+import static g.Signals.ScanCode.SC_EQUALS;
+import static g.Signals.ScanCode.SC_F;
+import static g.Signals.ScanCode.SC_G;
+import static g.Signals.ScanCode.SC_LEFT;
+import static g.Signals.ScanCode.SC_M;
+import static g.Signals.ScanCode.SC_MINUS;
+import static g.Signals.ScanCode.SC_RIGHT;
+import static g.Signals.ScanCode.SC_TAB;
+import static g.Signals.ScanCode.SC_UP;
 import java.awt.Rectangle;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import m.cheatseq_t;
-import static m.fixed_t.*;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.FixedDiv;
+import static m.fixed_t.FixedMul;
 import p.mobj_t;
-import static rr.line_t.*;
+import static rr.line_t.ML_DONTDRAW;
+import static rr.line_t.ML_MAPPED;
+import static rr.line_t.ML_SECRET;
 import rr.patch_t;
-import static utils.GenericCopy.*;
-import static v.DoomGraphicSystem.*;
+import static utils.GenericCopy.malloc;
+import static utils.GenericCopy.memcpy;
+import static utils.GenericCopy.memset;
+import static v.DoomGraphicSystem.V_NOSCALESTART;
 import v.graphics.Plotter;
-import static v.renderers.DoomScreen.*;
+import static v.renderers.DoomScreen.FG;
 
 public class Map<T, V> implements IAutoMap<T, V> {
 
@@ -219,13 +247,13 @@ public class Map<T, V> implements IAutoMap<T, V> {
         YELLOWS(8, (byte) 160 /*(256 - 32)*/),
         BLACK(1, (byte) 0),
         WHITE(1, (byte) 4),
-        GRAYS_DARKER_25(13, (byte)(GRAYS.value + 4)),
-        DARK_GREYS(8, (byte)(GRAYS.value + GRAYS.range / 2)),
-        DARK_REDS(8, (byte)(REDS.value + REDS.range / 2));
+        GRAYS_DARKER_25(13, (byte) (GRAYS.value + 4)),
+        DARK_GREYS(8, (byte) (GRAYS.value + GRAYS.range / 2)),
+        DARK_REDS(8, (byte) (REDS.value + REDS.range / 2));
 
         final static int NUM_LITES = 8;
-        final static int[] LITE_LEVELS_FULL_RANGE = { 0, 4, 7, 10, 12, 14, 15, 15 };
-        final static int[] LITE_LEVELS_HALF_RANGE = { 0, 2, 3, 5, 6, 6, 7, 7 };
+        final static int[] LITE_LEVELS_FULL_RANGE = {0, 4, 7, 10, 12, 14, 15, 15};
+        final static int[] LITE_LEVELS_HALF_RANGE = {0, 2, 3, 5, 6, 6, 7, 7};
         final byte[] liteBlock;
         final byte value;
         final int range;
@@ -239,10 +267,10 @@ public class Map<T, V> implements IAutoMap<T, V> {
                 this.liteBlock = null;
             }
         }
-        
+
         static {
-            for (Color c: values()) {
-                switch(c.range) {
+            for (Color c : values()) {
+                switch (c.range) {
                     case 16:
                         for (int i = 0; i < NUM_LITES; ++i) {
                             c.liteBlock[i] = (byte) (c.value + LITE_LEVELS_FULL_RANGE[i]);
@@ -259,38 +287,37 @@ public class Map<T, V> implements IAutoMap<T, V> {
     // For use if I do walls with outsides/insides
 
     // Automap colors
-    final static Color 
-        BACKGROUND = Color.BLACK,
-        YOURCOLORS = Color.WHITE,
-        WALLCOLORS = Color.REDS,
-        TELECOLORS = Color.DARK_REDS,
-        TSWALLCOLORS = Color.GRAYS,
-        FDWALLCOLORS = Color.BROWNS,
-        CDWALLCOLORS = Color.YELLOWS,
-        THINGCOLORS = Color.GREENS,
-        SECRETWALLCOLORS = Color.REDS,
-        GRIDCOLORS = Color.DARK_GREYS,
-        MAPPOWERUPSHOWNCOLORS = Color.GRAYS,
-        CROSSHAIRCOLORS = Color.GRAYS;
+    final static Color BACKGROUND = Color.BLACK,
+            YOURCOLORS = Color.WHITE,
+            WALLCOLORS = Color.REDS,
+            TELECOLORS = Color.DARK_REDS,
+            TSWALLCOLORS = Color.GRAYS,
+            FDWALLCOLORS = Color.BROWNS,
+            CDWALLCOLORS = Color.YELLOWS,
+            THINGCOLORS = Color.GREENS,
+            SECRETWALLCOLORS = Color.REDS,
+            GRIDCOLORS = Color.DARK_GREYS,
+            MAPPOWERUPSHOWNCOLORS = Color.GRAYS,
+            CROSSHAIRCOLORS = Color.GRAYS;
 
     final static EnumSet<Color> GENERATE_LITE_LEVELS_FOR = EnumSet.of(
-        TELECOLORS,
-        WALLCOLORS,
-        FDWALLCOLORS,
-        CDWALLCOLORS,
-        TSWALLCOLORS,
-        SECRETWALLCOLORS,
-        MAPPOWERUPSHOWNCOLORS,
-        THINGCOLORS
+            TELECOLORS,
+            WALLCOLORS,
+            FDWALLCOLORS,
+            CDWALLCOLORS,
+            TSWALLCOLORS,
+            SECRETWALLCOLORS,
+            MAPPOWERUPSHOWNCOLORS,
+            THINGCOLORS
     );
-    
+
     final static Color THEIR_COLORS[] = {
         Color.GREENS,
         Color.GRAYS,
         Color.BROWNS,
         Color.REDS
     };
-    
+
     // drawing stuff
     public static final ScanCode AM_PANDOWNKEY = SC_DOWN;
     public static final ScanCode AM_PANUPKEY = SC_UP;
@@ -321,7 +348,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
     // how much zoom-out per tic
     // pulls out to 0.5x in 1 second
     public static final int M_ZOOMOUT = ((int) (FRACUNIT / 1.02));
-    
+
     final EnumMap<Color, V> fixedColorSources = new EnumMap<>(Color.class);
     final EnumMap<Color, V> litedColorSources = new EnumMap<>(Color.class);
 
@@ -340,24 +367,24 @@ public class Map<T, V> implements IAutoMap<T, V> {
         finit_width = DOOM.vs.getScreenWidth();
         finit_height = DOOM.vs.getScreenHeight() - 32 * DOOM.vs.getSafeScaling();
     }
-    
+
     @Override
     public final void Repalette() {
         GENERATE_LITE_LEVELS_FOR.stream()
-            .forEach((c) -> {
-                if (c.liteBlock != null) {
-                    litedColorSources.put(c, DOOM.graphicSystem.convertPalettedBlock(c.liteBlock));
-                }
-            });
-        
+                .forEach((c) -> {
+                    if (c.liteBlock != null) {
+                        litedColorSources.put(c, DOOM.graphicSystem.convertPalettedBlock(c.liteBlock));
+                    }
+                });
+
         Arrays.stream(Color.values())
-            .forEach((c) -> {
-                V converted = DOOM.graphicSystem.convertPalettedBlock(c.value);
-                @SuppressWarnings("unchecked")
-                V extended = (V) Array.newInstance(converted.getClass().getComponentType(), Color.NUM_LITES);
-                memset(extended, 0, Color.NUM_LITES, converted, 0, 1);
-                fixedColorSources.put(c, extended);
-            });
+                .forEach((c) -> {
+                    V converted = DOOM.graphicSystem.convertPalettedBlock(c.value);
+                    @SuppressWarnings("unchecked")
+                    V extended = (V) Array.newInstance(converted.getClass().getComponentType(), Color.NUM_LITES);
+                    memset(extended, 0, Color.NUM_LITES, converted, 0, 1);
+                    fixedColorSources.put(c, extended);
+                });
     }
 
     /** translates between frame-buffer and map distances */
@@ -379,7 +406,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
     private int CYMTOF(int y) {
         return (f_y + (f_h - MTOF((y) - m_y)));
     }
-    
+
     // the following is crap
     public static final short LINE_NEVERSEE = ML_DONTDRAW;
 
@@ -414,20 +441,20 @@ public class Map<T, V> implements IAutoMap<T, V> {
     protected void initVectorGraphics() {
 
         int R = ((8 * PLAYERRADIUS) / 7);
-        player_arrow =
-            new mline_t[] {
+        player_arrow
+                = new mline_t[]{
                     new mline_t(-R + R / 8, 0, R, 0), // -----
                     new mline_t(R, 0, R - R / 2, R / 4), // ----
                     new mline_t(R, 0, R - R / 2, -R / 4),
                     new mline_t(-R + R / 8, 0, -R - R / 8, R / 4), // >---
                     new mline_t(-R + R / 8, 0, -R - R / 8, -R / 4),
                     new mline_t(-R + 3 * R / 8, 0, -R + R / 8, R / 4), // >>--
-                    new mline_t(-R + 3 * R / 8, 0, -R + R / 8, -R / 4) };
+                    new mline_t(-R + 3 * R / 8, 0, -R + R / 8, -R / 4)};
 
         NUMPLYRLINES = player_arrow.length;
 
-        cheat_player_arrow =
-            new mline_t[] {
+        cheat_player_arrow
+                = new mline_t[]{
                     new mline_t(-R + R / 8, 0, R, 0), // -----
                     new mline_t(R, 0, R - R / 2, R / 6), // ----
                     new mline_t(R, 0, R - R / 2, -R / 6),
@@ -444,22 +471,22 @@ public class Map<T, V> implements IAutoMap<T, V> {
                     new mline_t(R / 6, R / 4, R / 6, -R / 7), // >>-ddt
                     new mline_t(R / 6, -R / 7, R / 6 + R / 32, -R / 7 - R / 32),
                     new mline_t(R / 6 + R / 32, -R / 7 - R / 32,
-                            R / 6 + R / 10, -R / 7) };
+                            R / 6 + R / 10, -R / 7)};
 
         NUMCHEATPLYRLINES = cheat_player_arrow.length;
 
         R = (FRACUNIT);
-        triangle_guy =
-            new mline_t[] { new mline_t(-.867 * R, -.5 * R, .867 * R, -.5 * R),
+        triangle_guy
+                = new mline_t[]{new mline_t(-.867 * R, -.5 * R, .867 * R, -.5 * R),
                     new mline_t(.867 * R, -.5 * R, 0, R),
-                    new mline_t(0, R, -.867 * R, -.5 * R) };
+                    new mline_t(0, R, -.867 * R, -.5 * R)};
 
         NUMTRIANGLEGUYLINES = triangle_guy.length;
 
-        thintriangle_guy =
-            new mline_t[] { new mline_t(-.5 * R, -.7 * R, R, 0),
+        thintriangle_guy
+                = new mline_t[]{new mline_t(-.5 * R, -.7 * R, R, 0),
                     new mline_t(R, 0, -.5 * R, .7 * R),
-                    new mline_t(-.5 * R, .7 * R, -.5 * R, -.7 * R) };
+                    new mline_t(-.5 * R, .7 * R, -.5 * R, -.7 * R)};
 
         NUMTHINTRIANGLEGUYLINES = thintriangle_guy.length;
     }
@@ -486,7 +513,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
     protected int f_w;
 
     protected int f_h;
-    
+
     protected Rectangle f_rect;
 
     /** used for funky strobing effect */
@@ -494,7 +521,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
     /** pseudo-frame buffer */
     //protected V fb;
-    
     /**
      * I've made this awesome change to draw map lines on the renderer
      *  - Good Sign 2017/04/05
@@ -566,15 +592,14 @@ public class Map<T, V> implements IAutoMap<T, V> {
     /** specifies whether to follow the player around */
     protected boolean followplayer = true;
 
-    protected char[] cheat_amap_seq = { 0xb2, 0x26, 0x26, 0x2e, 0xff }; // iddt
+    protected char[] cheat_amap_seq = {0xb2, 0x26, 0x26, 0x2e, 0xff}; // iddt
 
     protected cheatseq_t cheat_amap = new cheatseq_t(cheat_amap_seq, 0);
 
     // MAES: STROBE cheat. It's not even cheating, strictly speaking.
-
-    private final char cheat_strobe_seq[] = { 0x6e, 0xa6, 0xea, 0x2e, 0x6a, 0xf6,
-            0x62, 0xa6, 0xff // vestrobe
-        };
+    private final char cheat_strobe_seq[] = {0x6e, 0xa6, 0xea, 0x2e, 0x6a, 0xf6,
+        0x62, 0xa6, 0xff // vestrobe
+};
 
     private final cheatseq_t cheat_strobe = new cheatseq_t(cheat_strobe_seq, 0);
 
@@ -582,7 +607,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
     // extern boolean viewactive;
     // extern byte screens[][DOOM.vs.getScreenWidth()*DOOM.vs.getScreenHeight()];
-
     /**
      * Calculates the slope and slope according to the x-axis of a line segment
      * in map coordinates (with the upright y-axis n' all) so that it can be
@@ -591,20 +615,21 @@ public class Map<T, V> implements IAutoMap<T, V> {
      * @param ml
      * @param is
      */
-
     public final void getIslope(mline_t ml, islope_t is) {
         int dx, dy;
 
         dy = ml.ay - ml.by;
         dx = ml.bx - ml.ax;
-        if (dy == 0)
+        if (dy == 0) {
             is.islp = (dx < 0 ? -MAXINT : MAXINT);
-        else
+        } else {
             is.islp = FixedDiv(dx, dy);
-        if (dx == 0)
+        }
+        if (dx == 0) {
             is.slp = (dy < 0 ? -MAXINT : MAXINT);
-        else
+        } else {
             is.slp = FixedDiv(dy, dx);
+        }
 
     }
 
@@ -620,10 +645,10 @@ public class Map<T, V> implements IAutoMap<T, V> {
         m_y -= m_h / 2;
         m_x2 = m_x + m_w;
         m_y2 = m_y + m_h;
-        
+
         plotter.setThickness(
-            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingX()),
-            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingY())
+                Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingX()),
+                Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingY())
         );
     }
 
@@ -656,15 +681,14 @@ public class Map<T, V> implements IAutoMap<T, V> {
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 
         plotter.setThickness(
-            Math.min(MTOF(FRACUNIT), Color.NUM_LITES),
-            Math.min(MTOF(FRACUNIT), Color.NUM_LITES)
+                Math.min(MTOF(FRACUNIT), Color.NUM_LITES),
+                Math.min(MTOF(FRACUNIT), Color.NUM_LITES)
         );
     }
 
     /**
      * adds a marker at the current location
      */
-
     public final void addMark() {
         markpoints[markpointnum].x = m_x + m_w / 2;
         markpoints[markpointnum].y = m_y + m_h / 2;
@@ -676,7 +700,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
      * Determines bounding box of all vertices, sets global variables
      * controlling zoom range.
      */
-
     public final void findMinMaxBoundaries() {
         int a; // fixed_t
         int b;
@@ -685,15 +708,17 @@ public class Map<T, V> implements IAutoMap<T, V> {
         max_x = max_y = -MAXINT;
 
         for (int i = 0; i < DOOM.levelLoader.numvertexes; i++) {
-            if (DOOM.levelLoader.vertexes[i].x < min_x)
+            if (DOOM.levelLoader.vertexes[i].x < min_x) {
                 min_x = DOOM.levelLoader.vertexes[i].x;
-            else if (DOOM.levelLoader.vertexes[i].x > max_x)
+            } else if (DOOM.levelLoader.vertexes[i].x > max_x) {
                 max_x = DOOM.levelLoader.vertexes[i].x;
+            }
 
-            if (DOOM.levelLoader.vertexes[i].y < min_y)
+            if (DOOM.levelLoader.vertexes[i].y < min_y) {
                 min_y = DOOM.levelLoader.vertexes[i].y;
-            else if (DOOM.levelLoader.vertexes[i].y > max_y)
+            } else if (DOOM.levelLoader.vertexes[i].y > max_y) {
                 max_y = DOOM.levelLoader.vertexes[i].y;
+            }
         }
 
         max_w = max_x - min_x;
@@ -724,15 +749,17 @@ public class Map<T, V> implements IAutoMap<T, V> {
         m_x += m_paninc.x;
         m_y += m_paninc.y;
 
-        if (m_x + m_w / 2 > max_x)
+        if (m_x + m_w / 2 > max_x) {
             m_x = max_x - m_w / 2;
-        else if (m_x + m_w / 2 < min_x)
+        } else if (m_x + m_w / 2 < min_x) {
             m_x = min_x - m_w / 2;
+        }
 
-        if (m_y + m_h / 2 > max_y)
+        if (m_y + m_h / 2 > max_y) {
             m_y = max_y - m_h / 2;
-        else if (m_y + m_h / 2 < min_y)
+        } else if (m_y + m_h / 2 < min_y) {
             m_y = min_y - m_h / 2;
+        }
 
         m_x2 = m_x + m_w;
         m_y2 = m_y + m_h;
@@ -754,12 +781,14 @@ public class Map<T, V> implements IAutoMap<T, V> {
         m_h = FTOM(f_h);
 
         // find player to center on initially
-        if (!DOOM.playeringame[pnum = DOOM.consoleplayer])
+        if (!DOOM.playeringame[pnum = DOOM.consoleplayer]) {
             for (pnum = 0; pnum < MAXPLAYERS; pnum++) {
-                System.out.println(pnum);
-                if (DOOM.playeringame[pnum])
+                //System.out.println(pnum);
+                if (DOOM.playeringame[pnum]) {
                     break;
+                }
             }
+        }
         plr = DOOM.players[pnum];
         m_x = plr.mo.x - m_w / 2;
         m_y = plr.mo.y - m_h / 2;
@@ -800,8 +829,9 @@ public class Map<T, V> implements IAutoMap<T, V> {
     public final void clearMarks() {
         int i;
 
-        for (i = 0; i < AM_NUMMARKPOINTS; i++)
+        for (i = 0; i < AM_NUMMARKPOINTS; i++) {
             markpoints[i].x = -1; // means empty
+        }
         markpointnum = 0;
     }
 
@@ -818,18 +848,18 @@ public class Map<T, V> implements IAutoMap<T, V> {
         f_rect = new Rectangle(0, 0, f_w, f_h);
 
         // scanline=new byte[f_h*f_w];
-
         this.clearMarks();
 
         this.findMinMaxBoundaries();
         scale_mtof = FixedDiv(min_scale_mtof, MINIMUM_SCALE);
-        if (scale_mtof > max_scale_mtof)
+        if (scale_mtof > max_scale_mtof) {
             scale_mtof = min_scale_mtof;
+        }
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
-        
+
         plotter.setThickness(
-            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingX()),
-            Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingY())
+                Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingX()),
+                Math.min(MTOF(FRACUNIT), DOOM.graphicSystem.getScalingY())
         );
     }
 
@@ -848,8 +878,9 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
     @Override
     public final void Start() {
-        if (!stopped)
+        if (!stopped) {
             Stop();
+        }
 
         stopped = false;
         if (lastlevel != DOOM.gamemap || lastepisode != DOOM.gameepisode) {
@@ -876,7 +907,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
     /**
      * set the window scale to the minimum size
      */
-
     public final void maxOutWindowScale() {
         scale_mtof = max_scale_mtof;
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -893,7 +923,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
     /**
      * Handle events (user inputs) in automap mode
      */
-
     @Override
     @AM_Map.C(AM_Responder)
     public final boolean Responder(event_t ev) {
@@ -910,25 +939,29 @@ public class Map<T, V> implements IAutoMap<T, V> {
         } else if (ev.isType(evtype_t.ev_keydown)) {
             rc = true;
             if (ev.isKey(AM_PANRIGHTKEY)) { // pan right
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.x = FTOM(F_PANINC);
-                else
+                } else {
                     rc = false;
+                }
             } else if (ev.isKey(AM_PANLEFTKEY)) { // pan left
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.x = -FTOM(F_PANINC);
-                else
+                } else {
                     rc = false;
+                }
             } else if (ev.isKey(AM_PANUPKEY)) { // pan up
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.y = FTOM(F_PANINC);
-                else
+                } else {
                     rc = false;
+                }
             } else if (ev.isKey(AM_PANDOWNKEY)) { // pan down
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.y = -FTOM(F_PANINC);
-                else
+                } else {
                     rc = false;
+                }
             } else if (ev.isKey(AM_ZOOMOUTKEY)) { // zoom out
                 mtof_zoommul = M_ZOOMOUT;
                 ftom_zoommul = M_ZOOMIN;
@@ -940,8 +973,9 @@ public class Map<T, V> implements IAutoMap<T, V> {
                 if (bigstate) {
                     this.saveScaleAndLoc();
                     this.minOutWindowScale();
-                } else
+                } else {
                     this.restoreScaleAndLoc();
+                }
             } else if (ev.isKey(AM_FOLLOWKEY)) {
                 followplayer = !followplayer;
                 f_oldloc.x = MAXINT;
@@ -960,12 +994,12 @@ public class Map<T, V> implements IAutoMap<T, V> {
                 cheatstate = false;
                 rc = false;
             }
-            
+
             if (!DOOM.deathmatch && ev.ifKeyAsciiChar(cheat_amap::CheckCheat)) {
                 rc = false;
                 cheating = (cheating + 1) % 3;
             }
-            
+
             /** 
              * MAES: brought back strobe effect
              * Good Sign: setting can be saved/loaded from config
@@ -976,17 +1010,21 @@ public class Map<T, V> implements IAutoMap<T, V> {
         } else if (ev.isType(evtype_t.ev_keyup)) {
             rc = false;
             if (ev.isKey(AM_PANRIGHTKEY)) {
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.x = 0;
+                }
             } else if (ev.isKey(AM_PANLEFTKEY)) {
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.x = 0;
+                }
             } else if (ev.isKey(AM_PANUPKEY)) {
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.y = 0;
+                }
             } else if (ev.isKey(AM_PANDOWNKEY)) {
-                if (!followplayer)
+                if (!followplayer) {
                     m_paninc.y = 0;
+                }
             } else if (ev.isKey(AM_ZOOMOUTKEY) || ev.isKey(AM_ZOOMINKEY)) {
                 mtof_zoommul = FRACUNIT;
                 ftom_zoommul = FRACUNIT;
@@ -1010,12 +1048,13 @@ public class Map<T, V> implements IAutoMap<T, V> {
         scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
         scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 
-        if (scale_mtof < min_scale_mtof)
+        if (scale_mtof < min_scale_mtof) {
             this.minOutWindowScale();
-        else if (scale_mtof > max_scale_mtof)
+        } else if (scale_mtof > max_scale_mtof) {
             this.maxOutWindowScale();
-        else
+        } else {
             this.activateNewScale();
+        }
 
     }
 
@@ -1036,7 +1075,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
             // m_y = FTOM(MTOF(plr.mo.y - m_h/2));
             // m_x = plr.mo.x - m_w/2;
             // m_y = plr.mo.y - m_h/2;
-
         }
 
     }
@@ -1062,29 +1100,33 @@ public class Map<T, V> implements IAutoMap<T, V> {
      */
     @Override
     public final void Ticker() {
-        if (!DOOM.automapactive || DOOM.menuactive)
+        if (!DOOM.automapactive || DOOM.menuactive) {
             return;
+        }
 
         amclock++;
 
-        if (followplayer)
+        if (followplayer) {
             this.doFollowPlayer();
+        }
 
         // Change the zoom if necessary
-        if (ftom_zoommul != FRACUNIT)
+        if (ftom_zoommul != FRACUNIT) {
             this.changeWindowScale();
+        }
 
         // Change x,y location
-        if ((m_paninc.x | m_paninc.y) != 0)
+        if ((m_paninc.x | m_paninc.y) != 0) {
             this.changeWindowLoc();
+        }
 
         // Update light level
-        if (DOOM.mapstrobe)
+        if (DOOM.mapstrobe) {
             updateLightLev();
+        }
     }
 
     // private static int BUFFERSIZE=f_h*f_w;
-
     /**
      * Automap clipping of lines. Based on Cohen-Sutherland clipping algorithm
      * but with a slightly faster reject and precalculated slopes. If the speed
@@ -1109,32 +1151,36 @@ public class Map<T, V> implements IAutoMap<T, V> {
          */
 
         // do trivial rejects and outcodes
-        if (ml.ay > m_y2)
+        if (ml.ay > m_y2) {
             outcode1 = TOP;
-        else if (ml.ay < m_y)
+        } else if (ml.ay < m_y) {
             outcode1 = BOTTOM;
+        }
 
-        if (ml.by > m_y2)
+        if (ml.by > m_y2) {
             outcode2 = TOP;
-        else if (ml.by < m_y)
+        } else if (ml.by < m_y) {
             outcode2 = BOTTOM;
+        }
 
-        if ((outcode1 & outcode2) != 0)
+        if ((outcode1 & outcode2) != 0) {
             return false; // trivially outside
-
-        if (ml.ax < m_x)
+        }
+        if (ml.ax < m_x) {
             outcode1 |= LEFT;
-        else if (ml.ax > m_x2)
+        } else if (ml.ax > m_x2) {
             outcode1 |= RIGHT;
+        }
 
-        if (ml.bx < m_x)
+        if (ml.bx < m_x) {
             outcode2 |= LEFT;
-        else if (ml.bx > m_x2)
+        } else if (ml.bx > m_x2) {
             outcode2 |= RIGHT;
+        }
 
-        if ((outcode1 & outcode2) != 0)
+        if ((outcode1 & outcode2) != 0) {
             return false; // trivially outside
-
+        }
         // transform to frame-buffer coordinates.
         fl.ax = CXMTOF(ml.ax);
         fl.ay = CYMTOF(ml.ay);
@@ -1145,16 +1191,18 @@ public class Map<T, V> implements IAutoMap<T, V> {
         outcode1 = DOOUTCODE(fl.ax, fl.ay);
         outcode2 = DOOUTCODE(fl.bx, fl.by);
 
-        if ((outcode1 & outcode2) != 0)
+        if ((outcode1 & outcode2) != 0) {
             return false;
+        }
 
         while ((outcode1 | outcode2) != 0) {
             // may be partially inside box
             // find an outside point
-            if (outcode1 != 0)
+            if (outcode1 != 0) {
                 outside = outcode1;
-            else
+            } else {
                 outside = outcode2;
+            }
 
             // clip to each side
             if ((outside & TOP) != 0) {
@@ -1189,8 +1237,9 @@ public class Map<T, V> implements IAutoMap<T, V> {
                 outcode2 = DOOUTCODE(fl.bx, fl.by);
             }
 
-            if ((outcode1 & outcode2) != 0)
+            if ((outcode1 & outcode2) != 0) {
                 return false; // trivially outside
+            }
         }
 
         return true;
@@ -1205,17 +1254,18 @@ public class Map<T, V> implements IAutoMap<T, V> {
      * @param mx
      * @param my
      */
-
     private int DOOUTCODE(int mx, int my) {
         int oc = 0;
-        if ((my) < 0)
+        if ((my) < 0) {
             (oc) |= TOP;
-        else if ((my) >= f_h)
+        } else if ((my) >= f_h) {
             (oc) |= BOTTOM;
-        if ((mx) < 0)
+        }
+        if ((mx) < 0) {
             (oc) |= LEFT;
-        else if ((mx) >= f_w)
+        } else if ((mx) >= f_w) {
             (oc) |= RIGHT;
+        }
         return oc;
     }
 
@@ -1233,10 +1283,10 @@ public class Map<T, V> implements IAutoMap<T, V> {
             // if ((fl.a.x==fl.b.x)&&(fl.a.y==fl.b.y)) singlepixel++;
             // draws the line using coords
             DOOM.graphicSystem
-                .drawLine(plotter
-                    .setColorSource(colorSource, 0)
-                    .setPosition(fl.ax, fl.ay),
-                fl.bx, fl.by);
+                    .drawLine(plotter
+                            .setColorSource(colorSource, 0)
+                            .setPosition(fl.ax, fl.ay),
+                            fl.bx, fl.by);
         }
     }
 
@@ -1253,10 +1303,11 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
         // Figure out start of vertical gridlines
         start = m_x;
-        if (((start - DOOM.levelLoader.bmaporgx) % (MAPBLOCKUNITS << FRACBITS)) != 0)
-            start +=
-                (MAPBLOCKUNITS << FRACBITS)
-                        - ((start - DOOM.levelLoader.bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
+        if (((start - DOOM.levelLoader.bmaporgx) % (MAPBLOCKUNITS << FRACBITS)) != 0) {
+            start
+                    += (MAPBLOCKUNITS << FRACBITS)
+                    - ((start - DOOM.levelLoader.bmaporgx) % (MAPBLOCKUNITS << FRACBITS));
+        }
         end = m_x + m_w;
 
         // draw vertical gridlines
@@ -1270,10 +1321,11 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
         // Figure out start of horizontal gridlines
         start = m_y;
-        if (((start - DOOM.levelLoader.bmaporgy) % (MAPBLOCKUNITS << FRACBITS)) != 0)
-            start +=
-                (MAPBLOCKUNITS << FRACBITS)
-                        - ((start - DOOM.levelLoader.bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
+        if (((start - DOOM.levelLoader.bmaporgy) % (MAPBLOCKUNITS << FRACBITS)) != 0) {
+            start
+                    += (MAPBLOCKUNITS << FRACBITS)
+                    - ((start - DOOM.levelLoader.bmaporgy) % (MAPBLOCKUNITS << FRACBITS));
+        }
         end = m_y + m_h;
 
         // draw horizontal gridlines
@@ -1293,7 +1345,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
      * Determines visible lines, draws them. This is LineDef based, not LineSeg
      * based.
      */
-
     private void drawWalls() {
 
         final V teleColorSource = litedColorSources.get(TELECOLORS);
@@ -1309,20 +1360,22 @@ public class Map<T, V> implements IAutoMap<T, V> {
             l.bx = DOOM.levelLoader.lines[i].v2x;
             l.by = DOOM.levelLoader.lines[i].v2y;
             if ((cheating | (DOOM.levelLoader.lines[i].flags & ML_MAPPED)) != 0) {
-                if (((DOOM.levelLoader.lines[i].flags & LINE_NEVERSEE) & ~cheating) != 0)
+                if (((DOOM.levelLoader.lines[i].flags & LINE_NEVERSEE) & ~cheating) != 0) {
                     continue;
+                }
                 if (DOOM.levelLoader.lines[i].backsector == null) {
                     drawMline(l, wallColorSource);
                 } else {
                     if (DOOM.levelLoader.lines[i].special == 39) { // teleporters
                         drawMline(l, teleColorSource);
                     } else if ((DOOM.levelLoader.lines[i].flags & ML_SECRET) != 0) // secret
-                                                                     // door
+                    // door
                     {
-                        if (cheating != 0)
+                        if (cheating != 0) {
                             drawMline(l, secretWallColorSource);
-                        else
+                        } else {
                             drawMline(l, wallColorSource);
+                        }
                     } else if (DOOM.levelLoader.lines[i].backsector.floorheight != DOOM.levelLoader.lines[i].frontsector.floorheight) {
                         drawMline(l, fdWallColorSource); // floor level change
                     } else if (DOOM.levelLoader.lines[i].backsector.ceilingheight != DOOM.levelLoader.lines[i].frontsector.ceilingheight) {
@@ -1331,12 +1384,12 @@ public class Map<T, V> implements IAutoMap<T, V> {
                         drawMline(l, tsWallColorSource);
                     }
                 }
-            }
-            // If we have allmap...
+            } // If we have allmap...
             else if (plr.powers[pw_allmap] != 0) {
                 // Some are never seen even with that!
-                if ((DOOM.levelLoader.lines[i].flags & LINE_NEVERSEE) == 0)
+                if ((DOOM.levelLoader.lines[i].flags & LINE_NEVERSEE) == 0) {
                     drawMline(l, litedColorSources.get(MAPPOWERUPSHOWNCOLORS));
+                }
             }
         }
 
@@ -1360,7 +1413,6 @@ public class Map<T, V> implements IAutoMap<T, V> {
      * @param a
      *        angle_t -> this should be a LUT-ready BAM.
      */
-
     private void rotate(int x, int y, int a) {
         // int tmpx;
 
@@ -1430,16 +1482,16 @@ public class Map<T, V> implements IAutoMap<T, V> {
         V colorSource;
 
         // System.out.println(Long.toHexString(plr.mo.angle));
-
         if (!DOOM.netgame) {
-            if (cheating != 0)
+            if (cheating != 0) {
                 drawLineCharacter(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-                    toBAMIndex(plr.mo.angle), fixedColorSources.get(Color.WHITE), plr.mo.x,
-                    plr.mo.y);
-            else
+                        toBAMIndex(plr.mo.angle), fixedColorSources.get(Color.WHITE), plr.mo.x,
+                        plr.mo.y);
+            } else {
                 drawLineCharacter(player_arrow, NUMPLYRLINES, 0,
-                    toBAMIndex(plr.mo.angle), fixedColorSources.get(Color.WHITE), plr.mo.x,
-                    plr.mo.y);
+                        toBAMIndex(plr.mo.angle), fixedColorSources.get(Color.WHITE), plr.mo.x,
+                        plr.mo.y);
+            }
             return;
         }
 
@@ -1447,16 +1499,19 @@ public class Map<T, V> implements IAutoMap<T, V> {
             their_color++;
             p = DOOM.players[i];
 
-            if ((DOOM.deathmatch && !DOOM.singledemo) && p != plr)
+            if ((DOOM.deathmatch && !DOOM.singledemo) && p != plr) {
                 continue;
+            }
 
-            if (!DOOM.playeringame[i])
+            if (!DOOM.playeringame[i]) {
                 continue;
+            }
 
-            if (p.powers[pw_invisibility] != 0)
+            if (p.powers[pw_invisibility] != 0) {
                 colorSource = fixedColorSources.get(Color.CLOSE_TO_BLACK);
-            else
+            } else {
                 colorSource = fixedColorSources.get(THEIR_COLORS[their_color]);
+            }
 
             drawLineCharacter(player_arrow, NUMPLYRLINES, 0, (int) p.mo.angle, colorSource, p.mo.x, p.mo.y);
         }
@@ -1472,7 +1527,7 @@ public class Map<T, V> implements IAutoMap<T, V> {
             t = DOOM.levelLoader.sectors[i].thinglist;
             while (t != null) {
                 drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-                    16 << FRACBITS, toBAMIndex(t.angle), colorSource, t.x, t.y);
+                        16 << FRACBITS, toBAMIndex(t.angle), colorSource, t.x, t.y);
                 t = (mobj_t) t.snext;
             }
         }
@@ -1491,8 +1546,9 @@ public class Map<T, V> implements IAutoMap<T, V> {
                 // h = 6; // because something's wrong with the wad, i guess
                 fx = CXMTOF(markpoints[i].x);
                 fy = CYMTOF(markpoints[i].y);
-                if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
+                if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h) {
                     DOOM.graphicSystem.DrawPatchScaled(FG, marknums[i], DOOM.vs, fx, fy, V_NOSCALESTART);
+                }
             }
         }
 
@@ -1509,24 +1565,26 @@ public class Map<T, V> implements IAutoMap<T, V> {
 
     @Override
     public final void Drawer() {
-        if (!DOOM.automapactive)
+        if (!DOOM.automapactive) {
             return;
+        }
         // System.out.println("Drawing map");
-        if (overlay < 1)
+        if (overlay < 1) {
             DOOM.graphicSystem.FillRect(FG, f_rect, BACKGROUND.value); // BACKGROUND
-        
-        if (grid)
+        }
+        if (grid) {
             drawGrid(fixedColorSources.get(GRIDCOLORS));
-        
+        }
+
         drawWalls();
         drawPlayers();
-        if (cheating == 2)
+        if (cheating == 2) {
             drawThings(THINGCOLORS, THINGRANGE);
+        }
         drawCrosshair(fixedColorSources.get(CROSSHAIRCOLORS));
 
         drawMarks();
 
         //DOOM.videoRenderer.MarkRect(f_x, f_y, f_w, f_h);
-
     }
 }

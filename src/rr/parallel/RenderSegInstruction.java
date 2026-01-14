@@ -5,19 +5,19 @@ package rr.parallel;
  * versions.
  *  
  */
+public class RenderSegInstruction<V> {
 
-public class RenderSegInstruction<V> {    
-	public int     rw_x,rw_stopx;
-	public int toptexture,midtexture,bottomtexture;
-	public int  pixhigh,pixlow,pixhighstep,pixlowstep,
-	topfrac,    topstep,bottomfrac, bottomstep;	
-	public boolean segtextured,markfloor,markceiling;
-	public long     rw_centerangle; // angle_t
-	/** fixed_t */
-	public int     rw_offset,rw_distance,rw_scale,
-	rw_scalestep,rw_midtexturemid,rw_toptexturemid,rw_bottomtexturemid;
-	public int viewheight;
-	V[] walllights;
-	public int centery;
+    public int rw_x, rw_stopx;
+    public int toptexture, midtexture, bottomtexture;
+    public int pixhigh, pixlow, pixhighstep, pixlowstep,
+            topfrac, topstep, bottomfrac, bottomstep;
+    public boolean segtextured, markfloor, markceiling;
+    public long rw_centerangle; // angle_t
+    /** fixed_t */
+    public int rw_offset, rw_distance, rw_scale,
+            rw_scalestep, rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
+    public int viewheight;
+    V[] walllights;
+    public int centery;
 
 }

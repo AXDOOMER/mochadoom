@@ -6,9 +6,17 @@ import java.awt.Container;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Image;
-import static java.awt.RenderingHints.*;
+import static java.awt.RenderingHints.KEY_ALPHA_INTERPOLATION;
+import static java.awt.RenderingHints.KEY_ANTIALIASING;
+import static java.awt.RenderingHints.KEY_COLOR_RENDERING;
+import static java.awt.RenderingHints.KEY_RENDERING;
+import static java.awt.RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED;
+import static java.awt.RenderingHints.VALUE_ANTIALIAS_OFF;
+import static java.awt.RenderingHints.VALUE_COLOR_RENDER_SPEED;
+import static java.awt.RenderingHints.VALUE_RENDER_SPEED;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
 import mochadoom.Engine;
 import mochadoom.Loggers;
@@ -17,29 +25,32 @@ import mochadoom.Loggers;
  * Common code for Doom's video frames
  */
 public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JFrame implements FullscreenOptions {
+
+    private static final Logger LOGGER = Loggers.getLogger(DoomFrame.class.getName());
+
     private static final long serialVersionUID = -4130528877723831825L;
-    
+
     /**
      * Canvas or JPanel
      */
     private final Window content;
-    
+
     /**
      * Graphics to draw image on
      */
     private volatile Graphics2D g2d;
-    
+
     /**
      * Provider of video content to display
      */
     final Supplier<? extends Image> imageSupplier;
-    
+
     /**
      * Default window size. It might change upon entering full screen, so don't consider it absolute. Due to letter
      * boxing and screen doubling, stretching etc. it might be different that the screen buffer (typically, larger).
      */
     final Dimension dim;
-    
+
     /**
      * Very generic JFrame. Along that it only initializes various properties of Doom Frame.
      */
@@ -71,7 +82,7 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
         } else {
             getContentPane().setPreferredSize(content.getPreferredSize());
         }
-        
+
         setResizable(false);
 
         /**
@@ -81,13 +92,17 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
          * JFrame's size is auto-set here.
          */
         pack();
+
+        // center frame
+        setLocationRelativeTo(null);
+
         setVisible(true);
-        
+
         // Gently tell the eventhandler to wake up and set itself.	  
         requestFocus();
         content.requestFocusInWindow();
     }
-    
+
     /**
      * Uninitialize graphics, so it can be reset on the next repaint
      */
@@ -107,12 +122,12 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
         if (!content.isDisplayable()) {
             return;
         }
-        
+
         /**
          * Work on a local copy of the stack - global one can become null at any moment
          */
         final Graphics2D localG2d = getGraphics2D();
-        
+
         /**
          * If the game starts too fast, it is possible to raise an exception there
          * We don't want to bother player with "something bad happened"
@@ -120,8 +135,7 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
          * - Good Sign 2017/04/09
          */
         if (localG2d == null) {
-            Loggers.getLogger(DoomFrame.class.getName())
-                .log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
+            LOGGER.log(Level.INFO, "Starting or switching fullscreen, have no Graphics2d yet, skipping paint");
         } else {
             draw(g2d, imageSupplier.get(), dim, this);
             if (showFPS) {
@@ -129,7 +143,7 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
                 final long now = System.currentTimeMillis();
                 final long lambda = now - lastTime;
                 if (lambda >= 100L) {
-                    setTitle(Engine.getEngine().getWindowTitle(frames * 1000.0/lambda));
+                    setTitle(Engine.getEngine().getWindowTitle(frames * 1000.0 / lambda));
                     frames = 0;
                     lastTime = now;
                 }
@@ -146,16 +160,20 @@ public class DoomFrame<Window extends Component & DoomWindow<Window>> extends JF
         Graphics2D localG2d;
         if ((localG2d = g2d) == null) {
             // add double-checked locking
-            synchronized(DoomFrame.class) {
+            synchronized (DoomFrame.class) {
                 if ((localG2d = g2d) == null) {
                     g2d = localG2d = (Graphics2D) content.getGraphics();
                     localG2d.setRenderingHint(KEY_ALPHA_INTERPOLATION, VALUE_ALPHA_INTERPOLATION_SPEED);
                     localG2d.setRenderingHint(KEY_ANTIALIASING, VALUE_ANTIALIAS_OFF);
                     localG2d.setRenderingHint(KEY_RENDERING, VALUE_RENDER_SPEED);
+                    localG2d.setRenderingHint(KEY_COLOR_RENDERING, VALUE_COLOR_RENDER_SPEED);
+
+                    // add fullscreen interpolation options
+                    applyFullscreenOptions(localG2d);
                 }
             }
         }
-        
+
         return localG2d;
     }
 

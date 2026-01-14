@@ -19,7 +19,12 @@ package m;
 import data.Defines;
 import data.mobjtype_t;
 import doom.SourceCode.M_Random;
-import static doom.SourceCode.M_Random.*;
+import static doom.SourceCode.M_Random.M_ClearRandom;
+import static doom.SourceCode.M_Random.M_Random;
+import static doom.SourceCode.M_Random.P_Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import p.ActiveStates;
 import utils.C2JUtils;
 
@@ -39,7 +44,9 @@ import utils.C2JUtils;
  * @author Good Sign
  */
 public class DelegateRandom implements IRandom {
-    
+
+    private static final Logger LOGGER = Loggers.getLogger(DelegateRandom.class.getName());
+
     private IRandom random;
     private IRandom altRandom;
 
@@ -60,11 +67,11 @@ public class DelegateRandom implements IRandom {
         if (arandom != null && ((!which && arandom instanceof DoomRandom) || (which && arandom instanceof JavaRandom))) {
             this.altRandom = random;
             this.random = arandom;
-            System.out.print(String.format("M_Random: Switching to %s\n", random.getClass().getSimpleName()));
+            LOGGER.log(Level.INFO, String.format("M_Random: Switching to %s\n", random.getClass().getSimpleName()));
         } else {
             this.altRandom = random;
             this.random = which ? new JavaRandom() : new DoomRandom();
-            System.out.print(String.format("M_Random: Switching to %s (new instance)\n", random.getClass().getSimpleName()));
+            LOGGER.log(Level.INFO, String.format("M_Random: Switching to %s (new instance)\n", random.getClass().getSimpleName()));
         }
         //random.ClearRandom();
     }
@@ -111,5 +118,5 @@ public class DelegateRandom implements IRandom {
     public int P_Random(ActiveStates caller, mobjtype_t type, int sequence) {
         return random.P_Random(caller, type, sequence);
     }
-    
+
 }

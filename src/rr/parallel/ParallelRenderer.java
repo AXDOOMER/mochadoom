@@ -3,6 +3,9 @@ package rr.parallel;
 import doom.DoomMain;
 import doom.player_t;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 import rr.SimpleThings;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.R_DrawColumnBoom;
@@ -30,18 +33,19 @@ import rr.drawfuns.R_DrawTranslatedColumnLow;
  * 
  * @author admin
  */
-
 public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T, V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(ParallelRenderer.class.getName());
 
     public ParallelRenderer(DoomMain<T, V> DM, int wallthread,
             int floorthreads, int nummaskedthreads) {
         super(DM, wallthread, floorthreads, nummaskedthreads);
-        
+
         // Register parallel seg drawer with list of RWI subsystems.
-        ParallelSegs tmp= new ParallelSegs(this);
+        ParallelSegs tmp = new ParallelSegs(this);
         this.MySegs = tmp;
-        RWIs= tmp;
-        
+        RWIs = tmp;
+
         this.MyThings = new SimpleThings<>(DM.vs, this);
         //this.MyPlanes = new Planes(this);// new ParallelPlanes<T, V>(DM.R);
 
@@ -56,8 +60,6 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
         this(DM, 1, 1, 2);
     }
 
-
-
     /**
      * R_RenderView As you can guess, this renders the player view of a
      * particular player object. In practice, it could render the view of any
@@ -66,7 +68,6 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
      * 
      * @throws IOException
      */
-
     public void RenderPlayerView(player_t player) {
 
         // Viewing variables are set according to the player's mobj. Interesting
@@ -80,7 +81,6 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
          * mobj_t crap=(mobj_t)shit; player.mo=crap; } catch (ClassCastException
          * e){ } }
          */
-
         // Clear buffers.
         MyBSP.ClearClipSegs();
         seg_vars.ClearDrawSegs();
@@ -94,7 +94,6 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
         MyBSP.RenderBSPNode(DOOM.levelLoader.numnodes - 1);
 
         // System.out.printf("Submitted %d RWIs\n",RWIcount);
-
         MySegs.CompleteRendering();
 
         // Check for new console commands.
@@ -111,8 +110,6 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
 
 //            drawsegsbarrier.await();
 //            visplanebarrier.await();
-
-
         MyThings.DrawMasked();
 
         // RenderRMIPipeline();
@@ -120,7 +117,6 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
          * try { maskedbarrier.await(); } catch (Exception e) {
          * e.printStackTrace(); }
          */
-
         // Check for new console commands.
         DOOM.gameNetworking.NetUpdate();
     }
@@ -201,10 +197,10 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
             maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] = new MaskedWorker.Indexed(
-                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
-                    screen, maskedbarrier, BLURRY_MAP
+                        DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
+                        screen, maskedbarrier, BLURRY_MAP
                 );
-                
+
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
                 maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
@@ -268,16 +264,13 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
      * columnofs, ylookup, screen, visplanebarrier, NUMFLOORTHREADS);
      * //vpw[i].id = i; detailaware.add((IDetailAware) vpw[i]); } }
      */
-
-
-        /*
+ /*
          * TODO: relay to dependent objects. super.initScaling();
          * ColVars<byte[],byte[]> fake = new ColVars<byte[],byte[]>(); RWI =
          * C2JUtils.createArrayOfObjects(fake, SCREENWIDTH * 3); // Be MUCH more
          * generous with this one. RMI = C2JUtils.createArrayOfObjects(fake,
          * SCREENWIDTH * 6);
-         */
-
+     */
     protected abstract void InitMaskedWorkers();
 
     public static final class HiColor extends ParallelRenderer<byte[], short[]> {
@@ -300,10 +293,10 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
             maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] = new MaskedWorker.HiColor(
-                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
-                    screen, maskedbarrier, BLURRY_MAP
+                        DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS,
+                        screen, maskedbarrier, BLURRY_MAP
                 );
-                
+
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
                 maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);
@@ -318,7 +311,7 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
         protected void InitColormaps() throws IOException {
 
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite
@@ -432,7 +425,7 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
                 throws IOException {
 
             colormaps.colormaps = DOOM.graphicSystem.getColorMap();
-            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
+            LOGGER.log(Level.FINE, String.format("COLORS15 Colormaps: %d", colormaps.colormaps.length));
 
             // MAES: blurry effect is hardcoded to this colormap.
             // Pointless, since we don't use indexes. Instead, a half-brite
@@ -446,10 +439,10 @@ public abstract class ParallelRenderer<T, V> extends AbstractParallelRenderer<T,
             maskedworkers = new MaskedWorker[NUMMASKEDTHREADS];
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] = new MaskedWorker.TrueColor(
-                    DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS, screen,
-                    maskedbarrier, BLURRY_MAP
+                        DOOM.vs, this, i, ylookup, columnofs, NUMMASKEDTHREADS, screen,
+                        maskedbarrier, BLURRY_MAP
                 );
-                
+
                 detailaware.add(maskedworkers[i]);
                 // "Peg" to sprite manager.
                 maskedworkers[i].cacheSpriteManager(DOOM.spriteManager);

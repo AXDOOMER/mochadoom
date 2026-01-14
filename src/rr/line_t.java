@@ -13,7 +13,8 @@ import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
-import static m.fixed_t.*;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedMul;
 import p.Interceptable;
 import p.Resettable;
 import s.degenmobj_t;
@@ -24,13 +25,12 @@ import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
 /** This is the actual linedef */
-
 public class line_t
         implements Interceptable, IReadableDoomObject, IPackableDoomObject,
         Resettable {
 
-    public static final char NO_INDEX=0xFFFF;
-    
+    public static final char NO_INDEX = 0xFFFF;
+
     public line_t() {
         sidenum = new char[2];
         bbox = new int[4];
@@ -86,11 +86,11 @@ public class line_t
 
     // From Boom
     public int tranlump;
-    
+
     public int id;
-    
+
     /** killough 4/17/98: improves searches for tags. */
-    public int firsttag,nexttag;    
+    public int firsttag, nexttag;
 
     /** For Boom stuff, interprets sidenum specially */
     public int getSpecialSidenum() {
@@ -114,17 +114,13 @@ public class line_t
      *        fixed_t
      * @return 0 or 1 (false, true) - (front, back)
      */
-    public boolean PointOnLineSide(int x, int y)
+    public boolean PointOnLineSide(int x, int y) {
 
-    {
-    	
-
-    	  return
-    			    (dx==0) ? x <= this.v1x ? this.dy > 0 : this.dy < 0 :
-    			    (dy==0) ? y <= this.v1y ? this.dx < 0 : this.dx > 0 :
-    			    FixedMul(y-this.v1y, this.dx>>FRACBITS) >=
-    			    FixedMul(this.dy>>FRACBITS, x-this.v1x);
-    	/*
+        return (dx == 0) ? x <= this.v1x ? this.dy > 0 : this.dy < 0
+                : (dy == 0) ? y <= this.v1y ? this.dx < 0 : this.dx > 0
+                        : FixedMul(y - this.v1y, this.dx >> FRACBITS)
+                        >= FixedMul(this.dy >> FRACBITS, x - this.v1x);
+        /*
         int dx, dy, left, right;
         if (this.dx == 0) {
             if (x <= this.v1x)
@@ -163,42 +159,43 @@ public class line_t
         boolean p2 = false;
 
         switch (this.slopetype) {
-        // Line perfectly horizontal, box floating "north" of line
-        case ST_HORIZONTAL:
-            p1 = tmbox[BOXTOP] > v1y;
-            p2 = tmbox[BOXBOTTOM] > v1y;
-            if (dx < 0) {
-                p1 ^= true;
-                p2 ^= true;
-            }
-            break;
+            // Line perfectly horizontal, box floating "north" of line
+            case ST_HORIZONTAL:
+                p1 = tmbox[BOXTOP] > v1y;
+                p2 = tmbox[BOXBOTTOM] > v1y;
+                if (dx < 0) {
+                    p1 ^= true;
+                    p2 ^= true;
+                }
+                break;
 
-        // Line perfectly vertical, box floating "west" of line
-        case ST_VERTICAL:
+            // Line perfectly vertical, box floating "west" of line
+            case ST_VERTICAL:
 
-            p1 = tmbox[BOXRIGHT] < v1x;
-            p2 = tmbox[BOXLEFT] < v1x;
-            if (dy < 0) {
-                p1 ^= true;
-                p2 ^= true;
-            }
-            break;
+                p1 = tmbox[BOXRIGHT] < v1x;
+                p2 = tmbox[BOXLEFT] < v1x;
+                if (dy < 0) {
+                    p1 ^= true;
+                    p2 ^= true;
+                }
+                break;
 
-        case ST_POSITIVE:
-            // Positive slope, both points on one side.
-            p1 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP]);
-            p2 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
-            break;
+            case ST_POSITIVE:
+                // Positive slope, both points on one side.
+                p1 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP]);
+                p2 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
+                break;
 
-        case ST_NEGATIVE:
-            // Negative slope, both points (mirrored horizontally) on one side.
-            p1 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP]);
-            p2 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
-            break;
+            case ST_NEGATIVE:
+                // Negative slope, both points (mirrored horizontally) on one side.
+                p1 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP]);
+                p2 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
+                break;
         }
 
-        if (p1 == p2)
+        if (p1 == p2) {
             return p1 ? 1 : 0;
+        }
         // Any other result means non-inclusive crossing.
         return -1;
     }
@@ -216,42 +213,43 @@ public class line_t
         boolean p2 = false;
 
         switch (this.slopetype) {
-        // Line perfectly horizontal, box floating "north" of line
-        case ST_HORIZONTAL:
-            p1 = tmbox[BOXTOP] >= v1y;
-            p2 = tmbox[BOXBOTTOM] >= v1y;
-            if (dx < 0) {
-                p1 ^= true;
-                p2 ^= true;
-            }
-            break;
+            // Line perfectly horizontal, box floating "north" of line
+            case ST_HORIZONTAL:
+                p1 = tmbox[BOXTOP] >= v1y;
+                p2 = tmbox[BOXBOTTOM] >= v1y;
+                if (dx < 0) {
+                    p1 ^= true;
+                    p2 ^= true;
+                }
+                break;
 
-        // Line perfectly vertical, box floating "west" of line
-        case ST_VERTICAL:
+            // Line perfectly vertical, box floating "west" of line
+            case ST_VERTICAL:
 
-            p1 = tmbox[BOXRIGHT] <= v1x;
-            p2 = tmbox[BOXLEFT] <= v1x;
-            if (dy < 0) {
-                p1 ^= true;
-                p2 ^= true;
-            }
-            break;
+                p1 = tmbox[BOXRIGHT] <= v1x;
+                p2 = tmbox[BOXLEFT] <= v1x;
+                if (dy < 0) {
+                    p1 ^= true;
+                    p2 ^= true;
+                }
+                break;
 
-        case ST_POSITIVE:
-            // Positive slope, both points on one side.
-            p1 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP]);
-            p2 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
-            break;
+            case ST_POSITIVE:
+                // Positive slope, both points on one side.
+                p1 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP]);
+                p2 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
+                break;
 
-        case ST_NEGATIVE:
-            // Negative slope, both points (mirrored horizontally) on one side.
-            p1 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP]);
-            p2 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
-            break;
+            case ST_NEGATIVE:
+                // Negative slope, both points (mirrored horizontally) on one side.
+                p1 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP]);
+                p2 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
+                break;
         }
 
-        if (p1 == p2)
+        if (p1 == p2) {
             return p1 ? 1 : 0;
+        }
         // Any other result means non-inclusive crossing.
         return -1;
     }
@@ -275,8 +273,8 @@ public class line_t
     }
 
     public String toString() {
-        return (String.format("Line %d Flags: %x Special %d Tag: %d ", this.id,this.flags,
-            this.special, this.tag));
+        return (String.format("Line %d Flags: %x Special %d Tag: %d ", this.id, this.flags,
+                this.special, this.tag));
     }
 
     @Override
@@ -317,7 +315,7 @@ public class line_t
         soundorg = null;
         tranlump = 0;
     }
-    
+
     /**
      * LUT, motion clipping, walls/grid element // // LineDef attributes. // /**
      * Solid, is an obstacle.
@@ -338,7 +336,6 @@ public class line_t
     // Unpegged textures allways have the first row of
     // the texture at the top pixel of the line for both
     // top and bottom textures (use next to windows).
-
     /** upper texture unpegged */
     public static final int ML_DONTPEGTOP = 8;
 

@@ -6,10 +6,13 @@ import static data.Limits.MAXVISSPRITES;
 import static data.Tables.ANG45;
 import static data.Tables.BITS32;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import mochadoom.Loggers;
 import p.mobj_t;
 import static p.mobj_t.MF_SHADOW;
 import static rr.SceneRenderer.MINZ;
@@ -23,9 +26,10 @@ import v.graphics.Palettes;
  *
  * @param <V>
  */
-
 public final class VisSprites<V>
         implements IVisSpriteManagement<V> {
+
+    private static final Logger LOGGER = Loggers.getLogger(VisSprites.class.getName());
 
     private final static boolean DEBUG = false;
 
@@ -34,7 +38,7 @@ public final class VisSprites<V>
     protected final RendererState<?, V> rendererState;
 
     public VisSprites(RendererState<?, V> rendererState) {
-        vissprite_t<V> tmp = new vissprite_t<V>();
+        vissprite_t<V> tmp = new vissprite_t<>();
         vissprites = C2JUtils.createArrayOfObjects(tmp, MAXVISSPRITES);
         this.rendererState = rendererState;
     }
@@ -48,18 +52,17 @@ public final class VisSprites<V>
     // UNUSED
     // private final vissprite_t unsorted;
     // private final vissprite_t vsprsortedhead;
-
     // Cache those you get from the sprite manager
     protected int[] spritewidth, spriteoffset, spritetopoffset;
 
     /**
      * R_AddSprites During BSP traversal, this adds sprites by sector.
      */
-
     @Override
     public void AddSprites(sector_t sec) {
-        if (DEBUG)
-            System.out.println("AddSprites");
+        if (DEBUG) {
+            LOGGER.log(Level.FINER, "AddSprites");
+        }
         mobj_t thing;
         int lightnum;
 
@@ -67,24 +70,27 @@ public final class VisSprites<V>
         // A sector might have been split into several
         // subsectors during BSP building.
         // Thus we check whether its already added.
-        if (sec.validcount == rendererState.getValidCount())
+        if (sec.validcount == rendererState.getValidCount()) {
             return;
+        }
 
         // Well, now it will be done.
         sec.validcount = rendererState.getValidCount();
 
         lightnum = (sec.lightlevel >> rendererState.colormaps.lightSegShift()) + rendererState.colormaps.extralight;
 
-        if (lightnum < 0)
+        if (lightnum < 0) {
             rendererState.colormaps.spritelights = rendererState.colormaps.scalelight[0];
-        else if (lightnum >= rendererState.colormaps.lightLevels())
+        } else if (lightnum >= rendererState.colormaps.lightLevels()) {
             rendererState.colormaps.spritelights = rendererState.colormaps.scalelight[rendererState.colormaps.lightLevels() - 1];
-        else
+        } else {
             rendererState.colormaps.spritelights = rendererState.colormaps.scalelight[lightnum];
+        }
 
         // Handle all things in sector.
-        for (thing = sec.thinglist; thing != null; thing = (mobj_t) thing.snext)
+        for (thing = sec.thinglist; thing != null; thing = (mobj_t) thing.snext) {
             ProjectSprite(thing);
+        }
     }
 
     /**
@@ -123,8 +129,9 @@ public final class VisSprites<V>
         tz = gxt - gyt;
 
         // thing is behind view plane?
-        if (tz < MINZ)
+        if (tz < MINZ) {
             return;
+        }
         /* MAES: so projection/tz gives horizontal scale */
         xscale = FixedDiv(rendererState.view.projection, tz);
 
@@ -133,20 +140,23 @@ public final class VisSprites<V>
         tx = -(gyt + gxt);
 
         // too far off the side?
-        if (Math.abs(tx) > (tz << 2))
+        if (Math.abs(tx) > (tz << 2)) {
             return;
+        }
 
         // decide which patch to use for sprite relative to player
         if (RANGECHECK) {
-            if (thing.mobj_sprite.ordinal() >= rendererState.DOOM.spriteManager.getNumSprites())
+            if (thing.mobj_sprite.ordinal() >= rendererState.DOOM.spriteManager.getNumSprites()) {
                 rendererState.DOOM.doomSystem.Error("R_ProjectSprite: invalid sprite number %d ",
-                    thing.mobj_sprite);
+                        thing.mobj_sprite);
+            }
         }
         sprdef = rendererState.DOOM.spriteManager.getSprite(thing.mobj_sprite.ordinal());
         if (RANGECHECK) {
-            if ((thing.mobj_frame & FF_FRAMEMASK) >= sprdef.numframes)
+            if ((thing.mobj_frame & FF_FRAMEMASK) >= sprdef.numframes) {
                 rendererState.DOOM.doomSystem.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
-                    thing.mobj_sprite, thing.mobj_frame);
+                        thing.mobj_sprite, thing.mobj_frame);
+            }
         }
         sprframe = sprdef.spriteframes[thing.mobj_frame & FF_FRAMEMASK];
 
@@ -167,15 +177,17 @@ public final class VisSprites<V>
         x1 = (rendererState.view.centerxfrac + FixedMul(tx, xscale)) >> FRACBITS;
 
         // off the right side?
-        if (x1 > rendererState.view.width)
+        if (x1 > rendererState.view.width) {
             return;
+        }
 
         tx += spritewidth[lump];
         x2 = ((rendererState.view.centerxfrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
 
         // off the left side
-        if (x2 < 0)
+        if (x2 < 0) {
             return;
+        }
 
         // store information in a vissprite
         vis = NewVisSprite();
@@ -202,8 +214,9 @@ public final class VisSprites<V>
             vis.xiscale = iscale;
         }
 
-        if (vis.x1 > x1)
+        if (vis.x1 > x1) {
             vis.startfrac += vis.xiscale * (vis.x1 - x1);
+        }
         vis.patch = lump;
 
         // get light level
@@ -218,14 +231,13 @@ public final class VisSprites<V>
             // full bright
             vis.colormap = (V) rendererState.colormaps.colormaps[Palettes.COLORMAP_FIXED];
             // vis.pcolormap=0;
-        }
-
-        else {
+        } else {
             // diminished light
             index = xscale >> (rendererState.colormaps.lightScaleShift() - rendererState.view.detailshift);
 
-            if (index >= rendererState.colormaps.maxLightScale())
+            if (index >= rendererState.colormaps.maxLightScale()) {
                 index = rendererState.colormaps.maxLightScale() - 1;
+            }
 
             vis.colormap = rendererState.colormaps.spritelights[index];
             // vis.pcolormap=index;
@@ -262,7 +274,6 @@ public final class VisSprites<V>
     /**
      * R_ClearSprites Called at frame start.
      */
-
     @Override
     public void ClearSprites() {
         // vissprite_p = vissprites;
@@ -270,27 +281,24 @@ public final class VisSprites<V>
     }
 
     // UNUSED private final vissprite_t overflowsprite = new vissprite_t();
-
     protected final void ResizeSprites() {
-        vissprites =
-            C2JUtils.resize(vissprites[0], vissprites, vissprites.length * 2); // Bye
-                                                                               // bye,
-                                                                               // old
-                                                                               // vissprites.
+        vissprites
+                = C2JUtils.resize(vissprites[0], vissprites, vissprites.length * 2); // Bye
+        // bye,
+        // old
+        // vissprites.
     }
 
     /**
      * R_SortVisSprites UNUSED more efficient Comparable sorting + built-in
      * Arrays.sort function used.
      */
-
     @Override
     public final void SortVisSprites() {
         Arrays.sort(vissprites, 0, vissprite_p);
 
         // Maes: got rid of old vissprite sorting code. Java's is better
         // Hell, almost anything was better than that.
-
     }
 
     @Override
@@ -304,10 +312,11 @@ public final class VisSprites<V>
     }
 
     public void resetLimits() {
-        vissprite_t<V>[] tmp =
-            C2JUtils.createArrayOfObjects(vissprites[0], MAXVISSPRITES);
+        vissprite_t<V>[] tmp
+                = C2JUtils.createArrayOfObjects(vissprites[0], MAXVISSPRITES);
         System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
 
         // Now, that was quite a haircut!.
-        vissprites = tmp;    }
+        vissprites = tmp;
+    }
 }

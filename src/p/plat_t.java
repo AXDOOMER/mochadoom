@@ -12,7 +12,8 @@ import w.IReadableDoomObject;
 public class plat_t extends SectorAction implements IReadableDoomObject {
 
     public sector_t sector;
-    public @fixed_t int speed, low, high;
+    public @fixed_t
+    int speed, low, high;
     public int wait;
     public int count;
     public plat_e status;
@@ -40,8 +41,8 @@ public class plat_t extends SectorAction implements IReadableDoomObject {
         count = DoomIO.readLEInt(f);
         status = plat_e.values()[DoomIO.readLEInt(f)];
         oldstatus = plat_e.values()[DoomIO.readLEInt(f)];
-        System.out.println(status);
-        System.out.println(oldstatus);
+        //System.out.println(status);
+        //System.out.println(oldstatus);
         crush = DoomIO.readIntBoolean(f);
         tag = DoomIO.readLEInt(f);
         type = plattype_e.values()[DoomIO.readLEInt(f)];
@@ -58,8 +59,8 @@ public class plat_t extends SectorAction implements IReadableDoomObject {
         b.putInt(count); //36
         b.putInt(status.ordinal()); //40
         b.putInt(oldstatus.ordinal()); //44
-        System.out.println(status);
-        System.out.println(oldstatus);
+        //System.out.println(status);
+        //System.out.println(oldstatus);
         b.putInt(crush ? 1 : 0); // 48
         b.putInt(tag); // 52
         b.putInt(type.ordinal()); // 56

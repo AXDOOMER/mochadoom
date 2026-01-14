@@ -36,6 +36,7 @@ import p.strobe_t;
 import p.vldoor_t;
 
 public interface Thinkers extends ActionTrait {
+
     //
     // T_FireFlicker
     //
@@ -59,7 +60,7 @@ public interface Thinkers extends ActionTrait {
 
         flick.count = 4;
     }
-    
+
     /**
      * T_LightFlash
      * Do flashing lights.
@@ -110,7 +111,7 @@ public interface Thinkers extends ActionTrait {
                     g.direction = -1;
                 }
                 break;
-                
+
             default:
                 break;
         }
@@ -127,11 +128,11 @@ public interface Thinkers extends ActionTrait {
     default void T_VerticalDoor(thinker_t v) {
         getThinkers().VerticalDoor((vldoor_t) v);
     }
-    
+
     default void T_SlidingDoor(thinker_t door) {
         getThinkers().SlidingDoor((slidedoor_t) door);
     }
-    
+
     default void T_PlatRaise(thinker_t p) {
         getThinkers().PlatRaise((plat_t) p);
     }

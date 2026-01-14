@@ -28,15 +28,25 @@ import rr.line_t;
 public interface ActionsMoveEvents extends ActionTrait {
 
     boolean DoDoor(line_t line, vldoor_e type);
+
     boolean DoFloor(line_t line, floor_e floor_e);
+
     boolean DoPlat(line_t line, plattype_e plattype_e, int i);
+
     boolean BuildStairs(line_t line, stair_e stair_e);
+
     boolean DoCeiling(line_t line, ceiling_e ceiling_e);
+
     void StopPlat(line_t line);
+
     void LightTurnOn(line_t line, int i);
+
     void StartLightStrobing(line_t line);
+
     void TurnTagLightsOff(line_t line);
+
     int Teleport(line_t line, int side, mobj_t thing);
+
     int CeilingCrushStop(line_t line);
 
     //

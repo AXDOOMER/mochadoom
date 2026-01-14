@@ -1,16 +1,15 @@
 package rr.drawfuns;
 
-import static m.fixed_t.FRACBITS;
 import i.IDoomSystem;
+import static m.fixed_t.FRACBITS;
 
-     /**
-	 * Adapted from Killough's Boom code. There are optimized as well as
-	 * low-detail versions of it.
-	 * 
-	 * @author admin
-	 * 
-	 */
-
+/**
+ * Adapted from Killough's Boom code. There are optimized as well as
+ * low-detail versions of it.
+ * 
+ * @author admin
+ * 
+ */
 /**
  * A column is a vertical slice/span from a wall texture that, given the
  * DOOM style restrictions on the view orientation, will always have
@@ -18,15 +17,14 @@ import i.IDoomSystem;
  * used. It has also been used with Wolfenstein 3D. MAES: this is called
  * mostly from inside Draw and from an external "Renderer"
  */
+public final class R_DrawColumn extends DoomColumnFunction<byte[], short[]> {
 
-public final class R_DrawColumn extends DoomColumnFunction<byte[],short[]> {
-    
     public R_DrawColumn(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+            int[] ylookup, int[] columnofs, ColVars<byte[], short[]> dcvars,
             short[] screen, IDoomSystem I) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
     }
-    
+
     public void invoke() {
         int count;
         // byte* dest;
@@ -40,12 +38,14 @@ public final class R_DrawColumn extends DoomColumnFunction<byte[],short[]> {
         // colmask = (byte) Math.min(dc_source.length-dc_source_ofs-1,127);
 
         // Zero length, column does not exceed a pixel.
-        if (count <= 0)
+        if (count <= 0) {
             return;
+        }
 
         if (RANGECHECK) {
-            if (dcvars.dc_x >= SCREENWIDTH || dcvars.dc_yl < 0 || dcvars.dc_yh >= SCREENHEIGHT)
+            if (dcvars.dc_x >= SCREENWIDTH || dcvars.dc_yl < 0 || dcvars.dc_yh >= SCREENHEIGHT) {
                 I.Error("R_DrawColumn: %i to %i at %i", dcvars.dc_yl, dcvars.dc_yh, dcvars.dc_x);
+            }
         }
 
         // Trying to draw a masked column? Then something gross will happen.
@@ -55,7 +55,6 @@ public final class R_DrawColumn extends DoomColumnFunction<byte[],short[]> {
          * count=dc_source.length-dc_source_ofs-1; dc_source_ofs=0;
          * //dc_yl=dc_yh-count; gross=true; }
          */
-        
         dest = computeScreenDest();
 
         // Determine scaling,

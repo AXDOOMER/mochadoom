@@ -2,6 +2,6 @@ package i;
 
 public interface IDrawer {
 
-	public void Drawer();
-	
+    public void Drawer();
+
 }

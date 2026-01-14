@@ -1,14 +1,13 @@
 package automap;
 
 /** used only in automap */
+public class mline_t {
 
-public class mline_t
-{
-    public mline_t(){
-        this(0,0,0,0);
+    public mline_t() {
+        this(0, 0, 0, 0);
     }
-    
-    public int ax,ay,bx,by;
+
+    public int ax, ay, bx, by;
 
     public mline_t(int ax, int ay, int bx, int by) {
         this.ax = ax;
@@ -16,14 +15,14 @@ public class mline_t
         this.bx = bx;
         this.by = by;
     }
-    
+
     public mline_t(double ax, double ay, double bx, double by) {
         this.ax = (int) ax;
         this.ay = (int) ay;
         this.bx = (int) bx;
         this.by = (int) by;
     }
-    
+
     /*
     public mline_t(mpoint_t a, mpoint_t b) {
         this.a = a;
@@ -46,5 +45,5 @@ public class mline_t
     public String toString(){
         return a.toString()+" - "+ b.toString();
     }
-    */
+     */
 }

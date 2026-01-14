@@ -26,6 +26,7 @@ import java.awt.Rectangle;
  * @author Good Sign
  */
 public interface Rectangles<V, E extends Enum<E>> extends Blocks<V, E>, Points<V, E> {
+
     /**
      * Computes a Horizontal with a row from the Rectangle at heightIndex
      * @param rect
@@ -36,14 +37,13 @@ public interface Rectangles<V, E extends Enum<E>> extends Blocks<V, E>, Points<V
         if (heightIndex < 0 || heightIndex > rect.height) {
             throw new IndexOutOfBoundsException("Bad row index: " + heightIndex);
         }
-        
+
         return new Horizontal(point(rect.x, rect.y) + heightIndex * getScreenWidth(), rect.width);
     }
-    
+
     /**
      * V_CopyRect
      */
-    
     default void CopyRect(E srcScreenType, Rectangle rectangle, E dstScreenType) {
         final V srcScreen = getScreen(srcScreenType);
         final V dstScreen = getScreen(dstScreenType);
@@ -54,7 +54,7 @@ public interface Rectangles<V, E extends Enum<E>> extends Blocks<V, E>, Points<V
             screenCopy(srcScreen, dstScreen, rel);
         }
     }
-    
+
     default void CopyRect(E srcScreenType, Rectangle rectangle, E dstScreenType, int dstPoint) {
         final V srcScreen = getScreen(srcScreenType);
         final V dstScreen = getScreen(dstScreenType);
@@ -64,11 +64,10 @@ public interface Rectangles<V, E extends Enum<E>> extends Blocks<V, E>, Points<V
             screenCopy(srcScreen, dstScreen, rel);
         }
     }
-    
+
     /**
      * V_FillRect
      */
-
     default void FillRect(E screenType, Rectangle rectangle, V patternSrc, Horizontal pattern) {
         final V screen = getScreen(screenType);
         if (rectangle.height > 0) {
@@ -90,8 +89,11 @@ public interface Rectangles<V, E extends Enum<E>> extends Blocks<V, E>, Points<V
             RepeatRow(screen, row, rectangle.height - 1);
         }
     }
-    
-    default void FillRect(E screenType, Rectangle rectangle, int color) {FillRect(screenType, rectangle, (byte) color);}
+
+    default void FillRect(E screenType, Rectangle rectangle, int color) {
+        FillRect(screenType, rectangle, (byte) color);
+    }
+
     default void FillRect(E screenType, Rectangle rectangle, byte color) {
         final V screen = getScreen(screenType);
         if (rectangle.height > 0) {

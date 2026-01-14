@@ -7,25 +7,25 @@ import rr.patch_t;
 
 public interface IHeadsUp {
 
-	void Ticker();
+    void Ticker();
 
-	void Erase();
+    void Erase();
 
-	void Drawer();
+    void Drawer();
 
     @HU_Stuff.C(HU_Responder)
-	boolean Responder(event_t ev);
+    boolean Responder(event_t ev);
 
-	patch_t[] getHUFonts();
+    patch_t[] getHUFonts();
 
-	char dequeueChatChar();
+    char dequeueChatChar();
 
-	void Init();
+    void Init();
 
-	void setChatMacro(int i, String s);
+    void setChatMacro(int i, String s);
 
-	void Start();
+    void Start();
 
-	void Stop();
+    void Stop();
 
 }

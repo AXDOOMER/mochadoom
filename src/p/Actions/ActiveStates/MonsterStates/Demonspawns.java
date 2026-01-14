@@ -23,6 +23,7 @@ import p.Actions.ActionTrait;
 import p.mobj_t;
 
 public interface Demonspawns extends ActionTrait {
+
     void A_FaceTarget(mobj_t actor);
 
     //

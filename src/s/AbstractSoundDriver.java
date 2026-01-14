@@ -4,6 +4,9 @@ import data.sfxinfo_t;
 import data.sounds;
 import static data.sounds.S_sfx;
 import doom.DoomMain;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import mochadoom.Loggers;
 
 /**
  * Functionality and fields that are common among the various "sound drivers"
@@ -11,12 +14,13 @@ import doom.DoomMain;
  * 
  * @author Maes
  */
-
 public abstract class AbstractSoundDriver implements ISoundDriver {
 
+    private static final Logger LOGGER = Loggers.getLogger(AbstractSoundDriver.class.getName());
+
     protected final static boolean D = false; // debug
-    
-    protected final DoomMain<?,?> DM;
+
+    protected final DoomMain<?, ?> DM;
 
     /**
      * The global mixing buffer. Basically, samples from all active internal
@@ -27,9 +31,8 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * Not all i
      * 
      */
-
     protected byte[] mixbuffer;// = new byte[MIXBUFFERSIZE];
-    
+
     protected final int numChannels;
 
     /** The actual lengths of all sound effects. */
@@ -39,7 +42,6 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * The sound in channel handles, determined on registration, might be used
      * to unregister/stop/modify, currently unused.
      */
-
     protected final int[] channelhandles;
 
     /**
@@ -66,8 +68,7 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
 
     // protected final static DataLine.Info info = new DataLine.Info(Clip.class,
     // format);
-
-    public AbstractSoundDriver(DoomMain<?,?> DM, int numChannels) {
+    public AbstractSoundDriver(DoomMain<?, ?> DM, int numChannels) {
         this.DM = DM;
         this.numChannels = numChannels;
         channelids = new int[numChannels];
@@ -79,11 +80,12 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * Generates volume lookup tables which also turn the unsigned samples into
      * signed samples.
      */
-
     protected final void generateVolumeLUT() {
-        for (int i = 0; i < 128; i++)
-            for (int j = 0; j < 256; j++)
+        for (int i = 0; i < 128; i++) {
+            for (int j = 0; j < 256; j++) {
                 vol_lookup[i][j] = (i * (j - 128) * 256) / 127;
+            }
+        }
     }
 
     /**
@@ -95,11 +97,10 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * @param steptablemid
      * @return
      */
-
     protected void generateStepTable(int steptablemid) {
         for (int i = -128; i < 128; i++) {
-            steptable[steptablemid + i] =
-                (int) (Math.pow(2.0, (i / 64.0)) * 65536.0);
+            steptable[steptablemid + i]
+                    = (int) (Math.pow(2.0, (i / 64.0)) * 65536.0);
             //System.out.printf("Pitch %d %d %f\n",i,steptable[steptablemid + i],FixedFloat.toFloat(steptable[steptablemid + i]));
         }
     }
@@ -112,7 +113,6 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * @param index
      * @return
      */
-    
     protected byte[] getsfx(String sfxname, int[] len, int index) {
         byte[] sfx;
         byte[] paddedsfx;
@@ -136,30 +136,30 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
         // I do not do runtime patches to that
         // variable. Instead, we will use a
         // default sound for replacement.
-        if (DM.wadLoader.CheckNumForName(name) == -1)
+        if (DM.wadLoader.CheckNumForName(name) == -1) {
             sfxlump = DM.wadLoader.GetNumForName("dspistol");
-        else
+        } else {
             sfxlump = DM.wadLoader.GetNumForName(name);
-
-        DMXSound dmx= DM.wadLoader.CacheLumpNum(sfxlump, 0, DMXSound.class);
-        
-        // KRUDE
-        if (dmx.speed==SAMPLERATE/2){
-            // Plain linear interpolation.
-            dmx.data=DSP.crudeResample(dmx.data,2);
-            //DSP.filter(dmx.data,SAMPLERATE, SAMPLERATE/4);
-            dmx.datasize=dmx.data.length;
-            
         }
-        
+
+        DMXSound dmx = DM.wadLoader.CacheLumpNum(sfxlump, 0, DMXSound.class);
+
+        // KRUDE
+        if (dmx.speed == SAMPLERATE / 2) {
+            // Plain linear interpolation.
+            dmx.data = DSP.crudeResample(dmx.data, 2);
+            //DSP.filter(dmx.data,SAMPLERATE, SAMPLERATE/4);
+            dmx.datasize = dmx.data.length;
+
+        }
+
         sfx = dmx.data;
 
         // MAES: A-ha! So that's how they do it.
         // SOund effects are padded to the highest multiple integer of
         // the mixing buffer's size (with silence)
-
-        paddedsize =
-            ((dmx.datasize + (SAMPLECOUNT - 1)) / SAMPLECOUNT) * SAMPLECOUNT;
+        paddedsize
+                = ((dmx.datasize + (SAMPLECOUNT - 1)) / SAMPLECOUNT) * SAMPLECOUNT;
 
         // Allocate from zone memory.
         paddedsfx = new byte[paddedsize];
@@ -169,13 +169,17 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
         System.arraycopy(sfx, 0, paddedsfx, 0, dmx.datasize);
 
         // Pad with silence (unsigned)
-        for (i = dmx.datasize; i < paddedsize; i++)
+        for (i = dmx.datasize; i < paddedsize; i++) {
             paddedsfx[i] = (byte) 127;
+        }
 
         // Remove the cached lump.
         DM.wadLoader.UnlockLumpNum(sfxlump);
 
-        if (D) System.out.printf("SFX %d name %s size %d speed %d padded to %d\n", index, S_sfx[index].name, dmx.datasize,dmx.speed,paddedsize);
+        if (D) {
+            LOGGER.log(Level.FINE,
+                    String.format("SFX %d name %s size %d speed %d padded to %d", index, S_sfx[index].name, dmx.datasize, dmx.speed, paddedsize));
+        }
         // Preserve padded length.
         len[index] = paddedsize;
 
@@ -215,10 +219,11 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
         // I do not do runtime patches to that
         // variable. Instead, we will use a
         // default sound for replacement.
-        if (DM.wadLoader.CheckNumForName(name) == -1)
+        if (DM.wadLoader.CheckNumForName(name) == -1) {
             sfxlump = DM.wadLoader.GetNumForName("dspistol");
-        else
+        } else {
             sfxlump = DM.wadLoader.GetNumForName(name);
+        }
 
         size = DM.wadLoader.LumpLength(sfxlump);
 
@@ -226,7 +231,6 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
 
         // Size blown up to accommodate two channels and 16 bits.
         // Sampling rate stays the same.
-
         paddedsize = (size - 8) * 2 * 2;
         // Allocate from zone memory.
         paddedsfx = new byte[paddedsize];
@@ -234,7 +238,6 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
         // Skip first 8 bytes (header), blow up the data
         // to stereo, BIG ENDIAN, SIGNED, 16 bit. Don't expect any fancy DSP
         // here!
-
         int sample = 0;
         for (i = 8; i < size; i++) {
             // final short sam=(short) vol_lookup[127][0xFF&sfx[i]];
@@ -265,17 +268,15 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * (e.g. classic mixer uses it, but AudioLine-based implementations are not
      * guaranteed.
      */
-
     @Override
     public int StartSound(int id, int vol, int sep, int pitch, int priority) {
 
-        if (id < 1 || id > S_sfx.length - 1)
+        if (id < 1 || id > S_sfx.length - 1) {
             return BUSY_HANDLE;
-
+        }
         // Find a free channel and get a timestamp/handle for the new sound.
-        int handle = this.addsfx(id, vol, steptable[pitch], sep);
 
-        return handle;
+        return this.addsfx(id, vol, steptable[pitch], sep);
     }
 
     /**
@@ -289,7 +290,6 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * @param seperation
      * @return
      */
-
     protected abstract int addsfx(int sfxid, int volume, int step,
             int seperation);
 
@@ -302,14 +302,15 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
     public final int GetSfxLumpNum(sfxinfo_t sfx) {
         String namebuf;
         namebuf = String.format("ds%s", sfx.name).toUpperCase();
-        if (namebuf.equals("DSNONE"))
+        if (namebuf.equals("DSNONE")) {
             return -1;
+        }
 
         int lump;
         try {
             lump = DM.wadLoader.GetNumForName(namebuf);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "GetSfxLumpNum failure", e);
             return -1;
         }
 
@@ -321,34 +322,32 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * 
      * @return
      */
-    protected  final void initMixBuffer() {
+    protected final void initMixBuffer() {
         for (int i = 0; i < MIXBUFFERSIZE; i += 4) {
-            mixbuffer[i] =
-                (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
-            mixbuffer[i + 1] =
-                (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff);
-            mixbuffer[i + 2] =
-                (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
-            mixbuffer[i + 3] =
-                (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff);
+            mixbuffer[i]
+                    = (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                            / MIXBUFFERSIZE)) & 0xff00) >>> 8);
+            mixbuffer[i + 1]
+                    = (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                            / MIXBUFFERSIZE)) & 0xff);
+            mixbuffer[i + 2]
+                    = (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                            / MIXBUFFERSIZE)) & 0xff00) >>> 8);
+            mixbuffer[i + 3]
+                    = (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                            / MIXBUFFERSIZE)) & 0xff);
 
         }
     }
-    
+
     /**
      * Loads samples in 8-bit format, forcibly converts them to the common sampling rate.
      * Used by.
      */
-
     protected final void initSound8() {
         int i;
 
         // Initialize external data (all sounds) at start, keep static.
-
         for (i = 1; i < NUMSFX; i++) {
             // Alias? Example is the chaingun sound linked to pistol.
             if (sounds.S_sfx[i].link == null) {
@@ -368,12 +367,10 @@ public abstract class AbstractSoundDriver implements ISoundDriver {
      * Only used by the Clip and David "drivers".
      * 
      */
-
     protected final void initSound16() {
         int i;
 
         // Initialize external data (all sounds) at start, keep static.
-
         for (i = 1; i < NUMSFX; i++) {
             // Alias? Example is the chaingun sound linked to pistol.
             if (sounds.S_sfx[i].link == null) {

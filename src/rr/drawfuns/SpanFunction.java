@@ -5,10 +5,10 @@ package rr.drawfuns;
  * @author velktron
  *
  */
+public interface SpanFunction<T, V> {
 
-public interface SpanFunction<T,V> {
     public void invoke();
-    
-	public void invoke(SpanVars<T,V> dsvars);
+
+    public void invoke(SpanVars<T, V> dsvars);
 
 }

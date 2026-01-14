@@ -31,7 +31,6 @@ package doom;
  * @author velktron
  *
  */
-
-public final class DoomContext<T,V>{
+public final class DoomContext<T, V> {
 
 }

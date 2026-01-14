@@ -17,7 +17,13 @@
  */
 package p.Actions;
 
-import static data.Defines.*;
+import static data.Defines.NUMAMMO;
+import static data.Defines.pw_allmap;
+import static data.Defines.pw_infrared;
+import static data.Defines.pw_invisibility;
+import static data.Defines.pw_invulnerability;
+import static data.Defines.pw_ironfeet;
+import static data.Defines.pw_strength;
 import data.mobjtype_t;
 import data.sounds.sfxenum_t;
 import defines.ammotype_t;
@@ -33,12 +39,20 @@ import doom.weapontype_t;
 import m.Settings;
 import static m.fixed_t.FRACUNIT;
 import p.mobj_t;
-import static p.mobj_t.*;
+import static p.mobj_t.MF_COUNTITEM;
+import static p.mobj_t.MF_DROPPED;
+import static p.mobj_t.MF_MISSILE;
+import static p.mobj_t.MF_PICKUP;
+import static p.mobj_t.MF_SHOOTABLE;
+import static p.mobj_t.MF_SKULLFLY;
+import static p.mobj_t.MF_SOLID;
+import static p.mobj_t.MF_SPECIAL;
 import static utils.C2JUtils.eval;
 
 public interface ActionsThings extends ActionTrait {
 
     void DamageMobj(mobj_t thing, mobj_t tmthing, mobj_t tmthing0, int damage);
+
     void RemoveMobj(mobj_t special);
 
     /**
@@ -60,7 +74,7 @@ public interface ActionsThings extends ActionTrait {
         blockdist = thing.radius + movm.tmthing.radius;
 
         if (Math.abs(thing.x - movm.tmx) >= blockdist
-            || Math.abs(thing.y - movm.tmy) >= blockdist) {
+                || Math.abs(thing.y - movm.tmy) >= blockdist) {
             // didn't hit it
             return true;
         }
@@ -94,8 +108,8 @@ public interface ActionsThings extends ActionTrait {
                 return true;        // underneath
             }
             if (movm.tmthing.target != null && (movm.tmthing.target.type == thing.type
-                || (movm.tmthing.target.type == mobjtype_t.MT_KNIGHT && thing.type == mobjtype_t.MT_BRUISER)
-                || (movm.tmthing.target.type == mobjtype_t.MT_BRUISER && thing.type == mobjtype_t.MT_KNIGHT))) {
+                    || (movm.tmthing.target.type == mobjtype_t.MT_KNIGHT && thing.type == mobjtype_t.MT_BRUISER)
+                    || (movm.tmthing.target.type == mobjtype_t.MT_BRUISER && thing.type == mobjtype_t.MT_KNIGHT))) {
                 // Don't hit same species as originator.
                 if (thing == movm.tmthing.target) {
                     return true;
@@ -452,7 +466,7 @@ public interface ActionsThings extends ActionTrait {
 
             case SPR_MGUN:
                 if (!player.GiveWeapon(weapontype_t.wp_chaingun,
-                    (special.flags & MF_DROPPED) != 0)) {
+                        (special.flags & MF_DROPPED) != 0)) {
                     return;
                 }
                 player.message = GOTCHAINGUN;
@@ -485,7 +499,7 @@ public interface ActionsThings extends ActionTrait {
 
             case SPR_SHOT:
                 if (!player.GiveWeapon(weapontype_t.wp_shotgun,
-                    (special.flags & MF_DROPPED) != 0)) {
+                        (special.flags & MF_DROPPED) != 0)) {
                     return;
                 }
                 player.message = GOTSHOTGUN;
@@ -494,7 +508,7 @@ public interface ActionsThings extends ActionTrait {
 
             case SPR_SGN2:
                 if (!player.GiveWeapon(weapontype_t.wp_supershotgun,
-                    (special.flags & MF_DROPPED) != 0)) {
+                        (special.flags & MF_DROPPED) != 0)) {
                     return;
                 }
                 player.message = GOTSHOTGUN2;

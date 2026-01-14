@@ -3,7 +3,6 @@ package p;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 
@@ -29,7 +28,6 @@ public class animdef_t
         this.speed = speed;
     }
 
-    
     /** if false, it is a flat, and will NOT be used as a texture. Unless you
      *  use "flats on walls functionality of course. */
     public boolean istexture;
@@ -40,14 +38,13 @@ public class animdef_t
      *  counts the actual number of existing textures during initialization time.
      * 
      */
-    
-    public String endname,startname;
+    public String endname, startname;
 
     public int speed;
 
     public String toString() {
         return String.format("%s %s %s %d", istexture, startname, endname,
-            speed);
+                speed);
     }
 
     @Override

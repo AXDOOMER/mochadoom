@@ -38,8 +38,11 @@ import static utils.C2JUtils.eval;
 public interface ActionsFloors extends ActionsPlats {
 
     result_e MovePlane(sector_t sector, int speed, int floordestheight, boolean crush, int i, int direction);
+
     boolean twoSided(int secnum, int i);
+
     side_t getSide(int secnum, int i, int s);
+
     sector_t getSector(int secnum, int i, int i0);
 
     //
@@ -78,7 +81,7 @@ public interface ActionsFloors extends ActionsPlats {
                         floor.sector.special = (short) floor.newspecial;
                         floor.sector.floorpic = floor.texture;
                     default:
-                    	break;
+                        break;
                 }
             }
 
@@ -150,7 +153,7 @@ public interface ActionsFloors extends ActionsPlats {
                         floor.floordestheight = sec.ceilingheight;
                     }
                     floor.floordestheight -= (8 * FRACUNIT)
-                        * eval(floortype == floor_e.raiseFloorCrush);
+                            * eval(floortype == floor_e.raiseFloorCrush);
                     break;
 
                 case raiseFloorTurbo:
@@ -239,7 +242,7 @@ public interface ActionsFloors extends ActionsPlats {
                         }
                     }
                 default:
-                	break;
+                    break;
             }
         }
         return rtn;
@@ -359,7 +362,7 @@ public interface ActionsFloors extends ActionsPlats {
                 res = MovePlane(plat.sector, plat.speed, plat.high, plat.crush, 0, 1);
 
                 if (plat.type == plattype_e.raiseAndChange
-                    || plat.type == plattype_e.raiseToNearestAndChange) {
+                        || plat.type == plattype_e.raiseToNearestAndChange) {
                     if (!eval(LevelTime() & 7)) {
                         StartSound(plat.sector.soundorg, sounds.sfxenum_t.sfx_stnmov);
                     }
